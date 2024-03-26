@@ -1,0 +1,18 @@
+2024-03-21T14:07:36.707-0700	info	Setting up own telemetry...	{"fieldKey": "filed-value"}
+2024-03-21T14:07:36.707-0700	info	Serving metrics	{"fieldKey": "filed-value", "address": ":8080", "level": "Normal"}
+2024-03-21T14:19:16.880-0700	info	Setting up own telemetry...	{"fieldKey": "filed-value"}
+2024-03-21T14:19:16.880-0700	info	Serving metrics	{"fieldKey": "filed-value", "address": ":8080", "level": "Normal"}
+2024-03-21T14:19:16.881-0700	info	Starting otelcorecol...	{"fieldKey": "filed-value", "Version": "0.65.0-dev", "NumCPU": 8}
+2024-03-21T14:19:16.881-0700	info	Starting extensions...	{"fieldKey": "filed-value"}
+2024-03-21T14:19:16.881-0700	info	Everything is ready. Begin running and processing data.	{"fieldKey": "filed-value"}
+2024-03-21T14:19:16.881-0700	warn	The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.	{"fieldKey": "filed-value", "feature gate ID": "component.UseLocalHostAsDefaultHost"}
+2024-03-21T14:23:19.846-0700	info	Setting up own telemetry...	{"fieldKey": "filed-value"}
+2024-03-21T14:23:19.847-0700	info	Serving metrics	{"fieldKey": "filed-value", "address": ":8080", "level": "Normal"}
+2024-03-21T14:23:43.988-0700	info	Setting up own telemetry...	{"fieldKey": "filed-value"}
+2024-03-21T14:23:43.988-0700	info	Serving metrics	{"fieldKey": "filed-value", "address": ":8080", "level": "Normal"}
+2024-03-21T14:23:49.952-0700	info	Setting up own telemetry...	{"fieldKey": "filed-value"}
+2024-03-21T14:23:49.952-0700	info	Serving metrics	{"fieldKey": "filed-value", "address": ":8080", "level": "Normal"}
+2024-03-21T14:23:49.953-0700	info	Starting otelcorecol...	{"fieldKey": "filed-value", "Version": "0.65.0-dev", "NumCPU": 8}
+2024-03-21T14:23:49.953-0700	info	Starting extensions...	{"fieldKey": "filed-value"}
+2024-03-21T14:23:49.953-0700	info	Everything is ready. Begin running and processing data.	{"fieldKey": "filed-value"}
+2024-03-21T14:23:49.953-0700	warn	The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.	{"fieldKey": "filed-value", "feature gate ID": "component.UseLocalHostAsDefaultHost"}
