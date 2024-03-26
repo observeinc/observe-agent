@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/otelcol"
@@ -58,7 +59,7 @@ func baseFactories() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Exporters, err = exporter.MakeFactoryMap(debugexporter.NewFactory()); err != nil {
+	if factories.Exporters, err = exporter.MakeFactoryMap(debugexporter.NewFactory(), otlphttpexporter.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 

@@ -18,6 +18,15 @@ receivers:
 exporters:
   debug:
     verbosity: detailed
+  otlphttp:
+    endpoint: ""
+    headers:
+      authorization: ""
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true  
 
 service:
   pipelines:
@@ -28,4 +37,4 @@ service:
     metrics:
       receivers: [otlp]
       processors: []
-      exporters: [debug]
+      exporters: [debug, otlphttp]

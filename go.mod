@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.96.0
 	go.opentelemetry.io/collector/exporter v0.97.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.97.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.97.0
 	go.opentelemetry.io/collector/extension v0.97.0
 	go.opentelemetry.io/collector/otelcol v0.96.0
 	go.opentelemetry.io/collector/processor v0.96.0
