@@ -39,13 +39,10 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		var wg sync.WaitGroup
-		err := startCollector(wg)
-		if err != nil {
-			fmt.Errorf("error: %e", err)
-		}
 		wg.Wait()
+		return startCollector(wg)
 	},
 }
 
@@ -97,7 +94,7 @@ func startCollector(wg sync.WaitGroup) error {
 	ctx := context.Background()
 	set := collector.CollectorSettings{
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: NopFactories,
+		Factories: BaseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:      []string{filepath.Join("conf.d", "otel-collector.yaml")},
@@ -129,7 +126,7 @@ func startCollector(wg sync.WaitGroup) error {
 			state := col.GetState()
 			fmt.Println("current state", state)
 			if state == collector.StateRunning {
-				colErrorChannel <- nil
+				// colErrorChannel <- nil
 				fmt.Println("wait group now done")
 				wg.Done()
 				break
@@ -139,16 +136,11 @@ func startCollector(wg sync.WaitGroup) error {
 	}()
 
 	// wait until the collector server is in the Running state, or an error was returned
-	err = <-colErrorChannel
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
+	return <-colErrorChannel
 }
 
 // NopFactories returns a otelcol.Factories with all nop factories.
-func NopFactories() (otelcol.Factories, error) {
+func BaseFactories() (otelcol.Factories, error) {
 	var factories otelcol.Factories
 	var err error
 
