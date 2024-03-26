@@ -14,10 +14,11 @@ import (
 	"github.com/spf13/cobra"
 	component "go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/otelcol"
@@ -25,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 // startCmd represents the start command
@@ -92,6 +93,7 @@ func init() {
 // }
 
 func startCollector(wg sync.WaitGroup) error {
+	wg.Add(1)
 	ctx := context.Background()
 	set := collector.CollectorSettings{
 		BuildInfo: component.NewDefaultBuildInfo(),
@@ -99,7 +101,7 @@ func startCollector(wg sync.WaitGroup) error {
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:      []string{filepath.Join("conf.d", "otel-collector.yaml")},
-				Providers: makeMapProvidersMap(newFailureProvider()),
+				Providers: makeMapProvidersMap(fileprovider.NewWithSettings(confmap.ProviderSettings{})),
 			},
 		},
 	}
@@ -154,11 +156,11 @@ func NopFactories() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(otlpreceiver.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Exporters, err = exporter.MakeFactoryMap(exportertest.NewNopFactory()); err != nil {
+	if factories.Exporters, err = exporter.MakeFactoryMap(debugexporter.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 
@@ -179,22 +181,4 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 		ret[provider.Scheme()] = provider
 	}
 	return ret
-}
-
-type failureProvider struct{}
-
-func newFailureProvider() confmap.Provider {
-	return &failureProvider{}
-}
-
-func (fmp *failureProvider) Retrieve(context.Context, string, confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	return nil, nil
-}
-
-func (*failureProvider) Scheme() string {
-	return "file"
-}
-
-func (*failureProvider) Shutdown(ctx context.Context) error {
-	return nil
 }
