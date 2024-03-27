@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -21,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/otelcol"
 	collector "go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -64,7 +64,7 @@ func baseFactories() (otelcol.Factories, error) {
 	var factories otelcol.Factories
 	var err error
 
-	if factories.Extensions, err = extension.MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
+	if factories.Extensions, err = extension.MakeFactoryMap(healthcheckextension.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 

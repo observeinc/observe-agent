@@ -2,6 +2,7 @@ package status
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -40,6 +41,23 @@ type StatusData struct {
 	Hostname        string
 }
 
+func GetAgentStatusFromHealthcheck() (AgentStatus, error) {
+	c := &http.Client{}
+	req, err := http.NewRequest("GET", "http://localhost:13133/status", nil)
+	if err != nil {
+		return NotRunning, nil
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return NotRunning, nil
+	}
+	if resp.StatusCode == 200 {
+		return Running, nil
+	} else {
+		return NotRunning, nil
+	}
+}
+
 func GetStatusData() (*StatusData, error) {
 	hostInfo, err := host.Info()
 	if err != nil {
@@ -53,11 +71,14 @@ func GetStatusData() (*StatusData, error) {
 	uptime, err := time.ParseDuration(strconv.FormatUint(hostInfo.Uptime, 10) + "s")
 	if err != nil {
 		fmt.Println(err)
-
+		return nil, err
+	}
+	status, err := GetAgentStatusFromHealthcheck()
+	if err != nil {
 		return nil, err
 	}
 	data := StatusData{
-		Status:          NotRunning.String(),
+		Status:          status.String(),
 		BootTime:        bt.Format(time.RFC3339),
 		UpTime:          uptime.Round(time.Second).String(),
 		HostID:          hostInfo.HostID,

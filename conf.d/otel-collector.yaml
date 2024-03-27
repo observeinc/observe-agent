@@ -29,6 +29,7 @@ exporters:
       enabled: true  
 
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
@@ -38,3 +39,11 @@ service:
       receivers: [otlp]
       processors: []
       exporters: [debug, otlphttp]
+
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+    path: "/status"
+    response_body: 
+      healthy: "200 OK"
+      unhealthy: "500 Internal Server Error"
