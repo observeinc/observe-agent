@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -77,6 +78,9 @@ func baseFactories() (otelcol.Factories, error) {
 func StartCollector(wg *sync.WaitGroup) error {
 	wg.Add(1)
 	ctx := context.Background()
+	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
+	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", endpoint+"/v1/metrics")
+	os.Setenv("OTEL_EXPORTER_OTLP_HEADERS", "Authorization=Bearer "+token)
 	set := generateCollectorSettings()
 	col, err := collector.NewCollector(*set)
 	if err != nil {

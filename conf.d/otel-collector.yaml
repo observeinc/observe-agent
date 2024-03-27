@@ -19,7 +19,7 @@ exporters:
   debug:
     verbosity: detailed
   otlphttp:
-    endpoint: ""
+    endpoint: ''
     headers:
       authorization: ""
     sending_queue:
@@ -33,7 +33,7 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [debug]
+      exporters: [debug, otlphttp]
     metrics:
       receivers: [otlp]
       processors: []

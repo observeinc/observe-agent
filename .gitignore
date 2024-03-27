@@ -1,4 +1,4 @@
 agent
 output-logs
-
+observe-agent
 dist/
