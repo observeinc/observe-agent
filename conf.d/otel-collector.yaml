@@ -19,9 +19,9 @@ exporters:
   debug:
     verbosity: detailed
   otlphttp:
-    endpoint: ''
+    endpoint: ${env:OBSERVE_ENDPOINT}
     headers:
-      authorization: ""
+      authorization: ${env:OBSERVE_TOKEN}
     sending_queue:
       num_consumers: 4
       queue_size: 100
