@@ -1,9 +1,10 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 */
-package cmd
+package start
 
 import (
+	"observe/agent/cmd"
 	observeotel "observe/agent/cmd/connections/otelcollector"
 	"sync"
 
@@ -24,7 +25,7 @@ collector on the current host.`,
 }
 
 func init() {
-	rootCmd.AddCommand(startCmd)
+	cmd.RootCmd.AddCommand(startCmd)
 
 	// Here you will define your flags and configuration settings.
 
