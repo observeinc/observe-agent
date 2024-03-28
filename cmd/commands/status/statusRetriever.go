@@ -157,25 +157,25 @@ func GetAgentMetricsFromEndpoint() (*AgentMetrics, error) {
 func GetStatusData() (*StatusData, error) {
 	agentMets, err := GetAgentMetricsFromEndpoint()
 	if err != nil {
-		return nil, err
+		fmt.Println("Error getting agent metrics: ", err)
+		agentMets = &AgentMetrics{}
 	}
 	hostInfo, err := host.Info()
 	if err != nil {
-		return nil, err
+		hostInfo = &host.InfoStat{}
 	}
 	hn, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		hn = "unknown"
 	}
 	bt := time.Unix(int64(hostInfo.BootTime), 0)
 	uptime, err := time.ParseDuration(strconv.FormatUint(hostInfo.Uptime, 10) + "s")
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		uptime = time.Duration(0)
 	}
 	status, err := GetAgentStatusFromHealthcheck()
 	if err != nil {
-		return nil, err
+		status = NotRunning
 	}
 
 	data := StatusData{
