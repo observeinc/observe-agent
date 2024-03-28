@@ -16,3 +16,27 @@ Agent
   PlatformVersion: {{ .PlatformVersion }}
   KernelArch: {{ .KernelArch }}
   KernelVersion: {{ .KernelVersion }}
+
+  Agent Metrics 
+  ================
+  ExporterQueueSize: {{ .AgentMetrics.ExporterQueueSize }}
+  CPUSeconds: {{ .AgentMetrics.CPUSeconds }}s
+  MemoryUsed: {{ .AgentMetrics.MemoryUsed }}MB
+  TotalSysMemory: {{ .AgentMetrics.TotalSysMemory }}MB
+  Uptime: {{ .AgentMetrics.Uptime }}s
+  AvgServerResponseTime: {{ .AgentMetrics.AvgServerResponseTime }}ms
+  AvgClientResponseTime: {{ .AgentMetrics.AvgClientResponseTime }}ms
+  
+    Metrics Stats
+    ===============
+    ReceiverAcceptedCount: {{ .AgentMetrics.MetricsStats.ReceiverAcceptedCount }}
+    ReceiverRefusedCount: {{ .AgentMetrics.MetricsStats.ReceiverRefusedCount }}
+    ExporterSentCount: {{ .AgentMetrics.MetricsStats.ExporterSentCount }}
+    ExporterSendFailedCount: {{ .AgentMetrics.MetricsStats.ExporterSendFailedCount }}
+  
+    Traces Stats
+    ===============
+    ReceiverAcceptedCount: {{ .AgentMetrics.TracesStats.ReceiverAcceptedCount }}
+    ReceiverRefusedCount: {{ .AgentMetrics.TracesStats.ReceiverRefusedCount }}
+    ExporterSentCount: {{ .AgentMetrics.TracesStats.ExporterSentCount }}
+    ExporterSendFailedCount: {{ .AgentMetrics.TracesStats.ExporterSendFailedCount }}

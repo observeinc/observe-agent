@@ -30,6 +30,10 @@ exporters:
 
 service:
   extensions: [health_check]
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"
   pipelines:
     traces:
       receivers: [otlp]
@@ -44,6 +48,3 @@ extensions:
   health_check:
     endpoint: "localhost:13133"
     path: "/status"
-    response_body: 
-      healthy: "200 OK"
-      unhealthy: "500 Internal Server Error"

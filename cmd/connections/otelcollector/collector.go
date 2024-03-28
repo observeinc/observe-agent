@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+
 	"go.opentelemetry.io/collector/otelcol"
 	collector "go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -91,10 +92,9 @@ func StartCollector(wg *sync.WaitGroup) error {
 	wg.Add(1)
 	ctx := context.Background()
 	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
-
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
-	os.Setenv("OBSERVE_TOKEN", "Authorization=Bearer "+token)
+	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
 	set := generateCollectorSettings()
 	col, err := collector.NewCollector(*set)
 	if err != nil {
