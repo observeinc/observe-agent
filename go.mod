@@ -4,6 +4,8 @@ go 1.21.7
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.97.0
+	github.com/prometheus/client_model v0.6.0
+	github.com/prometheus/common v0.51.1
 	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -19,7 +21,6 @@ require (
 	go.opentelemetry.io/collector/exporter/debugexporter v0.97.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.97.0
 	go.opentelemetry.io/collector/extension v0.97.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.96.0
 	go.opentelemetry.io/collector/otelcol v0.96.0
 	go.opentelemetry.io/collector/processor v0.96.0
 	go.opentelemetry.io/collector/receiver v0.97.0
@@ -64,8 +65,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
-	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.51.1 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
@@ -103,7 +102,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.24.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.24.0 // indirect
