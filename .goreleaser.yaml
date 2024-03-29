@@ -175,7 +175,19 @@ nfpms:
 
     # Contents to add to the package.
     # GoReleaser will automatically add the binaries.
-    # contents:
+    contents:
+      - src: packaging/etc/observe-agent
+        dst: /etc
+        type: tree
+
+      - src: packaging/lib/systemd/system/observe-agent.service
+        dst: /lib/systemd/system/observe-agent.service
+        type: config
+
+      # - src: packaging/etc/observe-agent/config.yaml
+      #   dst: /etc/observe-agent/config.yaml
+      #   type: config
+
     #   # Basic file that applies to all packagers
     #   - src: path/to/foo
     #     dst: /usr/bin/foo
@@ -297,11 +309,9 @@ nfpms:
     # Values are the paths to the scripts which will be executed.
     #
     # Templates: allowed (since v1.20)
-    # scripts:
-    #   preinstall: "scripts/preinstall.sh"
-    #   postinstall: "scripts/postinstall.sh"
-    #   preremove: "scripts/preremove.sh"
-    #   postremove: "scripts/postremove.sh"
+    scripts:
+      preinstall: "packaging/scripts/preinstall.sh"
+      preremove: "packaging/scripts/preremove.sh"
 
     # Templated scripts to execute during the installation of the package. (overridable)
     #
