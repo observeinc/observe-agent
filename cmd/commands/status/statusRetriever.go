@@ -67,9 +67,10 @@ func bToMb(b float32) float32 {
 	return b / 1024 / 1024
 }
 
-func GetAgentStatusFromHealthcheck() (AgentStatus, error) {
+func GetAgentStatusFromHealthcheck(baseURL string) (AgentStatus, error) {
+	URL := fmt.Sprintf("%s/status", baseURL)
 	c := &http.Client{}
-	req, err := http.NewRequest("GET", "http://localhost:13133/status", nil)
+	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
 		return NotRunning, nil
 	}
@@ -84,14 +85,15 @@ func GetAgentStatusFromHealthcheck() (AgentStatus, error) {
 	}
 }
 
-func GetAgentMetricsFromEndpoint() (*AgentMetrics, error) {
+func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
+	URL := fmt.Sprintf("%s/metrics", baseURL)
 	c := &http.Client{}
-	req, err := http.NewRequest("GET", "http://localhost:8888/metrics", nil)
+	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := c.Do(req)
-	if err != nil {
+	if err != nil || resp.StatusCode != 200 {
 		return nil, err
 	}
 	var parser expfmt.TextParser
@@ -155,7 +157,7 @@ func GetAgentMetricsFromEndpoint() (*AgentMetrics, error) {
 }
 
 func GetStatusData() (*StatusData, error) {
-	agentMets, err := GetAgentMetricsFromEndpoint()
+	agentMets, err := GetAgentMetricsFromEndpoint("http://localhost:8888")
 	if err != nil {
 		fmt.Println("Error getting agent metrics: ", err)
 		agentMets = &AgentMetrics{}
@@ -173,7 +175,7 @@ func GetStatusData() (*StatusData, error) {
 	if err != nil {
 		uptime = time.Duration(0)
 	}
-	status, err := GetAgentStatusFromHealthcheck()
+	status, err := GetAgentStatusFromHealthcheck("http://localhost:13133")
 	if err != nil {
 		status = NotRunning
 	}
