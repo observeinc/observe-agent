@@ -1,7 +1,10 @@
+Networking Check
+================
+
 Running network check against {{ .URL }}...
-{{ if .Passed }}
+{{- if .Passed }}
 Request to test URL responded with response code {{ .ResponseCode }}
-{{ else }}
+{{- else }}
 Request to test URL failed with error {{ .Error }} and response code {{ .ResponseCode }}. 
-{{ end }}
+{{- end }}
 

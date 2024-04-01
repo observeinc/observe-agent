@@ -22,7 +22,7 @@ is based on the `,
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("obsere-agent version: %s\n", version)
+		fmt.Printf("observe-agent version: %s\n", version)
 	},
 }
 

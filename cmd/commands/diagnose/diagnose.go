@@ -14,10 +14,13 @@ import (
 )
 
 const networkcheckTemplate = "networkcheck.tmpl"
+const authcheckTemplate = "authcheck.tmpl"
 
 var (
 	//go:embed networkcheck.tmpl
 	networkcheckTemplateFS embed.FS
+	//go:embed authcheck.tmpl
+	authcheckTemplateFS embed.FS
 )
 
 // diagnoseCmd represents the diagnose command
@@ -27,7 +30,7 @@ var diagnoseCmd = &cobra.Command{
 	Long: `This command runs diagnostic checks for various settings and configurations
 to attempt to identify issues that could cause the agent to function improperly.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Running diagnosis checks...\n")
+		fmt.Println("Running diagnosis checks...")
 		runNetworkCheck()
 	},
 }
@@ -47,9 +50,15 @@ func init() {
 }
 
 func runNetworkCheck() error {
-	networkTestResponse := MakeTestRequest(ChallengeURL)
+	networkTestResponse := makeNetworkingTestRequest()
 	t := template.Must(template.New(networkcheckTemplate).ParseFS(networkcheckTemplateFS, networkcheckTemplate))
 	if err := t.ExecuteTemplate(os.Stdout, networkcheckTemplate, networkTestResponse); err != nil {
+		return err
+	}
+
+	authTestResponse := makeAuthTestRequest()
+	t = template.Must(template.New(authcheckTemplate).ParseFS(authcheckTemplateFS, authcheckTemplate))
+	if err := t.ExecuteTemplate(os.Stdout, authcheckTemplate, authTestResponse); err != nil {
 		return err
 	}
 	return nil
