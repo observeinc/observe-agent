@@ -868,7 +868,7 @@ brews:
     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
 
     # Directory inside the repository to put the formula.
-    directory: Formula
+    # directory: Formula
 
     # Caveats for the user of your binary.
     # caveats: "How to use this binary"
@@ -1025,27 +1025,27 @@ brews:
       # empty.
       #
       # Since: v1.18
-      git:
-        # The Git URL to push.
-        #
-        # Templates: allowed
-        # url: 'git@github.com:observeinc/homebrew-tap.git'
+      # git:
+      #   # The Git URL to push.
+      #   #
+      #   # Templates: allowed
+      #   url: 'git@github.com:observeinc/homebrew-tap.git'
 
-        # The SSH private key that should be used to commit to the Git
-        # repository.
-        # This can either be a path or the key contents.
-        #
-        # IMPORTANT: the key must not be password-protected.
-        #
-        # WARNING: do not expose your private key in the configuration file!
-        #
-        # Templates: allowed
-        private_key: '{{ .Env.PRIVATE_KEY_PATH }}'
+      #   # The SSH private key that should be used to commit to the Git
+      #   # repository.
+      #   # This can either be a path or the key contents.
+      #   #
+      #   # IMPORTANT: the key must not be password-protected.
+      #   #
+      #   # WARNING: do not expose your private key in the configuration file!
+      #   #
+      #   # Templates: allowed
+      #   private_key: '{{ .Env.PRIVATE_KEY_PATH }}'
 
-        # The value to be passed to `GIT_SSH_COMMAND`.
-        # This is mainly used to specify the SSH private key used to pull/push
-        # to the Git URL.
-        #
-        # Default: 'ssh -i {{ .KeyPath }} -o StrictHostKeyChecking=accept-new -F /dev/null'
-        # Templates: allowed
-        ssh_command: 'ssh -i {{ .Env.KEY }} -o SomeOption=yes'
+      #   # The value to be passed to `GIT_SSH_COMMAND`.
+      #   # This is mainly used to specify the SSH private key used to pull/push
+      #   # to the Git URL.
+      #   #
+      #   # Default: 'ssh -i {{ .KeyPath }} -o StrictHostKeyChecking=accept-new -F /dev/null'
+      #   # Templates: allowed
+      #   ssh_command: 'ssh -i {{ .Env.KEY }} -o SomeOption=yes'
