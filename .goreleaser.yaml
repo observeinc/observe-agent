@@ -1050,3 +1050,6 @@ brews:
       #   # Default: 'ssh -i {{ .KeyPath }} -o StrictHostKeyChecking=accept-new -F /dev/null'
       #   # Templates: allowed
       #   ssh_command: 'ssh -i {{ .Env.KEY }} -o SomeOption=yes'
+
+furies:
+  - account: observeinc
