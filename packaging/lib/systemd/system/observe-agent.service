@@ -3,7 +3,7 @@ Description=Observe Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/observe-agent --config /etc/observe-agent/observe-agent.yaml
+ExecStart=/usr/bin/observe-agent start --config /etc/observe-agent/observe-agent.yaml
 KillMode=mixed
 Restart=on-failure
 Type=simple
