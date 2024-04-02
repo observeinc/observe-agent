@@ -37,6 +37,9 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    files:
+      - src: "packaging/etc/observe-agent/*"
+        dst: "."
 
 changelog:
   sort: asc
