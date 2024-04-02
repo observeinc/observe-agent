@@ -3,8 +3,7 @@ Description=Observe Agent
 After=network.target
 
 [Service]
-EnvironmentFile=/etc/obseve-agnet/observe-agent.conf
-ExecStart=/usr/bin/observe-agent
+ExecStart=/usr/bin/observe-agent --config /etc/observe-agent/observe-agent.yaml
 KillMode=mixed
 Restart=on-failure
 Type=simple

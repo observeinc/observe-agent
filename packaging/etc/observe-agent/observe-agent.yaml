@@ -1,0 +1,8 @@
+# This is an example config file for Observe-Agent
+# Please download the config from Connections Portal
+
+# Observe data token
+# token: "XXX"
+
+# Target Observe collection url
+# observe_url: "YYY"
