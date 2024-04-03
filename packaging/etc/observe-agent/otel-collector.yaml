@@ -1,0 +1,50 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+
+# processors:
+#   batch:
+#   memory_limiter:
+#     # 75% of maximum memory up to 2G
+#     limit_mib: 1536
+#     # 25% of limit up to 2G
+#     spike_limit_mib: 512
+#     check_interval: 5s
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: ${env:OBSERVE_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_TOKEN}
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [debug, otlphttp]
+    metrics:
+      receivers: [otlp]
+      processors: []
+      exporters: [debug, otlphttp]
+
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+    path: "/status"

@@ -39,14 +39,14 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func generateCollectorSettings() *collector.CollectorSettings {
+func generateCollectorSettings(otelConfig string) *collector.CollectorSettings {
 	providerSet := confmap.ProviderSettings{}
 	set := &collector.CollectorSettings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: baseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{filepath.Join("conf.d", "otel-collector.yaml")},
+				URIs: []string{otelConfig},
 				Providers: makeMapProvidersMap(
 					fileprovider.NewWithSettings(providerSet),
 					envprovider.NewWithSettings(providerSet),
@@ -92,10 +92,15 @@ func StartCollector(wg *sync.WaitGroup) error {
 	wg.Add(1)
 	ctx := context.Background()
 	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
+	otelConfig := viper.GetString("otel_config")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
-	set := generateCollectorSettings()
+	if otelConfig == "" {
+		otelConfig = filepath.Join("conf.d", "otel-collector.yaml")
+	}
+	fmt.Fprintln(os.Stderr, "Using OTEL config file:", otelConfig)
+	set := generateCollectorSettings(otelConfig)
 	col, err := collector.NewCollector(*set)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start agent: %v\n", err)
