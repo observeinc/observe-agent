@@ -8,3 +8,4 @@
 # observe_url: "YYY"
 
 otel_config: "/etc/observe-agent/otel-collector.yaml"
+

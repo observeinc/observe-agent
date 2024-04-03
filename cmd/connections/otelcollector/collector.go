@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -69,7 +71,7 @@ func baseFactories() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(otlpreceiver.NewFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(otlpreceiver.NewFactory(), hostmetricsreceiver.NewFactory(), filelogreceiver.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 

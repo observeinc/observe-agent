@@ -6,6 +6,48 @@ receivers:
       http:
         endpoint: localhost:4318
 
+  hostmetrics:
+    collection_interval: 20s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      load:
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network:
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      processes:
+      process:
+        metrics:
+          process.cpu.utilization:
+            enabled: true
+          process.cpu.time:
+            enabled: false
+
+  filelog:
+    include:
+      - /var/log/alternatives.log
+      - /var/log/cloud-init.log
+      - /var/log/auth.log
+      - /var/log/dpkg.log
+      - /var/log/syslog
+      - /var/log/messages
+      - /var/log/secure
+      - /var/log/yum.log
+
+
 # processors:
 #   batch:
 #   memory_limiter:
@@ -40,7 +82,11 @@ service:
       processors: []
       exporters: [debug, otlphttp]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, hostmetrics]
+      processors: []
+      exporters: [debug, otlphttp]
+    logs:
+      receivers: [otlp, filelog]
       processors: []
       exporters: [debug, otlphttp]
 
