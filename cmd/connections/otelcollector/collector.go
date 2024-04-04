@@ -7,9 +7,14 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -19,16 +24,17 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 	"go.opentelemetry.io/collector/otelcol"
 	collector "go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
@@ -71,19 +77,34 @@ func baseFactories() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(otlpreceiver.NewFactory(), hostmetricsreceiver.NewFactory(), filelogreceiver.NewFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(
+		otlpreceiver.NewFactory(),
+		hostmetricsreceiver.NewFactory(),
+		filestatsreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		prometheusreceiver.NewFactory(),
+	); err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Exporters, err = exporter.MakeFactoryMap(debugexporter.NewFactory(), otlphttpexporter.NewFactory()); err != nil {
+	if factories.Exporters, err = exporter.MakeFactoryMap(
+		loggingexporter.NewFactory(),
+		debugexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
+	); err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Processors, err = processor.MakeFactoryMap(processortest.NewNopFactory()); err != nil {
+	if factories.Processors, err = processor.MakeFactoryMap(
+		transformprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
+		batchprocessor.NewFactory(),
+		resourcedetectionprocessor.NewFactory(),
+	); err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
+	if factories.Connectors, err = connector.MakeFactoryMap(countconnector.NewFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 

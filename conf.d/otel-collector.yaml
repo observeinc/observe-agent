@@ -1,21 +1,118 @@
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+    path: "/status"
+
+connectors:
+  count: null
+
 receivers:
   otlp:
     protocols:
       grpc:
         endpoint: localhost:4317
       http:
+        max_request_body_size: 10485760
         endpoint: localhost:4318
+  filestats:
+    include: /etc/otelcol-contrib/config.yaml
+    collection_interval: 240m
+    initial_delay: 60s
+  filelog:
+    include:
+      - /var/log/**/*.log
+      - /var/log/syslog
+    include_file_path: true
+    retry_on_failure:
+      enabled: true
+    max_log_size: 4MiB
+    operators:
+      - type: filter
+        expr: body matches "otel-contrib"
+  filelog/config:
+    include:
+      - /etc/otelcol-contrib/config.yaml
+    start_at: beginning
+    poll_interval: 5m
+    multiline:
+      line_end_pattern: ENDOFLINEPATTERN
+  prometheus/internal:
+    config:
+      scrape_configs:
+        - job_name: otel-collector
+          scrape_interval: 5s
+          static_configs:
+            - targets:
+                - '0.0.0.0:8888'
+  hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      load: null
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      disk: null
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network: null
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
 
-# processors:
-#   batch:
-#   memory_limiter:
-#     # 75% of maximum memory up to 2G
-#     limit_mib: 1536
-#     # 25% of limit up to 2G
-#     spike_limit_mib: 512
-#     check_interval: 5s
+processors:
+  transform/truncate:
+    log_statements:
+      - context: log
+        statements:
+          - 'truncate_all(attributes, 2047)'
+          - 'truncate_all(resource.attributes, 2047)'
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 20
+    spike_limit_percentage: 5
+  batch: null
+  resourcedetection:
+    detectors:
+      - env
+      - system
+    system:
+      hostname_sources:
+        - os
+      resource_attributes:
+        host.id:
+          enabled: true
+  resourcedetection/cloud:
+    detectors:
+      - gcp
+      - ec2
+      - azure
+    timeout: 2s
+    override: false
+  resourcedetection/barebones:
+    detectors:
+      - env
+      - system
+    system:
+      hostname_sources:
+        - os
+      resource_attributes:
+        host.id:
+          enabled: true
+        host.name:
+          enabled: false
+        os.type:
+          enabled: true
 
 exporters:
+  logging: null
   debug:
     verbosity: detailed
   otlphttp:
@@ -29,22 +126,67 @@ exporters:
       enabled: true  
 
 service:
-  extensions: [health_check]
+  extensions: 
+    - health_check
   telemetry:
     metrics:
       level: detailed
       address: ":8888"
   pipelines:
     traces:
-      receivers: [otlp]
+      receivers: 
+        - otlp
       processors: []
-      exporters: [debug, otlphttp]
+      exporters: 
+        - debug 
+        - otlphttp
     metrics:
-      receivers: [otlp]
-      processors: []
-      exporters: [debug, otlphttp]
-
-extensions:
-  health_check:
-    endpoint: "localhost:13133"
-    path: "/status"
+      receivers:
+        - otlp
+        - hostmetrics
+        - prometheus/internal
+        - count
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        - batch
+      exporters:
+        - debug
+        - logging
+        - otlphttp
+    metrics/filestats:
+      receivers:
+        - filestats
+      processors:
+        - resourcedetection
+        - resourcedetection/cloud
+      exporters:
+        - logging
+        - otlphttp
+    logs/config:
+      receivers:
+        - filelog/config
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - batch
+      exporters:
+        - logging
+        - otlphttp
+    logs:
+      receivers:
+        - otlp
+        - filelog
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - batch
+      exporters:
+        - logging
+        - otlphttp
+        - count
