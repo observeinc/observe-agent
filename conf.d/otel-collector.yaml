@@ -123,10 +123,10 @@ exporters:
       num_consumers: 4
       queue_size: 100
     retry_on_failure:
-      enabled: true  
+      enabled: true
 
 service:
-  extensions: 
+  extensions:
     - health_check
   telemetry:
     metrics:
@@ -134,11 +134,11 @@ service:
       address: ":8888"
   pipelines:
     traces:
-      receivers: 
+      receivers:
         - otlp
       processors: []
-      exporters: 
-        - debug 
+      exporters:
+        - debug
         - otlphttp
     metrics:
       receivers:
