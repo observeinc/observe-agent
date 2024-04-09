@@ -42,5 +42,5 @@ git tag v0.1.x
 
 Finally, run the `goreleaser` command
 ```
-goreleaser release --cmean
+goreleaser release --clean
 ```
