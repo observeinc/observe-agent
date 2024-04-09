@@ -2,9 +2,8 @@ extensions:
   health_check:
     endpoint: "localhost:13133"
     path: "/status"
-
-connectors:
-  count: null
+  file_storage:
+    directory: /var/lib/observe-agent/file_storage/receiver 
 
 receivers:
   otlp:
@@ -12,108 +11,111 @@ receivers:
       grpc:
         endpoint: localhost:4317
       http:
-        max_request_body_size: 10485760
         endpoint: localhost:4318
+        max_request_body_size: 10485760 # should it be smaller than this one?
+
   filestats:
-    include: /etc/otelcol-contrib/config.yaml
-    collection_interval: 120m
+    include: [/etc/observe-agent/otel-collector.yaml]
+    collection_interval: 240m
     initial_delay: 60s
-  filelog:
-    include:
-      - /var/log/**/*.log
-      - /var/log/syslog
-    include_file_path: true
-    retry_on_failure:
-      enabled: true
-    max_log_size: 4MiB
-    operators:
-      - type: filter
-        expr: body matches "otel-contrib"
-  filelog/config:
-    include:
-      - /etc/otelcol-contrib/config.yaml
+
+  filelog/config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
+    include: [/etc/observe-agent/otel-collector.yaml]
     start_at: beginning
     poll_interval: 5m
     multiline:
       line_end_pattern: ENDOFLINEPATTERN
+
   prometheus/internal:
     config:
       scrape_configs:
-        - job_name: otel-collector
+        - job_name: 'otel-collector'
           scrape_interval: 5s
           static_configs:
-            - targets:
-                - '0.0.0.0:8888'
+            - targets: ['0.0.0.0:8888']
+
   hostmetrics:
-    collection_interval: 60s
+    collection_interval: 20s
     scrapers:
       cpu:
         metrics:
           system.cpu.utilization:
             enabled: true
-      load: null
+      load:
       memory:
         metrics:
           system.memory.utilization:
             enabled: true
-      disk: null
+      disk:
       filesystem:
         metrics:
           system.filesystem.utilization:
             enabled: true
-      network: null
+      network:
       paging:
         metrics:
           system.paging.utilization:
             enabled: true
+      processes:
+      process:
+        metrics:
+          process.cpu.utilization:
+            enabled: true
+          process.cpu.time:
+            enabled: false      
+
+  filelog:
+    include: [/var/log/**/*.log, /var/log/syslog]
+    include_file_path: true
+    storage: file_storage
+    retry_on_failure:
+      enabled: true
+    max_log_size: 4MiB
+    operators:
+      - type: filter
+        expr: 'body matches "otel-contrib"'
+
+  journald:
+    units:
+      - cron
+      - ssh
+      - systemd-networkd
+      - systemd-resolved
+      - systemd-login
+      - multipathd
+      - systemd-user-sessions
+      - ufw
+      - otetcol-contrib
+
+    priority: info
 
 processors:
+  # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
+  # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
   transform/truncate:
     log_statements:
       - context: log
+        statements: 
+          - truncate_all(attributes, 255)
+          - truncate_all(resource.attributes, 255)
+    trace_statements:
+      - context: span
         statements:
-          - 'truncate_all(attributes, 2047)'
-          - 'truncate_all(resource.attributes, 2047)'
+          - truncate_all(attributes, 255)
+          - truncate_all(resource.attributes, 255)
+
   memory_limiter:
     check_interval: 1s
     limit_percentage: 20
     spike_limit_percentage: 5
-  batch: null
+  
+  batch:
+  
   resourcedetection:
-    detectors:
-      - env
-      - system
-    system:
-      hostname_sources:
-        - os
-      resource_attributes:
-        host.id:
-          enabled: true
-  resourcedetection/cloud:
-    detectors:
-      - gcp
-      - ec2
-      - azure
-    timeout: 2s
-    override: false
-  resourcedetection/barebones:
-    detectors:
-      - env
-      - system
-    system:
-      hostname_sources:
-        - os
-      resource_attributes:
-        host.id:
-          enabled: true
-        host.name:
-          enabled: false
-        os.type:
-          enabled: true
+    detectors: [gcp, ecs, ec2, azure, system]
+    override: true
 
 exporters:
-  debug:
-    verbosity: detailed
   otlphttp:
     endpoint: ${env:OBSERVE_ENDPOINT}
     headers:
@@ -125,61 +127,40 @@ exporters:
       enabled: true
 
 service:
-  extensions:
-    - health_check
+  pipelines:
+    
+    metrics:
+      receivers: [hostmetrics, prometheus/internal]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlphttp]
+
+    metrics/filestats:
+       receivers: [filestats]
+       processors: [resourcedetection]
+       exporters: [otlphttp]
+
+    logs/config:
+       receivers: [filelog/config]
+       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+       exporters: [otlphttp]
+       
+    logs:
+      receivers: [otlp, filelog]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      exporters: [otlphttp]
+
+    logs/journal:
+      receivers: [otlp, journald]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      exporters: [otlphttp]
+      
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      exporters: [otlphttp]
+
+  extensions: [health_check, file_storage]
   telemetry:
     metrics:
       level: detailed
       address: ":8888"
-  pipelines:
-    traces:
-      receivers:
-        - otlp
-      processors: []
-      exporters:
-        - otlphttp
-    metrics:
-      receivers:
-        - otlp
-        - hostmetrics
-        - prometheus/internal
-        - count
-      processors:
-        - memory_limiter
-        - resourcedetection
-        - resourcedetection/cloud
-        - batch
-      exporters:
-        - otlphttp
-    metrics/filestats:
-      receivers:
-        - filestats
-      processors:
-        - resourcedetection
-        - resourcedetection/cloud
-      exporters:
-        - otlphttp
-    logs/config:
-      receivers:
-        - filelog/config
-      processors:
-        - memory_limiter
-        - transform/truncate
-        - resourcedetection
-        - resourcedetection/cloud
-        - batch
-      exporters:
-        - otlphttp
-    logs:
-      receivers:
-        - otlp
-        - filelog
-      processors:
-        - memory_limiter
-        - transform/truncate
-        - resourcedetection
-        - resourcedetection/cloud
-        - batch
-      exporters:
-        - otlphttp
-        - count
