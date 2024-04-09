@@ -314,6 +314,7 @@ nfpms:
     # Templates: allowed (since v1.20)
     scripts:
       preinstall: "packaging/linux/scripts/preinstall.sh"
+      postinstall: "packaging/linux/scripts/postinstall.sh"
       preremove: "packaging/linux/scripts/preremove.sh"
 
     # Templated scripts to execute during the installation of the package. (overridable)

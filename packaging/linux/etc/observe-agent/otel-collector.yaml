@@ -40,10 +40,18 @@ receivers:
         metrics:
           system.cpu.utilization:
             enabled: true
+          system.cpu.frequency:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.physical.count:
+            enabled: true
       load:
       memory:
         metrics:
           system.memory.utilization:
+            enabled: true
+          system.linux.memory.available:
             enabled: true
       disk:
       filesystem:
@@ -51,6 +59,11 @@ receivers:
           system.filesystem.utilization:
             enabled: true
       network:
+        metrics:
+          system.network.conntrack.count:
+            enabled: true
+          system.network.conntrack.max:
+            enabled: true
       paging:
         metrics:
           system.paging.utilization:
@@ -58,11 +71,22 @@ receivers:
       processes:
       process:
         metrics:
+          process.context_switches:
+            enabled: true
           process.cpu.utilization:
             enabled: true
-          process.cpu.time:
-            enabled: false      
-
+          process.disk.operations:
+            enabled: true      
+          process.memory.utilization:
+            enabled: true      
+          process.open_file_descriptors:
+            enabled: true      
+          process.paging.faults:
+            enabled: true      
+          process.signals_pending:
+            enabled: true      
+          process.threads:
+            enabled: true
   filelog:
     include: [/var/log/**/*.log, /var/log/syslog]
     include_file_path: true

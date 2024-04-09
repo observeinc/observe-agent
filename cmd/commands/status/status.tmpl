@@ -27,7 +27,14 @@ Agent
   Uptime: {{ .AgentMetrics.Uptime }}s
   AvgServerResponseTime: {{ .AgentMetrics.AvgServerResponseTime }}ms
   AvgClientResponseTime: {{ .AgentMetrics.AvgClientResponseTime }}ms
-  
+      
+    Logs Stats
+    ===============
+    ReceiverAcceptedCount: {{ .AgentMetrics.LogsStats.ReceiverAcceptedCount }}
+    ReceiverRefusedCount: {{ .AgentMetrics.LogsStats.ReceiverRefusedCount }}
+    ExporterSentCount: {{ .AgentMetrics.LogsStats.ExporterSentCount }}
+    ExporterSendFailedCount: {{ .AgentMetrics.LogsStats.ExporterSendFailedCount }}
+    
     Metrics Stats
     ===============
     ReceiverAcceptedCount: {{ .AgentMetrics.MetricsStats.ReceiverAcceptedCount }}

@@ -1,27 +1,9 @@
-# HELP otelcol_exporter_queue_capacity Fixed capacity of the retry queue (in batches)
-# TYPE otelcol_exporter_queue_capacity gauge
 otelcol_exporter_queue_capacity{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 100
-# HELP otelcol_exporter_queue_size Current size of the retry queue (in batches)
-# TYPE otelcol_exporter_queue_size gauge
 otelcol_exporter_queue_size{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 0
-# HELP otelcol_exporter_send_failed_metric_points Number of metric points in failed attempts to send to destination.
-# TYPE otelcol_exporter_send_failed_metric_points counter
-otelcol_exporter_send_failed_metric_points{exporter="debug",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 0
 otelcol_exporter_send_failed_metric_points{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 3
-# HELP otelcol_exporter_send_failed_spans Number of spans in failed attempts to send to destination.
-# TYPE otelcol_exporter_send_failed_spans counter
-otelcol_exporter_send_failed_spans{exporter="debug",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 0
 otelcol_exporter_send_failed_spans{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 0
-# HELP otelcol_exporter_sent_metric_points Number of metric points successfully sent to destination.
-# TYPE otelcol_exporter_sent_metric_points counter
-otelcol_exporter_sent_metric_points{exporter="debug",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
 otelcol_exporter_sent_metric_points{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1990
-# HELP otelcol_exporter_sent_spans Number of spans successfully sent to destination.
-# TYPE otelcol_exporter_sent_spans counter
-otelcol_exporter_sent_spans{exporter="debug",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 5126
 otelcol_exporter_sent_spans{exporter="otlphttp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 5126
-# HELP otelcol_http_client_duration Measures the duration of outbound HTTP requests.
-# TYPE otelcol_http_client_duration histogram
 otelcol_http_client_duration_bucket{http_method="POST",http_status_code="200",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_http_client_duration_bucket{http_method="POST",http_status_code="200",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 0
 otelcol_http_client_duration_bucket{http_method="POST",http_status_code="200",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 0
@@ -58,16 +40,10 @@ otelcol_http_client_duration_bucket{http_method="POST",http_status_code="401",ne
 otelcol_http_client_duration_bucket{http_method="POST",http_status_code="401",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 3
 otelcol_http_client_duration_sum{http_method="POST",http_status_code="401",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 266.229334
 otelcol_http_client_duration_count{http_method="POST",http_status_code="401",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 3
-# HELP otelcol_http_client_request_size Measures the size of HTTP request messages.
-# TYPE otelcol_http_client_request_size counter
 otelcol_http_client_request_size{http_method="POST",http_status_code="200",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 719350
 otelcol_http_client_request_size{http_method="POST",http_status_code="401",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 549
-# HELP otelcol_http_client_response_size Measures the size of HTTP response messages.
-# TYPE otelcol_http_client_response_size counter
 otelcol_http_client_response_size{http_method="POST",http_status_code="200",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 0
 otelcol_http_client_response_size{http_method="POST",http_status_code="401",net_peer_name="175914298205.collect.observe-eng.com",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 63
-# HELP otelcol_http_server_duration Measures the duration of inbound HTTP requests.
-# TYPE otelcol_http_server_duration histogram
 otelcol_http_server_duration_bucket{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_http_server_duration_bucket{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 0
 otelcol_http_server_duration_bucket{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 0
@@ -86,44 +62,18 @@ otelcol_http_server_duration_bucket{http_method="POST",http_scheme="http",http_s
 otelcol_http_server_duration_bucket{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 11
 otelcol_http_server_duration_sum{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 204.96979299999998
 otelcol_http_server_duration_count{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 11
-# HELP otelcol_http_server_request_size Measures the size of HTTP request messages.
-# TYPE otelcol_http_server_request_size counter
 otelcol_http_server_request_size{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 385958
-# HELP otelcol_http_server_response_size Measures the size of HTTP response messages.
-# TYPE otelcol_http_server_response_size counter
 otelcol_http_server_response_size{http_method="POST",http_scheme="http",http_status_code="200",net_host_name="localhost",net_host_port="4318",net_protocol_name="http",net_protocol_version="1.1",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 22
-# HELP otelcol_process_cpu_seconds Total CPU user and system time in seconds
-# TYPE otelcol_process_cpu_seconds counter
 otelcol_process_cpu_seconds{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 2.678548458333333
-# HELP otelcol_process_memory_rss Total physical memory (resident set size)
-# TYPE otelcol_process_memory_rss gauge
 otelcol_process_memory_rss{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 5.1953664e+07
-# HELP otelcol_process_runtime_heap_alloc_bytes Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
-# TYPE otelcol_process_runtime_heap_alloc_bytes gauge
 otelcol_process_runtime_heap_alloc_bytes{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1.41768e+07
-# HELP otelcol_process_runtime_total_alloc_bytes Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
-# TYPE otelcol_process_runtime_total_alloc_bytes counter
 otelcol_process_runtime_total_alloc_bytes{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 2.0776884e+08
-# HELP otelcol_process_runtime_total_sys_memory_bytes Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
-# TYPE otelcol_process_runtime_total_sys_memory_bytes gauge
 otelcol_process_runtime_total_sys_memory_bytes{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 3.5425296e+07
-# HELP otelcol_process_uptime Uptime of the process
-# TYPE otelcol_process_uptime counter
 otelcol_process_uptime{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 43.018906
-# HELP otelcol_receiver_accepted_metric_points Number of metric points successfully pushed into the pipeline.
-# TYPE otelcol_receiver_accepted_metric_points counter
 otelcol_receiver_accepted_metric_points{receiver="otlp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",transport="grpc"} 1995
-# HELP otelcol_receiver_accepted_spans Number of spans successfully pushed into the pipeline.
-# TYPE otelcol_receiver_accepted_spans counter
 otelcol_receiver_accepted_spans{receiver="otlp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",transport="http"} 5126
-# HELP otelcol_receiver_refused_metric_points Number of metric points that could not be pushed into the pipeline.
-# TYPE otelcol_receiver_refused_metric_points counter
 otelcol_receiver_refused_metric_points{receiver="otlp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",transport="grpc"} 0
-# HELP otelcol_receiver_refused_spans Number of spans that could not be pushed into the pipeline.
-# TYPE otelcol_receiver_refused_spans counter
 otelcol_receiver_refused_spans{receiver="otlp",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",transport="http"} 0
-# HELP otelcol_rpc_server_duration Measures the duration of inbound RPC.
-# TYPE otelcol_rpc_server_duration histogram
 otelcol_rpc_server_duration_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_rpc_server_duration_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 1992
 otelcol_rpc_server_duration_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 1994
@@ -142,8 +92,6 @@ otelcol_rpc_server_duration_bucket{rpc_grpc_status_code="0",rpc_method="Export",
 otelcol_rpc_server_duration_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 1995
 otelcol_rpc_server_duration_sum{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 464.5923969999998
 otelcol_rpc_server_duration_count{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
-# HELP otelcol_rpc_server_request_size Measures size of RPC request messages (uncompressed).
-# TYPE otelcol_rpc_server_request_size histogram
 otelcol_rpc_server_request_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_rpc_server_request_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 0
 otelcol_rpc_server_request_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 0
@@ -162,8 +110,6 @@ otelcol_rpc_server_request_size_bucket{rpc_method="Export",rpc_service="opentele
 otelcol_rpc_server_request_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 1995
 otelcol_rpc_server_request_size_sum{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 365085
 otelcol_rpc_server_request_size_count{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
-# HELP otelcol_rpc_server_requests_per_rpc Measures the number of messages received per RPC. Should be 1 for all non-streaming RPCs.
-# TYPE otelcol_rpc_server_requests_per_rpc histogram
 otelcol_rpc_server_requests_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_rpc_server_requests_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 1995
 otelcol_rpc_server_requests_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 1995
@@ -182,8 +128,6 @@ otelcol_rpc_server_requests_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="
 otelcol_rpc_server_requests_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 1995
 otelcol_rpc_server_requests_per_rpc_sum{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
 otelcol_rpc_server_requests_per_rpc_count{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
-# HELP otelcol_rpc_server_response_size Measures size of RPC response messages (uncompressed).
-# TYPE otelcol_rpc_server_response_size histogram
 otelcol_rpc_server_response_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_rpc_server_response_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 1995
 otelcol_rpc_server_response_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 1995
@@ -202,8 +146,6 @@ otelcol_rpc_server_response_size_bucket{rpc_method="Export",rpc_service="opentel
 otelcol_rpc_server_response_size_bucket{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 1995
 otelcol_rpc_server_response_size_sum{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 3990
 otelcol_rpc_server_response_size_count{rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
-# HELP otelcol_rpc_server_responses_per_rpc Measures the number of messages received per RPC. Should be 1 for all non-streaming RPCs.
-# TYPE otelcol_rpc_server_responses_per_rpc histogram
 otelcol_rpc_server_responses_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="0"} 0
 otelcol_rpc_server_responses_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="5"} 1995
 otelcol_rpc_server_responses_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="10"} 1995
@@ -222,6 +164,8 @@ otelcol_rpc_server_responses_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method=
 otelcol_rpc_server_responses_per_rpc_bucket{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest",le="+Inf"} 1995
 otelcol_rpc_server_responses_per_rpc_sum{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
 otelcol_rpc_server_responses_per_rpc_count{rpc_grpc_status_code="0",rpc_method="Export",rpc_service="opentelemetry.proto.collector.metrics.v1.MetricsService",rpc_system="grpc",service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1995
-# HELP target_info Target metadata
-# TYPE target_info gauge
 target_info{service_instance_id="ce05902b-e0ba-4cb2-b67b-3ff1bdd57385",service_name="otelcol",service_version="latest"} 1
+otelcol_receiver_accepted_log_records{receiver="filelog",service_instance_id="aa26c9f5-8101-4e3b-9b81-79953d2b6c59",service_name="otelcol",service_version="latest",transport=""} 328807
+otelcol_receiver_refused_log_records{receiver="filelog",service_instance_id="aa26c9f5-8101-4e3b-9b81-79953d2b6c59",service_name="otelcol",service_version="latest",transport=""} 0
+otelcol_exporter_send_failed_log_records{exporter="otlphttp",service_instance_id="aa26c9f5-8101-4e3b-9b81-79953d2b6c59",service_name="otelcol",service_version="latest"} 0
+otelcol_exporter_sent_log_records{exporter="otlphttp",service_instance_id="aa26c9f5-8101-4e3b-9b81-79953d2b6c59",service_name="otelcol",service_version="latest"} 328799

@@ -82,6 +82,12 @@ func TestGetAgentMetricsFromEndpoint(t *testing.T) {
 					ExporterSentCount:       5126,
 					ExporterSendFailedCount: 0,
 				},
+				LogsStats: DataTypeStats{
+					ReceiverAcceptedCount:   328807,
+					ReceiverRefusedCount:    0,
+					ExporterSentCount:       328799,
+					ExporterSendFailedCount: 0,
+				},
 			},
 		},
 	}

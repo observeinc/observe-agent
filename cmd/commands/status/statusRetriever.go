@@ -59,6 +59,7 @@ type AgentMetrics struct {
 	Uptime                float32
 	AvgServerResponseTime float32
 	AvgClientResponseTime float32
+	LogsStats             DataTypeStats
 	MetricsStats          DataTypeStats
 	TracesStats           DataTypeStats
 }
@@ -102,9 +103,10 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 		return nil, err
 	}
 
-	agentMets := AgentMetrics{MetricsStats: DataTypeStats{}, TracesStats: DataTypeStats{}}
+	agentMets := AgentMetrics{MetricsStats: DataTypeStats{}, TracesStats: DataTypeStats{}, LogsStats: DataTypeStats{}}
 	agentMets.MetricsStats = DataTypeStats{}
 	agentMets.TracesStats = DataTypeStats{}
+	agentMets.LogsStats = DataTypeStats{}
 	for _, v := range mf {
 		if v.Type.String() == io_prometheus_client.MetricType_HISTOGRAM.String() {
 			met := v.Metric[0]
@@ -118,6 +120,16 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 		} else {
 			met := v.Metric[0]
 			switch name := *v.Name; name {
+			// Log-related metrics
+			case "otelcol_receiver_accepted_log_records":
+				agentMets.LogsStats.ReceiverAcceptedCount = int(met.Counter.GetValue())
+			case "otelcol_receiver_refused_log_records":
+				agentMets.LogsStats.ReceiverRefusedCount = int(met.Counter.GetValue())
+			case "otelcol_exporter_sent_log_records":
+				agentMets.LogsStats.ExporterSentCount = int(met.Counter.GetValue())
+			case "otelcol_exporter_send_failed_log_records":
+				agentMets.LogsStats.ExporterSendFailedCount = int(met.Counter.GetValue())
+
 			// Metric-related metrics
 			case "otelcol_receiver_accepted_metric_points":
 				agentMets.MetricsStats.ReceiverAcceptedCount = int(met.Counter.GetValue())
