@@ -38,7 +38,7 @@ archives:
       - goos: windows
         format: zip
     files:
-      - src: "packaging/etc/observe-agent/*"
+      - src: "packaging/linux/etc/observe-agent/*"
         dst: "."
 
 changelog:
@@ -179,11 +179,11 @@ nfpms:
     # Contents to add to the package.
     # GoReleaser will automatically add the binaries.
     contents:
-      - src: packaging/etc/
+      - src: packaging/linux/etc/
         dst: /etc
         type: tree
 
-      - src: packaging/lib/systemd/system/observe-agent.service
+      - src: packaging/linux/lib/systemd/system/observe-agent.service
         dst: /lib/systemd/system/observe-agent.service
         type: config
 
@@ -313,8 +313,8 @@ nfpms:
     #
     # Templates: allowed (since v1.20)
     scripts:
-      preinstall: "packaging/scripts/preinstall.sh"
-      preremove: "packaging/scripts/preremove.sh"
+      preinstall: "packaging/linux/scripts/preinstall.sh"
+      preremove: "packaging/linux/scripts/preremove.sh"
 
     # Templated scripts to execute during the installation of the package. (overridable)
     #

@@ -553,6 +553,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthchecke
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.97.0/go.mod h1:/ZWb14bjsRhtlAwWeCGYgBFbPlzonVq06VYdvdCmlxc=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.97.0 h1:p7ANWW52nAKp9+f7RgGZvvXqU80rZu6yXVdSvcrgta0=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.97.0/go.mod h1:eLeuqRgW59hKeKdSdD2mNOs64yBKuxyp6udwgToUxjE=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.97.0 h1:d3+p+jvp+7+N0pEG5dFy5Px6llEdfaGhZNRHvT6FNpQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.97.0/go.mod h1:ZsCJoB4eTUyfECMLs4nvJidelnYt0dWbPFQxzOtcTUA=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.97.0 h1:x8iUxQv7lNqYLu38miE3YcdK8+a4g3frMJTsMGQkK1c=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.97.0/go.mod h1:xlJ4VRZZKASyfqUeFO4rNtZuwnHlwJGi+JF6muigJNE=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.97.0 h1:jPhm8t6pJcxgng2DaEhPZ3sY44KBoM0W32j6aI+hMgU=
@@ -591,6 +593,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsrece
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.97.0/go.mod h1:AWzgiEEUh0Md8J24qrErZI2vyVC5pSJxHsgFrk6Ut/M=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.97.0 h1:FXK0ADSKQYuqJpJ13oYCdgg9e+f3V23GlJ6sM8BSwx8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.97.0/go.mod h1:2YlFa0RAWKShfGB5ME8NDaBTCeF+kYExM9B9LOrvH3U=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.97.0 h1:0Loi+HlfT0ht6bXKOfd2qaiWt9mAZTBrIELQ6Zfc8pc=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.97.0/go.mod h1:VLu0LhPhMv1OuXrh9ylt7IYNDS7GEb4zeLWeruOQ5U0=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0 h1:7JuGYrWcdwMy4/gnlXcmCD6C9FovH2J8hpEsXf2JcnY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0/go.mod h1:S5j7OXl0p/irRvJGUdTzI3S/so96K4JmJexBgbrbwVs=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
@@ -746,6 +750,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
+go.etcd.io/bbolt v1.3.9 h1:8x7aARPEXiXbHmtUwAIv7eV2fQFHrLLavdiJ3uzJXoI=
+go.etcd.io/bbolt v1.3.9/go.mod h1:zaO32+Ti0PK1ivdPtgMESzuzL2VPoIG1PCQNvOdo/dE=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=

@@ -9,11 +9,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
@@ -73,7 +75,10 @@ func baseFactories() (otelcol.Factories, error) {
 	var factories otelcol.Factories
 	var err error
 
-	if factories.Extensions, err = extension.MakeFactoryMap(healthcheckextension.NewFactory()); err != nil {
+	if factories.Extensions, err = extension.MakeFactoryMap(
+		healthcheckextension.NewFactory(),
+		filestorage.NewFactory(),
+	); err != nil {
 		return otelcol.Factories{}, err
 	}
 
@@ -83,6 +88,7 @@ func baseFactories() (otelcol.Factories, error) {
 		filestatsreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		journaldreceiver.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}
@@ -116,11 +122,15 @@ func StartCollector(wg *sync.WaitGroup) error {
 	ctx := context.Background()
 	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
 	otelConfig := viper.GetString("otel_config")
+	fsPath := viper.GetString("filestorage_path")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
+	if fsPath != "" {
+		os.Setenv("FILESTORAGE_PATH", fsPath)
+	}
 	if otelConfig == "" {
-		otelConfig = filepath.Join("conf.d", "otel-collector.yaml")
+		otelConfig = filepath.Join("packaging/macos/", "otel-collector.yaml")
 	}
 	fmt.Fprintln(os.Stderr, "Using OTEL config file:", otelConfig)
 	set := generateCollectorSettings(otelConfig)

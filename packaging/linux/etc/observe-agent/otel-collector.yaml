@@ -3,7 +3,7 @@ extensions:
     endpoint: "localhost:13133"
     path: "/status"
   file_storage:
-    directory: /var/lib/observe-agent/file_storage/receiver 
+    directory: ${env:FILESTORAGE_PATH}
 
 receivers:
   otlp:
@@ -12,10 +12,9 @@ receivers:
         endpoint: localhost:4317
       http:
         endpoint: localhost:4318
-        max_request_body_size: 10485760 # should it be smaller than this one?
 
   filestats:
-    include: [/etc/observe-agent/otel-collector.yaml]
+    include: '/etc/observe-agent/otel-collector.yaml'
     collection_interval: 240m
     initial_delay: 60s
 
@@ -96,13 +95,13 @@ processors:
     log_statements:
       - context: log
         statements: 
-          - truncate_all(attributes, 255)
-          - truncate_all(resource.attributes, 255)
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
     trace_statements:
       - context: span
         statements:
-          - truncate_all(attributes, 255)
-          - truncate_all(resource.attributes, 255)
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
 
   memory_limiter:
     check_interval: 1s
