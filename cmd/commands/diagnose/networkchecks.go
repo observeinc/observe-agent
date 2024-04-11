@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/spf13/viper"
 )
 
 const (
@@ -18,8 +20,21 @@ type NetworkTestResult struct {
 	Error        string
 }
 
-func makeTestRequest(URL string) NetworkTestResult {
-	resp, err := http.Get(URL)
+func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		return NetworkTestResult{
+			Passed:       false,
+			Error:        err.Error(),
+			ResponseCode: 0,
+			URL:          URL,
+		}
+	}
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return NetworkTestResult{
 			Passed:       false,
@@ -30,7 +45,12 @@ func makeTestRequest(URL string) NetworkTestResult {
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading body: ", err)
+		return NetworkTestResult{
+			Passed:       false,
+			Error:        "failed to parse response body",
+			ResponseCode: resp.StatusCode,
+			URL:          URL,
+		}
 	}
 	bodyString := string(bodyBytes)
 	if resp.StatusCode != 200 {
@@ -49,9 +69,10 @@ func makeTestRequest(URL string) NetworkTestResult {
 }
 
 func makeNetworkingTestRequest() NetworkTestResult {
-	return makeTestRequest(ChallengeURL)
+	return makeTestRequest(ChallengeURL, make(map[string]string))
 }
 
 func makeAuthTestRequest() NetworkTestResult {
-	return makeTestRequest(AuthCheckURL)
+	authToken := fmt.Sprintf("Bearer %s", viper.GetString("token"))
+	return makeTestRequest(AuthCheckURL, map[string]string{"Authorization": authToken})
 }

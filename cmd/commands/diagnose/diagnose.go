@@ -30,7 +30,7 @@ var diagnoseCmd = &cobra.Command{
 	Long: `This command runs diagnostic checks for various settings and configurations
 to attempt to identify issues that could cause the agent to function improperly.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Running diagnosis checks...")
+		fmt.Print("Running diagnosis checks...\n\n")
 		runNetworkCheck()
 	},
 }
