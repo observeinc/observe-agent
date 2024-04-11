@@ -1,11 +1,9 @@
 package observeotel
 
 import (
-	"context"
-	"fmt"
+	"observe/agent/build"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -17,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -51,8 +50,13 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 
 func generateCollectorSettings(otelConfig string) *collector.CollectorSettings {
 	providerSet := confmap.ProviderSettings{}
+	buildInfo := component.BuildInfo{
+		Command:     "observe-agent",
+		Description: "Observe Distribution of Opentelemetry Collector",
+		Version:     build.Version,
+	}
 	set := &collector.CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
+		BuildInfo: buildInfo,
 		Factories: baseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -117,11 +121,8 @@ func baseFactories() (otelcol.Factories, error) {
 	return factories, err
 }
 
-func StartCollector(wg *sync.WaitGroup) error {
-	wg.Add(1)
-	ctx := context.Background()
+func SetEnvVars() {
 	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
-	otelConfig := viper.GetString("otel_config")
 	fsPath := viper.GetString("filestorage_path")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
@@ -129,24 +130,14 @@ func StartCollector(wg *sync.WaitGroup) error {
 	if fsPath != "" {
 		os.Setenv("FILESTORAGE_PATH", fsPath)
 	}
-	if otelConfig == "" {
-		otelConfig = filepath.Join("packaging/macos/", "otel-collector.yaml")
-	}
-	fmt.Fprintln(os.Stderr, "Using OTEL config file:", otelConfig)
-	set := generateCollectorSettings(otelConfig)
-	col, err := collector.NewCollector(*set)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to start agent: %v\n", err)
-		os.Exit(1)
-	}
+}
 
-	colErrorChannel := make(chan error, 1)
-	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
-	// asynchronously, but it will exit early if an error occurs on startup
-	go func() {
-		colErrorChannel <- col.Run(ctx)
-	}()
-
-	// wait for an error to returned
-	return <-colErrorChannel
+func GetOtelCollectorCommand() *cobra.Command {
+	otelConfigPath := viper.GetString("otel_config")
+	if otelConfigPath == "" {
+		otelConfigPath = filepath.Join("packaging/macos/", "otel-collector.yaml")
+	}
+	otelconfig := generateCollectorSettings(otelConfigPath)
+	cmd := otelcol.NewCommand(*otelconfig)
+	return cmd
 }

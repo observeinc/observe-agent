@@ -6,7 +6,6 @@ package start
 import (
 	"observe/agent/cmd"
 	observeotel "observe/agent/cmd/connections/otelcollector"
-	"sync"
 
 	"github.com/spf13/cobra"
 )
@@ -18,9 +17,9 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var wg sync.WaitGroup
-		wg.Wait()
-		return observeotel.StartCollector(&wg)
+		observeotel.SetEnvVars()
+		otelCmd := observeotel.GetOtelCollectorCommand()
+		return otelCmd.RunE(cmd, args)
 	},
 }
 
