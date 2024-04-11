@@ -22,6 +22,7 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags: -s -w -X observe/agent/build.Version={{.Version}}
 
 archives:
   - format: tar.gz

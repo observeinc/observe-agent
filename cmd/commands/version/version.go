@@ -5,8 +5,8 @@ package version
 
 import (
 	"fmt"
+	"observe/agent/build"
 	"observe/agent/cmd"
-	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
@@ -18,10 +18,7 @@ var versionCmd = &cobra.Command{
 	Long: `Display the currently installed version of the observe-agent. This version
 is based on the `,
 	Run: func(cmd *cobra.Command, args []string) {
-		version, err := getVersion()
-		if err != nil {
-			fmt.Println(err)
-		}
+		version := getVersion()
 		fmt.Printf("observe-agent version: %s\n", version)
 	},
 }
@@ -40,16 +37,9 @@ func init() {
 	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func getVersion() (string, error) {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "", fmt.Errorf("could not pull build info")
+func getVersion() string {
+	if build.Version == "" {
+		return "dev"
 	}
-
-	for _, dep := range bi.Deps {
-		if dep.Path == "observe/agent" {
-			return dep.Version, nil
-		}
-	}
-	return "", fmt.Errorf("could not find observe/agent version in build info")
+	return build.Version
 }
