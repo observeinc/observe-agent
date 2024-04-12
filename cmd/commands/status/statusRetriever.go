@@ -86,6 +86,14 @@ func GetAgentStatusFromHealthcheck(baseURL string) (AgentStatus, error) {
 	}
 }
 
+func getMetricsSum(metrics []*io_prometheus_client.Metric) float64 {
+	sum := float64(0)
+	for _, metric := range metrics {
+		sum += metric.Counter.GetValue()
+	}
+	return sum
+}
+
 func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 	URL := fmt.Sprintf("%s/metrics", baseURL)
 	c := &http.Client{}
@@ -122,41 +130,41 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 			switch name := *v.Name; name {
 			// Log-related metrics
 			case "otelcol_receiver_accepted_log_records":
-				agentMets.LogsStats.ReceiverAcceptedCount = int(met.Counter.GetValue())
+				agentMets.LogsStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_receiver_refused_log_records":
-				agentMets.LogsStats.ReceiverRefusedCount = int(met.Counter.GetValue())
+				agentMets.LogsStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_sent_log_records":
-				agentMets.LogsStats.ExporterSentCount = int(met.Counter.GetValue())
+				agentMets.LogsStats.ExporterSentCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_send_failed_log_records":
-				agentMets.LogsStats.ExporterSendFailedCount = int(met.Counter.GetValue())
+				agentMets.LogsStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// Metric-related metrics
 			case "otelcol_receiver_accepted_metric_points":
-				agentMets.MetricsStats.ReceiverAcceptedCount = int(met.Counter.GetValue())
+				agentMets.MetricsStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_receiver_refused_metric_points":
-				agentMets.MetricsStats.ReceiverRefusedCount = int(met.Counter.GetValue())
+				agentMets.MetricsStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_sent_metric_points":
-				agentMets.MetricsStats.ExporterSentCount = int(met.Counter.GetValue())
+				agentMets.MetricsStats.ExporterSentCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_send_failed_metric_points":
-				agentMets.MetricsStats.ExporterSendFailedCount = int(met.Counter.GetValue())
+				agentMets.MetricsStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// Trace-related metrics
 			case "otelcol_receiver_accepted_spans":
-				agentMets.TracesStats.ReceiverAcceptedCount = int(met.Counter.GetValue())
+				agentMets.TracesStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_receiver_refused_spans":
-				agentMets.TracesStats.ReceiverRefusedCount = int(met.Counter.GetValue())
+				agentMets.TracesStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_sent_spans":
-				agentMets.TracesStats.ExporterSentCount = int(met.Counter.GetValue())
+				agentMets.TracesStats.ExporterSentCount = int(getMetricsSum(v.Metric))
 			case "otelcol_exporter_send_failed_spans":
-				agentMets.TracesStats.ExporterSendFailedCount = int(met.Counter.GetValue())
+				agentMets.TracesStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// General metrics
 			case "otelcol_exporter_queue_size":
 				agentMets.ExporterQueueSize = float32(met.Gauge.GetValue())
 			case "otelcol_process_cpu_seconds":
-				agentMets.CPUSeconds = float32(met.Counter.GetValue())
+				agentMets.CPUSeconds = float32(getMetricsSum(v.Metric))
 			case "otelcol_process_uptime":
-				agentMets.Uptime = float32(met.Counter.GetValue())
+				agentMets.Uptime = float32(getMetricsSum(v.Metric))
 			case "otelcol_process_memory_rss":
 				agentMets.MemoryUsed = bToMb(float32(met.Gauge.GetValue()))
 			case "otelcol_process_runtime_total_sys_memory_bytes":
