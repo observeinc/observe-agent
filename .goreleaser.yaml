@@ -748,7 +748,7 @@ msi:
     #
     # Default: '{{.ProjectName}}_{{.MsiArch}}'
     # Templates: allowed
-    name: "observe-agent-{{.MsiArch}}"
+    name: "observe-agent_{{ .Version }}-{{.MsiArch}}"
 
     # The WXS file used to create the installers.
     # The file contents go through the templating engine, so you can do things
