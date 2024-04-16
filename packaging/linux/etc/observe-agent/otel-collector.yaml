@@ -87,6 +87,8 @@ receivers:
             enabled: true      
           process.threads:
             enabled: true
+        mute_process_exe_error: true
+        mute_process_user_error: true
   filelog:
     include: [/var/log/**/*.log, /var/log/syslog]
     include_file_path: true
