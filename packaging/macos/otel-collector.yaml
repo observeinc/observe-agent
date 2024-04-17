@@ -5,6 +5,9 @@ extensions:
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
 
+connectors:
+  count:
+
 receivers:
   otlp:
     protocols:
@@ -86,7 +89,11 @@ receivers:
           process.signals_pending:
             enabled: true      
           process.threads:
-            enabled: true 
+            enabled: true
+        mute_process_name_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
 
   filelog:
     include: [/var/log/**/*.log, /var/log/syslog]
@@ -140,7 +147,7 @@ service:
   pipelines:
     
     metrics:
-      receivers: [hostmetrics, prometheus/internal]
+      receivers: [hostmetrics, prometheus/internal, count]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [otlphttp]
 
@@ -157,7 +164,7 @@ service:
     logs:
       receivers: [otlp, filelog]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp, count]
       
     traces:
       receivers: [otlp]
