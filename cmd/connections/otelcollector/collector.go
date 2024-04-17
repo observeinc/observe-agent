@@ -1,9 +1,10 @@
 package observeotel
 
 import (
+	"fmt"
+	"log"
 	"observe/agent/build"
 	"os"
-	"path/filepath"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -48,7 +49,15 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func generateCollectorSettings(otelConfig string) *collector.CollectorSettings {
+func GenerateCollectorSettings() *collector.CollectorSettings {
+	// otelConfigPath := "c:\\users\\konstantin\\work\\otel-collector.yaml" // viper.GetString("otel_config")
+	otelConfigPath := viper.GetString("otel_config")
+	log.Print(fmt.Sprintf("otelConfigPath, %s", otelConfigPath))
+
+	// if otelConfigPath == "" {
+	// 	otelConfigPath = filepath.Join("packaging/macos/", "otel-collector.yaml")
+	// }
+
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -60,7 +69,7 @@ func generateCollectorSettings(otelConfig string) *collector.CollectorSettings {
 		Factories: baseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{otelConfig},
+				URIs: []string{otelConfigPath},
 				Providers: makeMapProvidersMap(
 					fileprovider.NewWithSettings(providerSet),
 					envprovider.NewWithSettings(providerSet),
@@ -127,17 +136,15 @@ func SetEnvVars() {
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
+	log.Print(fmt.Sprintf("OBSERVE_ENDPOINT, %s", endpoint))
+	log.Print(fmt.Sprintf("OBSERVE_TOKEN, %s", token))
 	if fsPath != "" {
 		os.Setenv("FILESTORAGE_PATH", fsPath)
 	}
 }
 
 func GetOtelCollectorCommand() *cobra.Command {
-	otelConfigPath := viper.GetString("otel_config")
-	if otelConfigPath == "" {
-		otelConfigPath = filepath.Join("packaging/macos/", "otel-collector.yaml")
-	}
-	otelconfig := generateCollectorSettings(otelConfigPath)
+	otelconfig := GenerateCollectorSettings()
 	cmd := otelcol.NewCommand(*otelconfig)
 	return cmd
 }

@@ -2,3 +2,5 @@ agent
 output-logs
 ./observe-agent
 dist/
+agent.exe
+agent.exe~

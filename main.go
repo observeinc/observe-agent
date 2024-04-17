@@ -11,6 +11,12 @@ import (
 	_ "observe/agent/cmd/commands/version"
 )
 
-func main() {
+func runInteractive() error {
 	cmd.Execute()
+
+	return nil
+}
+
+func main() {
+	run()
 }
