@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	receiverScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ReceiverKey
+	receiverScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ReceiverKey
 )
 
 // ObsReport is a helper to add observability to a receiver.
@@ -88,42 +88,42 @@ func (rec *ObsReport) createOtelMetrics() error {
 	var errors, err error
 
 	rec.acceptedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedSpansKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedSpansKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedMetricPointsKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedMetricPointsKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedLogRecordsKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedLogRecordsKey,
+		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)

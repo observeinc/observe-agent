@@ -16,7 +16,6 @@ const (
 )
 
 const (
-	ScraperPrefix                 = ScraperKey + SpanNameSep
-	ScraperMetricPrefix           = ScraperKey + MetricNameSep
-	ScraperMetricsOperationSuffix = SpanNameSep + "MetricsScraped"
+	ScraperPrefix                 = ScraperKey + NameSep
+	ScraperMetricsOperationSuffix = NameSep + "MetricsScraped"
 )

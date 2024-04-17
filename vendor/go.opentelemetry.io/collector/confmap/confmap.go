@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -286,8 +285,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 		}
 		for i := 0; i < to.Type().NumField(); i++ {
 			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
-			f := to.Type().Field(i)
-			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
+			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
 					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
 						return nil, err

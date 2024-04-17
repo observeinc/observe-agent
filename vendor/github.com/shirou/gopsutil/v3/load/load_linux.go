@@ -107,13 +107,21 @@ func MiscWithContext(ctx context.Context) (*MiscStat, error) {
 
 	}
 
-	procsTotal, err := common.NumProcsWithContext(ctx)
+	procsTotal, err := getProcsTotal(ctx)
 	if err != nil {
 		return ret, err
 	}
 	ret.ProcsTotal = int(procsTotal)
 
 	return ret, nil
+}
+
+func getProcsTotal(ctx context.Context) (int64, error) {
+	values, err := readLoadAvgFromFile(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseInt(strings.Split(values[3], "/")[1], 10, 64)
 }
 
 func readLoadAvgFromFile(ctx context.Context) ([]string, error) {

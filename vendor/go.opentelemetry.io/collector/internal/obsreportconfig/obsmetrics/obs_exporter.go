@@ -30,9 +30,8 @@ const (
 )
 
 var (
-	ExporterPrefix                 = ExporterKey + SpanNameSep
-	ExporterMetricPrefix           = ExporterKey + MetricNameSep
-	ExportTraceDataOperationSuffix = SpanNameSep + "traces"
-	ExportMetricsOperationSuffix   = SpanNameSep + "metrics"
-	ExportLogsOperationSuffix      = SpanNameSep + "logs"
+	ExporterPrefix                 = ExporterKey + NameSep
+	ExportTraceDataOperationSuffix = NameSep + "traces"
+	ExportMetricsOperationSuffix   = NameSep + "metrics"
+	ExportLogsOperationSuffix      = NameSep + "logs"
 )

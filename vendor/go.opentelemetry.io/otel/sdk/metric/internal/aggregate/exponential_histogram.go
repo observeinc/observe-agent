@@ -1,5 +1,16 @@
 // Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package aggregate // import "go.opentelemetry.io/otel/sdk/metric/internal/aggregate"
 
@@ -30,8 +41,7 @@ const (
 
 // expoHistogramDataPoint is a single data point in an exponential histogram.
 type expoHistogramDataPoint[N int64 | float64] struct {
-	attrs attribute.Set
-	res   exemplar.Reservoir[N]
+	res exemplar.Reservoir[N]
 
 	count uint64
 	min   N
@@ -49,7 +59,7 @@ type expoHistogramDataPoint[N int64 | float64] struct {
 	zeroCount  uint64
 }
 
-func newExpoHistogramDataPoint[N int64 | float64](attrs attribute.Set, maxSize, maxScale int, noMinMax, noSum bool) *expoHistogramDataPoint[N] {
+func newExpoHistogramDataPoint[N int64 | float64](maxSize, maxScale int, noMinMax, noSum bool) *expoHistogramDataPoint[N] {
 	f := math.MaxFloat64
 	max := N(f) // if N is int64, max will overflow to -9223372036854775808
 	min := N(-f)
@@ -58,7 +68,6 @@ func newExpoHistogramDataPoint[N int64 | float64](attrs attribute.Set, maxSize, 
 		min = N(minInt64)
 	}
 	return &expoHistogramDataPoint[N]{
-		attrs:    attrs,
 		min:      max,
 		max:      min,
 		maxSize:  maxSize,
@@ -291,7 +300,7 @@ func newExponentialHistogram[N int64 | float64](maxSize, maxScale int32, noMinMa
 
 		newRes: r,
 		limit:  newLimiter[*expoHistogramDataPoint[N]](limit),
-		values: make(map[attribute.Distinct]*expoHistogramDataPoint[N]),
+		values: make(map[attribute.Set]*expoHistogramDataPoint[N]),
 
 		start: now(),
 	}
@@ -307,7 +316,7 @@ type expoHistogram[N int64 | float64] struct {
 
 	newRes   func() exemplar.Reservoir[N]
 	limit    limiter[*expoHistogramDataPoint[N]]
-	values   map[attribute.Distinct]*expoHistogramDataPoint[N]
+	values   map[attribute.Set]*expoHistogramDataPoint[N]
 	valuesMu sync.Mutex
 
 	start time.Time
@@ -325,12 +334,12 @@ func (e *expoHistogram[N]) measure(ctx context.Context, value N, fltrAttr attrib
 	defer e.valuesMu.Unlock()
 
 	attr := e.limit.Attributes(fltrAttr, e.values)
-	v, ok := e.values[attr.Equivalent()]
+	v, ok := e.values[attr]
 	if !ok {
-		v = newExpoHistogramDataPoint[N](attr, e.maxSize, e.maxScale, e.noMinMax, e.noSum)
+		v = newExpoHistogramDataPoint[N](e.maxSize, e.maxScale, e.noMinMax, e.noSum)
 		v.res = e.newRes()
 
-		e.values[attr.Equivalent()] = v
+		e.values[attr] = v
 	}
 	v.record(value)
 	v.res.Offer(ctx, t, value, droppedAttr)
@@ -351,38 +360,36 @@ func (e *expoHistogram[N]) delta(dest *metricdata.Aggregation) int {
 	hDPts := reset(h.DataPoints, n, n)
 
 	var i int
-	for _, val := range e.values {
-		hDPts[i].Attributes = val.attrs
+	for a, b := range e.values {
+		hDPts[i].Attributes = a
 		hDPts[i].StartTime = e.start
 		hDPts[i].Time = t
-		hDPts[i].Count = val.count
-		hDPts[i].Scale = int32(val.scale)
-		hDPts[i].ZeroCount = val.zeroCount
+		hDPts[i].Count = b.count
+		hDPts[i].Scale = int32(b.scale)
+		hDPts[i].ZeroCount = b.zeroCount
 		hDPts[i].ZeroThreshold = 0.0
 
-		hDPts[i].PositiveBucket.Offset = int32(val.posBuckets.startBin)
-		hDPts[i].PositiveBucket.Counts = reset(hDPts[i].PositiveBucket.Counts, len(val.posBuckets.counts), len(val.posBuckets.counts))
-		copy(hDPts[i].PositiveBucket.Counts, val.posBuckets.counts)
+		hDPts[i].PositiveBucket.Offset = int32(b.posBuckets.startBin)
+		hDPts[i].PositiveBucket.Counts = reset(hDPts[i].PositiveBucket.Counts, len(b.posBuckets.counts), len(b.posBuckets.counts))
+		copy(hDPts[i].PositiveBucket.Counts, b.posBuckets.counts)
 
-		hDPts[i].NegativeBucket.Offset = int32(val.negBuckets.startBin)
-		hDPts[i].NegativeBucket.Counts = reset(hDPts[i].NegativeBucket.Counts, len(val.negBuckets.counts), len(val.negBuckets.counts))
-		copy(hDPts[i].NegativeBucket.Counts, val.negBuckets.counts)
+		hDPts[i].NegativeBucket.Offset = int32(b.negBuckets.startBin)
+		hDPts[i].NegativeBucket.Counts = reset(hDPts[i].NegativeBucket.Counts, len(b.negBuckets.counts), len(b.negBuckets.counts))
+		copy(hDPts[i].NegativeBucket.Counts, b.negBuckets.counts)
 
 		if !e.noSum {
-			hDPts[i].Sum = val.sum
+			hDPts[i].Sum = b.sum
 		}
 		if !e.noMinMax {
-			hDPts[i].Min = metricdata.NewExtrema(val.min)
-			hDPts[i].Max = metricdata.NewExtrema(val.max)
+			hDPts[i].Min = metricdata.NewExtrema(b.min)
+			hDPts[i].Max = metricdata.NewExtrema(b.max)
 		}
 
-		val.res.Collect(&hDPts[i].Exemplars)
+		b.res.Collect(&hDPts[i].Exemplars)
 
+		delete(e.values, a)
 		i++
 	}
-	// Unused attribute sets do not report.
-	clear(e.values)
-
 	e.start = t
 	h.DataPoints = hDPts
 	*dest = h
@@ -404,32 +411,32 @@ func (e *expoHistogram[N]) cumulative(dest *metricdata.Aggregation) int {
 	hDPts := reset(h.DataPoints, n, n)
 
 	var i int
-	for _, val := range e.values {
-		hDPts[i].Attributes = val.attrs
+	for a, b := range e.values {
+		hDPts[i].Attributes = a
 		hDPts[i].StartTime = e.start
 		hDPts[i].Time = t
-		hDPts[i].Count = val.count
-		hDPts[i].Scale = int32(val.scale)
-		hDPts[i].ZeroCount = val.zeroCount
+		hDPts[i].Count = b.count
+		hDPts[i].Scale = int32(b.scale)
+		hDPts[i].ZeroCount = b.zeroCount
 		hDPts[i].ZeroThreshold = 0.0
 
-		hDPts[i].PositiveBucket.Offset = int32(val.posBuckets.startBin)
-		hDPts[i].PositiveBucket.Counts = reset(hDPts[i].PositiveBucket.Counts, len(val.posBuckets.counts), len(val.posBuckets.counts))
-		copy(hDPts[i].PositiveBucket.Counts, val.posBuckets.counts)
+		hDPts[i].PositiveBucket.Offset = int32(b.posBuckets.startBin)
+		hDPts[i].PositiveBucket.Counts = reset(hDPts[i].PositiveBucket.Counts, len(b.posBuckets.counts), len(b.posBuckets.counts))
+		copy(hDPts[i].PositiveBucket.Counts, b.posBuckets.counts)
 
-		hDPts[i].NegativeBucket.Offset = int32(val.negBuckets.startBin)
-		hDPts[i].NegativeBucket.Counts = reset(hDPts[i].NegativeBucket.Counts, len(val.negBuckets.counts), len(val.negBuckets.counts))
-		copy(hDPts[i].NegativeBucket.Counts, val.negBuckets.counts)
+		hDPts[i].NegativeBucket.Offset = int32(b.negBuckets.startBin)
+		hDPts[i].NegativeBucket.Counts = reset(hDPts[i].NegativeBucket.Counts, len(b.negBuckets.counts), len(b.negBuckets.counts))
+		copy(hDPts[i].NegativeBucket.Counts, b.negBuckets.counts)
 
 		if !e.noSum {
-			hDPts[i].Sum = val.sum
+			hDPts[i].Sum = b.sum
 		}
 		if !e.noMinMax {
-			hDPts[i].Min = metricdata.NewExtrema(val.min)
-			hDPts[i].Max = metricdata.NewExtrema(val.max)
+			hDPts[i].Min = metricdata.NewExtrema(b.min)
+			hDPts[i].Max = metricdata.NewExtrema(b.max)
 		}
 
-		val.res.Collect(&hDPts[i].Exemplars)
+		b.res.Collect(&hDPts[i].Exemplars)
 
 		i++
 		// TODO (#3006): This will use an unbounded amount of memory if there

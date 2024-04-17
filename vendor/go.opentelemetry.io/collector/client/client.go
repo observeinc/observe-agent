@@ -98,7 +98,13 @@ type Info struct {
 	Auth AuthData
 
 	// Metadata is the request metadata from the client connecting to this connector.
+	// Experimental: *NOTE* this structure is subject to change or removal in the future.
 	Metadata Metadata
+}
+
+// Metadata is an immutable map, meant to contain request metadata.
+type Metadata struct {
+	data map[string][]string
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
@@ -110,7 +116,8 @@ type AuthData interface {
 	// "membership" might return a list of strings.
 	GetAttribute(string) any
 
-	// GetAttributeNames returns the names of all attributes in this authentication data.
+	// GetAttributes returns the names of all attributes in this authentication
+	// data.
 	GetAttributeNames() []string
 }
 
@@ -132,12 +139,7 @@ func FromContext(ctx context.Context) Info {
 	return c
 }
 
-// Metadata is an immutable map, meant to contain request metadata.
-type Metadata struct {
-	data map[string][]string
-}
-
-// NewMetadata creates a new Metadata object to use in Info.
+// NewMetadata creates a new Metadata object to use in Info. md is used as-is.
 func NewMetadata(md map[string][]string) Metadata {
 	c := make(map[string][]string, len(md))
 	for k, v := range md {
@@ -149,7 +151,6 @@ func NewMetadata(md map[string][]string) Metadata {
 }
 
 // Get gets the value of the key from metadata, returning a copy.
-// The key lookup is case-insensitive.
 func (m Metadata) Get(key string) []string {
 	if len(m.data) == 0 {
 		return nil

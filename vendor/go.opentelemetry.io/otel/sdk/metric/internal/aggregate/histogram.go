@@ -1,11 +1,21 @@
 // Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package aggregate // import "go.opentelemetry.io/otel/sdk/metric/internal/aggregate"
 
 import (
 	"context"
-	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -16,8 +26,7 @@ import (
 )
 
 type buckets[N int64 | float64] struct {
-	attrs attribute.Set
-	res   exemplar.Reservoir[N]
+	res exemplar.Reservoir[N]
 
 	counts   []uint64
 	count    uint64
@@ -26,8 +35,8 @@ type buckets[N int64 | float64] struct {
 }
 
 // newBuckets returns buckets with n bins.
-func newBuckets[N int64 | float64](attrs attribute.Set, n int) *buckets[N] {
-	return &buckets[N]{attrs: attrs, counts: make([]uint64, n)}
+func newBuckets[N int64 | float64](n int) *buckets[N] {
+	return &buckets[N]{counts: make([]uint64, n)}
 }
 
 func (b *buckets[N]) sum(value N) { b.total += value }
@@ -50,7 +59,7 @@ type histValues[N int64 | float64] struct {
 
 	newRes   func() exemplar.Reservoir[N]
 	limit    limiter[*buckets[N]]
-	values   map[attribute.Distinct]*buckets[N]
+	values   map[attribute.Set]*buckets[N]
 	valuesMu sync.Mutex
 }
 
@@ -59,14 +68,15 @@ func newHistValues[N int64 | float64](bounds []float64, noSum bool, limit int, r
 	// passed boundaries is ultimately this type's responsibility. Make a copy
 	// here so we can always guarantee this. Or, in the case of failure, have
 	// complete control over the fix.
-	b := slices.Clone(bounds)
-	slices.Sort(b)
+	b := make([]float64, len(bounds))
+	copy(b, bounds)
+	sort.Float64s(b)
 	return &histValues[N]{
 		noSum:  noSum,
 		bounds: b,
 		newRes: r,
 		limit:  newLimiter[*buckets[N]](limit),
-		values: make(map[attribute.Distinct]*buckets[N]),
+		values: make(map[attribute.Set]*buckets[N]),
 	}
 }
 
@@ -86,7 +96,7 @@ func (s *histValues[N]) measure(ctx context.Context, value N, fltrAttr attribute
 	defer s.valuesMu.Unlock()
 
 	attr := s.limit.Attributes(fltrAttr, s.values)
-	b, ok := s.values[attr.Equivalent()]
+	b, ok := s.values[attr]
 	if !ok {
 		// N+1 buckets. For example:
 		//
@@ -95,12 +105,12 @@ func (s *histValues[N]) measure(ctx context.Context, value N, fltrAttr attribute
 		// Then,
 		//
 		//   buckets = (-∞, 0], (0, 5.0], (5.0, 10.0], (10.0, +∞)
-		b = newBuckets[N](attr, len(s.bounds)+1)
+		b = newBuckets[N](len(s.bounds) + 1)
 		b.res = s.newRes()
 
 		// Ensure min and max are recorded values (not zero), for new buckets.
 		b.min, b.max = value, value
-		s.values[attr.Equivalent()] = b
+		s.values[attr] = b
 	}
 	b.bin(idx, value)
 	if !s.noSum {
@@ -140,35 +150,36 @@ func (s *histogram[N]) delta(dest *metricdata.Aggregation) int {
 	defer s.valuesMu.Unlock()
 
 	// Do not allow modification of our copy of bounds.
-	bounds := slices.Clone(s.bounds)
+	bounds := make([]float64, len(s.bounds))
+	copy(bounds, s.bounds)
 
 	n := len(s.values)
 	hDPts := reset(h.DataPoints, n, n)
 
 	var i int
-	for _, val := range s.values {
-		hDPts[i].Attributes = val.attrs
+	for a, b := range s.values {
+		hDPts[i].Attributes = a
 		hDPts[i].StartTime = s.start
 		hDPts[i].Time = t
-		hDPts[i].Count = val.count
+		hDPts[i].Count = b.count
 		hDPts[i].Bounds = bounds
-		hDPts[i].BucketCounts = val.counts
+		hDPts[i].BucketCounts = b.counts
 
 		if !s.noSum {
-			hDPts[i].Sum = val.total
+			hDPts[i].Sum = b.total
 		}
 
 		if !s.noMinMax {
-			hDPts[i].Min = metricdata.NewExtrema(val.min)
-			hDPts[i].Max = metricdata.NewExtrema(val.max)
+			hDPts[i].Min = metricdata.NewExtrema(b.min)
+			hDPts[i].Max = metricdata.NewExtrema(b.max)
 		}
 
-		val.res.Collect(&hDPts[i].Exemplars)
+		b.res.Collect(&hDPts[i].Exemplars)
 
+		// Unused attribute sets do not report.
+		delete(s.values, a)
 		i++
 	}
-	// Unused attribute sets do not report.
-	clear(s.values)
 	// The delta collection cycle resets.
 	s.start = t
 
@@ -190,36 +201,39 @@ func (s *histogram[N]) cumulative(dest *metricdata.Aggregation) int {
 	defer s.valuesMu.Unlock()
 
 	// Do not allow modification of our copy of bounds.
-	bounds := slices.Clone(s.bounds)
+	bounds := make([]float64, len(s.bounds))
+	copy(bounds, s.bounds)
 
 	n := len(s.values)
 	hDPts := reset(h.DataPoints, n, n)
 
 	var i int
-	for _, val := range s.values {
-		hDPts[i].Attributes = val.attrs
-		hDPts[i].StartTime = s.start
-		hDPts[i].Time = t
-		hDPts[i].Count = val.count
-		hDPts[i].Bounds = bounds
-
+	for a, b := range s.values {
 		// The HistogramDataPoint field values returned need to be copies of
 		// the buckets value as we will keep updating them.
 		//
 		// TODO (#3047): Making copies for bounds and counts incurs a large
 		// memory allocation footprint. Alternatives should be explored.
-		hDPts[i].BucketCounts = slices.Clone(val.counts)
+		counts := make([]uint64, len(b.counts))
+		copy(counts, b.counts)
+
+		hDPts[i].Attributes = a
+		hDPts[i].StartTime = s.start
+		hDPts[i].Time = t
+		hDPts[i].Count = b.count
+		hDPts[i].Bounds = bounds
+		hDPts[i].BucketCounts = counts
 
 		if !s.noSum {
-			hDPts[i].Sum = val.total
+			hDPts[i].Sum = b.total
 		}
 
 		if !s.noMinMax {
-			hDPts[i].Min = metricdata.NewExtrema(val.min)
-			hDPts[i].Max = metricdata.NewExtrema(val.max)
+			hDPts[i].Min = metricdata.NewExtrema(b.min)
+			hDPts[i].Max = metricdata.NewExtrema(b.max)
 		}
 
-		val.res.Collect(&hDPts[i].Exemplars)
+		b.res.Collect(&hDPts[i].Exemplars)
 
 		i++
 		// TODO (#3006): This will use an unbounded amount of memory if there

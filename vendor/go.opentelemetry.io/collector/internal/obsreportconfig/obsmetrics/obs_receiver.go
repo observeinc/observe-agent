@@ -30,9 +30,8 @@ const (
 )
 
 var (
-	ReceiverPrefix                  = ReceiverKey + SpanNameSep
-	ReceiverMetricPrefix            = ReceiverKey + MetricNameSep
-	ReceiveTraceDataOperationSuffix = SpanNameSep + "TraceDataReceived"
-	ReceiverMetricsOperationSuffix  = SpanNameSep + "MetricsReceived"
-	ReceiverLogsOperationSuffix     = SpanNameSep + "LogsReceived"
+	ReceiverPrefix                  = ReceiverKey + NameSep
+	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"
+	ReceiverMetricsOperationSuffix  = NameSep + "MetricsReceived"
+	ReceiverLogsOperationSuffix     = NameSep + "LogsReceived"
 )

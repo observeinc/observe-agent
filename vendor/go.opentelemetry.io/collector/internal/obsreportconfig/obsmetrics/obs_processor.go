@@ -18,5 +18,5 @@ const (
 )
 
 var (
-	ProcessorMetricPrefix = ProcessorKey + MetricNameSep
+	ProcessorPrefix = ProcessorKey + NameSep
 )
