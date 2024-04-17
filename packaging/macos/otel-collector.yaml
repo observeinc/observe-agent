@@ -5,6 +5,9 @@ extensions:
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
 
+connectors:
+  count:
+
 receivers:
   otlp:
     protocols:
@@ -144,7 +147,7 @@ service:
   pipelines:
     
     metrics:
-      receivers: [hostmetrics, prometheus/internal]
+      receivers: [hostmetrics, prometheus/internal, count]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [otlphttp]
 
@@ -161,7 +164,7 @@ service:
     logs:
       receivers: [otlp, filelog]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp, count]
       
     traces:
       receivers: [otlp]
