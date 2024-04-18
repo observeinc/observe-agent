@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0
 	github.com/prometheus/client_model v0.6.0
 	github.com/prometheus/common v0.51.1
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	go.opentelemetry.io/collector/component v0.97.0
@@ -37,6 +37,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.97.0
 	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0
+	golang.org/x/sys v0.18.0
 )
 
 require (
@@ -242,7 +243,6 @@ require (
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
