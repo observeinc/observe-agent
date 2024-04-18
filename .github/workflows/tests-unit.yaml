@@ -1,0 +1,26 @@
+name: Run Go tests
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go: [ 1.22.x ]
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Test
+      run: make go-test
