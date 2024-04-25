@@ -17,7 +17,10 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		observeotel.SetEnvVars()
+		err := observeotel.SetEnvVars()
+		if err != nil {
+			return err
+		}
 		otelCmd := observeotel.GetOtelCollectorCommand()
 		return otelCmd.RunE(cmd, args)
 	},

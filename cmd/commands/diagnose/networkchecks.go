@@ -68,11 +68,11 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 	}
 }
 
-func makeNetworkingTestRequest() NetworkTestResult {
-	return makeTestRequest(ChallengeURL, make(map[string]string))
+func makeNetworkingTestRequest(url string) NetworkTestResult {
+	return makeTestRequest(url, make(map[string]string))
 }
 
-func makeAuthTestRequest() NetworkTestResult {
+func makeAuthTestRequest(url string) NetworkTestResult {
 	authToken := fmt.Sprintf("Bearer %s", viper.GetString("token"))
-	return makeTestRequest(AuthCheckURL, map[string]string{"Authorization": authToken})
+	return makeTestRequest(url, map[string]string{"Authorization": authToken})
 }

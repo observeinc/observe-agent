@@ -6,8 +6,10 @@ Running auth check against {{ .URL }}
 Request to test URL responded with response code {{ .ResponseCode }}
 {{- else }}
 {{- if eq .ResponseCode 401 }} 
-Request to test URL failed with error {{ .Error }}. Please check that the token is present in the
-`observe-agent.yaml` config file and that the token is valid. 
+Request to test URL failed with error {{ .Error }}. 
+
+Remediation
+Please check that the token is present in the `observe-agent.yaml` config file and that the token is valid. 
 {{- else }}
 Request to test URL failed with error {{ .Error }} and response code {{ .ResponseCode }}. 
 {{- end }}

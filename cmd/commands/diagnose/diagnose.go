@@ -11,14 +11,15 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-const networkcheckTemplate = "networkcheck.tmpl"
+// const networkcheckTemplate = "networkcheck.tmpl"
 const authcheckTemplate = "authcheck.tmpl"
 
 var (
 	//go:embed networkcheck.tmpl
-	networkcheckTemplateFS embed.FS
+	// networkcheckTemplateFS embed.FS
 	//go:embed authcheck.tmpl
 	authcheckTemplateFS embed.FS
 )
@@ -50,14 +51,9 @@ func init() {
 }
 
 func runNetworkCheck() error {
-	networkTestResponse := makeNetworkingTestRequest()
-	t := template.Must(template.New(networkcheckTemplate).ParseFS(networkcheckTemplateFS, networkcheckTemplate))
-	if err := t.ExecuteTemplate(os.Stdout, networkcheckTemplate, networkTestResponse); err != nil {
-		return err
-	}
-
-	authTestResponse := makeAuthTestRequest()
-	t = template.Must(template.New(authcheckTemplate).ParseFS(authcheckTemplateFS, authcheckTemplate))
+	collector_url := viper.GetString("observe_url")
+	authTestResponse := makeAuthTestRequest(collector_url)
+	t := template.Must(template.New(authcheckTemplate).ParseFS(authcheckTemplateFS, authcheckTemplate))
 	if err := t.ExecuteTemplate(os.Stdout, authcheckTemplate, authTestResponse); err != nil {
 		return err
 	}

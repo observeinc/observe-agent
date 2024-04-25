@@ -1,6 +1,7 @@
 package observeotel
 
 import (
+	"net/url"
 	"observe/agent/build"
 	"os"
 
@@ -121,8 +122,12 @@ func baseFactories() (otelcol.Factories, error) {
 	return factories, err
 }
 
-func SetEnvVars() {
-	endpoint, token := viper.GetString("observe_url"), viper.GetString("token")
+func SetEnvVars() error {
+	collector_url, token := viper.GetString("observe_url"), viper.GetString("token")
+	endpoint, err := url.JoinPath(collector_url, "/v2/otel")
+	if err != nil {
+		return err
+	}
 	fsPath := viper.GetString("filestorage_path")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
@@ -130,6 +135,7 @@ func SetEnvVars() {
 	if fsPath != "" {
 		os.Setenv("FILESTORAGE_PATH", fsPath)
 	}
+	return nil
 }
 
 func GetOtelCollectorCommand() *cobra.Command {
