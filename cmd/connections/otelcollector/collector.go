@@ -1,8 +1,6 @@
 package observeotel
 
 import (
-	"fmt"
-	"log"
 	"observe/agent/build"
 	"os"
 
@@ -50,14 +48,7 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 }
 
 func GenerateCollectorSettings() *collector.CollectorSettings {
-	// otelConfigPath := "c:\\users\\konstantin\\work\\otel-collector.yaml" // viper.GetString("otel_config")
 	otelConfigPath := viper.GetString("otel_config")
-	log.Print(fmt.Sprintf("otelConfigPath, %s", otelConfigPath))
-
-	// if otelConfigPath == "" {
-	// 	otelConfigPath = filepath.Join("packaging/macos/", "otel-collector.yaml")
-	// }
-
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -136,8 +127,6 @@ func SetEnvVars() {
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
-	log.Print(fmt.Sprintf("OBSERVE_ENDPOINT, %s", endpoint))
-	log.Print(fmt.Sprintf("OBSERVE_TOKEN, %s", token))
 	if fsPath != "" {
 		os.Setenv("FILESTORAGE_PATH", fsPath)
 	}
