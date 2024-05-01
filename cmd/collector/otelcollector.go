@@ -49,21 +49,7 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func GenerateCollectorSettings() (*collector.CollectorSettings, string, error) {
-	var overrideFilename string
-	var err error
-	otelConfigPath := viper.GetString("otel_config_path")
-	URIs := []string{otelConfigPath}
-	// Save otel_config_overrides from observe-agent.yaml and load them as config for collector
-	otelOverrides := viper.Sub("otel_config_overrides")
-	if otelOverrides != nil {
-		overrideFilename, err = WriteOverrideConfigToFile(otelOverrides)
-		if err != nil {
-			return nil, overrideFilename, fmt.Errorf("failed to write otel config overrides to file: %w", err)
-		}
-		URIs = append(URIs, overrideFilename)
-	}
-
+func GenerateCollectorSettings(URIs []string) (*collector.CollectorSettings, error) {
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -86,7 +72,7 @@ func GenerateCollectorSettings() (*collector.CollectorSettings, string, error) {
 			},
 		},
 	}
-	return set, overrideFilename, nil
+	return set, nil
 }
 
 // Each module's factories needs to be manually included here for the parser to then handle that config.
@@ -152,7 +138,7 @@ func SetEnvVars() error {
 	return nil
 }
 
-func WriteOverrideConfigToFile(sub *viper.Viper) (string, error) {
+func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
 	f, err := os.CreateTemp("", "otel-config-overrides-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("failed to create config file to write to: %w", err)
