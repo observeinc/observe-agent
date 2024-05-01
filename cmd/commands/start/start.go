@@ -6,6 +6,7 @@ package start
 import (
 	"observe/agent/cmd"
 	observeotel "observe/agent/cmd/connections/otelcollector"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,12 @@ collector on the current host.`,
 		if err != nil {
 			return err
 		}
-		otelCmd := observeotel.GetOtelCollectorCommand()
+		colSettings, tempConfigFile, err := observeotel.GenerateCollectorSettings()
+		defer os.Remove(tempConfigFile)
+		if err != nil {
+			return err
+		}
+		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},
 }

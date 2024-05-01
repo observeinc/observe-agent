@@ -1,6 +1,7 @@
 package observeotel
 
 import (
+	"fmt"
 	"net/url"
 	"observe/agent/build"
 	"os"
@@ -48,8 +49,21 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func GenerateCollectorSettings() *collector.CollectorSettings {
-	otelConfigPath := viper.GetString("otel_config")
+func GenerateCollectorSettings() (*collector.CollectorSettings, string, error) {
+	var overrideFilename string
+	var err error
+	otelConfigPath := viper.GetString("otel_config_path")
+	URIs := []string{otelConfigPath}
+	// Save otel_config_overrides from observe-agent.yaml and load them as config for collector
+	otelOverrides := viper.Sub("otel_config_overrides")
+	if otelOverrides != nil {
+		overrideFilename, err = WriteOverrideConfigToFile(otelOverrides)
+		if err != nil {
+			return nil, overrideFilename, fmt.Errorf("failed to write otel config overrides to file: %w", err)
+		}
+		URIs = append(URIs, overrideFilename)
+	}
+
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -61,7 +75,7 @@ func GenerateCollectorSettings() *collector.CollectorSettings {
 		Factories: baseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{otelConfigPath},
+				URIs: URIs,
 				Providers: makeMapProvidersMap(
 					fileprovider.NewWithSettings(providerSet),
 					envprovider.NewWithSettings(providerSet),
@@ -72,7 +86,7 @@ func GenerateCollectorSettings() *collector.CollectorSettings {
 			},
 		},
 	}
-	return set
+	return set, overrideFilename, nil
 }
 
 // Each module's factories needs to be manually included here for the parser to then handle that config.
@@ -138,8 +152,19 @@ func SetEnvVars() error {
 	return nil
 }
 
-func GetOtelCollectorCommand() *cobra.Command {
-	otelconfig := GenerateCollectorSettings()
+func WriteOverrideConfigToFile(sub *viper.Viper) (string, error) {
+	f, err := os.CreateTemp("", "otel-config-overrides-*.yaml")
+	if err != nil {
+		return "", fmt.Errorf("failed to create config file to write to: %w", err)
+	}
+	err = sub.WriteConfigAs(f.Name())
+	if err != nil {
+		return f.Name(), fmt.Errorf("failed to write otel config overrides to file: %w", err)
+	}
+	return f.Name(), nil
+}
+
+func GetOtelCollectorCommand(otelconfig *collector.CollectorSettings) *cobra.Command {
 	cmd := otelcol.NewCommand(*otelconfig)
 	return cmd
 }
