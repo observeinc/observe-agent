@@ -46,10 +46,7 @@ collector on the current host.`,
 			}
 		}()
 		// Generate collector settings with all config files
-		colSettings, err := observeotel.GenerateCollectorSettings(configFilePaths)
-		if err != nil {
-			return err
-		}
+		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
 		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},

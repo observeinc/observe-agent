@@ -51,7 +51,7 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func GenerateCollectorSettings(URIs []string) (*collector.CollectorSettings, error) {
+func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -74,7 +74,7 @@ func GenerateCollectorSettings(URIs []string) (*collector.CollectorSettings, err
 			},
 		},
 	}
-	return set, nil
+	return set
 }
 
 // Each module's factories needs to be manually included here for the parser to then handle that config.
