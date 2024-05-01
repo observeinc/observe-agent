@@ -17,13 +17,6 @@ type ConnectionType[T interface{}] struct {
 	ConfigFields []CollectorConfigFragment
 }
 
-// var hostMonConfig HostMonitoringConfig
-// if err := rawHostMonConfig.Unmarshal(&hostMonConfig); err != nil {
-// 	fmt.Println(err)
-// 	return
-// }
-// fmt.Println(hostMonConfig)
-
 func (c ConnectionType[T]) GetConfigFilePaths() []string {
 	var rawConnConfig = viper.Sub(c.Name)
 	configPaths := make([]string, 0)
