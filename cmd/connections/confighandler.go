@@ -9,7 +9,6 @@ type ConfigFieldHandler interface {
 type CollectorConfigFragment struct {
 	configYAMLPath    string
 	colConfigFilePath string
-	required          bool
 }
 
 type ConnectionType[T interface{}] struct {
@@ -28,17 +27,13 @@ type ConnectionType[T interface{}] struct {
 func (c ConnectionType[T]) GetConfigFilePaths() []string {
 	var rawConnConfig = viper.Sub(c.Name)
 	configPaths := make([]string, 0)
-	if rawConnConfig == nil {
+	if rawConnConfig == nil || rawConnConfig.GetBool("enabled") != true {
 		return configPaths
 	}
 	for _, field := range c.ConfigFields {
 		val := rawConnConfig.GetBool(field.configYAMLPath)
-		if val == true {
+		if val && field.colConfigFilePath != "" {
 			configPaths = append(configPaths, field.colConfigFilePath)
-		} else {
-			if field.required {
-				return configPaths
-			}
 		}
 	}
 	return configPaths

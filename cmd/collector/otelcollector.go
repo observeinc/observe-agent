@@ -41,6 +41,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
+const BaseOtelCollectorConfigFilePath = "/etc/observe-agent/otel-collector.yaml"
+
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
 	ret := make(map[string]confmap.Provider, len(providers))
 	for _, provider := range providers {

@@ -76,6 +76,6 @@ receivers:
 service:
   pipelines:
     metrics:
-      receivers: [hostmetrics, prometheus/internal, count]
+      receivers: [hostmetrics, prometheus/internal]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [otlphttp]

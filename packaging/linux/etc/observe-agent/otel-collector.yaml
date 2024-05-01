@@ -5,9 +5,6 @@ extensions:
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
 
-connectors:
-  count:
-
 receivers:
   otlp:
     protocols:

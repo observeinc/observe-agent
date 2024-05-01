@@ -28,7 +28,7 @@ service:
     logs:
       receivers: [otlp, filelog]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp, count]
+      exporters: [otlphttp]
 
     logs/journal:
       receivers: [otlp, journald]

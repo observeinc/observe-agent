@@ -7,5 +7,25 @@
 # Target Observe collection url
 # observe_url: "YYY"
 
-otel_config: "/etc/observe-agent/otel-collector.yaml"
+# Path to store OTEL Collector 
+# filestorage_path: "/home/$USER/.observe-agent"
 
+# host_monitoring:
+#   enabled: true
+#   logs: 
+#     enabled: true
+#   metrics:
+#     enabled: true
+
+# otel_config_overrides:
+#   exporters:
+#     debug:
+#       verbosity: detailed
+#       sampling_initial: 5
+#       sampling_thereafter: 200
+#   service:
+#     pipelines:
+#       metrics:
+#         receivers: [hostmetrics]
+#         processors: [memory_limiter]
+#         exporters: [debug]

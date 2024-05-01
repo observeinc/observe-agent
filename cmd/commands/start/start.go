@@ -25,12 +25,13 @@ collector on the current host.`,
 		if err != nil {
 			return err
 		}
-		configFilePaths := make([]string, 0)
-		// Get config paths based on connection configs
+		// Initialize config file paths with base config
+		configFilePaths := []string{observeotel.BaseOtelCollectorConfigFilePath}
+		// Get additional config paths based on connection configs
 		if viper.IsSet(connections.HostMonitoringConnectionType.Name) {
 			configFilePaths = append(configFilePaths, connections.HostMonitoringConnectionType.GetConfigFilePaths()...)
 		}
-		// Generate final config with all config file paths including overrides
+		// Generate override file and include path if overrides provided
 		var overridePath string
 		if viper.IsSet("otel_config_overrides") {
 			overridePath, err = observeotel.GetOverrideConfigFile(viper.Sub("otel_config_overrides"))
@@ -44,6 +45,7 @@ collector on the current host.`,
 				os.Remove(overridePath)
 			}
 		}()
+		// Generate collector settings with all config files
 		colSettings, err := observeotel.GenerateCollectorSettings(configFilePaths)
 		if err != nil {
 			return err
