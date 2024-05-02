@@ -10,7 +10,7 @@ type HostMonitoringConfig struct {
 	}
 }
 
-var HostMonitoringConnectionType = ConnectionType[HostMonitoringConfig]{
+var HostMonitoringConnectionType = ConnectionType{
 	Name: "host_monitoring",
 	ConfigFields: []CollectorConfigFragment{
 		{

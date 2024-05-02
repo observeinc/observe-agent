@@ -1,10 +1,7 @@
 package observeotel
 
 import (
-	"fmt"
-	"net/url"
 	"observe/agent/build"
-	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -17,7 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -40,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
-
-const BaseOtelCollectorConfigFilePath = "/etc/observe-agent/otel-collector.yaml"
 
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
 	ret := make(map[string]confmap.Provider, len(providers))
@@ -122,34 +116,6 @@ func baseFactories() (otelcol.Factories, error) {
 	}
 
 	return factories, err
-}
-
-func SetEnvVars() error {
-	collector_url, token := viper.GetString("observe_url"), viper.GetString("token")
-	endpoint, err := url.JoinPath(collector_url, "/v2/otel")
-	if err != nil {
-		return err
-	}
-	fsPath := viper.GetString("filestorage_path")
-	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
-	os.Setenv("OBSERVE_ENDPOINT", endpoint)
-	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
-	if fsPath != "" {
-		os.Setenv("FILESTORAGE_PATH", fsPath)
-	}
-	return nil
-}
-
-func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
-	f, err := os.CreateTemp("", "otel-config-overrides-*.yaml")
-	if err != nil {
-		return "", fmt.Errorf("failed to create config file to write to: %w", err)
-	}
-	err = sub.WriteConfigAs(f.Name())
-	if err != nil {
-		return f.Name(), fmt.Errorf("failed to write otel config overrides to file: %w", err)
-	}
-	return f.Name(), nil
 }
 
 func GetOtelCollectorCommand(otelconfig *collector.CollectorSettings) *cobra.Command {
