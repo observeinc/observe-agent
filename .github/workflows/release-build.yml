@@ -2,6 +2,12 @@ name: Build Release
 
 on:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch to attempt to build"
+        required: true
+        default: "main"
 
 permissions:
   contents: write
