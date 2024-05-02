@@ -5,9 +5,12 @@ package start
 
 import (
 	"observe/agent/cmd"
-	observeotel "observe/agent/cmd/connections/otelcollector"
+	observeotel "observe/agent/cmd/collector"
+	"observe/agent/cmd/connections"
+	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var startCmd = &cobra.Command{
@@ -17,11 +20,34 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Handle base OTEL config
 		err := observeotel.SetEnvVars()
 		if err != nil {
 			return err
 		}
-		otelCmd := observeotel.GetOtelCollectorCommand()
+		// Initialize config file paths with base config
+		configFilePaths := []string{observeotel.BaseOtelCollectorConfigFilePath}
+		// Get additional config paths based on connection configs
+		if viper.IsSet(connections.HostMonitoringConnectionType.Name) {
+			configFilePaths = append(configFilePaths, connections.HostMonitoringConnectionType.GetConfigFilePaths()...)
+		}
+		// Generate override file and include path if overrides provided
+		var overridePath string
+		if viper.IsSet("otel_config_overrides") {
+			overridePath, err = observeotel.GetOverrideConfigFile(viper.Sub("otel_config_overrides"))
+			if err != nil {
+				return err
+			}
+			configFilePaths = append(configFilePaths, overridePath)
+		}
+		defer func() {
+			if viper.IsSet("otel_config_overrides") {
+				os.Remove(overridePath)
+			}
+		}()
+		// Generate collector settings with all config files
+		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
+		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},
 }

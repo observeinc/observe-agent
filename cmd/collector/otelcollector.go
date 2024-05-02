@@ -1,6 +1,7 @@
 package observeotel
 
 import (
+	"fmt"
 	"net/url"
 	"observe/agent/build"
 	"os"
@@ -40,6 +41,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
+const BaseOtelCollectorConfigFilePath = "/etc/observe-agent/otel-collector.yaml"
+
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
 	ret := make(map[string]confmap.Provider, len(providers))
 	for _, provider := range providers {
@@ -48,8 +51,7 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func GenerateCollectorSettings() *collector.CollectorSettings {
-	otelConfigPath := viper.GetString("otel_config")
+func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
 	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -61,7 +63,7 @@ func GenerateCollectorSettings() *collector.CollectorSettings {
 		Factories: baseFactories,
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: []string{otelConfigPath},
+				URIs: URIs,
 				Providers: makeMapProvidersMap(
 					fileprovider.NewWithSettings(providerSet),
 					envprovider.NewWithSettings(providerSet),
@@ -138,8 +140,19 @@ func SetEnvVars() error {
 	return nil
 }
 
-func GetOtelCollectorCommand() *cobra.Command {
-	otelconfig := GenerateCollectorSettings()
+func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
+	f, err := os.CreateTemp("", "otel-config-overrides-*.yaml")
+	if err != nil {
+		return "", fmt.Errorf("failed to create config file to write to: %w", err)
+	}
+	err = sub.WriteConfigAs(f.Name())
+	if err != nil {
+		return f.Name(), fmt.Errorf("failed to write otel config overrides to file: %w", err)
+	}
+	return f.Name(), nil
+}
+
+func GetOtelCollectorCommand(otelconfig *collector.CollectorSettings) *cobra.Command {
 	cmd := otelcol.NewCommand(*otelconfig)
 	return cmd
 }

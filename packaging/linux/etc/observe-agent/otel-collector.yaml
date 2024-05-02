@@ -5,9 +5,6 @@ extensions:
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
 
-connectors:
-  count:
-
 receivers:
   otlp:
     protocols:
@@ -27,98 +24,6 @@ receivers:
     poll_interval: 5m
     multiline:
       line_end_pattern: ENDOFLINEPATTERN
-
-  prometheus/internal:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 5s
-          static_configs:
-            - targets: ['0.0.0.0:8888']
-
-  hostmetrics:
-    collection_interval: 20s
-    scrapers:
-      cpu:
-        metrics:
-          system.cpu.utilization:
-            enabled: true
-          system.cpu.frequency:
-            enabled: true
-          system.cpu.logical.count:
-            enabled: true
-          system.cpu.physical.count:
-            enabled: true
-      load:
-      memory:
-        metrics:
-          system.memory.utilization:
-            enabled: true
-          system.linux.memory.available:
-            enabled: true
-      disk:
-      filesystem:
-        metrics:
-          system.filesystem.utilization:
-            enabled: true
-      network:
-        metrics:
-          system.network.conntrack.count:
-            enabled: true
-          system.network.conntrack.max:
-            enabled: true
-      paging:
-        metrics:
-          system.paging.utilization:
-            enabled: true
-      processes:
-      process:
-        metrics:
-          process.context_switches:
-            enabled: true
-          process.cpu.utilization:
-            enabled: true
-          process.disk.operations:
-            enabled: true      
-          process.memory.utilization:
-            enabled: true      
-          process.open_file_descriptors:
-            enabled: true      
-          process.paging.faults:
-            enabled: true      
-          process.signals_pending:
-            enabled: true      
-          process.threads:
-            enabled: true
-        mute_process_name_error: true
-        mute_process_exe_error: true
-        mute_process_io_error: true
-        mute_process_user_error: true
-
-  filelog:
-    include: [/var/log/**/*.log, /var/log/syslog]
-    include_file_path: true
-    storage: file_storage
-    retry_on_failure:
-      enabled: true
-    max_log_size: 4MiB
-    operators:
-      - type: filter
-        expr: 'body matches "otel-contrib"'
-
-  journald:
-    units:
-      - cron
-      - ssh
-      - systemd-networkd
-      - systemd-resolved
-      - systemd-login
-      - multipathd
-      - systemd-user-sessions
-      - ufw
-      - otetcol-contrib
-
-    priority: info
 
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
@@ -159,12 +64,6 @@ exporters:
 
 service:
   pipelines:
-    
-    metrics:
-      receivers: [hostmetrics, prometheus/internal, count]
-      processors: [memory_limiter, resourcedetection, batch]
-      exporters: [otlphttp]
-
     metrics/filestats:
        receivers: [filestats]
        processors: [resourcedetection]
@@ -174,21 +73,6 @@ service:
        receivers: [filelog/config]
        processors: [memory_limiter, transform/truncate, resourcedetection, batch]
        exporters: [otlphttp]
-       
-    logs:
-      receivers: [otlp, filelog]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp, count]
-
-    logs/journal:
-      receivers: [otlp, journald]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
-      
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
 
   extensions: [health_check, file_storage]
   telemetry:
