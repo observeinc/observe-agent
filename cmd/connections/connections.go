@@ -11,13 +11,12 @@ type CollectorConfigFragment struct {
 	colConfigFilePath string
 }
 
-type ConnectionType[T interface{}] struct {
+type ConnectionType struct {
 	Name         string
-	Config       T
 	ConfigFields []CollectorConfigFragment
 }
 
-func (c ConnectionType[T]) GetConfigFilePaths() []string {
+func (c ConnectionType) GetConfigFilePaths() []string {
 	var rawConnConfig = viper.Sub(c.Name)
 	configPaths := make([]string, 0)
 	if rawConnConfig == nil || rawConnConfig.GetBool("enabled") != true {
@@ -30,4 +29,8 @@ func (c ConnectionType[T]) GetConfigFilePaths() []string {
 		}
 	}
 	return configPaths
+}
+
+var AllConnectionTypes = []*ConnectionType{
+	&HostMonitoringConnectionType,
 }
