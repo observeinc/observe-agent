@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -54,8 +53,6 @@ func init() {
 
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
-	log.Printf("initConfig, cfgFile %s", CfgFile)
-
 	if CfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
