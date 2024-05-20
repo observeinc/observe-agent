@@ -18,8 +18,6 @@ import (
 const authcheckTemplate = "authcheck.tmpl"
 
 var (
-	//go:embed networkcheck.tmpl
-	// networkcheckTemplateFS embed.FS
 	//go:embed authcheck.tmpl
 	authcheckTemplateFS embed.FS
 )
