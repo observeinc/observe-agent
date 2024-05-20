@@ -39,7 +39,7 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 		return NetworkTestResult{
 			Passed:       false,
 			Error:        err.Error(),
-			ResponseCode: resp.StatusCode,
+			ResponseCode: 0,
 			URL:          URL,
 		}
 	}
