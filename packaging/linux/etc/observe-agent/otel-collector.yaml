@@ -25,6 +25,18 @@ receivers:
     multiline:
       line_end_pattern: ENDOFLINEPATTERN
 
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otelcol'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['0.0.0.0:8888']
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '.*grpc_io.*'
+              action: drop
+
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
   # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
@@ -73,6 +85,11 @@ service:
        receivers: [filelog/config]
        processors: [memory_limiter, transform/truncate, resourcedetection, batch]
        exporters: [otlphttp]
+
+    metrics/internal:
+      receivers: [prometheus]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      exporters: [otlphttp]
 
   extensions: [health_check, file_storage]
   telemetry:
