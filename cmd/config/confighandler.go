@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"runtime"
 
 	"observe/agent/cmd/connections"
 
@@ -60,4 +61,17 @@ func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
 		return f.Name(), fmt.Errorf("failed to write otel config overrides to file: %w", err)
 	}
 	return f.Name(), nil
+}
+
+func GetDefaultConfigFolder() string {
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		return "$HOME"
+	case "windows":
+		return "%PROGRAMDATA%\\observe-agent\\config"
+	case "linux":
+		return "/etc/observe-agent"
+	default:
+		return "/etc/observe-agent"
+	}
 }

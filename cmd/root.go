@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"observe/agent/cmd/config"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -44,7 +45,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.PersistentFlags().StringVar(&CfgFile, "config", "", "config file (default is $HOME/.observe-agent.yaml)")
+	RootCmd.PersistentFlags().StringVar(&CfgFile, "config", "", "config file path")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -57,12 +58,8 @@ func InitConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
 	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
 		// Search config in home directory with name ".observe-agent" (without extension).
-		viper.AddConfigPath(home)
+		viper.AddConfigPath(config.GetDefaultConfigFolder())
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".observe-agent")
 	}

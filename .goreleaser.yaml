@@ -65,7 +65,7 @@ nfpms:
     # Your app's homepage.
     homepage: https://observeinc.com/
 
-    maintainer: Konstantin Tikhonov <konstantin.tikhonov@observeinc.com>
+    maintainer: Alex Lew <alex.lew@observeinc.com>
 
     description: |-
       Observe agent.
