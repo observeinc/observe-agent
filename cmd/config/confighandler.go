@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"observe/agent/cmd/connections"
@@ -11,11 +12,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-const BaseOtelCollectorConfigFilePath = "/etc/observe-agent/otel-collector.yaml"
-
 func GetAllOtelConfigFilePaths() ([]string, string, error) {
 	// Initialize config file paths with base config
-	configFilePaths := []string{BaseOtelCollectorConfigFilePath}
+	configFilePaths := []string{filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")}
 	var err error
 	// Get additional config paths based on connection configs
 	for _, conn := range connections.AllConnectionTypes {
