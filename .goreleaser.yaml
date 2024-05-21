@@ -184,11 +184,11 @@ nfpms:
         dst: /etc
         type: tree
 
-      - src: packaging/linux/observe-agent.yaml
+      - src: packaging/linux/config/observe-agent.yaml
         dst: /etc/observe-agent/observe-agent.yaml
         type: config
 
-      - src: packaging/linux/lib/systemd/system/observe-agent.service
+      - src: packaging/linux/config/observe-agent.service
         dst: /lib/systemd/system/observe-agent.service
         type: config
 

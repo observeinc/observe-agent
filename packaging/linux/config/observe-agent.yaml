@@ -7,9 +7,11 @@
 # Target Observe collection url
 # observe_url: "YYY"
 
-# Path to store OTEL Collector 
+# Filestorage is an extension that uses local storage to manage collector pipeline state. 
+# This field configures the directory that's used. For Linux, this field should be left commented out.
 # filestorage_path: "/home/$USER/.observe-agent"
 
+# Uncomment this block to enable host monitoring logs and metrics collection
 # host_monitoring:
 #   enabled: true
 #   logs: 
@@ -17,6 +19,7 @@
 #   metrics:
 #     enabled: true
 
+# 
 # otel_config_overrides:
 #   exporters:
 #     debug:
