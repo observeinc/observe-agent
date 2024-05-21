@@ -15,11 +15,11 @@ var HostMonitoringConnectionType = ConnectionType{
 	ConfigFields: []CollectorConfigFragment{
 		{
 			configYAMLPath:    "metrics.enabled",
-			colConfigFilePath: "hostmonitoring_metrics.yaml",
+			colConfigFilePath: "metrics.yaml",
 		},
 		{
 			configYAMLPath:    "logs.enabled",
-			colConfigFilePath: "hostmonitoring_logs.yaml",
+			colConfigFilePath: "logs.yaml",
 		},
 	},
 }
