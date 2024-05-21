@@ -20,7 +20,6 @@ receivers:
       - multipathd
       - systemd-user-sessions
       - ufw
-      - otetcol-contrib
     priority: info
 
 service:
