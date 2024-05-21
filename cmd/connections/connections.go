@@ -1,6 +1,11 @@
 package connections
 
-import "github.com/spf13/viper"
+import (
+	"path/filepath"
+	"runtime"
+
+	"github.com/spf13/viper"
+)
 
 type ConfigFieldHandler interface {
 	GenerateCollectorConfigFragment() interface{}
@@ -16,16 +21,30 @@ type ConnectionType struct {
 	ConfigFields []CollectorConfigFragment
 }
 
+func GetConfigFolderPath() string {
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		return ""
+	case "windows":
+		return "%ProgramFiles%\\Observe\\observe-agent\\connections"
+	case "linux":
+		return "/etc/observe-agent/connections"
+	default:
+		return "/etc/observe-agent/connections"
+	}
+}
+
 func (c ConnectionType) GetConfigFilePaths() []string {
 	var rawConnConfig = viper.Sub(c.Name)
 	configPaths := make([]string, 0)
-	if rawConnConfig == nil || rawConnConfig.GetBool("enabled") != true {
+	if rawConnConfig == nil || !rawConnConfig.GetBool("enabled") {
 		return configPaths
 	}
 	for _, field := range c.ConfigFields {
 		val := rawConnConfig.GetBool(field.configYAMLPath)
 		if val && field.colConfigFilePath != "" {
-			configPaths = append(configPaths, field.colConfigFilePath)
+			configPath := filepath.Join(GetConfigFolderPath(), c.Name, field.configYAMLPath, field.colConfigFilePath)
+			configPaths = append(configPaths, configPath)
 		}
 	}
 	return configPaths

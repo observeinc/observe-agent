@@ -1,0 +1,14 @@
+[Unit]
+Description=Observe Agent
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/observe-agent start --config /etc/observe-agent/observe-agent.yaml
+KillMode=mixed
+Restart=on-failure
+Type=simple
+User=observe-agent
+Group=observe-agent
+
+[Install]
+WantedBy=multi-user.target
