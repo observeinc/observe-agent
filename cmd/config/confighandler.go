@@ -67,7 +67,7 @@ func GetDefaultConfigFolder() string {
 	case "darwin":
 		return "$HOME"
 	case "windows":
-		return "%PROGRAMDATA%\\observe-agent\\config"
+		return "C:\\Program Files\\Observe\\observe-agent\\config"
 	case "linux":
 		return "/etc/observe-agent"
 	default:
