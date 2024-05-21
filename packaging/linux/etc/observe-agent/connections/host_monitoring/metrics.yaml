@@ -61,6 +61,6 @@ receivers:
 service:
   pipelines:
     metrics/host_monitoring:
-      receivers: [hostmetrics/host-monitoring, prometheus/internal]
+      receivers: [hostmetrics/host-monitoring]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [otlphttp/observe]
