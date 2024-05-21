@@ -8,8 +8,9 @@
 # observe_url: "YYY"
 
 # Filestorage is an extension that uses local storage to manage collector pipeline state. 
-# This field configures the directory that's used. For Linux, this field should be left commented out.
-# filestorage_path: "/home/$USER/.observe-agent"
+# This field configures the directory that's used. The default is /var/lib/observe-agent/file_storage. 
+# If you change this field, you'll need to ensure that the dir exists and that the observe-agent user has write acess
+filestorage_path: "/var/lib/observe-agent/file_storage"
 
 host_monitoring:
   enabled: true
@@ -18,7 +19,6 @@ host_monitoring:
   metrics:
     enabled: true
 
-# 
 # otel_config_overrides:
 #   exporters:
 #     debug:
