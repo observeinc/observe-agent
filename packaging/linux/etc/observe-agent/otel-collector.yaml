@@ -13,19 +13,19 @@ receivers:
       http:
         endpoint: localhost:4318
 
-  filestats:
+  filestats/agent:
     include: '/etc/observe-agent/otel-collector.yaml'
     collection_interval: 240m
     initial_delay: 60s
 
-  filelog/config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
+  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
     include: [/etc/observe-agent/otel-collector.yaml]
     start_at: beginning
     poll_interval: 5m
     multiline:
       line_end_pattern: ENDOFLINEPATTERN
 
-  prometheus:
+  prometheus/agent:
     config:
       scrape_configs:
         - job_name: 'otelcol'
@@ -37,7 +37,7 @@ receivers:
               regex: '.*grpc_io.*'
               action: drop
 
-  journald:
+  journald/agent:
     units:
       - observe-agent
     priority: info
@@ -69,7 +69,7 @@ processors:
     override: true
 
 exporters:
-  otlphttp:
+  otlphttp/observe:
     endpoint: ${env:OBSERVE_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_TOKEN}
@@ -81,40 +81,40 @@ exporters:
 
 service:
   pipelines:
-    metrics/filestats:
-       receivers: [filestats]
+    metrics/agent-filestats:
+       receivers: [filestats/agent]
        processors: [resourcedetection]
-       exporters: [otlphttp]
+       exporters: [otlphttp/observe]
 
-    metrics/internal:
-      receivers: [prometheus]
+    metrics/agent-internal:
+      receivers: [prometheus/agent]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
     metrics/forward:
       receivers: [otlp]
       processors: []
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
-    logs/journal:
-      receivers: [journald]
+    logs/agent-journald:
+      receivers: [journald/agent]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
-    logs/config:
-       receivers: [filelog/config]
+    logs/agent-config:
+       receivers: [filelog/agent-config]
        processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-       exporters: [otlphttp]
+       exporters: [otlphttp/observe]
     
     logs/forward: 
       receivers: [otlp]
       processors: []
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
     traces/forward:
       receivers: [otlp]
       processors: []
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
   extensions: [health_check, file_storage]
   telemetry:
