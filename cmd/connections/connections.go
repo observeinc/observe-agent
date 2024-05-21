@@ -43,7 +43,7 @@ func (c ConnectionType) GetConfigFilePaths() []string {
 	for _, field := range c.ConfigFields {
 		val := rawConnConfig.GetBool(field.configYAMLPath)
 		if val && field.colConfigFilePath != "" {
-			configPath := filepath.Join(GetConfigFolderPath(), c.Name, field.configYAMLPath, field.colConfigFilePath)
+			configPath := filepath.Join(GetConfigFolderPath(), c.Name, field.colConfigFilePath)
 			configPaths = append(configPaths, configPath)
 		}
 	}

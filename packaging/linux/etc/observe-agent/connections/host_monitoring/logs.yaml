@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  filelog/host_monitoring:
     include: [/var/log/**/*.log, /var/log/syslog]
     include_file_path: true
     storage: file_storage
@@ -10,7 +10,7 @@ receivers:
       - type: filter
         expr: 'body matches "otel-contrib"'
 
-  journald:
+  journald/host_monitoring:
     units:
       - cron
       - ssh
@@ -20,16 +20,17 @@ receivers:
       - multipathd
       - systemd-user-sessions
       - ufw
+      - observe-agent
     priority: info
 
 service:
   pipelines:
-    logs:
-      receivers: [otlp, filelog]
+    logs/host_monitoring-file:
+      receivers: [otlp, filelog/host_monitoring]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
 
-    logs/journal:
-      receivers: [otlp, journald]
+    logs/host_monitoring-journald:
+      receivers: [otlp, journald/host_monitoring]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp]
+      exporters: [otlphttp/observe]
