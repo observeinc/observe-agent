@@ -40,13 +40,9 @@ func SetEnvVars() error {
 	if err != nil {
 		return err
 	}
-	fsPath := viper.GetString("filestorage_path")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
-	if fsPath != "" {
-		os.Setenv("FILESTORAGE_PATH", fsPath)
-	}
 	return nil
 }
 
@@ -63,9 +59,13 @@ func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
 }
 
 func GetDefaultConfigFolder() string {
-	switch os := runtime.GOOS; os {
+	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		return "$HOME"
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		return homedir
 	case "windows":
 		return "C:\\Program Files\\Observe\\observe-agent\\config"
 	case "linux":

@@ -4,3 +4,4 @@ output-logs
 dist/
 agent.exe
 agent.exe~
+.DS_Store
