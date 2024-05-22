@@ -7,11 +7,6 @@
 # Target Observe collection url
 # observe_url: "YYY"
 
-# Filestorage is an extension that uses local storage to manage collector pipeline state. 
-# This field configures the directory that's used. The default is /var/lib/observe-agent/file_storage. 
-# If you change this field, you'll need to ensure that the dir exists and that the observe-agent user has write acess
-filestorage_path: "/var/lib/observe-agent/file_storage"
-
 host_monitoring:
   enabled: true
   logs: 
@@ -27,7 +22,8 @@ host_monitoring:
 #       sampling_thereafter: 200
 #   service:
 #     pipelines:
-#       metrics:
-#         receivers: [hostmetrics]
+#       # This will override the existing metrics/host_monitoring pipeline and output to stdout debug instead
+#       metrics/host_monitoring:
+#         receivers: [hostmetrics/host-monitoring]
 #         processors: [memory_limiter]
 #         exporters: [debug]

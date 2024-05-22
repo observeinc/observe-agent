@@ -1,9 +1,9 @@
 extensions:
   health_check:
-    endpoint: "localhost:13133"
-    path: "/status"
+    endpoint: 'localhost:13133'
+    path: '/status'
   file_storage:
-    directory: ${env:FILESTORAGE_PATH}
+    directory: '$HOME/.observe-agent'
 
 connectors:
   count:

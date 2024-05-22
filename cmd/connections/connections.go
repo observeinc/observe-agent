@@ -1,6 +1,7 @@
 package connections
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -22,9 +23,13 @@ type ConnectionType struct {
 }
 
 func GetConfigFolderPath() string {
-	switch os := runtime.GOOS; os {
+	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		return ""
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(homedir, ".observe-agent/connections")
 	case "windows":
 		return "%ProgramFiles%\\Observe\\observe-agent\\connections"
 	case "linux":
