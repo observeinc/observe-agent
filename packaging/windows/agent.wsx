@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product
+        Name='{{.ProjectName}} {{.Version}}'
+        Id='5f60027b-8084-4852-b016-ac3ef1ccf2ad'
+        UpgradeCode='2a6ef119-eba9-4949-ab51-35fbe13b980a'
+        Language='1033'
+        Codepage='1252'
+        Version='{{.Version}}'
+        Manufacturer='Observe Inc'>
+
+        <Package
+            Id='*'
+            Keywords='Installer'
+            Description="{{.ProjectName}} installer"
+            Comments=''
+            Manufacturer='Observe Inc'
+            InstallerVersion='200'
+            Languages='1033'
+            Compressed='yes'
+            SummaryCodepage='1252'
+        />
+
+        <Media
+            Id='1'
+            Cabinet='Sample.cab'
+            EmbedCab='yes'
+            DiskPrompt="CD-ROM #1"
+        />
+
+        <Property
+            Id='DiskPrompt'
+            Value="{{.ProjectName}} {{.Version}} Installation [1]"
+        />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFiles{{ if eq .Arch "amd64" }}64{{ end }}Folder' Name='PFiles'>
+                <Directory Id='Observe' Name='Observe'>
+                    <Directory Id='{{.ProjectName}}' Name='{{.ProjectName}}'>
+                        <Component
+                            Id='MainExecutable'
+                            Guid='50d3c9fc-e571-46a4-b28d-f4ce99a23523'
+                        >
+                            <File
+                                Id='{{.Binary}}.exe'
+                                Name='{{.Binary}}.exe'
+                                DiskId='1'
+                                Source='{{.Binary}}.exe'
+                                KeyPath='yes'
+                            />
+                        </Component>
+                        <Directory Id='config' Name='config'>
+                            <Component
+                                Id='AgentConfig'
+                                Guid='4881bdf6-1eae-4b3a-bd12-67f415ac4ab5'
+                            >
+                                <File
+                                    Id='observe-agent.yaml'
+                                    Name='observe-agent.yaml'
+                                    DiskId='1'
+                                    Source='packaging/linux/config/observe-agent.yaml'
+                                    KeyPath='yes'
+                                />
+                            </Component>
+                        </Directory>
+                        <Directory Id='connections' Name='connections'>
+                            <Component
+                                Id='otel-collector.yaml'
+                                Guid='4aa4d60d-ed63-4be1-82c8-c5ad63044fcc'
+                            >
+                                <File
+                                    Id='otel-collector.yaml'
+                                    Name='otel-collector.yaml'
+                                    DiskId='1'
+                                    Source='packaging/linux/etc/observe-agent/otel-collector.yaml'
+                                    KeyPath='yes'
+                                />
+                            </Component>
+                            <Directory Id="host_monitoring" Name="host_monitoring">
+                                <Component
+                                    Id='logs.yaml'
+                                    Guid='de339fa3-5f8a-4c76-89bf-ad0b109d83e0'
+                                >
+                                    <File
+                                        Id='logs.yaml'
+                                        Name='logs.yaml'
+                                        DiskId='1'
+                                        Source='packaging/linux/etc/observe-agent/connections/host_monitoring/logs.yaml'
+                                        KeyPath='yes'
+                                    />
+                                </Component>
+                                <Component
+                                    Id='metrics.yaml'
+                                    Guid='2e60e25a-caa5-4376-a43d-dfa5ab925a92'
+                                >
+                                    <File
+                                        Id='metrics.yaml'
+                                        Name='metrics.yaml'
+                                        DiskId='1'
+                                        Source='packaging/linux/etc/observe-agent/connections/host_monitoring/metrics.yaml'
+                                        KeyPath='yes'
+                                    />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id='Complete' Level='1'>
+            <ComponentRef Id='MainExecutable' />
+        </Feature>
+    </Product>
+</Wix>

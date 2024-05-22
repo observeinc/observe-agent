@@ -760,7 +760,7 @@ msi:
     #
     # Templates: allowed
     # Required.
-    wxs: ./packaging/windows/app.wsx
+    wxs: ./packaging/windows/agent.wsx
 
     # IDs of the archives to use.
     # Empty means all IDs.
@@ -776,8 +776,11 @@ msi:
 
     # More files that will be available in the context in which the installer
     # will be built.
-    # extra_files:
-    #   - logo.ico
+    extra_files:
+      - packaging/linux/config/observe-agent.yaml
+      - packaging/linux/etc/observe-agent/otel-collector.yaml
+      - packaging/linux/etc/observe-agent/connections/host_monitoring/logs.yaml
+      - packaging/linux/etc/observe-agent/connections/host_monitoring/metrics.yaml
 
     # Whether to remove the archives from the artifact list.
     # If left as false, your end release will have both the zip and the msi
