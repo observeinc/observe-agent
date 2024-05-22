@@ -1,7 +1,7 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 */
-package configure
+package initconfig
 
 import (
 	"embed"
@@ -29,9 +29,9 @@ type AgentConfig struct {
 }
 
 var configureCmd = &cobra.Command{
-	Use:   "configure",
-	Short: "Configure agent",
-	Long:  `This command takes in parameters and writes them to the observe agent's configuration file.`,
+	Use:   "init-config",
+	Short: "Initialize agent configuration",
+	Long:  `This command takes in parameters and creates an initialized observe agent configuration file. Will overwrite existing config files with default values.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		configValues := AgentConfig{
 			Token:      viper.GetString("token"),
