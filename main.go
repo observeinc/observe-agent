@@ -5,6 +5,7 @@ package main
 
 import (
 	"observe/agent/cmd"
+	_ "observe/agent/cmd/commands/configure"
 	_ "observe/agent/cmd/commands/diagnose"
 	_ "observe/agent/cmd/commands/start"
 	_ "observe/agent/cmd/commands/status"

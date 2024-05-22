@@ -16,7 +16,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Display the currently installed version of the observe-agent.",
 	Long: `Display the currently installed version of the observe-agent. This version
-is based on the `,
+is based on the package release.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		version := getVersion()
 		fmt.Printf("observe-agent version: %s\n", version)
