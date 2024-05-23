@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 // follows drive-letter specification:
@@ -33,12 +34,21 @@ type ResolverSettings struct {
 	// It is required to have at least one location.
 	URIs []string
 
-	// Providers is a map of pairs <scheme, Provider>.
-	// It is required to have at least one Provider.
-	Providers map[string]Provider
+	// ProviderFactories is a list of Provider creation functions.
+	// It is required to have at least one ProviderFactory
+	// if a Provider is not given.
+	ProviderFactories []ProviderFactory
 
-	// MapConverters is a slice of Converter.
-	Converters []Converter
+	// ProviderSettings contains settings that will be passed to Provider
+	// factories when instantiating Providers.
+	ProviderSettings ProviderSettings
+
+	// ConverterFactories is a slice of Converter creation functions.
+	ConverterFactories []ConverterFactory
+
+	// ConverterSettings contains settings that will be passed to Converter
+	// factories when instantiating Converters.
+	ConverterSettings ConverterSettings
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -62,11 +72,30 @@ type ResolverSettings struct {
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
 func NewResolver(set ResolverSettings) (*Resolver, error) {
 	if len(set.URIs) == 0 {
-		return nil, errors.New("invalid map resolver config: no URIs")
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no URIs")
 	}
 
-	if len(set.Providers) == 0 {
-		return nil, errors.New("invalid map resolver config: no Providers")
+	if len(set.ProviderFactories) == 0 {
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no Providers")
+	}
+
+	if set.ProviderSettings.Logger == nil {
+		set.ProviderSettings.Logger = zap.NewNop()
+	}
+
+	if set.ConverterSettings.Logger == nil {
+		set.ConverterSettings.Logger = zap.NewNop()
+	}
+
+	providers := make(map[string]Provider, len(set.ProviderFactories))
+	for _, factory := range set.ProviderFactories {
+		provider := factory.Create(set.ProviderSettings)
+		providers[provider.Scheme()] = provider
+	}
+
+	converters := make([]Converter, len(set.ConverterFactories))
+	for i, factory := range set.ConverterFactories {
+		converters[i] = factory.Create(set.ConverterSettings)
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
@@ -83,28 +112,21 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := set.Providers[lURI.scheme]; !ok {
+		if _, ok := providers[lURI.scheme]; !ok {
 			return nil, fmt.Errorf("unsupported scheme on URI %q", uri)
 		}
 		uris[i] = lURI
 	}
-	providersCopy := make(map[string]Provider, len(set.Providers))
-	for k, v := range set.Providers {
-		providersCopy[k] = v
-	}
-	convertersCopy := make([]Converter, len(set.Converters))
-	copy(convertersCopy, set.Converters)
 
 	return &Resolver{
 		uris:       uris,
-		providers:  providersCopy,
-		converters: convertersCopy,
+		providers:  providers,
+		converters: converters,
 		watcher:    make(chan error, 1),
 	}, nil
 }
 
 // Resolve returns the configuration as a Conf, or error otherwise.
-//
 // Should never be called concurrently with itself, Watch or Shutdown.
 func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	// First check if already an active watching, close that if any.

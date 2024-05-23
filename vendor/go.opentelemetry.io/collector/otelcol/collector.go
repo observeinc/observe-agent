@@ -1,12 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package service handles the command-line, configuration, and runs the
-// OpenTelemetry Collector.
+// Package otelcol handles the command-line, configuration, and runs the OpenTelemetry Collector.
+// It contains the main [Collector] struct and its constructor [NewCollector].
+// [Collector.Run] starts the Collector and then blocks until it shuts down.
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,6 +17,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -108,13 +111,22 @@ type Collector struct {
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
-	asyncErrorChannel chan error
+	asyncErrorChannel          chan error
+	bc                         *bufferedCore
+	updateConfigProviderLogger func(core zapcore.Core)
 }
 
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
+
+	bc := newBufferedCore(zapcore.DebugLevel)
+	cc := &collectorCore{core: bc}
+	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
+	logger := zap.New(cc, options...)
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
+	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{Logger: logger}
 
 	if configProvider == nil {
 		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
@@ -131,9 +143,11 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		shutdownChan: make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
-		signalsChannel:    make(chan os.Signal, 3),
-		asyncErrorChannel: make(chan error),
-		configProvider:    configProvider,
+		signalsChannel:             make(chan os.Signal, 3),
+		asyncErrorChannel:          make(chan error),
+		configProvider:             configProvider,
+		bc:                         bc,
+		updateConfigProviderLogger: cc.SetCore,
 	}, nil
 }
 
@@ -154,7 +168,7 @@ func (col *Collector) Shutdown() {
 	}
 }
 
-// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
+// setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
@@ -184,6 +198,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.serviceConfig = &cfg.Service
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
 		CollectorConf:     conf,
@@ -197,6 +212,18 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}, cfg.Service)
 	if err != nil {
 		return err
+	}
+	if col.updateConfigProviderLogger != nil {
+		col.updateConfigProviderLogger(col.service.Logger().Core())
+	}
+	if col.bc != nil {
+		x := col.bc.TakeLogs()
+		for _, log := range x {
+			ce := col.service.Logger().Core().Check(log.Entry, nil)
+			if ce != nil {
+				ce.Write(log.Context...)
+			}
+		}
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
@@ -239,11 +266,41 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	return cfg.Validate()
 }
 
+func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapCfg := &zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Encoding:         "console",
+		EncoderConfig:    ec,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	return zapCfg.Build(options...)
+}
+
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+// Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
+	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
+		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
+		if loggerErr != nil {
+			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
+		}
+
+		if col.bc != nil {
+			x := col.bc.TakeLogs()
+			for _, log := range x {
+				ce := logger.Core().Check(log.Entry, nil)
+				if ce != nil {
+					ce.Write(log.Context...)
+				}
+			}
+		}
+
 		return err
 	}
 
@@ -256,6 +313,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
+	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
+	// If a configuration reload fails, we return without waiting for graceful shutdown.
 LOOP:
 	for {
 		select {

@@ -46,7 +46,6 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 }
 
 func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
-	providerSet := confmap.ProviderSettings{}
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
 		Description: "Observe Distribution of Opentelemetry Collector",
@@ -58,13 +57,13 @@ func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
 		ConfigProviderSettings: collector.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs: URIs,
-				Providers: makeMapProvidersMap(
-					fileprovider.NewWithSettings(providerSet),
-					envprovider.NewWithSettings(providerSet),
-					yamlprovider.NewWithSettings(providerSet),
-					httpprovider.NewWithSettings(providerSet),
-					httpsprovider.NewWithSettings(providerSet),
-				),
+				ProviderFactories: []confmap.ProviderFactory{
+					fileprovider.NewFactory(),
+					envprovider.NewFactory(),
+					yamlprovider.NewFactory(),
+					httpprovider.NewFactory(),
+					httpsprovider.NewFactory(),
+				},
 			},
 		},
 	}

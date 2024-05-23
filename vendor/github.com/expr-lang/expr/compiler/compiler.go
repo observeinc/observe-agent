@@ -92,6 +92,13 @@ type scope struct {
 	index        int
 }
 
+func (c *compiler) nodeParent() ast.Node {
+	if len(c.nodes) > 1 {
+		return c.nodes[len(c.nodes)-2]
+	}
+	return nil
+}
+
 func (c *compiler) emitLocation(loc file.Location, op Opcode, arg int) int {
 	c.bytecode = append(c.bytecode, op)
 	current := len(c.bytecode)
@@ -395,34 +402,12 @@ func (c *compiler) UnaryNode(node *ast.UnaryNode) {
 }
 
 func (c *compiler) BinaryNode(node *ast.BinaryNode) {
-	l := kind(node.Left)
-	r := kind(node.Right)
-
-	leftIsSimple := isSimpleType(node.Left)
-	rightIsSimple := isSimpleType(node.Right)
-	leftAndRightAreSimple := leftIsSimple && rightIsSimple
-
 	switch node.Operator {
 	case "==":
-		c.compile(node.Left)
-		c.derefInNeeded(node.Left)
-		c.compile(node.Right)
-		c.derefInNeeded(node.Right)
-
-		if l == r && l == reflect.Int && leftAndRightAreSimple {
-			c.emit(OpEqualInt)
-		} else if l == r && l == reflect.String && leftAndRightAreSimple {
-			c.emit(OpEqualString)
-		} else {
-			c.emit(OpEqual)
-		}
+		c.equalBinaryNode(node)
 
 	case "!=":
-		c.compile(node.Left)
-		c.derefInNeeded(node.Left)
-		c.compile(node.Right)
-		c.derefInNeeded(node.Right)
-		c.emit(OpEqual)
+		c.equalBinaryNode(node)
 		c.emit(OpNot)
 
 	case "or", "||":
@@ -580,6 +565,28 @@ func (c *compiler) BinaryNode(node *ast.BinaryNode) {
 	}
 }
 
+func (c *compiler) equalBinaryNode(node *ast.BinaryNode) {
+	l := kind(node.Left)
+	r := kind(node.Right)
+
+	leftIsSimple := isSimpleType(node.Left)
+	rightIsSimple := isSimpleType(node.Right)
+	leftAndRightAreSimple := leftIsSimple && rightIsSimple
+
+	c.compile(node.Left)
+	c.derefInNeeded(node.Left)
+	c.compile(node.Right)
+	c.derefInNeeded(node.Right)
+
+	if l == r && l == reflect.Int && leftAndRightAreSimple {
+		c.emit(OpEqualInt)
+	} else if l == r && l == reflect.String && leftAndRightAreSimple {
+		c.emit(OpEqualString)
+	} else {
+		c.emit(OpEqual)
+	}
+}
+
 func isSimpleType(node ast.Node) bool {
 	if node == nil {
 		return false
@@ -594,9 +601,21 @@ func isSimpleType(node ast.Node) bool {
 func (c *compiler) ChainNode(node *ast.ChainNode) {
 	c.chains = append(c.chains, []int{})
 	c.compile(node.Node)
-	// Chain activate (got nit somewhere)
 	for _, ph := range c.chains[len(c.chains)-1] {
-		c.patchJump(ph)
+		c.patchJump(ph) // If chain activated jump here (got nit somewhere).
+	}
+	parent := c.nodeParent()
+	if binary, ok := parent.(*ast.BinaryNode); ok && binary.Operator == "??" {
+		// If chain is used in nil coalescing operator, we can omit
+		// nil push at the end of the chain. The ?? operator will
+		// handle it.
+	} else {
+		// We need to put the nil on the stack, otherwise "typed"
+		// nil will be used as a result of the chain.
+		j := c.emit(OpJumpIfNotNil, placeholder)
+		c.emit(OpPop)
+		c.emit(OpNil)
+		c.patchJump(j)
 	}
 	c.chains = c.chains[:len(c.chains)-1]
 }
@@ -800,12 +819,35 @@ func (c *compiler) BuiltinNode(node *ast.BuiltinNode) {
 		c.compile(node.Arguments[0])
 		c.emit(OpBegin)
 		c.emitLoop(func() {
-			c.compile(node.Arguments[1])
+			if len(node.Arguments) == 2 {
+				c.compile(node.Arguments[1])
+			} else {
+				c.emit(OpPointer)
+			}
 			c.emitCond(func() {
 				c.emit(OpIncrementCount)
 			})
 		})
 		c.emit(OpGetCount)
+		c.emit(OpEnd)
+		return
+
+	case "sum":
+		c.compile(node.Arguments[0])
+		c.emit(OpBegin)
+		c.emit(OpInt, 0)
+		c.emit(OpSetAcc)
+		c.emitLoop(func() {
+			if len(node.Arguments) == 2 {
+				c.compile(node.Arguments[1])
+			} else {
+				c.emit(OpPointer)
+			}
+			c.emit(OpGetAcc)
+			c.emit(OpAdd)
+			c.emit(OpSetAcc)
+		})
+		c.emit(OpGetAcc)
 		c.emit(OpEnd)
 		return
 

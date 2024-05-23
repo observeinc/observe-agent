@@ -124,8 +124,8 @@ const (
 	ReferenceStatusDetaching = ReferenceStatus("detaching")
 	// When the reference is detached from a volume - the reference ceases to exist.
 	ReferenceStatusDetached = ReferenceStatus("detached")
-	// Reference undergoing snapshotting operation (transient).
-	ReferenceStatusSnapshotting = ReferenceStatus("snapshotting")
+	// Reference under creation which can be rolled back if an error occurs (transient).
+	ReferenceStatusCreating = ReferenceStatus("creating")
 	// Error status.
 	ReferenceStatusError = ReferenceStatus("error")
 )
@@ -314,6 +314,29 @@ func (enum *VolumeStatus) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Reference: reference.
+type Reference struct {
+	// ID: UUID of the reference.
+	ID string `json:"id"`
+
+	// ProductResourceType: type of resource to which the reference is associated.
+	ProductResourceType string `json:"product_resource_type"`
+
+	// ProductResourceID: UUID of the product resource it refers to (according to the product_resource_type).
+	ProductResourceID string `json:"product_resource_id"`
+
+	// CreatedAt: creation date of the reference.
+	CreatedAt *time.Time `json:"created_at"`
+
+	// Type: type of reference (link, exclusive, read_only).
+	// Default value: unknown_type
+	Type ReferenceType `json:"type"`
+
+	// Status: status of reference (attaching, attached, detaching).
+	// Default value: unknown_status
+	Status ReferenceStatus `json:"status"`
+}
+
 // SnapshotParentVolume: snapshot parent volume.
 type SnapshotParentVolume struct {
 	// ID: parent volume UUID (volume from which the snapshot originates).
@@ -340,29 +363,6 @@ type VolumeSpecifications struct {
 	Class StorageClass `json:"class"`
 }
 
-// Reference: reference.
-type Reference struct {
-	// ID: UUID of the reference.
-	ID string `json:"id"`
-
-	// ProductResourceType: type of resource to which the reference is associated.
-	ProductResourceType string `json:"product_resource_type"`
-
-	// ProductResourceID: UUID of the product resource it refers to (according to the product_resource_type).
-	ProductResourceID string `json:"product_resource_id"`
-
-	// CreatedAt: creation date of the reference.
-	CreatedAt *time.Time `json:"created_at"`
-
-	// Type: type of reference (link, exclusive, read_only).
-	// Default value: unknown_type
-	Type ReferenceType `json:"type"`
-
-	// Status: status of reference (attaching, attached, detaching).
-	// Default value: unknown_status
-	Status ReferenceStatus `json:"status"`
-}
-
 // CreateVolumeRequestFromEmpty: create volume request from empty.
 type CreateVolumeRequestFromEmpty struct {
 	// Size: must be compliant with the minimum (1 GB) and maximum (10 TB) allowed size.
@@ -379,18 +379,18 @@ type CreateVolumeRequestFromSnapshot struct {
 	SnapshotID string `json:"snapshot_id"`
 }
 
-// SnapshotSummary: snapshot summary.
-type SnapshotSummary struct {
+// Snapshot: snapshot.
+type Snapshot struct {
 	// ID: UUID of the snapshot.
 	ID string `json:"id"`
 
 	// Name: name of the snapshot.
 	Name string `json:"name"`
 
-	// ParentVolume: if the parent volume has been deleted, value is null.
+	// ParentVolume: if the parent volume was deleted, value is null.
 	ParentVolume *SnapshotParentVolume `json:"parent_volume"`
 
-	// Size: size of the snapshot in bytes.
+	// Size: size in bytes of the snapshot.
 	Size scw.Size `json:"size"`
 
 	// ProjectID: UUID of the project the snapshot belongs to.
@@ -402,6 +402,9 @@ type SnapshotSummary struct {
 	// UpdatedAt: last modification date of the properties of a snapshot.
 	UpdatedAt *time.Time `json:"updated_at"`
 
+	// References: list of the references to the snapshot.
+	References []*Reference `json:"references"`
+
 	// Status: current status of the snapshot (available, in_use, ...).
 	// Default value: unknown_status
 	Status SnapshotStatus `json:"status"`
@@ -409,7 +412,7 @@ type SnapshotSummary struct {
 	// Tags: list of tags assigned to the volume.
 	Tags []string `json:"tags"`
 
-	// Zone: snapshot Availability Zone.
+	// Zone: snapshot zone.
 	Zone scw.Zone `json:"zone"`
 
 	// Class: storage class of the snapshot.
@@ -559,24 +562,6 @@ type GetVolumeRequest struct {
 	VolumeID string `json:"-"`
 }
 
-// ImportSnapshotFromS3Request: import snapshot from s3 request.
-type ImportSnapshotFromS3Request struct {
-	// Zone: zone to target. If none is passed will use default zone from the config.
-	Zone scw.Zone `json:"-"`
-
-	Bucket string `json:"bucket"`
-
-	Key string `json:"key"`
-
-	Name string `json:"name"`
-
-	ProjectID string `json:"project_id"`
-
-	Tags []string `json:"tags"`
-
-	Size *scw.Size `json:"size,omitempty"`
-}
-
 // ListSnapshotsRequest: list snapshots request.
 type ListSnapshotsRequest struct {
 	// Zone: zone to target. If none is passed will use default zone from the config.
@@ -608,7 +593,7 @@ type ListSnapshotsRequest struct {
 // ListSnapshotsResponse: list snapshots response.
 type ListSnapshotsResponse struct {
 	// Snapshots: paginated returned list of snapshots.
-	Snapshots []*SnapshotSummary `json:"snapshots"`
+	Snapshots []*Snapshot `json:"snapshots"`
 
 	// TotalCount: total number of snpashots in the project.
 	TotalCount uint64 `json:"total_count"`
@@ -727,47 +712,6 @@ func (r *ListVolumesResponse) UnsafeAppend(res interface{}) (uint64, error) {
 	r.Volumes = append(r.Volumes, results.Volumes...)
 	r.TotalCount += uint64(len(results.Volumes))
 	return uint64(len(results.Volumes)), nil
-}
-
-// Snapshot: snapshot.
-type Snapshot struct {
-	// ID: UUID of the snapshot.
-	ID string `json:"id"`
-
-	// Name: name of the snapshot.
-	Name string `json:"name"`
-
-	// ParentVolume: if the parent volume was deleted, value is null.
-	ParentVolume *SnapshotParentVolume `json:"parent_volume"`
-
-	// Size: size in bytes of the snapshot.
-	Size scw.Size `json:"size"`
-
-	// ProjectID: UUID of the project the snapshot belongs to.
-	ProjectID string `json:"project_id"`
-
-	// CreatedAt: creation date of the snapshot.
-	CreatedAt *time.Time `json:"created_at"`
-
-	// UpdatedAt: last modification date of the properties of a snapshot.
-	UpdatedAt *time.Time `json:"updated_at"`
-
-	// References: list of the references to the snapshot.
-	References []*Reference `json:"references"`
-
-	// Status: current status of the snapshot (available, in_use, ...).
-	// Default value: unknown_status
-	Status SnapshotStatus `json:"status"`
-
-	// Tags: list of tags assigned to the volume.
-	Tags []string `json:"tags"`
-
-	// Zone: snapshot zone.
-	Zone scw.Zone `json:"zone"`
-
-	// Class: storage class of the snapshot.
-	// Default value: unknown_storage_class
-	Class StorageClass `json:"class"`
 }
 
 // UpdateSnapshotRequest: update snapshot request.
@@ -1131,43 +1075,6 @@ func (s *API) CreateSnapshot(req *CreateSnapshotRequest, opts ...scw.RequestOpti
 	scwReq := &scw.ScalewayRequest{
 		Method: "POST",
 		Path:   "/block/v1alpha1/zones/" + fmt.Sprint(req.Zone) + "/snapshots",
-	}
-
-	err = scwReq.SetBody(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp Snapshot
-
-	err = s.client.Do(scwReq, &resp, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-// ImportSnapshotFromS3:
-func (s *API) ImportSnapshotFromS3(req *ImportSnapshotFromS3Request, opts ...scw.RequestOption) (*Snapshot, error) {
-	var err error
-
-	if req.Zone == "" {
-		defaultZone, _ := s.client.GetDefaultZone()
-		req.Zone = defaultZone
-	}
-
-	if req.ProjectID == "" {
-		defaultProjectID, _ := s.client.GetDefaultProjectID()
-		req.ProjectID = defaultProjectID
-	}
-
-	if fmt.Sprint(req.Zone) == "" {
-		return nil, errors.New("field Zone cannot be empty in request")
-	}
-
-	scwReq := &scw.ScalewayRequest{
-		Method: "POST",
-		Path:   "/block/v1alpha1/zones/" + fmt.Sprint(req.Zone) + "/snapshots/import-from-s3",
 	}
 
 	err = scwReq.SetBody(req)
