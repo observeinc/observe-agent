@@ -5,6 +5,9 @@ extensions:
   file_storage:
     directory: '/var/lib/observe-agent/file_storage'
 
+connectors:
+  count:
+
 receivers:
   otlp:
     protocols:
@@ -87,7 +90,7 @@ service:
        exporters: [otlphttp/observe]
 
     metrics/agent-internal:
-      receivers: [prometheus/agent]
+      receivers: [prometheus/agent, count]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
       exporters: [otlphttp/observe]
 
@@ -99,7 +102,7 @@ service:
     logs/agent-journald:
       receivers: [journald/agent]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp/observe]
+      exporters: [otlphttp/observe, count]
 
     logs/agent-config:
        receivers: [filelog/agent-config]
@@ -109,7 +112,7 @@ service:
     logs/forward: 
       receivers: [otlp]
       processors: []
-      exporters: [otlphttp/observe]
+      exporters: [otlphttp/observe, count]
 
     traces/forward:
       receivers: [otlp]
