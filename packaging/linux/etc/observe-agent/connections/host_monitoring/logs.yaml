@@ -26,11 +26,11 @@ receivers:
 service:
   pipelines:
     logs/host_monitoring-file:
-      receivers: [otlp, filelog/host_monitoring]
+      receivers: [filelog/host_monitoring]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp/observe]
+      exporters: [otlphttp/observe, count]
 
     logs/host_monitoring-journald:
-      receivers: [otlp, journald/host_monitoring]
+      receivers: [journald/host_monitoring]
       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
-      exporters: [otlphttp/observe]
+      exporters: [otlphttp/observe, count]
