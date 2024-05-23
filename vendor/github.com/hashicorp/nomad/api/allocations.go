@@ -235,6 +235,27 @@ func (a *Allocations) Signal(alloc *Allocation, q *QueryOptions, task, signal st
 	return err
 }
 
+// SetPauseState sets the schedule behavior of one task in the allocation.
+func (a *Allocations) SetPauseState(alloc *Allocation, q *QueryOptions, task, state string) error {
+	req := AllocPauseRequest{
+		ScheduleState: state,
+		Task:          task,
+	}
+	var resp GenericResponse
+	_, err := a.client.putQuery("/v1/client/allocation/"+alloc.ID+"/pause", &req, &resp, q)
+	return err
+}
+
+// GetPauseState gets the schedule behavior of one task in the allocation.
+//
+// The ?task=<task> query parameter must be set.
+func (a *Allocations) GetPauseState(alloc *Allocation, q *QueryOptions, task string) (string, *QueryMeta, error) {
+	var resp AllocGetPauseResponse
+	qm, err := a.client.query("/v1/client/allocation/"+alloc.ID+"/pause", &resp, q)
+	state := resp.ScheduleState
+	return state, qm, err
+}
+
 // Services is used to return a list of service registrations associated to the
 // specified allocID.
 func (a *Allocations) Services(allocID string, q *QueryOptions) ([]*ServiceRegistration, *QueryMeta, error) {
@@ -311,7 +332,7 @@ type NodeScoreMeta struct {
 
 // Stub returns a list stub for the allocation
 func (a *Allocation) Stub() *AllocationListStub {
-	return &AllocationListStub{
+	stub := &AllocationListStub{
 		ID:                    a.ID,
 		EvalID:                a.EvalID,
 		Name:                  a.Name,
@@ -319,8 +340,6 @@ func (a *Allocation) Stub() *AllocationListStub {
 		NodeID:                a.NodeID,
 		NodeName:              a.NodeName,
 		JobID:                 a.JobID,
-		JobType:               *a.Job.Type,
-		JobVersion:            *a.Job.Version,
 		TaskGroup:             a.TaskGroup,
 		DesiredStatus:         a.DesiredStatus,
 		DesiredDescription:    a.DesiredDescription,
@@ -338,6 +357,13 @@ func (a *Allocation) Stub() *AllocationListStub {
 		CreateTime:            a.CreateTime,
 		ModifyTime:            a.ModifyTime,
 	}
+
+	if a.Job != nil {
+		stub.JobType = *a.Job.Type
+		stub.JobVersion = *a.Job.Version
+	}
+
+	return stub
 }
 
 // ServerTerminalStatus returns true if the desired state of the allocation is
@@ -510,6 +536,18 @@ type AllocationRestartRequest struct {
 type AllocSignalRequest struct {
 	Task   string
 	Signal string
+}
+
+type AllocPauseRequest struct {
+	Task string
+
+	// ScheduleState must be one of "pause", "run", "scheduled".
+	ScheduleState string
+}
+
+type AllocGetPauseResponse struct {
+	// ScheduleState will be one of "pause", "run", "scheduled".
+	ScheduleState string
 }
 
 // GenericResponse is used to respond to a request where no
