@@ -41,6 +41,8 @@ archives:
     files:
       - src: "packaging/linux/etc/observe-agent/*"
         dst: "."
+      - src: "packaging/linux/config/observe-agent.yaml"
+        dst: "."
 
 changelog:
   sort: asc
