@@ -2,10 +2,10 @@
 # Please download the config from Connections Portal
 
 # Observe data token
-# token: "XXX"
+# token: "${OBSERVE_COLLECTION_ENDPOINT}"
 
 # Target Observe collection url
-# observe_url: "YYY"
+# observe_url: "${OBSERVE_TOKEN}"
 
 host_monitoring:
   enabled: true
