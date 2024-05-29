@@ -41,7 +41,9 @@ archives:
     files:
       - src: "packaging/linux/etc/observe-agent/*"
         dst: "."
-
+      - src: "packaging/linux/config/*"
+        dst: "."
+        
 changelog:
   sort: asc
   filters:
