@@ -1,0 +1,117 @@
+extensions:
+  health_check:
+    endpoint: 'localhost:13133'
+    path: '/status'
+  file_storage:
+    directory: 'C:\ProgramData\Observe\observe-agent\filestorage'
+
+connectors:
+  count:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+
+  filestats/agent:
+    include: '/etc/observe-agent/otel-collector.yaml'
+    collection_interval: 240m
+    initial_delay: 60s
+
+  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
+    include: [/etc/observe-agent/otel-collector.yaml]
+    start_at: beginning
+    poll_interval: 5m
+    multiline:
+      line_end_pattern: ENDOFLINEPATTERN
+
+  prometheus/agent:
+    config:
+      scrape_configs:
+        - job_name: 'otelcol'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['0.0.0.0:8888']
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '.*grpc_io.*'
+              action: drop
+
+
+processors:
+  # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
+  # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
+  transform/truncate:
+    log_statements:
+      - context: log
+        statements: 
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+    trace_statements:
+      - context: span
+        statements:
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 20
+    spike_limit_percentage: 5
+  
+  batch:
+  
+  resourcedetection:
+    detectors: [gcp, ecs, ec2, azure, system]
+    override: true
+
+exporters:
+  otlphttp/observe:
+    endpoint: ${env:OBSERVE_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_TOKEN}
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+
+service:
+  pipelines:
+    metrics/agent-filestats:
+       receivers: [filestats/agent]
+       processors: [resourcedetection]
+       exporters: [otlphttp/observe]
+
+    metrics/agent-internal:
+      receivers: [prometheus/agent, count]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      exporters: [otlphttp/observe]
+
+    metrics/forward:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlphttp/observe]
+
+    logs/agent-config:
+       receivers: [filelog/agent-config]
+       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+       exporters: [otlphttp/observe]
+    
+    logs/forward: 
+      receivers: [otlp]
+      processors: []
+      exporters: [otlphttp/observe, count]
+
+    traces/forward:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlphttp/observe]
+
+  extensions: [health_check, file_storage]
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"

@@ -6,20 +6,24 @@ param (
 )
 
 $installer_url="https://github.com/observeinc/observe-agent/releases/download/v0.1.39/observe-agent_Windows_x86_64.zip"
-$local_installer="c:\temp\observe-agent_Windows_x86_64.zip"
-$observeagent_install_dir="$env:ProgramFiles\Observe Agent"
-$temp_dir="c:\temp"
+$local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
+$program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
+$observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
+$temp_dir="C:\temp"
 
 New-Item -ItemType Directory -Force -Path $temp_dir
-New-Item -ItemType Directory -Force -Path $otel_install_dir 
+New-Item -ItemType Directory -Force -Path $observeagent_install_dir
+New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
+New-Item -ItemType Directory -Force -Path $program_data_filestorage
+# New-Item -Path $local_installer -Force
 
-Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
+# Invoke-WebRequest -Uri $installer_url
 
-Expand-Archive -LiteralPath $local_installer -DestinationPath $temp_dir
-Copy-Item -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.exe -Destination $observeagent_install_dir
-Copy-Item -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.yaml -Destination $observeagent_install_dir
-Copy-Item -Path $temp_dir\observe-agent_Windows_x86_64\otel-collector.yaml -Destination $observeagent_install_dir
-Copy-Item -Path $temp_dir\observe-agent_Windows_x86_64\connnections\* -Destination $observeagent_install_dir
+# Expand-Archive -Force -LiteralPath $local_installer -DestinationPath "$temp_dir\observe-agent_Windows_x86_64"
+Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.exe -Destination $observeagent_install_dir
+Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.yaml -Destination $observeagent_install_dir
+Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\otel-collector.yaml -Destination $observeagent_install_dir\config\otel-collector.yaml
+Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\connections\ -Destination $observeagent_install_dir\connections -Recurse
 
 # Read the content of the config.yaml file
 $configContent = Get-Content -Path $observeagent_install_dir\observe-agent.yaml -Raw
