@@ -31,7 +31,6 @@ $configContent = $configContent -replace '\${OBSERVE_TOKEN}', $observe_token
 # Write the modified content back to the config.yaml file
 $configContent | Set-Content -Path $observeagent_install_dir\observe-agent.yaml
 
-
 if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
     $params = @{
         Name = "ObserveAgent"
