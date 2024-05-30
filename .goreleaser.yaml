@@ -16,16 +16,26 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: default
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
     ldflags: -s -w -X observe/agent/build.Version={{.Version}}
 
+  - id: windows_build
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    ldflags: -s -w -X observe/agent/build.Version={{.Version}}
+
 archives:
-  - format: tar.gz
+  - id: default
+    format: tar.gz
+    builds:
+      - default
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
@@ -34,15 +44,30 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - src: "packaging/linux/etc/observe-agent/*"
         dst: "."
       - src: "packaging/linux/config/*"
         dst: "."
+
+  - id: windows
+    format: zip
+    builds:
+      - windows_build
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - src: "packaging/windows/config/otel-collector.yaml"
+        dst: "otel-collector.yaml"
+      - src: "packaging/windows/observe-agent.yaml"
+        dst: "observe-agent.yaml"
+      - src: "packaging/windows/connections/**"
+        dst: "connections/"
 
 changelog:
   sort: asc
