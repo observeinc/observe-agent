@@ -38,7 +38,7 @@ $configContent | Set-Content -Path $observeagent_install_dir\observe-agent.yaml
 if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
     $params = @{
         Name = "ObserveAgent"
-        BinaryPathName = "$observeagent_install_dir\observe-agent.exe $observeagent_install_dir\observe-agent.yaml"
+        BinaryPathName =  "`"${observeagent_install_dir}\observe-agent.exe`" `"${observeagent_install_dir}\observe-agent.yaml`""
         DisplayName = "Observe Agent"
         StartupType = "Automatic"
         Description = "Observe Agent based on OpenTelemetry collector"
