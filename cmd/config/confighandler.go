@@ -41,16 +41,10 @@ func SetEnvVars() error {
 	if err != nil {
 		return err
 	}
-	var filestorage_path string
-	if viper.IsSet("filestorage_path") {
-		filestorage_path = viper.GetString("filestorage_path")
-	} else {
-		filestorage_path = GetDefaultFilestoragePath()
-	}
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
-	os.Setenv("FILESTORAGE_PATH", filestorage_path)
+	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
 	return nil
 }
 
