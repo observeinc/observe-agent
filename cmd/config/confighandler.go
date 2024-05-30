@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 
@@ -43,6 +44,7 @@ func SetEnvVars() error {
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
+	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
 	return nil
 }
 
@@ -72,5 +74,19 @@ func GetDefaultConfigFolder() string {
 		return "/etc/observe-agent"
 	default:
 		return "/etc/observe-agent"
+	}
+}
+
+func GetDefaultFilestoragePath() string {
+	switch currOS := runtime.GOOS; currOS {
+	case "darwin":
+		return "~/Library/Application Support/Observe/observe-agent/filestorage"
+	case "windows":
+		programData := os.Getenv("PROGRAMDATA")
+		return path.Join(programData, "Observe", "observe-agent", "filestorage")
+	case "linux":
+		return "/var/lib/observe-agent/filestorage"
+	default:
+		return "/var/lib/observe-agent/filestorage"
 	}
 }

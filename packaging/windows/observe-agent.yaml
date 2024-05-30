@@ -1,0 +1,18 @@
+# Observe data token
+token: "${OBSERVE_TOKEN}"
+
+# Target Observe collection url
+observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
+
+# otel_config_overrides:
+#   exporters:
+#     debug:
+#       verbosity: detailed
+#       sampling_initial: 5
+#       sampling_thereafter: 200
+#   service:
+#     pipelines:
+#       metrics:
+#         receivers: [hostmetrics, prometheus/internal, count]
+#         processors: [memory_limiter, resourcedetection, batch]
+#         exporters: [debug]

@@ -40,10 +40,6 @@ receivers:
               regex: '.*grpc_io.*'
               action: drop
 
-  journald/agent:
-    units:
-      - observe-agent
-    priority: info
 
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
@@ -68,17 +64,8 @@ processors:
   batch:
   
   resourcedetection:
-    detectors: [env, system]
-    system:
-      hostname_sources: ["os"]
-      resource_attributes:
-        host.id:
-          enabled: true
-  
-  resourcedetection/cloud:
-    detectors: ["gcp", "ecs", "ec2", "azure"]
-    timeout: 2s
-    override: false
+    detectors: [gcp, ecs, ec2, azure, system]
+    override: true
 
 exporters:
   otlphttp/observe:
@@ -95,37 +82,32 @@ service:
   pipelines:
     metrics/agent-filestats:
        receivers: [filestats/agent]
-       processors: [resourcedetection, resourcedetection/cloud]
+       processors: [resourcedetection]
        exporters: [otlphttp/observe]
 
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
       exporters: [otlphttp/observe]
 
     metrics/forward:
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud]
+      processors: []
       exporters: [otlphttp/observe]
-
-    logs/agent-journald:
-      receivers: [journald/agent]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe, count]
 
     logs/agent-config:
        receivers: [filelog/agent-config]
-       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
        exporters: [otlphttp/observe]
     
     logs/forward: 
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud]
+      processors: []
       exporters: [otlphttp/observe, count]
 
     traces/forward:
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud]
+      processors: []
       exporters: [otlphttp/observe]
 
   extensions: [health_check, file_storage]
