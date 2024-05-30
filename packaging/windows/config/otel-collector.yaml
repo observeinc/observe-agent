@@ -3,7 +3,7 @@ extensions:
     endpoint: 'localhost:13133'
     path: '/status'
   file_storage:
-    directory: 'C:\ProgramData\Observe\observe-agent\filestorage'
+    directory: ${env:FILESTORAGE_PATH}
 
 connectors:
   count:
