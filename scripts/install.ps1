@@ -15,9 +15,8 @@ New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
-New-Item -Path $local_installer -Force
 
-Invoke-WebRequest -Uri $installer_url
+Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
 
 Expand-Archive -Force -LiteralPath $local_installer -DestinationPath "$temp_dir\observe-agent_Windows_x86_64"
 Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.exe -Destination $observeagent_install_dir
