@@ -3,10 +3,12 @@ receivers:
     channel: Application
     retry_on_failure:
       enabled: true
+
   windowseventlog/host_monitoring-security:
     channel: Security
     retry_on_failure:
       enabled: true
+      
   windowseventlog/host_monitoring-system:
     channel: System
     retry_on_failure:
