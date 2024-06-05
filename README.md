@@ -20,27 +20,3 @@ To start the observe agent after building the binary run the following command.
 ```
 
 
-# Releasing
-
-## Goreleaser
-
-First, install goreleaser pro. On MacOS the command is 
-```
-brew install goreleaser/tap/goreleaser-pro
-```
-
-Then, set the following secrets:
-
-- `GORELEASER_KEY`
-- `GITHUB_TOKEN`
-- `FURY_TOKEN`
-
-Then, create a tag with 
-```
-git tag v0.1.x
-```
-
-Finally, run the `goreleaser` command
-```
-goreleaser release --clean
-```
