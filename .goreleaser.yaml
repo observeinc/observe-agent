@@ -66,9 +66,8 @@ archives:
         dst: "otel-collector.yaml"
       - src: "packaging/windows/observe-agent.yaml"
         dst: "observe-agent.yaml"
-      - src: "packaging/windows/connections/**/*"
-        dst: "connections/"
-        strip_parent: false
+      - src: "packaging/windows/connections/host_monitoring/*"
+        dst: "connections/host_monitoring"
 
 changelog:
   sort: asc
