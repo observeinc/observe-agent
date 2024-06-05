@@ -68,6 +68,7 @@ archives:
         dst: "observe-agent.yaml"
       - src: "packaging/windows/connections/**/*"
         dst: "connections/"
+        strip_parent: false
 
 changelog:
   sort: asc
