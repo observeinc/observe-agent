@@ -17,7 +17,7 @@ require (
 	github.com/prometheus/common v0.53.0
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/spf13/cobra v1.8.0
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/confmap v0.101.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.101.0
@@ -176,7 +176,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20240523113335-452272e0496d // indirect
 	github.com/ovh/go-ovh v1.5.1 // indirect
-	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
