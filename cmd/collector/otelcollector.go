@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -89,6 +90,7 @@ func baseFactories() (otelcol.Factories, error) {
 		filelogreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
+		windowseventlogreceiver.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}

@@ -17,12 +17,12 @@ receivers:
         endpoint: localhost:4318
 
   filestats/agent:
-    include: '/etc/observe-agent/otel-collector.yaml'
+    include: 'C:\Program Files\Observe\observe-agent\config\otel-collector.yaml'
     collection_interval: 240m
     initial_delay: 60s
 
   filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
-    include: [/etc/observe-agent/otel-collector.yaml]
+    include: ['C:\Program Files\Observe\observe-agent\config\otel-collector.yaml']
     start_at: beginning
     poll_interval: 5m
     multiline:
@@ -64,8 +64,17 @@ processors:
   batch:
   
   resourcedetection:
-    detectors: [gcp, ecs, ec2, azure, system]
-    override: true
+    detectors: [env, system]
+    system:
+      hostname_sources: ["os"]
+      resource_attributes:
+        host.id:
+          enabled: true
+  
+  resourcedetection/cloud:
+    detectors: ["gcp", "ecs", "ec2", "azure"]
+    timeout: 2s
+    override: false
 
 exporters:
   otlphttp/observe:
@@ -82,32 +91,32 @@ service:
   pipelines:
     metrics/agent-filestats:
        receivers: [filestats/agent]
-       processors: [resourcedetection]
+       processors: [resourcedetection, resourcedetection/cloud]
        exporters: [otlphttp/observe]
 
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe]
 
     metrics/forward:
       receivers: [otlp]
-      processors: []
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe]
 
     logs/agent-config:
        receivers: [filelog/agent-config]
-       processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
        exporters: [otlphttp/observe]
     
     logs/forward: 
       receivers: [otlp]
-      processors: []
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe, count]
 
     traces/forward:
       receivers: [otlp]
-      processors: []
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe]
 
   extensions: [health_check, file_storage]
