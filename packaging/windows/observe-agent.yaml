@@ -4,6 +4,13 @@ token: "${OBSERVE_TOKEN}"
 # Target Observe collection url
 observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
 
+host_monitoring:
+  enabled: true
+  logs: 
+    enabled: true
+  metrics:
+    enabled: true
+    
 # otel_config_overrides:
 #   exporters:
 #     debug:

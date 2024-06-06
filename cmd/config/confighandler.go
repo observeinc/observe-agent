@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 
@@ -69,7 +68,7 @@ func GetDefaultConfigFolder() string {
 		}
 		return homedir
 	case "windows":
-		return "C:\\Program Files\\Observe\\observe-agent\\config"
+		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent\\config")
 	case "linux":
 		return "/etc/observe-agent"
 	default:
@@ -82,8 +81,7 @@ func GetDefaultFilestoragePath() string {
 	case "darwin":
 		return "~/Library/Application Support/Observe/observe-agent/filestorage"
 	case "windows":
-		programData := os.Getenv("PROGRAMDATA")
-		return path.Join(programData, "Observe", "observe-agent", "filestorage")
+		return os.ExpandEnv("$ProgramData\\Observe\\observe-agent\\filestorage")
 	case "linux":
 		return "/var/lib/observe-agent/filestorage"
 	default:

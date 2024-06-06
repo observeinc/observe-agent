@@ -31,7 +31,7 @@ func GetConfigFolderPath() string {
 		}
 		return filepath.Join(homedir, ".observe-agent/connections")
 	case "windows":
-		return "%ProgramFiles%\\Observe\\observe-agent\\connections"
+		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent\\connections")
 	case "linux":
 		return "/etc/observe-agent/connections"
 	default:

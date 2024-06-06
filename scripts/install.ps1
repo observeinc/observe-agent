@@ -5,7 +5,7 @@ param (
     $observe_token
 )
 
-$installer_url="https://github.com/observeinc/observe-agent/releases/download/v0.1.45/observe-agent_Windows_x86_64.zip"
+$installer_url="https://github.com/observeinc/observe-agent/releases/download/v0.1.46/observe-agent_Windows_x86_64.zip"
 $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
@@ -17,6 +17,11 @@ New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
 
 Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
+
+# Stop the observe agent if its running so that we can copy the new .exe
+if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
+    Stop-Service ObserveAgent
+}
 
 Expand-Archive -Force -LiteralPath $local_installer -DestinationPath "$temp_dir\observe-agent_Windows_x86_64"
 Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.exe -Destination $observeagent_install_dir
