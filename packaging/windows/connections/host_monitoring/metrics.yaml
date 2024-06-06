@@ -6,18 +6,10 @@ receivers:
         metrics:
           system.cpu.utilization:
             enabled: true
-          system.cpu.frequency:
-            enabled: true
-          system.cpu.logical.count:
-            enabled: true
-          system.cpu.physical.count:
-            enabled: true
       load:
       memory:
         metrics:
           system.memory.utilization:
-            enabled: true
-          system.linux.memory.available:
             enabled: true
       disk:
       filesystem:
@@ -25,38 +17,10 @@ receivers:
           system.filesystem.utilization:
             enabled: true
       network:
-        metrics:
-          system.network.conntrack.count:
-            enabled: true
-          system.network.conntrack.max:
-            enabled: true
       paging:
         metrics:
           system.paging.utilization:
             enabled: true
-      processes:
-      process:
-        metrics:
-          process.context_switches:
-            enabled: true
-          process.cpu.utilization:
-            enabled: true
-          process.disk.operations:
-            enabled: true      
-          process.memory.utilization:
-            enabled: true      
-          process.open_file_descriptors:
-            enabled: true      
-          process.paging.faults:
-            enabled: true      
-          process.signals_pending:
-            enabled: true      
-          process.threads:
-            enabled: true
-        mute_process_name_error: true
-        mute_process_exe_error: true
-        mute_process_io_error: true
-        mute_process_user_error: true
 
 service:
   pipelines:
