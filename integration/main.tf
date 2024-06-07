@@ -4,7 +4,7 @@
 
 
 module "aws_machines" {
-  source           = "./AWS"
+  source           = "./modules/setup_aws"
   PUBLIC_KEY_PATH  = var.PUBLIC_KEY_PATH
   PRIVATE_KEY_PATH = var.PRIVATE_KEY_PATH
   name_format        = var.name_format

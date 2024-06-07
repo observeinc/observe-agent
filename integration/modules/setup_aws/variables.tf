@@ -112,7 +112,7 @@ variable "AWS_MACHINE_CONFIGS" {
       ami_description   = "Amazon Linux 2023 AMI 2023.4.20240528.0 x86_64 HVM kernel-6.1"
       default_user      = "ec2-user"
       sleep             = 60
-      user_data         = "user_data/yumbased.sh"
+      user_data         = "scripts/user_data/yumbased.sh"
     }
 
     RHEL_8_4_0 = {
