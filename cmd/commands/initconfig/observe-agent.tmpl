@@ -5,11 +5,11 @@ token: {{ .Token }}
 observe_url: {{ .ObserveURL }}
 
 host_monitoring:
-  enabled: true
+  enabled: {{ .HostMonitoring_Enabled }}
   logs: 
-    enabled: true
+    enabled: {{ .HostMonitoring_LogsEnabled }}
   metrics:
-    enabled: true
+    enabled: {{ .HostMonitoring_MetricsEnabled }}
 
 # otel_config_overrides:
 #   exporters:
