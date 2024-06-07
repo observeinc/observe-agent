@@ -7,5 +7,17 @@ agent.exe~
 .DS_Store
 
 #integration
-.pem
-.pub 
+*.pem
+*.pub 
+
+
+#terraform
+integration/.terrafrom 
+.terraform/
+terraform.tfstate
+*.tfstate*
+terraform.tfvars
+*.auto.tfvars
+tfplan
+.terraform.lock.hcl
+
