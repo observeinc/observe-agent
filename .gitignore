@@ -5,3 +5,7 @@ dist/
 agent.exe
 agent.exe~
 .DS_Store
+
+#integration
+.pem
+.pub 
