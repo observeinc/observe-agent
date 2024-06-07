@@ -58,8 +58,7 @@ func InitConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
 	} else {
-		// Search config in home directory with name ".observe-agent" (without extension).
-		viper.AddConfigPath(config.GetDefaultConfigFolder())
+		viper.AddConfigPath(config.GetDefaultAgentPath())
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("observe-agent")
 	}
