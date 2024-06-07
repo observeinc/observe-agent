@@ -70,15 +70,36 @@ processors:
   resourcedetection:
     detectors: [env, system]
     system:
-      hostname_sources: ["os"]
+      hostname_sources: ["dns", "os"]
       resource_attributes:
         host.id:
+          enabled: false
+        os.type:
+           enabled: true
+        host.arch:
+          enabled: true
+        host.name:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        os.description:
           enabled: true
   
   resourcedetection/cloud:
     detectors: ["gcp", "ecs", "ec2", "azure"]
     timeout: 2s
     override: false
+    
 
 exporters:
   otlphttp/observe:

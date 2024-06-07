@@ -27,10 +27,10 @@ service:
   pipelines:
     logs/host_monitoring-file:
       receivers: [filelog/host_monitoring]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe, count]
 
     logs/host_monitoring-journald:
       receivers: [journald/host_monitoring]
-      processors: [memory_limiter, transform/truncate, resourcedetection, batch]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe, count]
