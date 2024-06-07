@@ -35,7 +35,7 @@ resource "aws_instance" "linux_host_integration" {
   vpc_security_group_ids = [aws_security_group.ec2_public.id]
   key_name               = aws_key_pair.ec2key.key_name
 
-  #user_data         = coalesce(var.USERDATA, file(each.value.user_data))
+  user_data         = coalesce(var.USERDATA, file(each.value.user_data))
   get_password_data = can(regex("WINDOWS", each.key)) ? true : false
 
   root_block_device {

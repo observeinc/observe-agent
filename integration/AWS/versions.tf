@@ -14,7 +14,3 @@ terraform {
   required_version = ">= 1.2"
 }
 
-provider "aws" {
-  region = "us-west-1"  # Specify the AWS region
-  profile = "thunderdome"
-}

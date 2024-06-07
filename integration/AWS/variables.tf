@@ -34,9 +34,9 @@ variable "BASE_TAGS" {
   default = {
     owner        = "Observe"
     createdBy    = "terraform"
-    team         = "content"
-    purpose      = "test auto configuration script"
-    git_repo_url = "https://github.com/observeinc/linux-host-configuration-scripts"
+    team         = "Product Specialists "
+    purpose      = "observe-agent integration tests"
+    git_repo_url = "https://github.com/observeinc/observe-agent"
   }
 }
 
@@ -112,7 +112,7 @@ variable "AWS_MACHINE_CONFIGS" {
       ami_description   = "Amazon Linux 2023 AMI 2023.4.20240528.0 x86_64 HVM kernel-6.1"
       default_user      = "ec2-user"
       sleep             = 60
-      user_data         = "../user_data/yumbased.sh"
+      user_data         = "user_data/yumbased.sh"
     }
 
     RHEL_8_4_0 = {
