@@ -4,6 +4,9 @@ token: "${OBSERVE_TOKEN}"
 # Target Observe collection url
 observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
 
+# Debug mode - Sets agent log level to debug
+debug: false
+
 host_monitoring:
   enabled: true
   logs: 
