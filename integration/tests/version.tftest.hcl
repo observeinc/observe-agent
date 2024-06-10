@@ -33,14 +33,16 @@ run "check_version" {
   variables {
     command = "python3 ./scripts/check_version.py"
     env_vars = {
-      PUBLIC_SSH_LINK = "ssh -t -i ./test_key.pem ec2-user@54.151.114.231"
-      #PUBLIC_SSH_LINK = run.setup_aws.ec2.public_ssh_link
+      HOST = "54.151.114.231"
+      USER = "ec2-user"
+      KEY_FILENAME = "./test_key.pem"     
+      MACHINE_NAME = "AMAZON_LINUX_2023"
     }
   }
 
   assert {
     condition     = output.error == ""
-    error_message = "Something Failed"
+    error_message = "Error in Check Version Test"
   }
 }
 
