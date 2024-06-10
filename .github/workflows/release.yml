@@ -1,12 +1,10 @@
 name: Release Version
 
 on:
-  workflow_dispatch:
-    inputs:
-    branch:
-      description: "The branch to attempt to build"
-      required: true
-      default: "main"
+  push:
+    # run only against tags
+    tags:
+      - "*"
 
 permissions:
   contents: write
@@ -15,7 +13,6 @@ permissions:
 
 jobs:
   goreleaser:
-    if: contains('["obs-gh-alexlew"]', github.actor)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
