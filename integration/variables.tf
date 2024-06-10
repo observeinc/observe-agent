@@ -34,6 +34,14 @@ variable "CI" {
   description = "This variable is set to true by github actions to tell us we are running in ci"
 }
 
+
+variable "AWS_MACHINE_FILTER" {
+  description = "This is used as filter agains AWS_MACHINE_CONFIGS in main.tf - if set to true then all values"
+  default     = ["UBUNTU_18_04_LTS"]
+  type        = any
+}
+
+
 # tflint-ignore: terraform_naming_convention
 # variable "PUBLIC_KEY" {
 #   description = "Public key var for running in ci"

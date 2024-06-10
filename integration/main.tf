@@ -8,6 +8,6 @@ module "aws_machines" {
   PUBLIC_KEY_PATH  = var.PUBLIC_KEY_PATH
   PRIVATE_KEY_PATH = var.PRIVATE_KEY_PATH
   name_format        = var.name_format
-  AWS_MACHINE_FILTER = ["AMAZON_LINUX_2023"]
+  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER
   CI                 = var.CI
 }

@@ -1,0 +1,31 @@
+#!/bin/bash
+set -euo pipefail
+
+DIE() { echo "$*" 1>&2; exit 1; }
+PUBLIC_SSH_LINK="ssh -i ./test_key.pem ec2-user@54.151.114.231" 
+
+[[ ! -z "${PUBLIC_SSH_LINK:-}" ]] || DIE "PUBLIC_SSH_LINK not set"
+echo "PUBLIC_SSH_LINK is set to: ${PUBLIC_SSH_LINK}"
+
+# Run the SSH command
+${PUBLIC_SSH_LINK} << EOF
+    # Capture the multi-line output of observe-agent version command
+    IFS= read -r -d '' output < <(observe-agent version && printf '\\0')
+    echo "Command output: \$output"
+
+    # Parse the version number and config file path from the multi-line output
+    if [[ "\$output" =~ Using\ config\ file:\ (/etc/observe-agent/observe-agent.yaml) ]]; then
+        echo "Using the correct config file: \${BASH_REMATCH[1]}"
+    else
+        echo "Config file is incorrect or not found."
+        exit 1
+    fi
+
+    if [[ "\$output" =~ observe-agent\ version:\ (0\.[0-9]+\.[0-9]+) ]]; then
+        version=\${BASH_REMATCH[1]}
+        echo "Observe agent version: \$version"
+    else
+        echo "Failed to parse the version number."
+        exit 1
+    fi
+EOF
