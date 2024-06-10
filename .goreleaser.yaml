@@ -69,6 +69,12 @@ archives:
       - src: "packaging/windows/connections/host_monitoring/*"
         dst: "connections/host_monitoring"
 
+release:
+  github:
+    owner: observeinc
+    name: observe-agent
+  draft: true
+
 changelog:
   sort: asc
   filters:
