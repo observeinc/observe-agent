@@ -1,6 +1,6 @@
 
 provider "aws" {
-  region = "us-west-1"  # Specify the AWS region
+  region  = "us-west-1" # Specify the AWS region
   profile = "blunderdome"
 
   assume_role {
@@ -8,19 +8,43 @@ provider "aws" {
   }
 }
 
-// run "setup_aws" {
-//   module {
-//     source = "./modules/setup_aws"
-//   }
-//   variables {
-//     PUBLIC_KEY_PATH  = var.PUBLIC_KEY_PATH
-//     PRIVATE_KEY_PATH = var.PRIVATE_KEY_PATH
-//     AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER
-//     CI                 = var.CI
 
-//   }
+variables {
+  name_format        = var.name_format
+  PUBLIC_KEY_PATH    = var.PUBLIC_KEY_PATH
+  PRIVATE_KEY_PATH   = var.PRIVATE_KEY_PATH
+  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER #Test a Single Machine locally 
+  CI                 = var.CI
+}
 
-// }
+run "setup_aws" {
+  module {
+    source = "./modules/setup_aws"
+  } 
+}
+
+
+run "check_ec2_connection" {
+  module {
+    source  = "observeinc/collection/aws//modules/testing/exec"
+    version = "2.9.0"
+  }
+
+  variables {
+    command = "python3 ./scripts/check_ec2_connection.py"
+    env_vars = {
+      HOST        = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].public_ip
+      USER        = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].user_name      
+      KEY_FILENAME = "${var.PRIVATE_KEY_PATH}"
+      MACHINE_NAME = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].machine_name
+    }
+  }
+
+  assert {
+    condition     = output.error == ""
+    error_message = "Error in Check EC2 State"
+  }
+}
 
 
 
@@ -29,14 +53,14 @@ run "check_version" {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
- 
+
   variables {
-    command = "python3 ./scripts/check_version.py"
+    command = "python3 ./scripts/check_version.py" 
     env_vars = {
-      HOST = "54.151.114.231"
-      USER = "ec2-user"
-      KEY_FILENAME = "./test_key.pem"     
-      MACHINE_NAME = "AMAZON_LINUX_2023"
+      HOST        = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].public_ip
+      USER        = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].user_name
+      KEY_FILENAME = "${var.PRIVATE_KEY_PATH}"
+      MACHINE_NAME = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].machine_name
     }
   }
 
@@ -48,58 +72,3 @@ run "check_version" {
 
 
 
-
-// run "check_version_python" {
-//   module {
-//     source  = "./modules/exec_python"
-//   }
- 
-//   variables {
-//     command = "./scripts/check_version.py"
-//     env_vars = {
-//       PUBLIC_SSH_LINK = "ssh -t -i ./test_key.pem ec2-user@54.151.114.231"
-//       #PUBLIC_SSH_LINK = run.setup_aws.ec2.public_ssh_link
-//     }
-//   }
-
-//   assert {
-//     condition     = output.error == ""
-//     error_message = "Something Failed"
-//   }
-// }
-
-
-
-
-
-
-# run "create_bucket" {
-#   module {
-#     source  = "observeinc/collection/aws//modules/testing/s3_bucket"
-#     version = "2.9.0"
-#   }
-
-#   variables {
-#     setup = run.setup
-#   }
-# }
-
-# run "check" {
-#   module {
-#     source  = "observeinc/collection/aws//modules/testing/exec"
-#     version = "2.9.0"
-#   }
-
-#   variables {
-#     command = "./scripts/check_bucket_not_empty"
-#     env_vars = {
-#       SOURCE = run.create_bucket.id
-#       OPTS   = "--output json"
-#     }
-#   }
-
-#   assert {
-#     condition     = output.error == "bucket is empty"
-#     error_message = "Bucket isn't empty"
-#   }
-# }

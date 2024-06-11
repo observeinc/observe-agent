@@ -3,20 +3,13 @@ variable "name_format" {
   default = "observe-agent-test-%s"
 }
 
-# github actions uppercases all of there vars 
-# tflint-ignore: terraform_naming_convention
-# variable "WORKFLOW_MATRIX_VALUE" {
-#   type        = string
-#   description = "Uses value for naming resources"
-#   default     = "base"
-# }
 
 # tflint-ignore: terraform_naming_convention
 variable "PUBLIC_KEY_PATH" {
   type        = string
   description = "Public key path ex - \"/Users/YOU/.ssh/id_rsa\""
- #default     = null
-  nullable    = true
+  #default     = null
+  nullable = true
 }
 
 # tflint-ignore: terraform_naming_convention
@@ -24,7 +17,7 @@ variable "PRIVATE_KEY_PATH" {
   description = "Private key path ex - \"/Users/YOU/.ssh/id_rsa.pub\""
   default     = null
   #nullable    = true
-  type        = string
+  type = string
 }
 
 # tflint-ignore: terraform_naming_convention
@@ -36,11 +29,10 @@ variable "CI" {
 
 
 variable "AWS_MACHINE_FILTER" {
-  description = "This is used as filter agains AWS_MACHINE_CONFIGS in main.tf - if set to true then all values"
-  default     = ["UBUNTU_18_04_LTS"]
+  description = "This is used as filter and run againt AWS_MACHINE_CONFIGS in main.tf - if set to null, don't filter anything"
   type        = any
+  default     = null
 }
-
 
 # tflint-ignore: terraform_naming_convention
 # variable "PUBLIC_KEY" {

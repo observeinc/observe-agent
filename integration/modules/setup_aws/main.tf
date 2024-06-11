@@ -1,6 +1,17 @@
+# locals {
+#   compute_instances = { for key, value in var.AWS_MACHINE_CONFIGS :
+#   key => value if contains(var.AWS_MACHINE_FILTER, key) || length(var.AWS_MACHINE_FILTER) == 0 }
+# }
+
+
+
+#Reference to which AWS_MACHINE_FILTER will be used for testing 
 locals {
-  compute_instances = { for key, value in var.AWS_MACHINE_CONFIGS :
-  key => value if contains(var.AWS_MACHINE_FILTER, key) || length(var.AWS_MACHINE_FILTER) == 0 }
+  compute_instances = {
+    for key, value in var.AWS_MACHINE_CONFIGS :
+    key => value
+    if(var.AWS_MACHINE_FILTER) == null || key == var.AWS_MACHINE_FILTER
+  }
 }
 
 
@@ -50,4 +61,5 @@ resource "aws_instance" "linux_host_integration" {
       OBSERVE_TEST_RUN_KEY = local.test_key_value[each.key]
     },
   )
+
 }

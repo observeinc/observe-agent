@@ -21,3 +21,6 @@ terraform.tfvars
 tfplan
 .terraform.lock.hcl
 
+#python
+*pycache*
+*.pyc

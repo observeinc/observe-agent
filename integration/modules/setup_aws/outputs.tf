@@ -3,6 +3,7 @@ output "ec2" {
     key => {
       "arn" = value.arn
       # "account"   = local.account_info[split(":", value.arn)[4]]
+      "instance_state"  = value.instance_state
       "public_ip"       = value.public_ip
       "machine_name"    = key
       "user_name"       = var.AWS_MACHINE_CONFIGS[key].default_user

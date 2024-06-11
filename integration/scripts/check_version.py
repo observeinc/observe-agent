@@ -2,40 +2,21 @@
 import os
 import sys
 import re
-from fabric import Connection 
-
-def die(message):
-    print(message, file=sys.stderr)
-    sys.exit(1)
-
-host = os.environ.get("HOST")
-user = os.environ.get("USER")
-key_filename = os.environ.get("KEY_FILENAME")
-machine_name=os.environ.get("MACHINE_NAME")
-
-if host is None:
-    die("Error: HOST environment variable is not set.")
-
-if user is None:
-    die("Error: USER environment variable is not set.")
-
-if key_filename is None:
-    die("Error: KEY_FILENAME environment variable is not set.")
-
-if machine_name is None:
-    die("Error: MACHINE_NAME environment variable is not set.")
+import time 
+from utils import Host, check_env_vars, die
 
 
 
-conn = Connection(host=host, user=user, connect_kwargs={"key_filename": key_filename})
+def run_test_linux(remote_host: Host) -> None:    
 
-def run_test_linux():    
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'
     version_pattern = re.compile(r'^\d+\.\d+\.\d+$')
+    connection_timeout = 30
 
+    #Test SSH Connection 
+    remote_host.test_conection(connection_timeout)
 
-    result = conn.run('observe-agent version', hide=True)
-    
+    result = remote_host.run_command('observe-agent version')    
     # Split the output by newlines and extract everything after the colon
     for line in result.stdout.splitlines():      
         if ":" in line:
@@ -54,9 +35,15 @@ def run_test_linux():
     if not version_pattern.match(version):
         raise ValueError(f"Invalid version: {version}")
 
+    print (" ✅ Verified version and config file succesfully! ")
 
 
-if "linux" in machine_name.lower():
-    run_test_linux()
+if __name__ == '__main__':
 
+    host, user, key_filename, machine_name = check_env_vars()
+    remote_host = Host(host_ip=host,
+                       username=user,
+                       key_file_path=key_filename)    
+    if "linux" in machine_name.lower():
+        run_test_linux(remote_host)
 

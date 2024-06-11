@@ -165,11 +165,11 @@ variable "AWS_MACHINE_CONFIGS" {
   }
 }
 
-# tflint-ignore: terraform_naming_convention
+# If not 
 variable "AWS_MACHINE_FILTER" {
-  description = "This is used as filter agains AWS_MACHINE_CONFIGS in main.tf - if set to true then all values"
-  default     = ["UBUNTU_18_04_LTS"]
+  description = "This is used as filter and run againt AWS_MACHINE_CONFIGS in main.tf - if set to null, don't filter anything"
   type        = any
+  default     = null
 }
 
 variable "USERDATA" {
