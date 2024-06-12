@@ -531,16 +531,42 @@ nfpms:
     #   packager: GoReleaser <staff@goreleaser.com>
 
 dockers:
-  - id: observe-agent
+  - image_templates:
+      - "docker.io/observeinc/observe-agent:{{ .Tag }}-amd64"
+      - "docker.io/observeinc/observe-agent:latest-amd64"
+    dockerfile: packaging/docker/Dockerfile
+    use: buildx
     goos: linux
     goarch: amd64
-    image_templates:
-      - "docker.io/observeinc/observe-agent:{{ .Tag }}"
-      - "docker.io/observeinc/observe-agent:latest"
+    build_flag_templates:
+      - "--platform=linux/amd64"
     skip_push: true
-    dockerfile: packaging/docker/Dockerfile
     extra_files:
       - packaging/docker
+  - image_templates:
+      - "docker.io/observeinc/observe-agent:{{ .Tag }}-arm64v8"
+      - "docker.io/observeinc/observe-agent:latest-arm64v8"
+    dockerfile: packaging/docker/Dockerfile
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+    skip_push: true
+    extra_files:
+      - packaging/docker
+    
+docker_manifests:
+  - name_template: "docker.io/observeinc/observe-agent:{{ .Tag }}"
+    skip_push: true
+    image_templates:
+      - "docker.io/observeinc/observe-agent:{{ .Tag }}-amd64"
+      - "docker.io/observeinc/observe-agent:{{ .Tag }}-arm64v8"
+  - name_template: "docker.io/observeinc/observe-agent:latest"
+    skip_push: true
+    image_templates:
+      - "docker.io/observeinc/observe-agent:latest-amd64"
+      - "docker.io/observeinc/observe-agent:latest-arm64v8"
 
 # winget:
 #   - # Name of the recipe
