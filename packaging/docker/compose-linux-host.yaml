@@ -1,6 +1,6 @@
 services:
   agent:
-    image: "observe-agent:latest"
+    image: "observeinc/observe-agent:latest"
     pid: host
     volumes:
       # Used for hostmetrics
@@ -21,13 +21,14 @@ services:
         source: /var/log
         target: /hostfs/var/log
         read_only: true
-      # Necessary to enable symlinks for kube logs
-      - type: bind
-        source: /var/lib/docker/containers
-        target: /var/lib/docker/containers
+      # Symlinks dont work by default on docker containers so we need to add each of the 
+      # directories containing symlink targets individually for docker to be able to follow them
       - type: bind
         source: /var/log/pods
         target: /var/log/pods
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
       # Load agent from current directory
       - type: bind
         source: ${PWD}/observe-agent.yaml

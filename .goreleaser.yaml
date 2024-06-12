@@ -536,6 +536,7 @@ dockers:
     goarch: amd64
     image_templates:
       - "docker.io/observeinc/observe-agent:{{ .Tag }}"
+      - "docker.io/observeinc/observe-agent:latest"
     skip_push: true
     dockerfile: packaging/docker/Dockerfile
     extra_files:
