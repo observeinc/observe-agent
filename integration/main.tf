@@ -1,13 +1,8 @@
-# locals {
-#   name_format = var.CI == true ? "gha-lht-${var.WORKFLOW_MATRIX_VALUE}-%s" : var.name_format
-# }
-
-
-module "aws_machines" {
-  source             = "./modules/setup_aws"
-  PUBLIC_KEY_PATH    = var.PUBLIC_KEY_PATH
-  PRIVATE_KEY_PATH   = var.PRIVATE_KEY_PATH
-  name_format        = var.name_format
-  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER
-  CI                 = var.CI
+resource "null_resource" "main" {
+  provisioner "local-exec" {
+    command = <<EOF
+            echo "This root module does nothing and is intended for testing purposes for terraform test commands"
+            echo "Please call terrafrom test -verbose to run tests from this location" 
+            EOF
+  }
 }

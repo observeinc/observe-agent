@@ -4,16 +4,18 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.11"
-    }   
+    }
   }
   required_version = ">= 1.2"
 }
 
+
 provider "aws" {
-  region  = "us-west-1" # Specify the AWS region
-  profile = "blunderdome"
+  
+  region  = var.aws_region
+  profile = var.aws_profile
 
   assume_role {
-    role_arn = "arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"
+    role_arn = var.aws_role_arn
   }
 }

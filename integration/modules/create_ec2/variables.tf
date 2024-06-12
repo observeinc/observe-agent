@@ -112,7 +112,7 @@ variable "AWS_MACHINE_CONFIGS" {
       ami_description   = "Amazon Linux 2023 AMI 2023.4.20240528.0 x86_64 HVM kernel-6.1"
       default_user      = "ec2-user"
       sleep             = 60
-      user_data         = "scripts/user_data/yumbased.sh"
+      user_data         = "user_data/yumbased.sh"
     }
 
     RHEL_8_4_0 = {
@@ -176,4 +176,21 @@ variable "USERDATA" {
   type     = any
   nullable = true
   default  = null
+}
+
+variable "aws_region" {
+  type    = string
+  default = "us-west-1"
+  description = "AWS region"
+}
+
+variable "aws_profile" {
+  type = string
+  description = "AWS profile"
+}
+
+variable "aws_role_arn" {
+    type = string
+    description = "AWS role arn"
+  
 }
