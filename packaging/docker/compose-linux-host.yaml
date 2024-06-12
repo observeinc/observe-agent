@@ -1,0 +1,34 @@
+services:
+  agent:
+    image: "observe-agent:latest"
+    pid: host
+    volumes:
+      # Used for hostmetrics
+      - type: bind
+        source: /proc
+        target: /hostfs/proc
+        read_only: true
+      - type: bind
+        source: /snap
+        target: /hostfs/snap
+        read_only: true
+      - type: bind
+        source: /var/lib
+        target: /hostfs/var/lib
+        read_only: true
+      # Used for filelog
+      - type: bind
+        source: /var/log
+        target: /hostfs/var/log
+        read_only: true
+      # Necessary to enable symlinks for kube logs
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
+      - type: bind
+        source: /var/log/pods
+        target: /var/log/pods
+      # Load agent from current directory
+      - type: bind
+        source: ${PWD}/observe-agent.yaml
+        target: /etc/observe-agent/observe-agent.yaml
