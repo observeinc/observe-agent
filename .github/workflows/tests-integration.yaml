@@ -2,6 +2,7 @@ name: Observe Agent Integration Tests
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   example_job:
