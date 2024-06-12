@@ -537,7 +537,9 @@ dockers:
     image_templates:
       - "docker.io/observeinc/observe-agent:{{ .Tag }}"
     skip_push: true
-    dockerfile: 
+    dockerfile: packaging/docker/Dockerfile
+    extra_files:
+      - packaging/docker
 
 # winget:
 #   - # Name of the recipe
