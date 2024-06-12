@@ -530,6 +530,15 @@ nfpms:
     #   # with the maintainer, which is the person who maintains the software.
     #   packager: GoReleaser <staff@goreleaser.com>
 
+dockers:
+  - id: observe-agent
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "docker.io/observeinc/observe-agent:{{ .Tag }}"
+    skip_push: true
+    dockerfile: 
+
 # winget:
 #   - # Name of the recipe
 #     #
