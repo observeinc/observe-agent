@@ -1,0 +1,158 @@
+extensions:
+  health_check:
+    endpoint: 'localhost:13133'
+    path: '/status'
+  file_storage:
+    directory: ${env:FILESTORAGE_PATH}
+
+connectors:
+  count:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+
+  filestats/agent:
+    include: '/etc/observe-agent/otel-collector.yaml'
+    collection_interval: 240m
+    initial_delay: 60s
+
+  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
+    include: [/etc/observe-agent/otel-collector.yaml]
+    start_at: beginning
+    poll_interval: 5m
+    multiline:
+      line_end_pattern: ENDOFLINEPATTERN
+
+  prometheus/agent:
+    config:
+      scrape_configs:
+        - job_name: 'otelcol'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['0.0.0.0:8888']
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '.*grpc_io.*'
+              action: drop
+
+  journald/agent:
+    units:
+      - observe-agent
+    priority: info
+
+processors:
+  # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
+  # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
+  transform/truncate:
+    log_statements:
+      - context: log
+        statements: 
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+    trace_statements:
+      - context: span
+        statements:
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 20
+    spike_limit_percentage: 5
+  
+  batch:
+  
+  resourcedetection:
+    detectors: [env, system]
+    system:
+      hostname_sources: ["dns", "os"]
+      resource_attributes:
+        host.id:
+          enabled: false
+        os.type:
+           enabled: true
+        host.arch:
+          enabled: true
+        host.name:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        os.description:
+          enabled: true
+  
+  resourcedetection/cloud:
+    detectors: ["gcp", "ecs", "ec2", "azure"]
+    timeout: 2s
+    override: false
+    
+
+exporters:
+  otlphttp/observe:
+    endpoint: ${env:OBSERVE_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_TOKEN}
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+
+service:
+  pipelines:
+    metrics/agent-filestats:
+       receivers: [filestats/agent]
+       processors: [resourcedetection, resourcedetection/cloud]
+       exporters: [otlphttp/observe]
+
+    metrics/agent-internal:
+      receivers: [prometheus/agent, count]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      exporters: [otlphttp/observe]
+
+    metrics/forward:
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud]
+      exporters: [otlphttp/observe]
+
+    logs/agent-journald:
+      receivers: [journald/agent]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      exporters: [otlphttp/observe, count]
+
+    logs/agent-config:
+       receivers: [filelog/agent-config]
+       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+       exporters: [otlphttp/observe]
+    
+    logs/forward: 
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud]
+      exporters: [otlphttp/observe, count]
+
+    traces/forward:
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud]
+      exporters: [otlphttp/observe]
+
+  extensions: [health_check, file_storage]
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"
+    logs:
+      level: ${env:OTEL_LOG_LEVEL}

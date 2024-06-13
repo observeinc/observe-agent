@@ -28,5 +28,8 @@ jobs:
         go-version: ${{ matrix.go }}
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch_depth: 0
+        ref: ${{ github.event.inputs.branch }}
     - name: Test
       run: make go-test
