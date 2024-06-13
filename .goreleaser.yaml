@@ -543,7 +543,6 @@ dockers:
       - "--platform=linux/amd64"
     extra_files:
       - packaging/docker
-    skip_push: true
   - image_templates:
       - &arm64v8_image "docker.io/observeinccd/observe-agent:{{ .Version }}-arm64v8"
     dockerfile: packaging/docker/Dockerfile
@@ -554,7 +553,6 @@ dockers:
       - "--platform=linux/arm64/v8"
     extra_files:
       - packaging/docker
-    skip_push: true
 
 docker_manifests:
   - name_template: "docker.io/observeinccd/observe-agent:{{ .Version }}"
