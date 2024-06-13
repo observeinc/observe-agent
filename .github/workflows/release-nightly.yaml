@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   goreleaser:
+    if: contains('["obs-gh-alexlew"]', github.actor)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
