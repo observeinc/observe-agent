@@ -45,6 +45,11 @@ jobs:
               id: validate
               run: terraform validate -no-color
 
+            - name: Terraform Test
+              id: test
+              run: terraform test -verbose 
+
+
 #   example_job:
 #     runs-on: ubuntu-latest
 #     steps:
