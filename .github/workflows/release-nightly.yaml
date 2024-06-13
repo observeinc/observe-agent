@@ -45,7 +45,7 @@ jobs:
           distribution: goreleaser-pro
           # 'latest', 'nightly', or a semver
           version: latest
-          args: release --clean --skip=validate --verbose --nightly
+          args: release --prepare --clean --skip=validate --verbose --nightly
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
