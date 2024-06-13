@@ -1,4 +1,23 @@
- run "setup_aws" {
+provider "aws" {  #Explicitly set the provider to Variables 
+  region = var.aws_region 
+  profile = var.aws_profile
+
+  assume_role {
+    role_arn = var.aws_role_arn
+  }
+}
+
+
+variables {  #Explicitly set variables for this file 
+  name_format        = var.name_format
+  PUBLIC_KEY_PATH    = var.PUBLIC_KEY_PATH
+  PRIVATE_KEY_PATH   = var.PRIVATE_KEY_PATH
+  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER 
+  CI                 = var.CI
+}
+
+
+run "setup_aws" {
   module {
     source = "./modules/create_ec2"
   }
