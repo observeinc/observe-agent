@@ -17,7 +17,7 @@ locals {
 
 
 # EC2 instance for linux host 
-resource "aws_instance" "linux_host_integration" {
+resource "aws_instance" "observe_agent_instance" {
   for_each = local.compute_instances
 
   ami           = each.value.ami_id
@@ -28,7 +28,7 @@ resource "aws_instance" "linux_host_integration" {
   subnet_id = data.aws_subnet.subnet_public.id
 
   vpc_security_group_ids = [data.aws_security_group.ec2_public.id]
-  key_name               = data.aws_key_pair.ec2key.key_name
+  key_name               = data.aws_key_pair.observe_agent_instance.key_name
 
   user_data         = coalesce(var.USERDATA, file(join("/", ["${path.module}", each.value.user_data])))
   get_password_data = can(regex("WINDOWS", each.key)) ? true : false
