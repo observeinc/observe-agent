@@ -21,7 +21,6 @@ resource "random_string" "output" {
 }
 
 
-
 data "aws_security_group" "ec2_public" {
   name = "tf-observe-agent-test-ec2_sg"
 }
@@ -33,8 +32,7 @@ data "aws_subnet" "subnet_public" {
   }
 }
 
-
-
-
-##References to VPC, SG for EC2 
-#aws_security_group.ec2_public.id
+data "aws_key_pair" "ec2" {
+  key_name           = "tf-observe-agent-test-publicKey"
+  include_public_key = true  
+}
