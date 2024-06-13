@@ -559,12 +559,10 @@ docker_manifests:
     image_templates:
       - *amd64_image
       - *arm64v8_image
-    use: podman
   - name_template: "docker.io/observeinccd/observe-agent:latest"
     image_templates:
       - *amd64_image
       - *arm64v8_image
-    use: podman
 
 # winget:
 #   - # Name of the recipe
