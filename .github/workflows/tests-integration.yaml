@@ -24,12 +24,12 @@ jobs:
         runs-on: ubuntu-latest
         defaults:
             run:
-                working-directory: integration
+                working-directory: integration #Terrafrom commands and tests are ran from integration directory
         steps:
             - name: Checkout code
               uses: actions/checkout@v4        
        
-            - name: Configure AWS Credentials
+            - name: Configure AWS Credentials ## Terraform provider automatically uses these creds 
               uses: aws-actions/configure-aws-credentials@v4
               with:
                 role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -48,6 +48,8 @@ jobs:
                 echo "$S${{ secrets.SSH_PUBLIC_KEY }}" >${{env.TF_VAR_PUBLIC_KEY_PATH}}
                 chmod 644 ${{env.TF_VAR_PUBLIC_KEY_PATH}}
                 ls -l 
+                cat ${{env.TF_VAR_PRIVATE_KEY_PATH}}
+                cat ${{env.TF_VAR_PUBLIC_KEY_PATH}}
             
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v3

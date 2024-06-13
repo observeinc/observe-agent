@@ -11,8 +11,8 @@ terraform {
 
 
 provider "aws" {
-  region = "us-west-1"
-  # profile = "blunderdome" #Local Use Only
+  # region = "us-west-1" #Local use only
+  # profile = "blunderdome" #Local use only git
   # assume_role {
   #   role_arn = "IAM ROLE IN BLUNDERDOME" #Local Use Only 
   # }
