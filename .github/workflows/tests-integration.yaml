@@ -4,11 +4,43 @@ on:
   workflow_dispatch:
   push:
 
+#Special permissions required for OIDC authentication
+permissions:
+    id-token: write
+    contents: read
+    pull-requests: write
+
+env:
+    TF_VAR_name_format: "tf-observe-agent-test-%s"
+    TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"
+    ##Add rest of env vars here 
+    
+
 jobs:
-  example_job:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Run a command
-        run: echo "This workflow was manually triggered"
+    observe-agent-integration-tests:
+        name: observe-agent-integration-tests
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: integration
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4        
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+       
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+                role-session-name: ${{ github.sha }}
+                aws-region: ${{ secrets.AWS_REGION }}
+                
+#   example_job:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#       - name: Run a command
+#         run: echo "This workflow was manually triggered"
