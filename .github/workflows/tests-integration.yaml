@@ -41,7 +41,7 @@ jobs:
               with:
                 python-version: '3.10' 
 
-            - name: Setup SSH
+            - name: Setup SSH Keys
               run: |
                 echo "${{ secrets.SSH_PRIVATE_KEY }}" > ${{env.TF_VAR_PRIVATE_KEY_PATH}}
                 chmod 600 ${{env.TF_VAR_PRIVATE_KEY_PATH}}
@@ -62,13 +62,9 @@ jobs:
 
             - name: Terraform Test
               id: test
-              run: |                
-                ls -l       
-                cat ${{env.TF_VAR_PRIVATE_KEY_PATH}}
-                echo "..."
-                cat ${{env.TF_VAR_PUBLIC_KEY_PATH}}
-                       
-                #terraform test -verbose 
+              run: |               
+                ls -l                                   
+                terraform test -verbose 
 
 
 #   example_job:
