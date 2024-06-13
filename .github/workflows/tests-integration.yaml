@@ -15,7 +15,7 @@ env:
     TF_VAR_aws_profile: ${{ secrets.AWS_PROFILE }} #Not needed for Github Actions but provided for sanity
     TF_VAR_aws_role_arn: ${{ secrets.AWS_ROLE_TO_ASSUME }}
     TF_VAR_name_format: "tf-observe-agent-test-%s"
-    TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"  
+    #TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"  
     TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
     TF_VAR_PRIVATE_KEY_PATH: "./test.pem.pub" 
 
