@@ -178,21 +178,23 @@ variable "USERDATA" {
   default  = null
 }
 
-variable "aws_region" {
-  type    = string
-  default = "us-west-1"
-  description = "AWS region"
-}
 
-variable "aws_profile" {
-  type = string
-  description = "AWS profile"
-  sensitive = true
-  default = "blunderdome"
-}
 
-variable "aws_role_arn" {
-    type = string
-    description = "AWS role arn"
-    sensitive =true  
-}
+# variable "aws_region" {
+#   type    = string
+#   default = "us-west-1"
+#   description = "AWS region"
+# }
+
+# variable "aws_profile" {
+#   type = string
+#   description = "AWS profile"
+#   sensitive = true
+#   default = "blunderdome"
+# }
+
+# variable "aws_role_arn" {
+#     type = string
+#     description = "AWS role arn"
+#     sensitive =true  
+# }

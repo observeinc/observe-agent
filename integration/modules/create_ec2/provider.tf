@@ -11,11 +11,12 @@ terraform {
 
 
 provider "aws" {
-  
-  region  = var.aws_region
-  profile = var.aws_profile
-
-  assume_role {
-    role_arn = var.aws_role_arn
-  }
+  region = "us-west-1"
+  # profile = "blunderdome" #Local Use Only
+  # assume_role {
+  #   role_arn = "IAM ROLE IN BLUNDERDOME" #Local Use Only 
+  # }
 }
+
+
+

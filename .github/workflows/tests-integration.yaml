@@ -11,8 +11,8 @@ permissions:
     pull-requests: write
 
 env:
-    TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
-    TF_VAR_aws_role_arn: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+    #TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+    #TF_VAR_aws_role_arn: ${{ secrets.AWS_ROLE_TO_ASSUME }}
     TF_VAR_name_format: "tf-observe-agent-test-%s"
     #TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"  
     TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
