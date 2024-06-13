@@ -188,6 +188,7 @@ variable "aws_profile" {
   type = string
   description = "AWS profile"
   sensitive = true
+  default = "blunderdome"
 }
 
 variable "aws_role_arn" {
