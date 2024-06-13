@@ -32,7 +32,3 @@ data "aws_subnet" "subnet_public" {
   }
 }
 
-data "aws_key_pair" "observe_agent_instance" {
-  key_name           = "tf-observe-agent-test-publicKey"
-  include_public_key = true  
-}

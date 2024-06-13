@@ -54,13 +54,13 @@ variable "CI" {
   description = "This variable is set to true by github actions to tell us we are running in ci"
 }
 
-# tflint-ignore: terraform_naming_convention
-variable "PUBLIC_KEY" {
-  description = "This value comes from a variable in github actions"
-  nullable    = true
-  default     = null
-  type        = string
-}
+# # tflint-ignore: terraform_naming_convention
+# variable "PUBLIC_KEY" {
+#   description = "This value comes from a variable in github actions"
+#   nullable    = true
+#   default     = null
+#   type        = string
+# }
 
 # tflint-ignore: terraform_naming_convention
 variable "AWS_MACHINE_CONFIGS" {

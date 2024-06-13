@@ -35,6 +35,11 @@ jobs:
                 role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
                 role-session-name: ${{ github.sha }}
                 aws-region: ${{ secrets.AWS_REGION }}
+            
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.10' 
 
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v3
@@ -50,7 +55,6 @@ jobs:
             - name: Terraform Test
               id: test
               run: |
-                touch test_key.pub
                 touch test_key.pem
                 ls -l  
                 terraform test -verbose 
