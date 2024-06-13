@@ -11,11 +11,15 @@ permissions:
     pull-requests: write
 
 env:
+    TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+    TF_VAR_aws_profile: ${{ secrets.AWS_PROFILE }} #Not needed for Github Actions but provided for sanity
+    TF_VAR_aws_role_arn: ${{ secrets.AWS_ROLE_TO_ASSUME }}
     TF_VAR_name_format: "tf-observe-agent-test-%s"
-    TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"
-    ##Add rest of env vars here 
-    
+    TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"  
+    TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
+    TF_VAR_PRIVATE_KEY_PATH: "./test.pem.pub" 
 
+    
 jobs:
     observe-agent-integration-tests:
         name: observe-agent-integration-tests
@@ -26,9 +30,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4        
-
-            - name: Setup Terraform
-              uses: hashicorp/setup-terraform@v3
        
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
@@ -36,6 +37,9 @@ jobs:
                 role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
                 role-session-name: ${{ github.sha }}
                 aws-region: ${{ secrets.AWS_REGION }}
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
                 
             - name: Terraform Init
               id: init
