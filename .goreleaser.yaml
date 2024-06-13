@@ -17,6 +17,7 @@ before:
 
 builds:
   - id: default
+    binary: observe-agent
     env:
       - CGO_ENABLED=0
     goos:
@@ -25,6 +26,7 @@ builds:
     ldflags: -s -w -X observe/agent/build.Version={{.Version}}
 
   - id: windows_build
+    binary: observe-agent
     env:
       - CGO_ENABLED=0
     goos:
@@ -85,7 +87,7 @@ nfpms:
     #
     # Default: '{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     # Templates: allowed
-    file_name_template: "{{ .PackageName }}"
+    file_name_template: "{{ .ConventionalFileName }}"
 
     vendor: Observe Inc.
 
