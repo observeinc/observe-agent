@@ -35,5 +35,5 @@ COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=agent /output/ /
 COPY --from=directories /var/lib/observe-agent/filestorage /var/lib/observe-agent/filestorage
 
-ENTRYPOINT ["/agent"]
+ENTRYPOINT ["/observe-agent"]
 CMD ["start"]
