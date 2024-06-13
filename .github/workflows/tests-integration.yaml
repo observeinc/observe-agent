@@ -37,6 +37,14 @@ jobs:
                 role-session-name: ${{ github.sha }}
                 aws-region: ${{ secrets.AWS_REGION }}
                 
+            - name: Terraform Init
+              id: init
+              run: terraform init
+
+            - name: Terraform Validate
+              id: validate
+              run: terraform validate -no-color
+
 #   example_job:
 #     runs-on: ubuntu-latest
 #     steps:
