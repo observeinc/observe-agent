@@ -50,6 +50,7 @@ jobs:
             - name: Terraform Test
               id: test
               run: |
+                terraform version 
                 touch test_key.pub
                 touch test_key.pem
                 ls -l  
