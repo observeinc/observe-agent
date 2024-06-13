@@ -168,7 +168,7 @@ variable "AWS_MACHINE_CONFIGS" {
 # If not 
 variable "AWS_MACHINE_FILTER" {
   description = "This is used as filter and run againt AWS_MACHINE_CONFIGS in main.tf - if set to null, don't filter anything"
-  type        = any
+  type        = string
   default     = null
 }
 
