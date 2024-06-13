@@ -532,8 +532,8 @@ nfpms:
 
 dockers:
   - image_templates:
-      - "docker.io/observeinc/observe-agent:{{ .Tag }}-amd64"
-      - "docker.io/observeinc/observe-agent:latest-amd64"
+      - "docker.io/observeinccd/observe-agent:{{ .Version }}-amd64"
+      - "docker.io/observeinccd/observe-agent:latest-amd64"
     dockerfile: packaging/docker/Dockerfile
     use: buildx
     goos: linux
@@ -544,8 +544,8 @@ dockers:
     extra_files:
       - packaging/docker
   - image_templates:
-      - "docker.io/observeinc/observe-agent:{{ .Tag }}-arm64v8"
-      - "docker.io/observeinc/observe-agent:latest-arm64v8"
+      - "docker.io/observeinccd/observe-agent:{{ .Version }}-arm64v8"
+      - "docker.io/observeinccd/observe-agent:latest-arm64v8"
     dockerfile: packaging/docker/Dockerfile
     use: buildx
     goos: linux
@@ -557,16 +557,16 @@ dockers:
       - packaging/docker
     
 docker_manifests:
-  - name_template: "docker.io/observeinc/observe-agent:{{ .Tag }}"
+  - name_template: "docker.io/observeinccd/observe-agent:{{ .Version }}"
     skip_push: true
     image_templates:
-      - "docker.io/observeinc/observe-agent:{{ .Tag }}-amd64"
-      - "docker.io/observeinc/observe-agent:{{ .Tag }}-arm64v8"
-  - name_template: "docker.io/observeinc/observe-agent:latest"
+      - "docker.io/observeinccd/observe-agent:{{ .Version }}-amd64"
+      - "docker.io/observeinccd/observe-agent:{{ .Version }}-arm64v8"
+  - name_template: "docker.io/observeinccd/observe-agent:latest"
     skip_push: true
     image_templates:
-      - "docker.io/observeinc/observe-agent:latest-amd64"
-      - "docker.io/observeinc/observe-agent:latest-arm64v8"
+      - "docker.io/observeinccd/observe-agent:latest-amd64"
+      - "docker.io/observeinccd/observe-agent:latest-arm64v8"
 
 # winget:
 #   - # Name of the recipe
