@@ -65,7 +65,7 @@ jobs:
               run: |                
                 ls -l       
                 cat ${{env.TF_VAR_PRIVATE_KEY_PATH}}
-                echo "...""
+                echo "..."
                 cat ${{env.TF_VAR_PUBLIC_KEY_PATH}}
                        
                 #terraform test -verbose 
