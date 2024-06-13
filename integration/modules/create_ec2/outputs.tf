@@ -1,5 +1,5 @@
 output "ec2" {
-  value = { for key, value in aws_instance.linux_host_integration :
+  value = { for key, value in aws_instance.observe_agent_instance :
     key => {
       "arn" = value.arn
       # "account"   = local.account_info[split(":", value.arn)[4]]
