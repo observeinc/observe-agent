@@ -85,7 +85,7 @@ nfpms:
     #
     # Default: '{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     # Templates: allowed
-    file_name_template: "{{ .ConventionalFileName }}"
+    file_name_template: "{{ .PackageName }}"
 
     vendor: Observe Inc.
 
