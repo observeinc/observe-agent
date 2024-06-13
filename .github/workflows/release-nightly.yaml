@@ -2,11 +2,11 @@ name: Release Nightly Version
 
 on:
   workflow_dispatch:
-  inputs:
-    branch:
-      description: "The branch to attempt to build"
-      required: true
-      default: "main"
+    inputs:
+      branch:
+        description: "The branch to create nightly release based on"
+        required: true
+        default: "main"
 
 permissions:
   contents: write
