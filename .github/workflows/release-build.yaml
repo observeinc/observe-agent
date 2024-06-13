@@ -30,6 +30,8 @@ jobs:
         run: sudo apt-get install -y wixl
       # More assembly might be required: Docker logins, GPG, etc.
       # It all depends on your needs.
+      - name: Install qemu
+        uses: docker/setup-qemu-action@v3
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
