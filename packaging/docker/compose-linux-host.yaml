@@ -1,0 +1,35 @@
+services:
+  agent:
+    image: "observeinc/observe-agent:latest"
+    pid: host
+    volumes:
+      # Used for hostmetrics
+      - type: bind
+        source: /proc
+        target: /hostfs/proc
+        read_only: true
+      - type: bind
+        source: /snap
+        target: /hostfs/snap
+        read_only: true
+      - type: bind
+        source: /var/lib
+        target: /hostfs/var/lib
+        read_only: true
+      # Used for filelog
+      - type: bind
+        source: /var/log
+        target: /hostfs/var/log
+        read_only: true
+      # Symlinks dont work by default on docker containers so we need to add each of the 
+      # directories containing symlink targets individually for docker to be able to follow them
+      - type: bind
+        source: /var/log/pods
+        target: /var/log/pods
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
+      # Load agent from current directory
+      - type: bind
+        source: ${PWD}/observe-agent.yaml
+        target: /etc/observe-agent/observe-agent.yaml

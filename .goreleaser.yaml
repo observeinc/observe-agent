@@ -17,6 +17,7 @@ before:
 
 builds:
   - id: default
+    binary: observe-agent
     env:
       - CGO_ENABLED=0
     goos:
@@ -25,6 +26,7 @@ builds:
     ldflags: -s -w -X observe/agent/build.Version={{.Version}}
 
   - id: windows_build
+    binary: observe-agent
     env:
       - CGO_ENABLED=0
     goos:
@@ -529,6 +531,38 @@ nfpms:
     #   # The packager refers to the organization packaging the software, not to be confused
     #   # with the maintainer, which is the person who maintains the software.
     #   packager: GoReleaser <staff@goreleaser.com>
+
+dockers:
+  - image_templates:
+      - &amd64_image "docker.io/observeinc/observe-agent:{{ .Version }}-amd64"
+    dockerfile: packaging/docker/Dockerfile
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    extra_files:
+      - packaging/docker
+  - image_templates:
+      - &arm64v8_image "docker.io/observeinc/observe-agent:{{ .Version }}-arm64v8"
+    dockerfile: packaging/docker/Dockerfile
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+    extra_files:
+      - packaging/docker
+
+docker_manifests:
+  - name_template: "docker.io/observeinc/observe-agent:{{ .Version }}"
+    image_templates:
+      - *amd64_image
+      - *arm64v8_image
+  - name_template: "docker.io/observeinc/observe-agent:latest"
+    image_templates:
+      - *amd64_image
+      - *arm64v8_image
 
 # winget:
 #   - # Name of the recipe
