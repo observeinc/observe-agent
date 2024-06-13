@@ -542,7 +542,6 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
-    skip_push: true
     extra_files:
       - packaging/docker
   - image_templates:
@@ -554,18 +553,15 @@ dockers:
     goarch: arm64
     build_flag_templates:
       - "--platform=linux/arm64/v8"
-    skip_push: true
     extra_files:
       - packaging/docker
     
 docker_manifests:
   - name_template: "docker.io/observeinccd/observe-agent:{{ .Version }}"
-    skip_push: true
     image_templates:
       - "docker.io/observeinccd/observe-agent:{{ .Version }}-amd64"
       - "docker.io/observeinccd/observe-agent:{{ .Version }}-arm64v8"
   - name_template: "docker.io/observeinccd/observe-agent:latest"
-    skip_push: true
     image_templates:
       - "docker.io/observeinccd/observe-agent:latest-amd64"
       - "docker.io/observeinccd/observe-agent:latest-arm64v8"
