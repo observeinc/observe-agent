@@ -20,6 +20,7 @@ terraform.tfvars
 *.auto.tfvars
 tfplan
 .terraform.lock.hcl
+*_override.tf
 
 #python
 *pycache*
