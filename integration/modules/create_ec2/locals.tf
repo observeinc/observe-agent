@@ -51,7 +51,7 @@ locals {
 
     RHEL_8_4_0 = {
       ami_instance_type = "t3.small"
-      ami_id            = "ami-0b28dfc7adc325ef4"
+      ami_id            = "ami-054965c6cd7c6e462"
       ami_description   = "Red Hat Enterprise Linux 8 (HVM), SSD Volume Type"
       default_user      = "ec2-user"
       sleep             = 120
