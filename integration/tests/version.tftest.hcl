@@ -1,8 +1,17 @@
-provider "aws"{}
+#provider "aws"{}
 
-run "setup_aws" {
+provider "aws" {
+  region  = "us-west-1" # Specify the AWS region
+  profile = "blunderdome"
+  assume_role {
+    #role_arn = "arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"
+    role_arn = "arn:aws:iam::767397788203:role/gh-observe_agent-repo"
+  }
+}
+
+run "setup_ec2" {
   module {
-    source = "./modules/create_ec2" 
+    source = "./modules/create_ec2"
   }
 }
 
@@ -15,10 +24,10 @@ run "check_ec2_connection" {
   variables {
     command = "python3 ./scripts/check_ec2_connection.py"
     env_vars = {
-      HOST         = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].public_ip
-      USER         = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].user_name
-      KEY_FILENAME = "${var.PRIVATE_KEY_PATH}"
-      MACHINE_NAME = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].machine_name
+      HOST         = run.setup_ec2.public_ip
+      USER         = run.setup_ec2.user_name
+      KEY_FILENAME = run.setup_ec2.private_key_path
+      MACHINE_NAME = run.setup_ec2.machine_name
     }
   }
 
@@ -39,10 +48,10 @@ run "check_version" {
   variables {
     command = "python3 ./scripts/check_version.py"
     env_vars = {
-      HOST         = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].public_ip
-      USER         = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].user_name
-      KEY_FILENAME = "${var.PRIVATE_KEY_PATH}"
-      MACHINE_NAME = run.setup_aws.ec2[var.AWS_MACHINE_FILTER].machine_name
+      HOST         = run.setup_ec2.public_ip
+      USER         = run.setup_ec2.user_name
+      KEY_FILENAME = run.setup_ec2.private_key_path
+      MACHINE_NAME = run.setup_ec2.machine_name
     }
   }
 
@@ -51,6 +60,8 @@ run "check_version" {
     error_message = "Error in Check Version Test"
   }
 }
+
+
 
 
 

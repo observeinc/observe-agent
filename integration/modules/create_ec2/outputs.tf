@@ -1,16 +1,33 @@
-output "ec2" {
-  value = { for key, value in aws_instance.observe_agent_instance :
-    key => {
-      "arn" = value.arn
-      # "account"   = local.account_info[split(":", value.arn)[4]]
-      "instance_state"  = value.instance_state
-      "public_ip"       = value.public_ip
-      "machine_name"    = key
-      "user_name"       = var.AWS_MACHINE_CONFIGS[key].default_user
-      "test_key"        = random_string.output[key].id
-      "instance_id"     = value.id
-      "public_ssh_link" = "ssh -i ${var.PRIVATE_KEY_PATH} ${var.AWS_MACHINE_CONFIGS[key].default_user}@${value.public_ip}"
-    }
+output "machine_name"{
+  value = var.AWS_MACHINE
+}
 
-  }
+output "arn" {
+  value = aws_instance.observe_agent_instance.arn
+}
+
+output "instance_id" {
+  value = aws_instance.observe_agent_instance.id
+  
+}
+output "instance_state" {
+  value = aws_instance.observe_agent_instance.instance_state
+}
+
+
+output "public_ip" {
+  value = aws_instance.observe_agent_instance.public_ip
+}
+
+output "user_name" {
+  value =  local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user
+}
+
+output "private_key_path" {
+  value = var.PRIVATE_KEY_PATH  
+}
+
+output "public_ssh_link" {
+  value =  "ssh -i ${var.PRIVATE_KEY_PATH} ${local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user}@${aws_instance.observe_agent_instance.public_ip}"
+  
 }
