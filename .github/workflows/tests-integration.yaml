@@ -22,6 +22,7 @@ jobs:
         name: observe-agent-integration-tests-${{ matrix.AWS_MACHINE}}
         runs-on: ubuntu-latest
         strategy:
+            fail-fast: false 
             matrix:
                 AWS_MACHINE: ["AMAZON_LINUX_2023", "RHEL_8_4_0"]
         defaults:
@@ -73,10 +74,3 @@ jobs:
                 terraform test -verbose 
 
 
-#   example_job:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#       - name: Run a command
-#         run: echo "This workflow was manually triggered"
