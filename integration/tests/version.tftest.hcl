@@ -7,13 +7,13 @@
 //   }
 // }
 
+provider "aws"{}
 
 variables {  #Explicitly set variables for this file 
   name_format        = var.name_format
+  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER 
   PUBLIC_KEY_PATH    = var.PUBLIC_KEY_PATH
   PRIVATE_KEY_PATH   = var.PRIVATE_KEY_PATH
-  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER 
-  CI                 = var.CI
 }
 
 
