@@ -44,6 +44,6 @@ if __name__ == '__main__':
     remote_host = Host(host_ip=host,
                        username=user,
                        key_file_path=key_filename)    
-    if "linux" in machine_name.lower():
+    if "linux" in machine_name.lower() or "rhel" in machine_name.lower():
         run_test_linux(remote_host)
 
