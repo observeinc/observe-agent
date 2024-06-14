@@ -13,7 +13,7 @@ def run_test_linux(remote_host):
     cloud_init_file = "/var/log/cloud-init-output.log"
     tmp_file = "/tmp/cloud-init-output.log"
     connection_timeout = 60
-    cloud_init_file_timeout = 30
+    cloud_init_file_timeout = 60
 
     #Test SSH Connection 
     remote_host.test_conection(connection_timeout)
