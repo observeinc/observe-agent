@@ -12,7 +12,7 @@ permissions:
 
 env:
     TF_VAR_name_format: "tf-observe-agent-test-%s"
-    TF_VAR_AWS_MACHINE_FILTER: "AMAZON_LINUX_2023"  #Plan is to matrix this variable 
+    TF_VAR_AWS_MACHINE: "AMAZON_LINUX_2023"  #Plan is to matrix this variable 
     TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
     TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem" 
 
