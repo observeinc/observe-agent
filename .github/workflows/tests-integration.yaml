@@ -23,7 +23,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                AWS_MACHINE: ["AMAZON_LINUX_2023"]
+                AWS_MACHINE: ["AMAZON_LINUX_2023", "RHEL_8_4_0"]
         defaults:
             run:
                 working-directory: integration #Terrafrom commands and tests are ran from integration directory
