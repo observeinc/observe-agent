@@ -1,28 +1,10 @@
-// provider "aws" {  #Explicitly set the provider to Variables 
-//   region = var.aws_region 
-//   profile = var.aws_profile
-
-//   assume_role {
-//     role_arn = var.aws_role_arn
-//   }
-// }
-
 provider "aws"{}
-
-variables {  #Explicitly set variables for this file 
-  name_format        = var.name_format
-  AWS_MACHINE_FILTER = var.AWS_MACHINE_FILTER 
-  PUBLIC_KEY_PATH    = var.PUBLIC_KEY_PATH
-  PRIVATE_KEY_PATH   = var.PRIVATE_KEY_PATH
-}
-
 
 run "setup_aws" {
   module {
-    source = "./modules/create_ec2"
+    source = "./modules/create_ec2" 
   }
 }
-
 
 run "check_ec2_connection" {
   module {
