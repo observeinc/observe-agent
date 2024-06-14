@@ -10,11 +10,14 @@ terraform {
 }
 
 
-provider "aws" {
-  # region = "us-west-1" #Local use only
-  # profile = "blunderdome" #Local use only git
-  # assume_role {
-  #   role_arn = "IAM ROLE IN BLUNDERDOME" #Local Use Only 
-  # }
-}
+provider "aws" {}
+
+#Create provider_override.tf with the following for local use
+# provider "aws" {
+#   region = "us-west-1" 
+#   profile = "blunderdome" 
+#   assume_role {
+#     role_arn = "IAM ROLE IN BLUNDERDOME" 
+#   }
+# }
 
