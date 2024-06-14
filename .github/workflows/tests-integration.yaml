@@ -12,15 +12,18 @@ permissions:
 
 env:
     TF_VAR_name_format: "tf-observe-agent-test-%s"
-    TF_VAR_AWS_MACHINE: "AMAZON_LINUX_2023"  #Plan is to matrix this variable 
+    TF_VAR_AWS_MACHINE: "AMAZON_LINUX_2023"  #Plan is to matrix this variable RHEL_8_4_0
     TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
     TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem" 
 
-
+#RHEL_8_4_0
 jobs:
     observe-agent-integration-tests:
-        name: observe-agent-integration-tests
+        name: observe-agent-integration-tests-${{ matrix.AWS_MACHINE}}
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                AWS_MACHINE: ["AMAZON_LINUX_2023"]
         defaults:
             run:
                 working-directory: integration #Terrafrom commands and tests are ran from integration directory
@@ -49,6 +52,9 @@ jobs:
                 chmod 644 ${{env.TF_VAR_PUBLIC_KEY_PATH}}
                 ls -l 
                             
+            - name: Setup additional terraform variable
+              run:  echo "TF_VAR_AWS_MACHINE=$(echo ${{matrix.AWS_MACHINE}})" >> $GITHUB_ENV
+
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v3
                 
