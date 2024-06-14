@@ -11,7 +11,7 @@ def run_test_linux(remote_host: Host) -> None:
 
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'
     version_pattern = re.compile(r'^\d+\.\d+\.\d+$')
-    connection_timeout = 30
+    connection_timeout = 60
 
     #Test SSH Connection 
     remote_host.test_conection(connection_timeout)

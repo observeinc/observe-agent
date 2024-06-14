@@ -12,7 +12,7 @@ from utils import Host, check_env_vars, die
 def run_test_linux(remote_host):    
     cloud_init_file = "/var/log/cloud-init-output.log"
     tmp_file = "/tmp/cloud-init-output.log"
-    connection_timeout = 30
+    connection_timeout = 60
     cloud_init_file_timeout = 30
 
     #Test SSH Connection 
