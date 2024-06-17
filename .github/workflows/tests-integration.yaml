@@ -2,7 +2,7 @@ name: Observe Agent Integration Tests
 
 on:
   workflow_dispatch:
-  push:
+  #push:
 
 #Special permissions required for OIDC authentication
 permissions:
