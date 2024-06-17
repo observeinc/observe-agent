@@ -3,7 +3,7 @@ module observe/agent
 go 1.22.3
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.101.0
@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.101.0
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.101.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.101.0
-	go.opentelemetry.io/collector/connector v0.101.0
+	go.opentelemetry.io/collector/connector v0.102.0
 	go.opentelemetry.io/collector/exporter v0.101.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.101.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.101.0
@@ -167,10 +167,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.101.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.101.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.101.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.101.0 // indirect
