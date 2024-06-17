@@ -1,11 +1,11 @@
-# This is an example config file for Observe-Agent
-# Please download the config from Connections Portal
-
 # Observe data token
-# token: "${OBSERVE_TOKEN}"
+token: "${OBSERVE_TOKEN}"
 
 # Target Observe collection url
-# observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
+observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
+
+# Debug mode - Sets agent log level to debug
+debug: false
 
 host_monitoring:
   enabled: true
@@ -13,9 +13,10 @@ host_monitoring:
     enabled: true
   metrics:
     enabled: true
-
+    
 # otel_config_overrides:
 #   exporters:
+#     # This is a net new exporter
 #     debug:
 #       verbosity: detailed
 #       sampling_initial: 5
@@ -24,6 +25,11 @@ host_monitoring:
 #     pipelines:
 #       # This will override the existing metrics/host_monitoring pipeline and output to stdout debug instead
 #       metrics/host_monitoring:
+#         receivers: [hostmetrics/host-monitoring]
+#         processors: [memory_limiter]
+#         exporters: [debug]
+#       # This is a net new pipeline
+#       logs/new-pipeline:
 #         receivers: [hostmetrics/host-monitoring]
 #         processors: [memory_limiter]
 #         exporters: [debug]

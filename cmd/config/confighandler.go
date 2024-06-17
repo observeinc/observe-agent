@@ -35,7 +35,7 @@ func GetAllOtelConfigFilePaths() ([]string, string, error) {
 }
 
 func SetEnvVars() error {
-	collector_url, token := viper.GetString("observe_url"), viper.GetString("token")
+	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
 	endpoint, err := url.JoinPath(collector_url, "/v2/otel")
 	if err != nil {
 		return err
@@ -44,6 +44,12 @@ func SetEnvVars() error {
 	os.Setenv("OBSERVE_ENDPOINT", endpoint)
 	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
 	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
+
+	if debug {
+		os.Setenv("OTEL_LOG_LEVEL", "DEBUG")
+	} else {
+		os.Setenv("OTEL_LOG_LEVEL", "INFO")
+	}
 	return nil
 }
 
@@ -62,13 +68,26 @@ func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
 func GetDefaultConfigFolder() string {
 	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
+		return GetDefaultAgentPath()
+	case "windows":
+		return filepath.Join(GetDefaultAgentPath(), "config")
+	case "linux":
+		return GetDefaultAgentPath()
+	default:
+		return GetDefaultAgentPath()
+	}
+}
+
+func GetDefaultAgentPath() string {
+	switch currOS := runtime.GOOS; currOS {
+	case "darwin":
 		homedir, err := os.UserHomeDir()
 		if err != nil {
 			return ""
 		}
 		return homedir
 	case "windows":
-		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent\\config")
+		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent")
 	case "linux":
 		return "/etc/observe-agent"
 	default:
@@ -79,7 +98,7 @@ func GetDefaultConfigFolder() string {
 func GetDefaultFilestoragePath() string {
 	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		return "~/Library/Application Support/Observe/observe-agent/filestorage"
+		return filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Observe", "observe-agent", "filestorage")
 	case "windows":
 		return os.ExpandEnv("$ProgramData\\Observe\\observe-agent\\filestorage")
 	case "linux":

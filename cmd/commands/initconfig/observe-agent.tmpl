@@ -4,12 +4,15 @@ token: {{ .Token }}
 # Target Observe collection url
 observe_url: {{ .ObserveURL }}
 
+# Debug mode - Sets agent log level to debug
+debug: false
+
 host_monitoring:
-  enabled: true
+  enabled: {{ .HostMonitoring_Enabled }}
   logs: 
-    enabled: true
+    enabled: {{ .HostMonitoring_LogsEnabled }}
   metrics:
-    enabled: true
+    enabled: {{ .HostMonitoring_MetricsEnabled }}
 
 # otel_config_overrides:
 #   exporters:

@@ -176,3 +176,5 @@ service:
     metrics:
       level: detailed
       address: ":8888"
+    logs:
+      level: ${env:OTEL_LOG_LEVEL}
