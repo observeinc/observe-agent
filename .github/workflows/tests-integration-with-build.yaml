@@ -93,10 +93,8 @@ jobs:
         - name: Download build artifacts 
           uses: actions/download-artifact@v4        
           with:
-            name: dist
-            path: dist/
-        
-        - run: ls -l && ls -l dist/
+            name: dist        
+        - run: ls -l && ls -l dist/ && ls -R 
 
 
         # - name: Setup Terraform
