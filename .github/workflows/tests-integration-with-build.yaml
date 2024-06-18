@@ -40,7 +40,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: latest
+          version: '~> v2'
           args: release --clean  --snapshot 
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
