@@ -94,11 +94,11 @@ jobs:
           uses: actions/download-artifact@v4        
           id: artifact-download-step
           with:
-            name: dist        
+            name: dist         
             path: dist
 
-        - name: Output artifact ID
-          run:  echo 'Artifact ID is ${{ steps.artifact-download-step.outputs.download-path }}'
+        - name: Artificat download path 
+          run:  echo 'Artifact donwnload path is ${{ steps.artifact-download-step.outputs.download-path }}'
 
         - run: |
             echo "GH Workspace is: $GITHUB_WORKSPACE"
