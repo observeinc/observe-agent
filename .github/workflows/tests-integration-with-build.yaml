@@ -103,7 +103,10 @@ jobs:
         - run: |
             echo "GH Workspace is: $GITHUB_WORKSPACE"
             ls ${{ steps.artifact-download-step.outputs.download-path }}
-            ls -l && ls -l dist/ && ls -R 
+            echo "Current Dir Stuff"
+            pwd
+            ls -l 
+            
 
 
         # - name: Setup Terraform
