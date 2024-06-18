@@ -41,10 +41,13 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: latest
-          args: release --clean  --verbose --snapshot 
+          args: release --clean  --snapshot 
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - run: ls -l && ls -l dist/
+
+
+
 
 #RHEL_8_4_0
 # jobs:
