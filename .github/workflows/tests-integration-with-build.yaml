@@ -95,6 +95,7 @@ jobs:
           id: artifact-download-step
           with:
             name: dist        
+            path: dist
 
         - name: Output artifact ID
           run:  echo 'Artifact ID is ${{ steps.artifact-download-step.outputs.download-path }}'
