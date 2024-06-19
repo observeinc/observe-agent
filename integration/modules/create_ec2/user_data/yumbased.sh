@@ -9,10 +9,10 @@ yum install ca-certificates -y
 
 
 
-echo '[fury]
-name=Gemfury Private Repo
-baseurl=https://yum.fury.io/observeinc/
-enabled=1
-gpgcheck=0' | sudo tee /etc/yum.repos.d/fury.repo
+# echo '[fury]
+# name=Gemfury Private Repo
+# baseurl=https://yum.fury.io/observeinc/
+# enabled=1
+# gpgcheck=0' | sudo tee /etc/yum.repos.d/fury.repo
 
-sudo yum install observe-agent -y
+# sudo yum install observe-agent -y

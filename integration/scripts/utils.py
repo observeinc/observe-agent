@@ -7,31 +7,65 @@ import os
 import sys
 import re
 import time 
+import json 
+import pprint 
 
 def die(message):
     print(message, file=sys.stderr)
     sys.exit(1)
 
 
-def check_env_vars():
+def get_env_vars():
     host = os.environ.get("HOST")
     user = os.environ.get("USER")
     key_filename = os.environ.get("KEY_FILENAME")
     machine_name=os.environ.get("MACHINE_NAME")
+    machine_config_string=os.environ.get("MACHINE_CONFIG")
 
     if host is None:
-        die("Error: HOST environment variable is not set.")
+        die("Error: HOST environment variable is not set. This should be an output variable from create_ec2 module")
 
     if user is None:
-        die("Error: USER environment variable is not set.")
+        die("Error: USER environment variable is not set. This should be an output variable from create_ec2 module")
 
     if key_filename is None:
-        die("Error: KEY_FILENAME environment variable is not set.")
+        die("Error: KEY_FILENAME environment variable is not set. This should be an output variable from create_ec2 module")
 
     if machine_name is None:
-        die("Error: MACHINE_NAME environment variable is not set.")
+        die("Error: MACHINE_NAME environment variable is not set. This should be an output variable from create_ec2 module")
 
-    return host, user, key_filename, machine_name
+    if machine_config_string is None:
+        die("Error: MACHINE_CONFIG environment variable is not set. This should be an output variable from create_ec2 module")
+
+     # Split the string into key-value pairs
+    pairs = machine_config_string.split(',')
+    data = {}
+    for pair in pairs:
+        key, value = pair.split(':', 1)  #
+        data[key] = value
+    
+    env_vars = {
+        "host": host,
+        "user": user,
+        "key_filename": key_filename,
+        "machine_name": machine_name,
+        "machine_config": data
+    }
+    print("-"*30)
+    print("Env vars set to: \n", env_vars)
+    print("-"*30)
+
+    return env_vars
+
+
+def print_test_decorator(func):
+    def wrapper(*args, **kwargs):
+        print("*" * 30)
+        print("Running Test:", func.__name__)
+        result = func(*args, **kwargs)
+        print("*" * 30)
+        return result
+    return wrapper
 
 class ExampleException(Exception):  #We can put our custom exceptions here 
     pass
@@ -94,8 +128,8 @@ class Host(object):
                 host=self.host_ip, user=self.username,
                 key=self.key_file_path, exc=exc))
     
-    def test_conection(self, timeout=30):
-
+    def test_conection(self, timeout=60):
+        print("Testing SSH connection to host {} with timeout {}s".format(self.host_ip, timeout))
         for _ in range(timeout):
             connection = self._get_connection()
             try:
@@ -107,3 +141,4 @@ class Host(object):
                 print(f"❌ SSH connection failed: {exc}")
             time.sleep(1)
         raise RuntimeError(" ❌ The SSH connection failed")
+

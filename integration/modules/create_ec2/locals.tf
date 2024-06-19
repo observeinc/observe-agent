@@ -47,6 +47,7 @@ locals {
       default_user      = "ec2-user"
       sleep             = 60
       user_data         = "user_data/yumbased.sh"
+      
     }
 
     RHEL_8_4_0 = {

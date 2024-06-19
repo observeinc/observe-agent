@@ -9,7 +9,7 @@ from utils import Host, check_env_vars, die
 
 
 
-def run_test_linux(remote_host):    
+def run_test_linux(remote_host, env_vars):    
     cloud_init_file = "/var/log/cloud-init-output.log"
     tmp_file = "/tmp/cloud-init-output.log"
     connection_timeout = 60
@@ -33,13 +33,15 @@ def run_test_linux(remote_host):
 
 if __name__ == '__main__':
     
-    host, user, key_filename, machine_name = check_env_vars()
-    remote_host = Host(host_ip=host,
-                       username=user,
-                       key_file_path=key_filename)       
+    env_vars = check_env_vars()
+    remote_host = Host(host_ip=env_vars["host"],
+                       username=env_vars["user"],
+                       key_file_path=env_vars["key_filename"])       
 
-    if "linux" in machine_name.lower() or "rhel" in machine_name.lower():
-        run_test_linux(remote_host)
+    print("Machine Config is: {}".format(env_vars["machine_config"]))
+
+    if "linux" in env_vars["machine_name"].lower() or "rhel" in env_vars["machine_name"].lower():
+        run_test_linux(remote_host, env_vars)
 
 
 

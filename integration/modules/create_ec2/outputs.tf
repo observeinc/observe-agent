@@ -1,5 +1,17 @@
+locals {
+  machine_config_list = formatlist("%s:%s", keys(local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE]), values(local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE]))
+}
 output "machine_name"{
   value = var.AWS_MACHINE
+}
+
+#Outputs a string version of machine config (since tf tests exec module needs a string)
+output "machine_config" {
+  value =   join(",", local.machine_config_list)
+}
+
+output "user_name" {
+  value =  local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user
 }
 
 output "arn" {
@@ -19,9 +31,6 @@ output "public_ip" {
   value = aws_instance.observe_agent_instance.public_ip
 }
 
-output "user_name" {
-  value =  local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user
-}
 
 output "private_key_path" {
   value = var.PRIVATE_KEY_PATH  
