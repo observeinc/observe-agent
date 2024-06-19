@@ -8,12 +8,35 @@ import time
 from utils import * 
 
 
+def get_installation_package(env_vars):
+
+    current_dir = os.getcwd()
+    dist_directory = os.path.abspath(os.path.join(current_dir, '..',  'dist'))
+    print(f"Path to 'dist' directory: {dist_directory}")
+
+    # List files in the directory
+    files = os.listdir(dist_directory)   
+
+    # Search criteria
+    package_type = env_vars["machine_config"]["package_type"]
+    architecture = env_vars["machine_config"]["architecture"]
+
+    # Iterate through files and find matches
+    for filename in files:
+        if package_type in filename and architecture in filename:            
+            full_path = os.path.join(dist_directory, filename)
+            print(f"Found matching file {filename} at: {full_path}")
+            return filename, full_path
 
 
 
 @print_test_decorator
-def run_test_linux(remote_host, env_vars):       
-    pass 
+def run_test_linux(rremote_host: Host, env_vars: dict):       
+    
+    filename, package = get_installation_package(env_vars)
+    remote_host.put_file(package, "/home/ec2-user")
+    result = remote_host.run_command('cd /home/ec2-user && sudo yum localinstall {} -y'.format(filename))
+    print(result)    
   
 
 

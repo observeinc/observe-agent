@@ -47,7 +47,9 @@ locals {
       default_user      = "ec2-user"
       sleep             = 60
       user_data         = "user_data/yumbased.sh"
-      
+      distribution      = "redhat"
+      package_type      = "rpm"
+      architecture      = "x86_64"      
     }
 
     RHEL_8_4_0 = {

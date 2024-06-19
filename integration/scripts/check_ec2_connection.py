@@ -5,18 +5,14 @@ import os
 import sys
 import re
 import time 
-from utils import Host, check_env_vars, die
+from utils import *
 
 
-
-def run_test_linux(remote_host, env_vars):    
+@print_test_decorator
+def run_test_linux(remote_host: Host, env_vars: dict):    
     cloud_init_file = "/var/log/cloud-init-output.log"
     tmp_file = "/tmp/cloud-init-output.log"
-    connection_timeout = 60
-    cloud_init_file_timeout = 60
-
-    #Test SSH Connection 
-    remote_host.test_conection(connection_timeout)
+    cloud_init_file_timeout = 240 # 4 minutes
 
     #Test cloud-init file finished successfully
     for _ in range(cloud_init_file_timeout):        
@@ -33,16 +29,16 @@ def run_test_linux(remote_host, env_vars):
 
 if __name__ == '__main__':
     
-    env_vars = check_env_vars()
+    env_vars = get_env_vars()
     remote_host = Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
-                       key_file_path=env_vars["key_filename"])       
-
-    print("Machine Config is: {}".format(env_vars["machine_config"]))
+                       key_file_path=env_vars["key_filename"])    
+    
+    #Test SSH Connection before starting test of interest 
+    remote_host.test_conection(int(env_vars["machine_config"]["sleep"]))   
 
     if "linux" in env_vars["machine_name"].lower() or "rhel" in env_vars["machine_name"].lower():
         run_test_linux(remote_host, env_vars)
-
 
 
 
