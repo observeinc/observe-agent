@@ -100,31 +100,22 @@ jobs:
         - name: Artificat download path 
           run:  echo 'Artifact donwnload path is ${{ steps.artifact-download-step.outputs.download-path }}'
 
-        - run: |
-            echo "GH Workspace is: $GITHUB_WORKSPACE"
-            ls ${{ steps.artifact-download-step.outputs.download-path }}
-            echo "Current Dir Stuff"
-            pwd
-            ls -l 
+        - name: Setup Terraform
+          uses: hashicorp/setup-terraform@v3
             
+        - name: Terraform Init
+          id: init
+          run: terraform init
 
+        - name: Terraform Validate
+          id: validate
+          run: terraform validate -no-color
 
-        # - name: Setup Terraform
-        #   uses: hashicorp/setup-terraform@v3
-            
-        # - name: Terraform Init
-        #   id: init
-        #   run: terraform init
-
-        # - name: Terraform Validate
-        #   id: validate
-        #   run: terraform validate -no-color
-
-        # - name: Terraform Test
-        #   id: test
-        #   run: |               
-        #     ls -l                                   
-        #     terraform test -verbose 
+        - name: Terraform Test
+          id: test
+          run: |               
+            ls -l                                   
+            terraform test -verbose 
 
 
 
