@@ -41,35 +41,3 @@ if __name__ == '__main__':
         run_test_linux(remote_host, env_vars)
         
 
-
-
-
-
-# def die(message):
-#     print(message, file=sys.stderr)
-#     sys.exit(1)
-
-# host = os.environ.get("HOST")
-# user = os.environ.get("USER")
-# key_filename = os.environ.get("KEY_FILENAME")
-# machine_name=os.environ.get("MACHINE_NAME")
-
-# if host is None:
-#     die("Error: HOST environment variable is not set.")
-
-# if user is None:
-#     die("Error: USER environment variable is not set.")
-
-# if key_filename is None:
-#     die("Error: KEY_FILENAME environment variable is not set.")
-
-# if machine_name is None:
-#     die("Error: MACHINE_NAME environment variable is not set.")
-
-
-# conn = Connection(host=host, user=user, connect_kwargs={"key_filename": key_filename})
-# #conn.run()
-
-
-
-# #var/log/cloud-init-output.log
