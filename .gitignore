@@ -9,6 +9,7 @@ agent.exe~
 #integration
 *.pem
 *.pub 
+*.env 
 
 
 #terraform
