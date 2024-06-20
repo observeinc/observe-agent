@@ -12,15 +12,15 @@ agent.exe~
 
 
 #terraform
-integration/.terrafrom 
+integration/.terraform
 .terraform/
-terraform.tfstate
 *.tfstate*
 terraform.tfvars
 *.auto.tfvars
 tfplan
 .terraform.lock.hcl
 *_override.tf
+
 
 #python
 *pycache*

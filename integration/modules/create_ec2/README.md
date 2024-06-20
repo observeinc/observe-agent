@@ -13,7 +13,7 @@ It then generates outputs that can be used in other modules (eg: `tests/*` for t
 
 ### Dependencies
 
-It relies on the existence of the following in `us-west-` 
+It relies on the existence of the following in `us-west-1` 
 - Security Group Name: `tf-observe-agent-test-ec2_sg` 
 - Subnet Name: `tf-observe-agent-test-subnet`
 
