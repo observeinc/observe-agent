@@ -21,6 +21,8 @@ def get_installation_package(env_vars):
     package_type = env_vars["machine_config"]["package_type"]
     architecture = env_vars["machine_config"]["architecture"]
 
+    print(f"Looking for installation package '{package_type}' and architecture '{architecture}'")
+
     # Iterate through files and find matches
     for filename in files:
         if package_type in filename and architecture in filename:            
@@ -34,10 +36,18 @@ def get_installation_package(env_vars):
 def run_test_linux(rremote_host: Host, env_vars: dict):       
     
     filename, package = get_installation_package(env_vars)
-    remote_host.put_file(package, "/home/ec2-user")
-    result = remote_host.run_command('cd /home/ec2-user && sudo yum localinstall {} -y'.format(filename))
+    home_dir = "/home/{}".format(env_vars["user"])
+
+    remote_host.put_file(package, home_dir)
+    if "redhat" in env_vars["machine_config"]["distribution"]:
+        result = remote_host.run_command('cd ~ && sudo yum localinstall {} -y'.format(filename))
+    elif "debian" in env_vars["machine_config"]["distribution"] :
+        result = remote_host.run_command('cd ~ && sudo dpkg -i {}'.format(filename))
+    else:
+        raise RuntimeError("❌ Unknown distribution type")  
     print(result)    
-  
+    
+
 
 
 if __name__ == '__main__':
@@ -50,7 +60,7 @@ if __name__ == '__main__':
     #Test SSH Connection before starting test of interest 
     remote_host.test_conection(int(env_vars["machine_config"]["sleep"]))   
 
-    if "linux" in env_vars["machine_name"].lower() or "rhel" in env_vars["machine_name"].lower():
+    if "redhat" in env_vars["machine_config"]["distribution"] or "debian" in env_vars["machine_config"]["distribution"]:
         run_test_linux(remote_host, env_vars)
 
 

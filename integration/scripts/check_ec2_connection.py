@@ -37,8 +37,9 @@ if __name__ == '__main__':
     #Test SSH Connection before starting test of interest 
     remote_host.test_conection(int(env_vars["machine_config"]["sleep"]))   
 
-    if "linux" in env_vars["machine_name"].lower() or "rhel" in env_vars["machine_name"].lower():
+    if "redhat" in env_vars["machine_config"]["distribution"] or "debian" in env_vars["machine_config"]["distribution"]:
         run_test_linux(remote_host, env_vars)
+        
 
 
 
