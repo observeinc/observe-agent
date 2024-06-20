@@ -1,4 +1,4 @@
-name: Observe Agent Integration Tests (BUILD TEST)
+name: Observe Agent Integration Tests
 
 on:
   workflow_dispatch:
@@ -11,8 +11,7 @@ permissions:
     pull-requests: write
 
 env:
-    TF_VAR_name_format: "tf-observe-agent-test-%s"
-    TF_VAR_AWS_MACHINE: "AMAZON_LINUX_2023"  #Plan is to matrix this variable RHEL_8_4_0
+    TF_VAR_name_format: "tf-observe-agent-test-%s"   
     TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
     TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem" 
 
@@ -93,9 +92,6 @@ jobs:
           with:
             name: dist         
             path: dist
-
-        - name: Artificat download path 
-          run:  echo 'Artifact donwnload path is ${{ steps.artifact-download-step.outputs.download-path }}'
 
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@v3
