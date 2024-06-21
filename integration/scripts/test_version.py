@@ -3,10 +3,10 @@ import os
 import sys
 import re
 import time 
-from utils import Host, get_env_vars, die
+from utils import *
 
 
-
+@print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
 
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'

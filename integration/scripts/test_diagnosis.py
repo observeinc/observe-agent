@@ -3,10 +3,11 @@ import os
 import sys
 import re
 import time 
-from utils import Host, get_env_vars, die
+from utils import *
 
 
 
+@print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
 
     init_command='sudo observe-agent init-config --token {} --observe_url {}'.format(env_vars["observe_token"], env_vars["observe_url"])

@@ -4,11 +4,11 @@ import sys
 import re
 import time 
 import pprint
-from utils import Host, get_env_vars, die
+from utils import *
 from collections import defaultdict
 
 
-
+@print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
        
    start_command='sudo systemctl enable --now observe-agent'
