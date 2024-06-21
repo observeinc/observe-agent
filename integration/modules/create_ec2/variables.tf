@@ -5,7 +5,7 @@ variable "name_format" {
 
 variable "AWS_MACHINE" {
   description = "This is used to choose a machine and run againt AWS_MACHINE_CONFIGS in main.tf"
-  type        = string  
+  type        = string
 }
 
 variable "PUBLIC_KEY_PATH" {

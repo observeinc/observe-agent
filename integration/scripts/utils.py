@@ -10,17 +10,20 @@ import time
 import json 
 import pprint 
 
-def die(message):
+def die(message: str):
     print(message, file=sys.stderr)
     sys.exit(1)
 
 
-def get_env_vars():
+def get_env_vars(need_observe: bool = False):
     host = os.environ.get("HOST")
     user = os.environ.get("USER")
     key_filename = os.environ.get("KEY_FILENAME")
     machine_name=os.environ.get("MACHINE_NAME")
     machine_config_string=os.environ.get("MACHINE_CONFIG")
+    observe_url=os.environ.get("OBSERVE_URL")
+    observe_token=os.environ.get("OBSERVE_TOKEN")
+
 
     if host is None:
         die("Error: HOST environment variable is not set. This should be an output variable from create_ec2 module")
@@ -37,6 +40,11 @@ def get_env_vars():
     if machine_config_string is None:
         die("Error: MACHINE_CONFIG environment variable is not set. This should be an output variable from create_ec2 module")
 
+    if observe_url is None and need_observe:
+        die("Error: OBSERVE_URL environment variable is not set. This should be an output variable from setup_observe_variables module")
+    if observe_token is None and need_observe:
+        die("Error: OBSERVE_TOKEN environment variable is not set")
+
      # Split the string into key-value pairs
     pairs = machine_config_string.split(',')
     data = {}
@@ -49,7 +57,9 @@ def get_env_vars():
         "user": user,
         "key_filename": key_filename,
         "machine_name": machine_name,
-        "machine_config": data
+        "machine_config": data,
+        "observe_url": observe_url,
+        "observe_token": observe_token
     }
     print("-"*30)
     print("Env vars set to: \n", env_vars)

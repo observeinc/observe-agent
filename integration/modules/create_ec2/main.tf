@@ -33,15 +33,15 @@ resource "aws_instance" "observe_agent_instance" {
 
   user_data         = file(join("/", ["${path.module}", local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].user_data]))
   get_password_data = can(regex("WINDOWS", var.AWS_MACHINE)) ? true : false
-  
+
   root_block_device {
     volume_size = 100
   }
   tags = merge(
     local.BASE_TAGS,
     {
-      Name                 = format(var.name_format, "${var.AWS_MACHINE}_${random_string.output.id}")
-      OS_KEY               = "${var.AWS_MACHINE}"
+      Name   = format(var.name_format, "${var.AWS_MACHINE}_${random_string.output.id}")
+      OS_KEY = "${var.AWS_MACHINE}"
     },
   )
 

@@ -6,7 +6,7 @@ provider "aws"{}
 //   profile = "blunderdome"
 //   assume_role {
 //     #role_arn = "arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"
-//     role_arn = "arn:aws:iam::767397788203:role/gh-observe_agent-repo"
+//     role_arn = "arn:aws:iam::76739778s203:role/gh-observe_agent-repo"
 //   }
 // }
 
@@ -18,20 +18,27 @@ run "setup_ec2" {
 }
 
 
+run "setup_observe_variables" {
+  module {
+    source = "./modules/setup_observe_variables"
+  }
+}
 
-run "check_ec2_connection" {
+
+
+run "test_ec2_connection" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/check_ec2_connection.py"
+    command = "python3 ./scripts/test_ec2_connection.py"
     env_vars = {
-      HOST         = run.setup_ec2.public_ip
-      USER         = run.setup_ec2.user_name
-      KEY_FILENAME = run.setup_ec2.private_key_path
-      MACHINE_NAME = run.setup_ec2.machine_name
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
   }
@@ -45,19 +52,19 @@ run "check_ec2_connection" {
 
 
 
-run "check_installation" {
+run "test_installation" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/check_installation.py"
+    command = "python3 ./scripts/test_installation.py"
     env_vars = {
-      HOST         = run.setup_ec2.public_ip
-      USER         = run.setup_ec2.user_name
-      KEY_FILENAME = run.setup_ec2.private_key_path
-      MACHINE_NAME = run.setup_ec2.machine_name
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
   }
@@ -71,19 +78,19 @@ run "check_installation" {
 
 
 
-run "check_version" {
+run "test_version" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/check_version.py"
+    command = "python3 ./scripts/test_version.py"
     env_vars = {
-      HOST         = run.setup_ec2.public_ip
-      USER         = run.setup_ec2.user_name
-      KEY_FILENAME = run.setup_ec2.private_key_path
-      MACHINE_NAME = run.setup_ec2.machine_name
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
   }
@@ -97,4 +104,28 @@ run "check_version" {
 
 
 
+run "test_diagnosis" {
+  module {
+    source  = "observeinc/collection/aws//modules/testing/exec"
+    version = "2.9.0"
+  }
+
+  variables {
+    command = "python3 ./scripts/test_diagnosis.py"
+    env_vars = {
+      OBSERVE_URL    = run.setup_observe_variables.OBSERVE_URL
+      OBSERVE_TOKEN  = run.setup_observe_variables.OBSERVE_TOKEN
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      MACHINE_NAME   = run.setup_ec2.machine_name
+      MACHINE_CONFIG = run.setup_ec2.machine_config
+    }
+  }
+
+  assert {
+    condition     = output.error == ""
+    error_message = "Error in Check Diagnosis Test"
+  }
+}
 

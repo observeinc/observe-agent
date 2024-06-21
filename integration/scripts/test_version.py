@@ -28,9 +28,9 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
     
     if config_file != config_file_linux:
-        raise ValueError(f"Invalid config file: {config_file}")
+        raise ValueError(f" ❌ Invalid config file: {config_file}")
     if not version_pattern.match(version):
-        raise ValueError(f"Invalid version: {version}")
+        raise ValueError(f" ❌ Invalid version: {version}")
 
     print (" ✅ Verified version and config file succesfully! ")
 

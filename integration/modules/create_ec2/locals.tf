@@ -12,7 +12,7 @@ locals {
       user_data         = "user_data/aptbased.sh"
       distribution      = "debian"
       package_type      = ".deb"
-      architecture      = "amd64" 
+      architecture      = "amd64"
     }
 
     # UBUNTU_20_04_LTS = {
@@ -52,7 +52,7 @@ locals {
       user_data         = "user_data/yumbased.sh"
       distribution      = "redhat"
       package_type      = ".rpm"
-      architecture      = "x86_64"      
+      architecture      = "x86_64"
     }
 
     # RHEL_8_4_0 = {
