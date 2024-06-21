@@ -42,7 +42,7 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
             break        
     if not observe_val:
         print(result)
-        raise ValueError(f"❌ Failed: observe-agent -> observe valdation")
+        raise ValueError(f"❌ Failed: observe-agent -> observe validation")
    
 
 if __name__ == '__main__':
