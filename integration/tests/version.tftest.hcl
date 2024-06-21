@@ -45,7 +45,7 @@ run "test_ec2_connection" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Check EC2 State"
+    error_message = "Error in Check EC2 Connection"
   }
 }
 
@@ -126,6 +126,29 @@ run "test_diagnosis" {
   assert {
     condition     = output.error == ""
     error_message = "Error in Check Diagnosis Test"
+  }
+}
+
+run "test_status" {
+  module {
+    source  = "observeinc/collection/aws//modules/testing/exec"
+    version = "2.9.0"
+  }
+
+  variables {
+    command = "python3 ./scripts/test_status.py"
+    env_vars = {
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      MACHINE_NAME   = run.setup_ec2.machine_name
+      MACHINE_CONFIG = run.setup_ec2.machine_config
+    }
+  }
+
+  assert {
+    condition     = output.error == ""
+    error_message = "Error in Check Status Test"
   }
 }
 
