@@ -18,6 +18,7 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
    #Start Observe Agent 
    remote_host.run_command(start_command)
+   time.sleep(5)
 
     #Check Status Command
    result = remote_host.run_command(status_command)
