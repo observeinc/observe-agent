@@ -8,7 +8,7 @@ import time
 from utils import * 
 
 
-def get_installation_package(env_vars):
+def get_installation_package(env_vars: dict) -> tuple:
 
     current_dir = os.getcwd()
     dist_directory = os.path.abspath(os.path.join(current_dir, '..',  'dist'))
@@ -34,7 +34,16 @@ def get_installation_package(env_vars):
 
 @print_test_decorator
 def run_test_linux(rremote_host: Host, env_vars: dict):       
-    
+    """
+    Test to install local observe-agent on a linux ec2 instance and validate command ran successfully 
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        RuntimeError: Unknown distribution type passed  
+    """
     filename, package = get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
 

@@ -10,7 +10,16 @@ from collections import defaultdict
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
-       
+
+   """
+    Test to check if observe-agent is running correctly 
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing 
+
+    """ 
+
    start_command='sudo systemctl enable --now observe-agent'
    status_command='observe-agent status'
    metrics_dict = defaultdict(list)

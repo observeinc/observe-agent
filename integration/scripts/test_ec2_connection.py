@@ -9,7 +9,20 @@ from utils import *
 
 
 @print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict):    
+def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
+    """
+    This test validates that the cloud-init file finished successfully 
+    and ec2 instance is in stable state prior to running other
+
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        RuntimeError: Failed to verify cloud-init file
+    """
+
     cloud_init_file = "/var/log/cloud-init-output.log"
     tmp_file = "/tmp/cloud-init-output.log"
     cloud_init_file_timeout = 240 # 4 minutes

@@ -10,12 +10,23 @@ import time
 import json 
 import pprint 
 
-def die(message: str):
+def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)
 
 
-def get_env_vars(need_observe: bool = False):
+def get_env_vars(need_observe: bool = False) -> dict:
+    
+
+    """Gets environmental variables from OS and returns a dict of env_vars
+
+    Args:
+        need_observe (bool, optional): whether or not to require observe url/token variables.
+          Defaults to False.
+
+    Returns:
+        _type_: dict of environment variables
+    """
     host = os.environ.get("HOST")
     user = os.environ.get("USER")
     key_filename = os.environ.get("KEY_FILENAME")
@@ -69,6 +80,7 @@ def get_env_vars(need_observe: bool = False):
 
 
 def print_test_decorator(func):
+
     def wrapper(*args, **kwargs):
         print("*" * 30)
         print("Running Test:", func.__name__)
@@ -82,6 +94,9 @@ class ExampleException(Exception):  #We can put our custom exceptions here
 
 
 class Host(object):
+
+    """Host class for SSH into EC2 instances 
+    """
     def __init__(self,
                  host_ip,
                  username,
@@ -90,7 +105,7 @@ class Host(object):
         self.username = username
         self.key_file_path = key_file_path
 
-    def _get_connection(self):
+    def _get_connection(self) -> Connection:
         connect_kwargs = {'key_filename': self.key_file_path,
                           'timeout': 60,                        
                           }
@@ -113,7 +128,7 @@ class Host(object):
         return result
 
 
-    def put_file(self, local_path, remote_path):
+    def put_file(self, local_path, remote_path) -> None:
         try:
             with self._get_connection() as connection:
                 print('Copying {0} to {1} on host {2}'.format(
@@ -122,7 +137,7 @@ class Host(object):
         except (socket_error, AuthenticationException) as exc:
             self._raise_authentication_err(exc)
 
-    def get_file(self, remote_path, local_path):
+    def get_file(self, remote_path, local_path) -> None:
         try:
             with self._get_connection() as connection:
                 print('Copying {0} to {1} from host {2}'.format(
@@ -139,6 +154,14 @@ class Host(object):
                 key=self.key_file_path, exc=exc))
     
     def test_conection(self, timeout=60):
+        """Tests SSH connection to the host 
+
+        Args:
+            timeout (int, optional): how long to wait for the connection to be established. Defaults to 60.
+
+        Raises:
+            RuntimeError: SSH connection failures if the timeout is reached and no valid connection found
+        """
         print("Testing SSH connection to host {} with timeout {}s".format(self.host_ip, timeout))
         for _ in range(timeout):
             connection = self._get_connection()

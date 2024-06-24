@@ -10,6 +10,17 @@ from utils import *
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
 
+    """
+    Test to validate connection of observe-agent to Observe 
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        ValueError: Something failed with initial config or observe-agent -> observe connection 
+    """
+
     init_command='sudo observe-agent init-config --token {} --observe_url {}'.format(env_vars["observe_token"], env_vars["observe_url"])
     diagnose_command='observe-agent diagnose'
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'

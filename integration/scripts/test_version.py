@@ -9,6 +9,16 @@ from utils import *
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
 
+    """
+    Test to validate observe-agent version and config file loaded is correct 
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        ValueError: if version or config file is invalid
+    """
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'
     #Can match 0.2.2-SNAPSHOT-b6e1491 or 0.2.2 
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
