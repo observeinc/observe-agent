@@ -4,6 +4,7 @@ import (
 	"observe/agent/build"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
@@ -99,6 +100,7 @@ func baseFactories() (otelcol.Factories, error) {
 		loggingexporter.NewFactory(),
 		debugexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		fileexporter.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}
