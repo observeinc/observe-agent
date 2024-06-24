@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.2](https://github.com/googleapis/google-cloud-go/compare/auth/v0.5.1...auth/v0.5.2) (2024-06-24)
+
+
+### Bug Fixes
+
+* **auth:** Fetch initial token when CachedTokenProviderOptions.DisableAutoRefresh is true ([#10415](https://github.com/googleapis/google-cloud-go/issues/10415)) ([3266763](https://github.com/googleapis/google-cloud-go/commit/32667635ca2efad05cd8c087c004ca07d7406913)), refs [#10414](https://github.com/googleapis/google-cloud-go/issues/10414)
+
+## [0.5.1](https://github.com/googleapis/google-cloud-go/compare/auth/v0.5.0...auth/v0.5.1) (2024-05-31)
+
+
+### Bug Fixes
+
+* **auth:** Pass through client to 2LO and 3LO flows ([#10290](https://github.com/googleapis/google-cloud-go/issues/10290)) ([685784e](https://github.com/googleapis/google-cloud-go/commit/685784ea84358c15e9214bdecb307d37aa3b6d2f))
+
+## [0.5.0](https://github.com/googleapis/google-cloud-go/compare/auth/v0.4.2...auth/v0.5.0) (2024-05-28)
+
+
+### Features
+
+* **auth:** Adds X509 workload certificate provider ([#10233](https://github.com/googleapis/google-cloud-go/issues/10233)) ([17a9db7](https://github.com/googleapis/google-cloud-go/commit/17a9db73af35e3d1a7a25ac4fd1377a103de6150))
+
 ## [0.4.2](https://github.com/googleapis/google-cloud-go/compare/auth/v0.4.1...auth/v0.4.2) (2024-05-16)
 
 
