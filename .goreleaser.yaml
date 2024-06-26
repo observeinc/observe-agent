@@ -31,6 +31,9 @@ builds:
       - CGO_ENABLED=0
     goos:
       - windows
+    goarch:
+      - amd64
+      - '386'
     ldflags: -s -w -X observe/agent/build.Version={{.Version}}
 
 archives:
