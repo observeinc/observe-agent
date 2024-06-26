@@ -48,6 +48,7 @@ jobs:
         with:
           name: dist
           path: dist/
+          retention-days: 1
 
   observe-agent-integration-tests:
     name: observe-agent-integration-tests-${{ matrix.AWS_MACHINE}}
