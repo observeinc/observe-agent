@@ -22,7 +22,6 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
    start_command='sudo systemctl enable --now observe-agent'
    status_command='observe-agent status'
-   metrics_dict = defaultdict(list)
    start_timeout = 30 #how long to wait for observe-agent to start
    agent_status=False
 
@@ -32,7 +31,7 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
    
    #Run Check Status Command in a loop to wait for observe-agent to start
    for _ in range(start_timeout):       
-    
+        metrics_dict = defaultdict(list)
         result = remote_host.run_command(status_command)
         for line in result.stdout.splitlines():      
             if ":" in line:
@@ -41,13 +40,13 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
                 value = value.strip()                    
                 metrics_dict[metric].append(value)
             print(line)        
-        #Assertions on metrics
-        if metrics_dict["Status"] and metrics_dict["Status"][0] == "Running":
+        if metrics_dict["Status"] and metrics_dict["Status"][0] == "Running": 
             print("✅ Observe Agent is active and running without errors!")
             agent_status=True
             break     
-        print("❌ Observe Agent is not running. Retry Count is {}/{}...".format(_+1, start_timeout))
-        time.sleep(1)
+        else:
+            print("❌ Observe Agent is not running. Retry Count is {}/{}...".format(_+1, start_timeout))
+            time.sleep(1)
     
    if not agent_status:
         die("❌ Error in Observe Agent Status Test ")

@@ -1,4 +1,4 @@
-provider "aws" {}
+//provider "aws" {}
 
 
 run "setup_ec2" {

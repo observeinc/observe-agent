@@ -32,6 +32,19 @@ Note: You must also set the provider correctly. We use the following settings:
 - IAM Role Assumed: `gh-observe_agent-repo` 
   - The above role has permissions to create and destroy EC2 instances. See `modules/setup_aws_backend/role.tf` for more details.
 
+The provider can be directly set in the `integration/tests/integration.tftest.hcl` as below:
+
+```
+provider "aws" {
+  region  = "us-west-1" # Specify the AWS region
+  profile = "blunderdome"
+  assume_role {
+      role_arn = "arn:aws:iam::<member_account>:role/gh-observe_agent-repo"
+  }
+}
+
+```
+
 
 ### Local Testing
 
