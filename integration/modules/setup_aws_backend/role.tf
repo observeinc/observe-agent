@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "assume_role" {
     }
   }
 
-  #Nikhil-PS Account (767397788203)
+  #This is created in member account Nikhil-PS Account (767397788203) in the blunderdome root account for billing
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {

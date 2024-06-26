@@ -1,6 +1,6 @@
 
 # Random String for naming
-resource "random_string" "output" {
+resource "random_string" "unique_id" {
   length  = 6
   special = false
 }
@@ -9,13 +9,13 @@ resource "random_string" "output" {
 
 #Create Key pair for EC2 instance using Public Key Specified in var.PUBLIC_KEY_PATH
 resource "aws_key_pair" "ec2key" {
-  key_name   = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.output.id}")
+  key_name   = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.unique_id.id}")
   public_key = file(var.PUBLIC_KEY_PATH)
 
   tags = merge(
     local.BASE_TAGS,
     {
-      Name = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.output.id}")
+      Name = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.unique_id.id}")
     },
   )
 
@@ -40,7 +40,7 @@ resource "aws_instance" "observe_agent_instance" {
   tags = merge(
     local.BASE_TAGS,
     {
-      Name   = format(var.name_format, "${var.AWS_MACHINE}_${random_string.output.id}")
+      Name   = format(var.name_format, "${var.AWS_MACHINE}_${random_string.unique_id.id}")
       OS_KEY = "${var.AWS_MACHINE}"
     },
   )
