@@ -7,11 +7,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.103.0
@@ -34,6 +36,7 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.103.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.103.0
 	go.opentelemetry.io/collector/extension v0.103.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.103.0
 	go.opentelemetry.io/collector/otelcol v0.103.0
 	go.opentelemetry.io/collector/processor v0.103.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.103.0
@@ -176,6 +179,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.103.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.103.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.103.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.103.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
@@ -235,6 +239,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.27.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.52.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0 // indirect

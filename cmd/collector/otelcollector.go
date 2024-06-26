@@ -7,11 +7,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
@@ -29,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
@@ -80,6 +83,7 @@ func baseFactories() (otelcol.Factories, error) {
 	if factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
 		filestorage.NewFactory(),
+		zpagesextension.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}
@@ -92,6 +96,7 @@ func baseFactories() (otelcol.Factories, error) {
 		prometheusreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
+		iisreceiver.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}
@@ -106,10 +111,11 @@ func baseFactories() (otelcol.Factories, error) {
 	}
 
 	if factories.Processors, err = processor.MakeFactoryMap(
-		transformprocessor.NewFactory(),
-		memorylimiterprocessor.NewFactory(),
+		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
+		transformprocessor.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}

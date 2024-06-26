@@ -541,6 +541,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometh
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.103.0/go.mod h1:+WiRcWZOrXV3B5Qk0KlF5Tm7BopRvLpoPYqTrt4iA7s=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.103.0 h1:MquBpfLZRaGnQeeIF3Kn+bQNXRLZtKTWGEysbNnxcRo=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.103.0/go.mod h1:+3rCl7Z3Zm4ZZOyX9lMmaAoN8NeeCXUOmR/tysR631g=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.103.0 h1:K5wP0xYwrYyU9fCUtTrgH6aIeF75HM0ZCanQ4/R4uc8=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.103.0/go.mod h1:ApV6op2+UDXU0fU8NezQc+57o7hTi55yj3ZsqZCdvc8=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.103.0 h1:c5sOZWBMD/gyKxqwGgS6cwLdvkg6W8I3/0RZOm84xA0=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.103.0/go.mod h1:2CG+06d3sh+O36maAs2TPAbNRXZ0zcqY2kH5pEABrzg=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.103.0 h1:0RKHdlCbOQA09p8BmtCjJqaYsu20bNVi6zWrpdgxxYw=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.103.0/go.mod h1:H1z0xcIHlvTlISLtrZlRF4nwDrGLu/iO2ExXacYcJM4=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.103.0 h1:+JRtnmcLjvG0BESXWCQ9PECtTisWtnIT1/DutAdr38U=
@@ -551,6 +555,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsrece
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.103.0/go.mod h1:egWafB+ntGWH3jrW7LgebNW5p+EniZLcJ9hpfAuCI+U=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.103.0 h1:8HZm7c/QOvrLdj3bZjoBaL1YqRme6/x3gCKJvvF6uMU=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.103.0/go.mod h1:saj0LAF7PbWIYnNjYjuM5UXjLiTnOug5r731oLkQv6Q=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.103.0 h1:jgLmXaaSdCZnacFp+ZnixlsuFRIkTNt4vzgr52Xesqo=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.103.0/go.mod h1:NZ1K3FrBGzEi6IGmTKlFOj+3BOmrtU1v1ZXFL6JddZ4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.103.0 h1:nCNKbPPZBUPOoFpCqt+/pLNQZyQyI3SzFy6r3lYtvh4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.103.0/go.mod h1:vcqbS3qS7XIkiiAHUVMi7wD4iOmrZgHeupNA38vx4cA=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.103.0 h1:V1N1X+KbjMauQsqW99vOfwTWBmdDGHafyoCN2LVtro4=
