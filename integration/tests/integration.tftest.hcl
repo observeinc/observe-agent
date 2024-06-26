@@ -1,16 +1,6 @@
 provider "aws" {}
 
 
-// provider "aws" {
-//   region  = "us-west-1" # Specify the AWS region
-//   profile = "blunderdome"
-//   assume_role {
-//     #role_arn = "arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"
-//     role_arn = "arn:aws:iam::76739778s203:role/gh-observe_agent-repo"
-//   }
-// }
-
-
 run "setup_ec2" {
   module {
     source = "./modules/create_ec2"
