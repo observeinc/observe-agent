@@ -24,7 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+      - run: git branch && df -h
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -47,7 +48,7 @@ jobs:
         with:
           name: dist
           path: dist/
-          retention-days: 10
+          retention-days: 1
 
   observe-agent-integration-tests:
     name: observe-agent-integration-tests-${{ matrix.AWS_MACHINE}}
@@ -64,7 +65,7 @@ jobs:
     steps:
         - name: Checkout code
           uses: actions/checkout@v4        
-    
+        - run: git branch && df -h
         - name: Configure AWS Credentials ## Terraform provider automatically uses these creds 
           uses: aws-actions/configure-aws-credentials@v4
           with:
