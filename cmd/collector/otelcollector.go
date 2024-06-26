@@ -10,11 +10,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/spf13/cobra"
@@ -89,14 +91,16 @@ func baseFactories() (otelcol.Factories, error) {
 	}
 
 	if factories.Receivers, err = receiver.MakeFactoryMap(
-		otlpreceiver.NewFactory(),
-		hostmetricsreceiver.NewFactory(),
-		filestatsreceiver.NewFactory(),
+		elasticsearchreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
-		prometheusreceiver.NewFactory(),
-		journaldreceiver.NewFactory(),
-		windowseventlogreceiver.NewFactory(),
+		filestatsreceiver.NewFactory(),
+		hostmetricsreceiver.NewFactory(),
 		iisreceiver.NewFactory(),
+		journaldreceiver.NewFactory(),
+		kafkareceiver.NewFactory(),
+		otlpreceiver.NewFactory(),
+		prometheusreceiver.NewFactory(),
+		windowseventlogreceiver.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
 	}
