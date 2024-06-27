@@ -16,8 +16,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
@@ -97,9 +100,12 @@ func baseFactories() (otelcol.Factories, error) {
 		hostmetricsreceiver.NewFactory(),
 		iisreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
+		kafkametricsreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		redisreceiver.NewFactory(),
+		statsdreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
 	); err != nil {
 		return otelcol.Factories{}, err
