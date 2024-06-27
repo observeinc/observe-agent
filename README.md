@@ -31,9 +31,12 @@ This section lists the components that are included in the Observe Distribution 
 | [hostmetrics][hostmetricsreceiver]         | [memory_limiter][memorylimiterprocessor]        | [otlphttp][otlphttpexporter] | [zpages][zpagesextension]            |                         |
 | [iis][iisreceiver]                         | [resourcedetection][resourcedetectionprocessor] |                              |                                      |                         |
 | [journald][journaldreceiver]               | [transform][transformprocessor]                 |                              |                                      |                         |
+| [kafkametrics][kafkametricsreceiver]       |                                                 |                              |                                      |                         |
 | [kafka][kafkareceiver]                     |                                                 |                              |                                      |                         |
 | [otlp][otlpreceiver]                       |                                                 |                              |                                      |                         |
 | [prometheus][prometheusreceiver]           |                                                 |                              |                                      |                         |
+| [redis][redisreceiver]                     |                                                 |                              |                                      |                         |
+| [statsd][statsdreceiver]                   |                                                 |                              |                                      |                         |
 | [windowseventlog][windowseventlogreceiver] |                                                 |                              |                                      |                         |
 
 [elasticsearchreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/elasticsearchreceiver
@@ -42,9 +45,12 @@ This section lists the components that are included in the Observe Distribution 
 [hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/hostmetricsreceiver
 [iisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/iisreceiver
 [journaldreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/journaldreceiver
+[kafkametricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/kafkametricsreceiver
 [kafkareceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/kafkareceiver
 [otlpreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.103.0/receiver/otlpreceiver
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/prometheusreceiver
+[redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.102.0/receiver/redisreceiver
+[statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/statsdreceiver
 [windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/windowseventlogreceiver
 [attributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/processor/attributesprocessor
 [batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.103.0/processor/batchprocessor
