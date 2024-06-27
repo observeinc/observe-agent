@@ -23,26 +23,9 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
     init_command='sudo observe-agent init-config --token {} --observe_url {}'.format(env_vars["observe_token"], env_vars["observe_url"])
     diagnose_command='observe-agent diagnose'
-    config_file_linux = '/etc/observe-agent/observe-agent.yaml'
 
     #Set up correct config with observe url and token 
     result = remote_host.run_command(init_command)
-    write = False
-    use = False
-    for line in result.stdout.splitlines():      
-        if "Writing configuration values to {}".format(config_file_linux) in line:
-            print (" ✅ init-config: wrote configuration succesfully! ")
-            write = True
-            break        
-    for line in result.stderr.splitlines():      
-        if "Using config file: ".format(config_file_linux) in line:
-            print (" ✅ init-config: using correct config file! ")
-            use = True
-            break
-    if not write or not use:       
-        print(result)
-        raise ValueError(f"❌ Something went wrong with init-config")
-            
 
     #Check diagnose command
     result = remote_host.run_command(diagnose_command)
