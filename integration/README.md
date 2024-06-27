@@ -45,6 +45,8 @@ provider "aws" {
 
 ```
 
+or through a `provider_override.tf` placed in `modules/create_ec2` directory.
+
 
 ### Local Testing
 
