@@ -42,7 +42,7 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: '~> v2'
-          args: release --prepare --clean --snapshot --verbose --parallelism 10
+          args: release --prepare --clean --snapshot --verbose --parallelism 4
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - run: ls -l && ls -l dist/
