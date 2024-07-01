@@ -23,7 +23,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: '~> v2'
-          args: release --prepare --clean --snapshot --verbose --parallelism 10
+          args: release --prepare --clean --snapshot --verbose --parallelism 8
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - run: ls -l && ls -l dist/
