@@ -38,6 +38,9 @@ output "private_key_path" {
 
 output "public_ssh_link" {
   value = "ssh -i ${var.PRIVATE_KEY_PATH} ${local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user}@${aws_instance.observe_agent_instance.public_ip}"
-
 }
 
+output "password" {
+  value = can(regex("WINDOWS", var.AWS_MACHINE)) ? rsadecrypt(aws_instance.observe_agent_instance.password_data, file(var.PRIVATE_KEY_PATH)) : null  
+  sensitive = true   
+}

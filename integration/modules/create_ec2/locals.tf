@@ -74,14 +74,17 @@ locals {
     #   user_data         = "user_data/yumbased.sh"
     # }
 
-    # WINDOWS_SERVER_2016_BASE = {
-    #   ami_instance_type = "t3.small"
-    #   ami_id            = "ami-0e87182c1094f2344"
-    #   ami_description   = "Microsoft Windows Server 2016 with Desktop Experience Locale English AMI provided by Amazon"
-    #   default_user      = "Administrator"
-    #   sleep             = 120
-    #   user_data         = "user_data/windows.ps"
-    # }
+    WINDOWS_SERVER_2016_BASE = {
+      ami_instance_type = "t3.small"
+      ami_id            = "ami-07357c8c8d7501f94"
+      ami_description   = "Microsoft Windows Server 2016 with Desktop Experience Locale English AMI provided by Amazon"
+      default_user      = "Administrator"
+      sleep             = 120
+      user_data         = "user_data/windows.ps"
+      distribution      = "windows"
+      package_type      = ".zip"
+      architecture      = "x86_64"
+    }
 
     # WINDOWS_SERVER_2019_BASE = {
     #   ami_instance_type = "t3.small"

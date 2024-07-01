@@ -28,6 +28,7 @@ run "test_ec2_connection" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -54,6 +55,7 @@ run "test_installation" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -80,6 +82,7 @@ run "test_version" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -108,6 +111,7 @@ run "test_diagnosis" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -131,6 +135,7 @@ run "test_status" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
