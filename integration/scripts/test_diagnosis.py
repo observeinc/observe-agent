@@ -5,7 +5,9 @@ import re
 import time 
 from utils import *
 
-
+@print_test_decorator
+def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+    pass   
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
@@ -45,7 +47,8 @@ if __name__ == '__main__':
     env_vars = get_env_vars(need_observe=True)
     remote_host = Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
-                       key_file_path=env_vars["key_filename"])    
+                       key_file_path=env_vars["key_filename"],
+                       password=env_vars["password"])    
     
     #Test SSH Connection before starting test of interest 
     remote_host.test_conection(int(env_vars["machine_config"]["sleep"]))   
