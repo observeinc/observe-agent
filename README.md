@@ -25,12 +25,13 @@ This section lists the components that are included in the Observe Distribution 
 
 | Receivers                                  | Processors                                      | Exporters                    | Extensions                           | Connectors              |
 |--------------------------------------------|-------------------------------------------------|------------------------------|--------------------------------------|-------------------------|
-| [elasticsearch][elasticsearchreceiver]     |                                                 |                              |                                      |                         |
-| [filelog][filelogreceiver]                 | [attributes][attributesprocessor]               | [debug][debugexporter]       | [file_storage][filestorage]          | [count][countconnector] |
-| [filestats][filestatsreceiver]             | [batch][batchprocessor]                         | [file][fileexporter]         | [health_check][healthcheckextension] |                         |
-| [hostmetrics][hostmetricsreceiver]         | [memory_limiter][memorylimiterprocessor]        | [otlphttp][otlphttpexporter] | [zpages][zpagesextension]            |                         |
-| [iis][iisreceiver]                         | [resourcedetection][resourcedetectionprocessor] |                              |                                      |                         |
-| [journald][journaldreceiver]               | [transform][transformprocessor]                 |                              |                                      |                         |
+| [docker_stats][dockerstatsreceiver]        | [attributes][attributesprocessor]               | [debug][debugexporter]       | [file_storage][filestorage]          | [count][countconnector] |
+| [elasticsearch][elasticsearchreceiver]     | [batch][batchprocessor]                         | [file][fileexporter]         | [health_check][healthcheckextension] |                         |
+| [filelog][filelogreceiver]                 | [memory_limiter][memorylimiterprocessor]        | [otlphttp][otlphttpexporter] | [zpages][zpagesextension]            |                         |
+| [filestats][filestatsreceiver]             | [resourcedetection][resourcedetectionprocessor] |                              |                                      |                         |
+| [hostmetrics][hostmetricsreceiver]         | [transform][transformprocessor]                 |                              |                                      |                         |
+| [iis][iisreceiver]                         |                                                 |                              |                                      |                         |
+| [journald][journaldreceiver]               |                                                 |                              |                                      |                         |
 | [kafkametrics][kafkametricsreceiver]       |                                                 |                              |                                      |                         |
 | [kafka][kafkareceiver]                     |                                                 |                              |                                      |                         |
 | [otlp][otlpreceiver]                       |                                                 |                              |                                      |                         |
@@ -38,7 +39,7 @@ This section lists the components that are included in the Observe Distribution 
 | [redis][redisreceiver]                     |                                                 |                              |                                      |                         |
 | [statsd][statsdreceiver]                   |                                                 |                              |                                      |                         |
 | [windowseventlog][windowseventlogreceiver] |                                                 |                              |                                      |                         |
-
+[dockerstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.104.0/receiver/dockerstatsreceiver
 [elasticsearchreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/elasticsearchreceiver
 [filelogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/filelogreceiver
 [filestatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.103.0/receiver/filestatsreceiver
