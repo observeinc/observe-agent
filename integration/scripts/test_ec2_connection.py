@@ -9,7 +9,37 @@ from utils import *
 
 @print_test_decorator
 def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
-    pass   
+
+    """
+    This test validates that the UserdataExecution.log finished successfully 
+    and ec2 instance is in stable state prior to running other
+
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        RuntimeError: Failed to verify UserdataExecution.log file
+    """
+    
+    cloud_init_file=r'/C:/ProgramData/Amazon/EC2-Windows/Launch/Log/UserdataExecution.log'
+    tmp_file = "/tmp/UserdataExecution.log"
+    cloud_init_file_timeout = 240 # 4 minutes    
+        
+    #Test windows cloud-init file finished successfully
+    for _ in range(cloud_init_file_timeout):        
+        remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
+        with open(tmp_file, encoding="utf-16") as file:
+            content = file.read().lower()
+            if "user data script completed"  in content:
+                print(" ✅ Verified UserdataExecution had completed successfully!")
+                return 
+            else:
+               print(" Looking for the UserdataExecution.log file to finish completing...")
+        time.sleep(1)        
+    raise RuntimeError("❌ The UserdataExecution file did not finish successfully in time")  
+
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
