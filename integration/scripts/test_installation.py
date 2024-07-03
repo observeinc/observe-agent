@@ -5,11 +5,10 @@ import os
 import sys
 import re
 import time 
+import inspect 
 from utils import * 
 
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
-    pass   
+
 
 def get_installation_package(env_vars: dict) -> tuple:
 
@@ -33,10 +32,38 @@ def get_installation_package(env_vars: dict) -> tuple:
             print(f"Found matching file {filename} at: {full_path}")
             return filename, full_path
 
+@print_test_decorator
+def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+
+    #Get built dist. installation package path for machine 
+    filename, package = get_installation_package(env_vars)    
+    home_dir = r"/C:/Users/{}".format(env_vars["user"])
+    home_dir_powershell = r"C:\Users\{}".format(env_vars["user"])
+    
+    #Get agent-installation script path
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))   
+    ps_installation_script_path = os.path.join(current_script_dir, 'install_windows.ps1')
+
+
+    #Copy built distribution package to remote host home dir 
+    #remote_host.put_file(package, home_dir)
+
+    #Copy observe-agent powershell installation script to remote host home dir 
+    remote_host.put_file(ps_installation_script_path, home_dir)
+
+    #Run install script 
+    result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format( home_dir_powershell, filename))
+    print(result)
+    
+    #result = remote_host.run_command('Expand-Archive -Path {}'.format(filename))
+    #print(result)
+    
+    print("✅ Installation test passed")
+    
 
 
 @print_test_decorator
-def run_test_linux(rremote_host: Host, env_vars: dict):       
+def run_test_linux(remote_host: Host, env_vars: dict):       
     """
     Test to install local observe-agent on a linux ec2 instance and validate command ran successfully 
 

@@ -64,6 +64,13 @@ OBSERVE_URL="" #Observe URL to use for testing
 OBSERVE_TOKEN="" #Observe Token to use for testing
 ```
 
+Run the scripts from the folder as below:
+```
+➜  integration git:(nikhil/integration-testing-windows) ✗ pwd
+/Users/nikhil.dua/Documents/observe-repos/observe-agent/integration
+➜  integration git:(nikhil/integration-testing-windows) ✗ python3 scripts/test_installation.py
+```
+
 
 ### Architecture
 
