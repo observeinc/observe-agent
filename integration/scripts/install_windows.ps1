@@ -17,15 +17,16 @@ New-Item -ItemType Directory -Force -Path $program_data_filestorage
 
 # Stop the observe agent if its running so that we can copy the new .exe
 if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
-    Write-Output "Stopping Observe Agent..."
+    Write-Output "Observe Agent is running, Stopping Observe Agent..."
     Stop-Service ObserveAgent
 }
 
-#Unzip the installer .zip to C:\temp\observe-agent_extract
+# Unzip the installer .zip to C:\temp\observe-agent_extract
+# Eg: Unzip C:\Users\Administrator\observe-agent_Windows_x86_64.zip to C:\temp\observe-agent_extract
 Write-Output "Unzipping installer $local_installer to $temp_dir\observe-agent_extract"
 Expand-Archive -Force -LiteralPath $local_installer  -DestinationPath "$temp_dir\observe-agent_extract"
 
-#Copy relevant files from C:\temp\observe-agent_extract to C:\Program Files\Observe\observe-agent
+# Copy relevant files from C:\temp\observe-agent_extract to C:\Program Files\Observe\observe-agent
 Write-Output "Copying files from $temp_dir\observe-agent_extract to $observeagent_install_dir"
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.exe -Destination $observeagent_install_dir
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.yaml -Destination $observeagent_install_dir
@@ -33,6 +34,7 @@ Copy-Item -Force -Path $temp_dir\observe-agent_extract\otel-collector.yaml -Dest
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\ -Destination $observeagent_install_dir\connections -Recurse
 
 if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
+    Write-Output "Creating ObserveAgent Service...."
     $params = @{
         Name = "ObserveAgent"
         BinaryPathName =  "`"${observeagent_install_dir}\observe-agent.exe`" `"${observeagent_install_dir}\observe-agent.yaml`""
@@ -45,6 +47,7 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
     Start-Service ObserveAgent
     }
 else{
+    Write-Output "ObserveAgent Service already exists, restarting service..."
     Stop-Service ObserveAgent
     Start-Service ObserveAgent
 }

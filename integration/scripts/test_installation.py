@@ -11,7 +11,18 @@ from utils import *
 
 
 def get_installation_package(env_vars: dict) -> tuple:
+    """Returns the full path and filename to the built distribution package
 
+    Args:
+        env_vars (dict):environment variables passed into for testing
+
+    Returns:
+        tuple: filename and full path to the built distribution package
+        Examples:
+          filename: observe-agent_Windows_x86_64.zip
+          full_path: /Users/nikhil.dua/Documents/observe-repos/observe-agent/dist/observe-agent_Windows_x86_64.zip
+
+    """
     current_dir = os.getcwd()
     dist_directory = os.path.abspath(os.path.join(current_dir, '..',  'dist'))
     print(f"Path to 'dist' directory: {dist_directory}")
@@ -35,28 +46,31 @@ def get_installation_package(env_vars: dict) -> tuple:
 @print_test_decorator
 def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
 
-    #Get built dist. installation package path for machine 
-    filename, package = get_installation_package(env_vars)    
-    home_dir = r"/C:/Users/{}".format(env_vars["user"])
-    home_dir_powershell = r"C:\Users\{}".format(env_vars["user"])
+    # Get built dist. installation package path for machine 
+    filename, full_path = get_installation_package(env_vars)    
+
+    # Set windows home dir paths for consistency 
+    home_dir = r"/C:/Users/{}".format(env_vars["user"]) #for user in sftp 
+    home_dir_powershell = r"C:\Users\{}".format(env_vars["user"]) #for use in powershell script 
     
-    #Get agent-installation script path
+    # Find agent installation script path 
     current_script_dir = os.path.dirname(os.path.abspath(__file__))   
     ps_installation_script_path = os.path.join(current_script_dir, 'install_windows.ps1')
 
 
-    #Copy built distribution package to remote host home dir 
-    #remote_host.put_file(package, home_dir)
+    # Copy built distribution package to remote host home dir 
+    remote_host.put_file(full_path, home_dir) #Eg: /C:/Users/Adminstrator/observe-agent_Windows_x86_64.zip
 
-    #Copy observe-agent powershell installation script to remote host home dir 
-    remote_host.put_file(ps_installation_script_path, home_dir)
+    # Copy observe-agent powershell installation script to remote host home dir 
+    remote_host.put_file(ps_installation_script_path, home_dir) #Eg: /C:/Users/Adminstrator/install_windows.ps1
 
-    #Run install script 
-    result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format( home_dir_powershell, filename))
+    # Run install script and pass in distribution package path
+    # Eg: .\install_windows.ps1 -local_installer C:\Users\Adminstrator\observe-agent_Windows_x86_64.zip
+    result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format(home_dir_powershell, filename))
     print(result)
     
-    #result = remote_host.run_command('Expand-Archive -Path {}'.format(filename))
-    #print(result)
+
+    
     
     print("✅ Installation test passed")
     
@@ -74,10 +88,10 @@ def run_test_linux(remote_host: Host, env_vars: dict):
     Raises:
         RuntimeError: Unknown distribution type passed  
     """
-    filename, package = get_installation_package(env_vars)
+    filename, full_path= get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
 
-    remote_host.put_file(package, home_dir)
+    remote_host.put_file(full_path, home_dir)
     if "redhat" in env_vars["machine_config"]["distribution"]:
         result = remote_host.run_command('cd ~ && sudo yum localinstall {} -y'.format(filename))
     elif "debian" in env_vars["machine_config"]["distribution"] :
