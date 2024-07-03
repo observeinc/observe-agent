@@ -69,7 +69,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format(home_dir_powershell, filename))
     print(result)
     
-    if result.stderr: #Powershell script failure does not cause command failure as the installation command succeeds 
+    if result.stderr: #Powershell script failure does not cause command failure as the installation command succeeds so we need to check the stderr  
         raise RuntimeError("❌ Installation error in powershell script")  
     else:        
         print("✅ Installation test passed")

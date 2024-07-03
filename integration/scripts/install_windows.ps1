@@ -44,6 +44,8 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
       }
       
     New-Service @params
+    Write-Output "Starting ObserveAgent Service..."
+    Start-Sleep -Seconds 10
     Start-Service ObserveAgent
     }
 else{
