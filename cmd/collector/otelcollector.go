@@ -10,6 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -95,6 +96,7 @@ func baseFactories() (otelcol.Factories, error) {
 	}
 
 	if factories.Receivers, err = receiver.MakeFactoryMap(
+		awsecscontainermetricsreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
