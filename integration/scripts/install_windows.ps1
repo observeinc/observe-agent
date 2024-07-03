@@ -1,3 +1,5 @@
+#$local_installer="C:\Users\Administrator\observe-agent_Windows_x86_64.zip" This is set from python 
+
 param (
     [Parameter(Mandatory=$true)]
     [string]$local_installer
@@ -8,8 +10,9 @@ Write-Output "Local installer path is located at: $local_installer"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
 $temp_dir="C:\temp"
+#$local_installer="C:\Users\Administrator\observe-agent_Windows_x86_64.zip"
 
-#Create directories for temp & observe-agent installation 
+#Create directories for temp & observe-agent installation ls
 New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
