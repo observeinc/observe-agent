@@ -10,7 +10,6 @@ Write-Output "Local installer path is located at: $local_installer"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
 $temp_dir="C:\temp"
-#$local_installer="C:\Users\Administrator\observe-agent_Windows_x86_64.zip"
 
 #Create directories for temp & observe-agent installation ls
 New-Item -ItemType Directory -Force -Path $temp_dir
@@ -36,24 +35,38 @@ Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.yaml -Desti
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\otel-collector.yaml -Destination $observeagent_install_dir\config\otel-collector.yaml
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\ -Destination $observeagent_install_dir\connections -Recurse
 
-if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
-    Write-Output "Creating ObserveAgent Service...."
-    $params = @{
-        Name = "ObserveAgent"
-        BinaryPathName =  "`"${observeagent_install_dir}\observe-agent.exe`" `"${observeagent_install_dir}\observe-agent.yaml`""
-        DisplayName = "Observe Agent"
-        StartupType = "Automatic"
-        Description = "Observe Agent based on OpenTelemetry collector"
-      }
+
+
+
+# # Read the content of the config.yaml file
+# $configContent = Get-Content -Path $observeagent_install_dir\observe-agent.yaml -Raw
+
+# # Replace ${myhost} with the actual value
+# $configContent = $configContent -replace '\${OBSERVE_COLLECTION_ENDPOINT}', "test"
+# $configContent = $configContent -replace '\${OBSERVE_TOKEN}', "test"
+
+# # Write the modified content back to the config.yaml file
+# $configContent | Set-Content -Path $observeagent_install_dir\observe-agent.yaml
+
+
+# if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
+#     Write-Output "Creating ObserveAgent Service...."
+#     $params = @{
+#         Name = "ObserveAgent"
+#         BinaryPathName =  "`"${observeagent_install_dir}\observe-agent.exe`" `"${observeagent_install_dir}\observe-agent.yaml`""
+#         DisplayName = "Observe Agent"
+#         StartupType = "Automatic"
+#         Description = "Observe Agent based on OpenTelemetry collector"
+#       }
       
-    New-Service @params
-    Write-Output "Starting ObserveAgent Service..."
-    Start-Service ObserveAgent
-    }
-else{
-    Write-Output "ObserveAgent Service already exists, restarting service..."
-    Stop-Service ObserveAgent
-    Start-Service ObserveAgent
-}
+#     New-Service @params
+#     Write-Output "Starting ObserveAgent Service..."
+#     Start-Service ObserveAgent
+#     }
+# else{
+#     Write-Output "ObserveAgent Service already exists, restarting service..."
+#     Stop-Service ObserveAgent
+#     Start-Service ObserveAgent
+# }
 
 
