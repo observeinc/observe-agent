@@ -59,22 +59,22 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
 
 
     # Copy built distribution package to remote host home dir 
-    remote_host.put_file(full_path, home_dir) #Eg: /C:/Users/Adminstrator/observe-agent_Windows_x86_64.zip
+    remote_host.put_file(full_path, home_dir) #Eg: sftp to /C:/Users/Adminstrator/observe-agent_Windows_x86_64.zip
 
     # Copy observe-agent powershell installation script to remote host home dir 
-    remote_host.put_file(ps_installation_script_path, home_dir) #Eg: /C:/Users/Adminstrator/install_windows.ps1
+    remote_host.put_file(ps_installation_script_path, home_dir) #Eg: sftp to /C:/Users/Adminstrator/install_windows.ps1
 
     # Run install script and pass in distribution package path
     # Eg: .\install_windows.ps1 -local_installer C:\Users\Adminstrator\observe-agent_Windows_x86_64.zip
     result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format(home_dir_powershell, filename))
     print(result)
     
-
+    if result.stderr: #Powershell script failure does not cause command failure as the installation command succeeds 
+        raise RuntimeError("❌ Installation error in powershell script")  
+    else:        
+        print("✅ Installation test passed")
+        
     
-    
-    print("✅ Installation test passed")
-    
-
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict):       
@@ -98,6 +98,7 @@ def run_test_linux(remote_host: Host, env_vars: dict):
         result = remote_host.run_command('cd ~ && sudo dpkg -i {}'.format(filename))
     else:
         raise RuntimeError("❌ Unknown distribution type")  
+    
     print(result)    
     print("✅ Installation test passed")
 
