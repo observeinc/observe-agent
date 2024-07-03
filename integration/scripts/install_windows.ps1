@@ -38,6 +38,9 @@ Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\ -Destination
 
 
 
+
+
+
 # # Read the content of the config.yaml file
 # $configContent = Get-Content -Path $observeagent_install_dir\observe-agent.yaml -Raw
 
