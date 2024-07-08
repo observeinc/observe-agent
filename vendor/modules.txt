@@ -721,12 +721,13 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthchecke
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/metadata
-# github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.103.0
+# github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.104.0
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints
-# github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.103.0
+# github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.104.0
 ## explicit; go 1.21.0
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize
 # github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
@@ -918,6 +919,11 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformpro
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.104.0
+## explicit; go 1.21.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.104.0
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
@@ -1300,22 +1306,22 @@ go.opentelemetry.io/collector/internal/sharedcomponent
 # go.opentelemetry.io/collector/component v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/component
-# go.opentelemetry.io/collector/config/configauth v0.103.0
+# go.opentelemetry.io/collector/config/configauth v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configauth
-# go.opentelemetry.io/collector/config/configcompression v1.10.0
+# go.opentelemetry.io/collector/config/configcompression v1.11.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configcompression
 # go.opentelemetry.io/collector/config/configgrpc v0.103.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configgrpc
-# go.opentelemetry.io/collector/config/confighttp v0.103.0
+# go.opentelemetry.io/collector/config/confighttp v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/confighttp
 # go.opentelemetry.io/collector/config/confignet v0.103.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/confignet
-# go.opentelemetry.io/collector/config/configopaque v1.10.0
+# go.opentelemetry.io/collector/config/configopaque v1.11.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configopaque
 # go.opentelemetry.io/collector/config/configretry v0.103.0
@@ -1324,10 +1330,10 @@ go.opentelemetry.io/collector/config/configretry
 # go.opentelemetry.io/collector/config/configtelemetry v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configtelemetry
-# go.opentelemetry.io/collector/config/configtls v0.103.0
+# go.opentelemetry.io/collector/config/configtls v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/configtls
-# go.opentelemetry.io/collector/config/internal v0.103.0
+# go.opentelemetry.io/collector/config/internal v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/config/internal
 # go.opentelemetry.io/collector/confmap v0.104.0
@@ -1386,11 +1392,11 @@ go.opentelemetry.io/collector/exporter/loggingexporter/internal/metadata
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/exporter/otlphttpexporter
 go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata
-# go.opentelemetry.io/collector/extension v0.103.0
+# go.opentelemetry.io/collector/extension v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/extension
 go.opentelemetry.io/collector/extension/experimental/storage
-# go.opentelemetry.io/collector/extension/auth v0.103.0
+# go.opentelemetry.io/collector/extension/auth v0.104.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/extension/auth
 # go.opentelemetry.io/collector/extension/zpagesextension v0.103.0
