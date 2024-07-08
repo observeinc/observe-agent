@@ -46,6 +46,16 @@ def get_installation_package(env_vars: dict) -> tuple:
 @print_test_decorator
 def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
 
+    """
+    Test to install local observe-agent on a windows ec2 instance and validate command ran successfully 
+
+    Args:
+        remote_host (Host): instance to ssh into 
+        env_vars (dict): environment variables passed into for testing
+
+    Raises:
+        RuntimeError: Installation error in powershell script
+    """
     # Get built dist. installation package path for machine 
     filename, full_path = get_installation_package(env_vars)    
 
@@ -66,6 +76,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
 
     # Run install script and pass in distribution package path
     # Eg: .\install_windows.ps1 -local_installer C:\Users\Adminstrator\observe-agent_Windows_x86_64.zip
+    # observe-agent gets installed to C:\Program Files\observe-agent on ec2 machine 
     result = remote_host.run_command('.\install_windows.ps1 -local_installer {}\{}'.format(home_dir_powershell, filename))
     print(result)
     

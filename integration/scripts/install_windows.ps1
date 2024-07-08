@@ -1,3 +1,7 @@
+# This scripts take an $local_install parameter, unzips the observe-agent .zip file and
+# and copies the relevant files to C:\Program Files\Observe\observe-agent
+# It's intended to only install obsserve-agent on a windows machine and ensure no issues take place
+
 #$local_installer="C:\Users\Administrator\observe-agent_Windows_x86_64.zip" This is set from python 
 
 param (
