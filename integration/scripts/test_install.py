@@ -69,10 +69,10 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
 
 
     # Copy built distribution package to remote host home dir 
-    remote_host.put_file(full_path, home_dir) #Eg: sftp to /C:/Users/Adminstrator/observe-agent_Windows_x86_64.zip
+    remote_host.put_file(local_path=full_path, remote_path=home_dir) #Eg: sftp to /C:/Users/Adminstrator/observe-agent_Windows_x86_64.zip
 
     # Copy observe-agent powershell installation script to remote host home dir 
-    remote_host.put_file(ps_installation_script_path, home_dir) #Eg: sftp to /C:/Users/Adminstrator/install_windows.ps1
+    remote_host.put_file(local_path=ps_installation_script_path, remote_path=home_dir) #Eg: sftp to /C:/Users/Adminstrator/install_windows.ps1
 
     # Run install script and pass in distribution package path
     # Eg: .\install_windows.ps1 -local_installer C:\Users\Adminstrator\observe-agent_Windows_x86_64.zip
@@ -81,7 +81,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     print(result)
     
     if result.stderr: #Powershell script failure does not cause command failure as the installation command succeeds so we need to check the stderr  
-        raise RuntimeError("❌ Installation error in powershell script")  
+        raise RuntimeError("❌ Installation error in install_windows.ps1 powershell script")  
     else:        
         print("✅ Installation test passed")
         
