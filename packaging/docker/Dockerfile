@@ -28,12 +28,13 @@ RUN tar czhf journalctl.tar.gz /bin/journalctl $(ldd /bin/journalctl | grep -oP 
 # however, we can copy full directory as root (/) to be base file structure for scratch image
 RUN mkdir /output && tar xf /journalctl.tar.gz --directory /output
 
-FROM scratch
+FROM alpine:3.20.0
 ADD packaging/docker/observe-agent /etc/observe-agent
 COPY --from=systemd /output/ /
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=agent /output/ /
 COPY --from=directories /var/lib/observe-agent/filestorage /var/lib/observe-agent/filestorage
 
+EXPOSE 4317 55680 55679 13133
 ENTRYPOINT ["/observe-agent"]
 CMD ["start"]
