@@ -1,3 +1,4 @@
+# build
 agent
 output-logs
 ./observe-agent
@@ -5,12 +6,12 @@ dist/
 agent.exe
 agent.exe~
 .DS_Store
+observe-agent/
 
 #integration
 *.pem
 *.pub 
 *.env 
-
 
 #terraform
 integration/.terraform
@@ -22,7 +23,7 @@ tfplan
 .terraform.lock.hcl
 *_override.tf
 
-
 #python
 *pycache*
 *.pyc
+
