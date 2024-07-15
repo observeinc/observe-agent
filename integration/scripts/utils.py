@@ -14,6 +14,14 @@ def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)
 
+def mask_credentials(env_vars):
+    masked_env_vars = env_vars.copy()
+    #Only mask if vars exist 
+    if masked_env_vars["password"] and masked_env_vars["password"] is not None and masked_env_vars["password"] != "None" :
+        masked_env_vars["password"] = '*' * 5
+    if masked_env_vars["observe_token"] and masked_env_vars["observe_token"] is not None and masked_env_vars["observe_token"] != "None": 
+        masked_env_vars["observe_token"] = '*' * 5
+    return masked_env_vars
 
 def get_env_vars(need_observe: bool = False) -> dict:
     
@@ -22,7 +30,7 @@ def get_env_vars(need_observe: bool = False) -> dict:
 
     Args:
         need_observe (bool, optional): whether or not to require observe url/token variables.
-          Defaults to False.
+          Defaults to False.       
 
     Returns:
         _type_: dict of environment variables
@@ -30,10 +38,13 @@ def get_env_vars(need_observe: bool = False) -> dict:
     host = os.environ.get("HOST")
     user = os.environ.get("USER")
     key_filename = os.environ.get("KEY_FILENAME")
+    password=os.environ.get("PASSWORD")
     machine_name=os.environ.get("MACHINE_NAME")
     machine_config_string=os.environ.get("MACHINE_CONFIG")
     observe_url=os.environ.get("OBSERVE_URL")
     observe_token=os.environ.get("OBSERVE_TOKEN")
+
+    mask = os.getenv("MASK", "True").lower() not in ("false", "0", "f", "no", "n")
 
 
     if host is None:
@@ -45,6 +56,9 @@ def get_env_vars(need_observe: bool = False) -> dict:
     if key_filename is None:
         die("Error: KEY_FILENAME environment variable is not set. This should be an output variable from create_ec2 module")
 
+    if (password == 'None' or password is None) and "WINDOWS" in machine_name:
+        die("Error: Windows is specified but PASSWORD environment variable is not set. This should be an output variable from create_ec2 module")
+
     if machine_name is None:
         die("Error: MACHINE_NAME environment variable is not set. This should be an output variable from create_ec2 module")
 
@@ -54,7 +68,7 @@ def get_env_vars(need_observe: bool = False) -> dict:
     if observe_url is None and need_observe:
         die("Error: OBSERVE_URL environment variable is not set. This should be an output variable from setup_observe_variables module")
     if observe_token is None and need_observe:
-        die("Error: OBSERVE_TOKEN environment variable is not set")
+        die("Error: OBSERVE_TOKEN environment variable is not set. This should be an output variable from setup_observe_variables module")
 
      # Split the string into key-value pairs
     pairs = machine_config_string.split(',')
@@ -67,13 +81,23 @@ def get_env_vars(need_observe: bool = False) -> dict:
         "host": host,
         "user": user,
         "key_filename": key_filename,
+        "password": password,
         "machine_name": machine_name,
         "machine_config": data,
         "observe_url": observe_url,
         "observe_token": observe_token
     }
+
+    # Mask sensitive vars before printing
+    masked_env_vars = mask_credentials(env_vars)
+
     print("-"*30)
-    print("Env vars set to: \n", env_vars)
+    if mask:
+        print("Masking Enabled")
+        print("Env vars set to: \n",  masked_env_vars )
+    else:
+        print("Masking Disabled")
+        print("Env vars set to: \n",  env_vars )
     print("-"*30)
 
     return env_vars
@@ -97,17 +121,16 @@ class Host(object):
 
     """Host class for SSH into EC2 instances 
     """
-    def __init__(self,
-                 host_ip,
-                 username,
-                 key_file_path):
+    def __init__(self, host_ip, username, key_file_path,password=None):
         self.host_ip = host_ip
         self.username = username
         self.key_file_path = key_file_path
+        self.password=password
 
     def _get_connection(self) -> Connection:
-        connect_kwargs = {'key_filename': self.key_file_path,
-                          'timeout': 60,                        
+        connect_kwargs = {'key_filename': self.key_file_path,                          
+                          'password': self.password ,
+                          'timeout': 60,                      
                           }
         return Connection(host=self.host_ip, user=self.username, port=22,
                           connect_kwargs=connect_kwargs)

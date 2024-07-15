@@ -28,6 +28,7 @@ run "test_ec2_connection" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -35,25 +36,26 @@ run "test_ec2_connection" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Check EC2 Connection"
+    error_message = "Error in EC2 Connection Test"
   }
 }
 
 
 
 
-run "test_installation" {
+run "test_install" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/test_installation.py"
+    command = "python3 ./scripts/test_install.py"
     env_vars = {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -61,7 +63,7 @@ run "test_installation" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Agent Installation"
+    error_message = "Error in Installation Test"
   }
 }
 
@@ -80,6 +82,7 @@ run "test_version" {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -87,27 +90,28 @@ run "test_version" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Check Version Test"
+    error_message = "Error in Version Test"
   }
 }
 
 
 
 
-run "test_diagnosis" {
+run "test_configure" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/test_diagnosis.py"
+    command = "python3 ./scripts/test_configure.py"
     env_vars = {
       OBSERVE_URL    = run.setup_observe_variables.OBSERVE_URL
       OBSERVE_TOKEN  = run.setup_observe_variables.OBSERVE_TOKEN
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -115,22 +119,23 @@ run "test_diagnosis" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Check Diagnosis Test"
+    error_message = "Error in Configure Test"
   }
 }
 
-run "test_status" {
+run "test_start" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
     version = "2.9.0"
   }
 
   variables {
-    command = "python3 ./scripts/test_status.py"
+    command = "python3 ./scripts/test_start.py"
     env_vars = {
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
     }
@@ -138,7 +143,7 @@ run "test_status" {
 
   assert {
     condition     = output.error == ""
-    error_message = "Error in Check Status Test"
+    error_message = "Error in Start Test"
   }
 }
 
