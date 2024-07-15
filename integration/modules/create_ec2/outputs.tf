@@ -42,5 +42,5 @@ output "public_ssh_link" {
 
 output "password" {
   value = can(regex("WINDOWS", var.AWS_MACHINE)) ? rsadecrypt(aws_instance.observe_agent_instance.password_data, file(var.PRIVATE_KEY_PATH)) : "None" 
-  #sensitive = true   
+  sensitive = true   
 }
