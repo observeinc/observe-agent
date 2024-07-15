@@ -20,7 +20,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         env_vars (dict): environment variables passed into for testing
 
     Raises:
-        RuntimeError: Failed to verify UserdataExecution.log file
+        RuntimeError: Failed to verify UserdataExecution.log or agent.logfile
     """
     
   
@@ -33,7 +33,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
       
         for _ in range(cloud_init_file_timeout):        
             remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
-            with open(tmp_file) as file:
+            with open(tmp_file) as file: #No encoding for windows 2022 needed 
                 content = file.read().lower()
                 if "script execution finished successfully"  in content:
                     print(" ✅ Verified agent.log had completed successfully!")
@@ -45,7 +45,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     else: # Windows 2016/2019 -   Test windows cloud-init file finished successfully
         print("Windows 2016 or 2019 detected")
         cloud_init_file = r'/C:/ProgramData/Amazon/EC2-Windows/Launch/Log/UserdataExecution.log'
-        
+
         for _ in range(cloud_init_file_timeout):        
             remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
             with open(tmp_file, encoding="utf-16") as file:
