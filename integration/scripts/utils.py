@@ -16,9 +16,10 @@ def die(message: str) -> None:
 
 def mask_credentials(env_vars):
     masked_env_vars = env_vars.copy()
-    if "password" in masked_env_vars and "password" is not None:
+    #Only mask if vars exist 
+    if masked_env_vars["password"] and masked_env_vars["password"] is not None:
         masked_env_vars["password"] = '*' * 5
-    if "observe_token" in masked_env_vars and "password" is not None:
+    if masked_env_vars["observe_token"] and masked_env_vars["password"] is not None: 
         masked_env_vars["observe_token"] = '*' * 5
     return masked_env_vars
 
