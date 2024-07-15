@@ -100,17 +100,19 @@ locals {
     }    
 
   
+     WINDOWS_SERVER_2022_BASE = {
+      ami_instance_type = "t3.small"
+      ami_id            = "ami-02f9041628cc2f753"
+      ami_description   = "Microsoft Windows Server 2022 Full Locale English AMI provided by Amazon"
+      default_user      = "Administrator"
+      sleep             = 120
+      user_data         = "user_data/windows.ps"
+      distribution      = "windows"
+      package_type      = ".zip"
+      architecture      = "x86_64"
+    }    
 
-    # WINDOWS_SERVER_2022_BASE = {
-    #   ami_instance_type = "t3.small"
-    #   ami_id            = "ami-091f300417a06d788"
-    #   ami_description   = "Microsoft Windows Server 2022 Full Locale English AMI provided by Amazon"
-    #   default_user      = "Administrator"
-    #   sleep             = 120
-    #   user_data         = "user_data/windows.ps"
-    # }
-
-
+  
   }
 }
 
