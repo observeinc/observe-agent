@@ -17,9 +17,9 @@ def die(message: str) -> None:
 def mask_credentials(env_vars):
     masked_env_vars = env_vars.copy()
     #Only mask if vars exist 
-    if masked_env_vars["password"] and masked_env_vars["password"] is not None:
+    if masked_env_vars["password"] and masked_env_vars["password"] is not None and masked_env_vars["password"] != "None" :
         masked_env_vars["password"] = '*' * 5
-    if masked_env_vars["observe_token"] and masked_env_vars["password"] is not None: 
+    if masked_env_vars["observe_token"] and masked_env_vars["observe_token"] is not None and masked_env_vars["observe_token"] != "None": 
         masked_env_vars["observe_token"] = '*' * 5
     return masked_env_vars
 
@@ -56,7 +56,7 @@ def get_env_vars(need_observe: bool = False) -> dict:
     if key_filename is None:
         die("Error: KEY_FILENAME environment variable is not set. This should be an output variable from create_ec2 module")
 
-    if password == 'None' and "WINDOWS" in machine_name:
+    if (password == 'None' or password is None) and "WINDOWS" in machine_name:
         die("Error: Windows is specified but PASSWORD environment variable is not set. This should be an output variable from create_ec2 module")
 
     if machine_name is None:
