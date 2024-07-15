@@ -14,11 +14,11 @@ def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)
 
-def mask_password(env_vars):
+def mask_credentials(env_vars):
     masked_env_vars = env_vars.copy()
-    if "password" in masked_env_vars:
+    if "password" in masked_env_vars and "password" is not None:
         masked_env_vars["password"] = '*' * 5
-    if "observe_token" in masked_env_vars:
+    if "observe_token" in masked_env_vars and "password" is not None:
         masked_env_vars["observe_token"] = '*' * 5
     return masked_env_vars
 
@@ -87,8 +87,8 @@ def get_env_vars(need_observe: bool = False) -> dict:
         "observe_token": observe_token
     }
 
-    # Mask the password before printing
-    masked_env_vars = mask_password(env_vars)
+    # Mask sensitive vars before printing
+    masked_env_vars = mask_credentials(env_vars)
 
     print("-"*30)
     if mask:
