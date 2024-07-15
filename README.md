@@ -10,6 +10,22 @@ To run the code you need to have `golang v1.21.7` installed. Then you can run th
 go build -o observe-agent
 ```
 
+## Adding new components
+
+Before adding new components, you'll need to install the [Otel Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) tool. If you're running on mac and arm64 (M chips) you can run the following command
+
+```
+make install-ocb
+```
+
+Otherwise, see instructions to install at https://opentelemetry.io/docs/collector/custom-collector/#step-1---install-the-builder
+
+To add new components, you can modify the `builder-config.yaml` file. Add the component to the correct section and then run the following command.
+```
+make build-ocb
+```
+
+This command should add the new dependencies and code in the correct places. You can build the agent afterwards with `go build` to confirm. 
 
 ## Running
 
