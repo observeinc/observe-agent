@@ -23,22 +23,41 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         RuntimeError: Failed to verify UserdataExecution.log file
     """
     
-    cloud_init_file=r'/C:/ProgramData/Amazon/EC2-Windows/Launch/Log/UserdataExecution.log'
+  
     tmp_file = "/tmp/UserdataExecution.log"
     cloud_init_file_timeout = 240 # 4 minutes    
+    
+    if "2022" in env_vars["machine_name"]: #Windows 2022 -  Test windows cloud-init file finished successfully
+        print("Windows 2022 detected")
+        cloud_init_file = r'/C:/ProgramData/Amazon/EC2Launch/log/agent.log'
+      
+        for _ in range(cloud_init_file_timeout):        
+            remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
+            with open(tmp_file) as file:
+                content = file.read().lower()
+                if "script execution finished successfully"  in content:
+                    print(" ✅ Verified agent.log had completed successfully!")
+                    return 
+                else:
+                    print(" Looking for the agent.log file to finish completing...")
+            time.sleep(1)        
+        raise RuntimeError("❌ The agent.log file did not finish successfully in time")  
+    else: # Windows 2016/2019 -   Test windows cloud-init file finished successfully
+        print("Windows 2016 or 2019 detected")
+        cloud_init_file = r'/C:/ProgramData/Amazon/EC2-Windows/Launch/Log/UserdataExecution.log'
         
-    #Test windows cloud-init file finished successfully
-    for _ in range(cloud_init_file_timeout):        
-        remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
-        with open(tmp_file, encoding="utf-16") as file:
-            content = file.read().lower()
-            if "user data script completed"  in content:
-                print(" ✅ Verified UserdataExecution had completed successfully!")
-                return 
-            else:
-               print(" Looking for the UserdataExecution.log file to finish completing...")
-        time.sleep(1)        
-    raise RuntimeError("❌ The UserdataExecution file did not finish successfully in time")  
+        for _ in range(cloud_init_file_timeout):        
+            remote_host.get_file(cloud_init_file, tmp_file) # This command will automatically test connection 
+            with open(tmp_file, encoding="utf-16") as file:
+                content = file.read().lower()
+                if "user data script completed"  in content:
+                    print(" ✅ Verified UserdataExecution had completed successfully!")
+                    return 
+                else:
+                    print(" Looking for the UserdataExecution.log file to finish completing...")
+            time.sleep(1)        
+        raise RuntimeError("❌ The UserdataExecution file did not finish successfully in time")  
+
 
 
 @print_test_decorator
