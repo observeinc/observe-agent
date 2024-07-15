@@ -19,11 +19,11 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         ValueError: if version or config file is invalid
     """
 
-    config_file_windows = 'C:\Program Files\Observe\observe-agent\observe-agent.yaml'
+    config_file_windows = 'C:\\Program Files\\Observe\\observe-agent\\observe-agent.yaml'
     #Can match 0.2.2-SNAPSHOT-b6e1491 or 0.2.2 
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
 
-    result = remote_host.run_command('Set-Location "${Env:Programfiles}\Observe\observe-agent"; ./observe-agent version')    
+    result = remote_host.run_command('Set-Location "${Env:Programfiles}\\Observe\\observe-agent"; ./observe-agent version')    
     # Split the output by newlines and extract everything after the colon
     for line in result.stdout.splitlines():      
         if ":" in line:

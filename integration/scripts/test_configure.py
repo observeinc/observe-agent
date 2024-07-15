@@ -18,10 +18,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     Raises:
         ValueError: Something failed with initial config or observe-agent -> observe connection 
     """
-
-    #init_command='sudo observe-agent init-config --token {} --observe_url {}'.format(env_vars["observe_token"], env_vars["observe_url"])
-    #diagnose_command='observe-agent diagnose'
-
+ 
     init_command='Set-Location "C:\Program Files\Observe\observe-agent"; ./observe-agent init-config --token {} --observe_url {}'.format(env_vars["observe_token"], env_vars["observe_url"])
     diagnose_command='Set-Location "C:\Program Files\Observe\observe-agent"; ./observe-agent diagnose'
     

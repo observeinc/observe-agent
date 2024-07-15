@@ -14,6 +14,13 @@ def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)
 
+def mask_password(env_vars):
+    masked_env_vars = env_vars.copy()
+    if "password" in masked_env_vars:
+        masked_env_vars["password"] = '*' * len(masked_env_vars["password"])
+    if "observe_token" in masked_env_vars:
+        masked_env_vars["observe_token"] = '*' * len(masked_env_vars["observe_token"])
+    return masked_env_vars
 
 def get_env_vars(need_observe: bool = False) -> dict:
     
@@ -22,7 +29,7 @@ def get_env_vars(need_observe: bool = False) -> dict:
 
     Args:
         need_observe (bool, optional): whether or not to require observe url/token variables.
-          Defaults to False.
+          Defaults to False.       
 
     Returns:
         _type_: dict of environment variables
@@ -35,7 +42,8 @@ def get_env_vars(need_observe: bool = False) -> dict:
     machine_config_string=os.environ.get("MACHINE_CONFIG")
     observe_url=os.environ.get("OBSERVE_URL")
     observe_token=os.environ.get("OBSERVE_TOKEN")
-    
+
+    mask = os.getenv("MASK", "True").lower() not in ("false", "0", "f", "no", "n")
 
 
     if host is None:
@@ -78,8 +86,17 @@ def get_env_vars(need_observe: bool = False) -> dict:
         "observe_url": observe_url,
         "observe_token": observe_token
     }
+
+    # Mask the password before printing
+    masked_env_vars = mask_password(env_vars)
+
     print("-"*30)
-    print("Env vars set to: \n", env_vars)
+    if mask:
+        print("Masking Enabled")
+        print("Env vars set to: \n",  masked_env_vars )
+    else:
+        print("Masking Disabled")
+        print("Env vars set to: \n",  env_vars )
     print("-"*30)
 
     return env_vars

@@ -50,7 +50,7 @@ or through a `provider_override.tf` placed in `modules/create_ec2` directory.
 
 ### Local Testing
 
-Any of the python scripts in the `/scripts` directory can be tested by running them directly, granted an EC2 Machine exists. As the scripts rely on the outputs of `create_ec2` and `setup_observe_variables` modules to be passed in as environment variables, these environment variables can be manually set if the modules are not ran.
+Any of the python scripts in the `/scripts` directory can be tested by running them directly, granted an EC2 Machine exists. As the scripts rely on the outputs of `create_ec2` and `setup_observe_variables` modules to be passed in as environment variables, these environment variables can be manually set if the set up modules are not ran.
 
 The `/scripts/<test_xyz.py` expects the following environment variables to be set:
 
@@ -62,6 +62,8 @@ MACHINE_NAME="UBUNTU_22_04_LTS" #Machine name to test
 MACHINE_CONFIG="ami_description:Ubuntu Server 22.04 LTS (HVM)- EBS General Purpose (SSD) Volume Type. Support available from Canonical,ami_id:ami-036cafe742923b3d9,ami_instance_type:t3.small,architecture:amd64,default_user:ubuntu,distribution:debian,package_type:.deb,sleep:120,user_data:user_data/aptbased.sh" #Machine config 
 OBSERVE_URL="" #Observe URL to use for testing
 OBSERVE_TOKEN="" #Observe Token to use for testing
+PASSWORD="WindowsPassword to be used for testing" # Set to None for testing 
+
 ```
 
 Run the scripts from the folder as below:
@@ -71,6 +73,18 @@ Run the scripts from the folder as below:
 ➜  integration git:(nikhil/integration-testing-windows) ✗ python3 scripts/test_installation.py
 ```
 
+Note: If testing Windows machines, the RDP password is redacted by default in the python scripts. 
+This can be turned off when disabling mask by setting below environment variable to `False` before running these scripts
+```
+export MASK=False
+python3 scripts/test_ec2_connection.py
+------------------------------
+Masking Disabled
+Env vars set to: 
+ {'host': '54.177.26.178', 'user': 'Administrator', 'key_filename': './test_key.pem', 'password': '<exposed_password>, 'machine_name': 'WINDOWS_SERVER_2016_BASE', 'machine_config': {'ami_description': 'Microsoft Windows Server 2016 with Desktop Experience Locale English AMI provided by Amazon', 'ami_id': 'ami-07357c8c8d7501f94', 'ami_instance_type': 't3.small', 'architecture': 'x86_64', 'default_user': 'Administrator', 'distribution': 'windows', 'package_type': '.zip', 'sleep': '120', 'user_data': 'user_data/windows.ps'}, 'observe_url': 'https://179969258044.collect.observe-staging.com/', 'observe_token': '<exposed_token>}
+------------------------------
+Testing SSH connection to host 54.177.26.178 with timeout 120s
+```
 
 ### Architecture
 
