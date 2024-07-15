@@ -60,7 +60,7 @@ jobs:
     strategy:
         fail-fast: false 
         matrix:
-            AWS_MACHINE: ["AMAZON_LINUX_2023", "UBUNTU_22_04_LTS", "WINDOWS_SERVER_2016_BASE"]
+            AWS_MACHINE: ["AMAZON_LINUX_2023", "UBUNTU_22_04_LTS", "WINDOWS_SERVER_2016_BASE", "WINDOWS_SERVER_2019_BASE"]
     defaults:
         run:
             working-directory: integration #Terrafrom commands and tests are ran from integration directory
