@@ -17,9 +17,9 @@ def die(message: str) -> None:
 def mask_password(env_vars):
     masked_env_vars = env_vars.copy()
     if "password" in masked_env_vars:
-        masked_env_vars["password"] = '*' * len(masked_env_vars["password"])
+        masked_env_vars["password"] = '*' * 5
     if "observe_token" in masked_env_vars:
-        masked_env_vars["observe_token"] = '*' * len(masked_env_vars["observe_token"])
+        masked_env_vars["observe_token"] = '*' * 5
     return masked_env_vars
 
 def get_env_vars(need_observe: bool = False) -> dict:
