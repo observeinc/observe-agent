@@ -22,6 +22,10 @@ func GetAllOtelConfigFilePaths() ([]string, string, error) {
 			configFilePaths = append(configFilePaths, conn.GetConfigFilePaths()...)
 		}
 	}
+	// Read in otel-config flag and add to paths if set
+	if viper.IsSet("otelConfigFile") {
+		configFilePaths = append(configFilePaths, viper.GetString("otelConfigFile"))
+	}
 	// Generate override file and include path if overrides provided
 	var overridePath string
 	if viper.IsSet("otel_config_overrides") {
