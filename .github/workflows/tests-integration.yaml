@@ -56,8 +56,8 @@ jobs:
         run: |
           docker load --input dist/observe-agent_docker_amd64.tar
           docker images
-          docker load --input dist/observe-agent_docker_arm64v8.tar
-          docker images
+          # docker load --input dist/observe-agent_docker_arm64v8.tar
+          # docker images
 
       - name: Upload build artifacts 
         uses: actions/upload-artifact@v4        
