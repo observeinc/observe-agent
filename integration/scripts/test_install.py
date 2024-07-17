@@ -93,7 +93,7 @@ def run_test_docker(remote_host: Host, env_vars: dict) -> None:
     home_dir = "/home/{}".format(env_vars["user"])
 
     remote_host.put_file(full_path, home_dir)
-    result = remote_host.run_command('docker load --input {}'.format(filename))
+    result = remote_host.run_command('sudo docker load --input {}'.format(filename))
     if result.stderr:
         print(result)
         raise RuntimeError("❌ Installation error in docker load")
