@@ -56,6 +56,7 @@ jobs:
       - run: ls -l && ls -l dist/     
       - id: docker-load #Load docker images from tar into docker 
         run: |
+          docker rmi $(docker images -q)
           docker load --input dist/observe-agent_docker_amd64.tar
           docker images
           # docker load --input dist/observe-agent_docker_arm64v8.tar
