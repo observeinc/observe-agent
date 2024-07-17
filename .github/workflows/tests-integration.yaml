@@ -49,6 +49,8 @@ jobs:
         run: |
           amd64_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "amd64"| grep "observe-agent" | sort -r -k4 | head -n 1)
           arm64v8_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "arm64v8"| grep "observe-agent" | sort -r -k4 | head -n 1)
+          echo "amd64_image: ${amd64_image}"
+          echo "arm64v8_image: ${arm64v8_image}"
           docker save -o dist/observe-agent_docker_arm64v8.tar ${arm64v8_image}
           docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
       - run: ls -l && ls -l dist/     
