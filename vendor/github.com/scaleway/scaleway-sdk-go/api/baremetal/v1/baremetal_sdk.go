@@ -56,15 +56,6 @@ func (enum IPReverseStatus) String() string {
 	return string(enum)
 }
 
-func (enum IPReverseStatus) Values() []IPReverseStatus {
-	return []IPReverseStatus{
-		"unknown",
-		"pending",
-		"active",
-		"error",
-	}
-}
-
 func (enum IPReverseStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -95,13 +86,6 @@ func (enum IPVersion) String() string {
 	return string(enum)
 }
 
-func (enum IPVersion) Values() []IPVersion {
-	return []IPVersion{
-		"IPv4",
-		"IPv6",
-	}
-}
-
 func (enum IPVersion) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -130,13 +114,6 @@ func (enum ListServerEventsRequestOrderBy) String() string {
 		return "created_at_asc"
 	}
 	return string(enum)
-}
-
-func (enum ListServerEventsRequestOrderBy) Values() []ListServerEventsRequestOrderBy {
-	return []ListServerEventsRequestOrderBy{
-		"created_at_asc",
-		"created_at_desc",
-	}
 }
 
 func (enum ListServerEventsRequestOrderBy) MarshalJSON() ([]byte, error) {
@@ -171,15 +148,6 @@ func (enum ListServerPrivateNetworksRequestOrderBy) String() string {
 	return string(enum)
 }
 
-func (enum ListServerPrivateNetworksRequestOrderBy) Values() []ListServerPrivateNetworksRequestOrderBy {
-	return []ListServerPrivateNetworksRequestOrderBy{
-		"created_at_asc",
-		"created_at_desc",
-		"updated_at_asc",
-		"updated_at_desc",
-	}
-}
-
 func (enum ListServerPrivateNetworksRequestOrderBy) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -210,13 +178,6 @@ func (enum ListServersRequestOrderBy) String() string {
 	return string(enum)
 }
 
-func (enum ListServersRequestOrderBy) Values() []ListServersRequestOrderBy {
-	return []ListServersRequestOrderBy{
-		"created_at_asc",
-		"created_at_desc",
-	}
-}
-
 func (enum ListServersRequestOrderBy) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -245,13 +206,6 @@ func (enum ListSettingsRequestOrderBy) String() string {
 		return "created_at_asc"
 	}
 	return string(enum)
-}
-
-func (enum ListSettingsRequestOrderBy) Values() []ListSettingsRequestOrderBy {
-	return []ListSettingsRequestOrderBy{
-		"created_at_asc",
-		"created_at_desc",
-	}
 }
 
 func (enum ListSettingsRequestOrderBy) MarshalJSON() ([]byte, error) {
@@ -285,14 +239,6 @@ func (enum OfferStock) String() string {
 	return string(enum)
 }
 
-func (enum OfferStock) Values() []OfferStock {
-	return []OfferStock{
-		"empty",
-		"low",
-		"available",
-	}
-}
-
 func (enum OfferStock) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -324,14 +270,6 @@ func (enum OfferSubscriptionPeriod) String() string {
 	return string(enum)
 }
 
-func (enum OfferSubscriptionPeriod) Values() []OfferSubscriptionPeriod {
-	return []OfferSubscriptionPeriod{
-		"unknown_subscription_period",
-		"hourly",
-		"monthly",
-	}
-}
-
 func (enum OfferSubscriptionPeriod) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -361,14 +299,6 @@ func (enum ServerBootType) String() string {
 		return "unknown_boot_type"
 	}
 	return string(enum)
-}
-
-func (enum ServerBootType) Values() []ServerBootType {
-	return []ServerBootType{
-		"unknown_boot_type",
-		"normal",
-		"rescue",
-	}
 }
 
 func (enum ServerBootType) MarshalJSON() ([]byte, error) {
@@ -404,16 +334,6 @@ func (enum ServerInstallStatus) String() string {
 	return string(enum)
 }
 
-func (enum ServerInstallStatus) Values() []ServerInstallStatus {
-	return []ServerInstallStatus{
-		"unknown",
-		"to_install",
-		"installing",
-		"completed",
-		"error",
-	}
-}
-
 func (enum ServerInstallStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -447,16 +367,6 @@ func (enum ServerOptionOptionStatus) String() string {
 	return string(enum)
 }
 
-func (enum ServerOptionOptionStatus) Values() []ServerOptionOptionStatus {
-	return []ServerOptionOptionStatus{
-		"option_status_unknown",
-		"option_status_enable",
-		"option_status_enabling",
-		"option_status_disabling",
-		"option_status_error",
-	}
-}
-
 func (enum ServerOptionOptionStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -486,14 +396,6 @@ func (enum ServerPingStatus) String() string {
 		return "ping_status_unknown"
 	}
 	return string(enum)
-}
-
-func (enum ServerPingStatus) Values() []ServerPingStatus {
-	return []ServerPingStatus{
-		"ping_status_unknown",
-		"ping_status_up",
-		"ping_status_down",
-	}
 }
 
 func (enum ServerPingStatus) MarshalJSON() ([]byte, error) {
@@ -528,17 +430,6 @@ func (enum ServerPrivateNetworkStatus) String() string {
 		return "unknown"
 	}
 	return string(enum)
-}
-
-func (enum ServerPrivateNetworkStatus) Values() []ServerPrivateNetworkStatus {
-	return []ServerPrivateNetworkStatus{
-		"unknown",
-		"attaching",
-		"attached",
-		"error",
-		"detaching",
-		"locked",
-	}
 }
 
 func (enum ServerPrivateNetworkStatus) MarshalJSON() ([]byte, error) {
@@ -581,23 +472,6 @@ func (enum ServerStatus) String() string {
 	return string(enum)
 }
 
-func (enum ServerStatus) Values() []ServerStatus {
-	return []ServerStatus{
-		"unknown",
-		"delivering",
-		"ready",
-		"stopping",
-		"stopped",
-		"starting",
-		"error",
-		"deleting",
-		"locked",
-		"out_of_stock",
-		"ordered",
-		"resetting",
-	}
-}
-
 func (enum ServerStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -626,13 +500,6 @@ func (enum SettingType) String() string {
 		return "unknown"
 	}
 	return string(enum)
-}
-
-func (enum SettingType) Values() []SettingType {
-	return []SettingType{
-		"unknown",
-		"smtp",
-	}
 }
 
 func (enum SettingType) MarshalJSON() ([]byte, error) {
@@ -1323,9 +1190,6 @@ type ListOffersRequest struct {
 	// SubscriptionPeriod: subscription period type to filter offers by.
 	// Default value: unknown_subscription_period
 	SubscriptionPeriod OfferSubscriptionPeriod `json:"-"`
-
-	// Name: offer name to filter offers by.
-	Name *string `json:"-"`
 }
 
 // ListOffersResponse: list offers response.
@@ -2402,7 +2266,6 @@ func (s *API) ListOffers(req *ListOffersRequest, opts ...scw.RequestOption) (*Li
 	parameter.AddToQuery(query, "page", req.Page)
 	parameter.AddToQuery(query, "page_size", req.PageSize)
 	parameter.AddToQuery(query, "subscription_period", req.SubscriptionPeriod)
-	parameter.AddToQuery(query, "name", req.Name)
 
 	if fmt.Sprint(req.Zone) == "" {
 		return nil, errors.New("field Zone cannot be empty in request")

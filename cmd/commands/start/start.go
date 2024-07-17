@@ -5,7 +5,7 @@ package start
 
 import (
 	"observe/agent/cmd"
-	observeotel "observe/agent/cmd/collector"
+	observeotel "observe/otelcol"
 	"observe/agent/cmd/config"
 	"os"
 

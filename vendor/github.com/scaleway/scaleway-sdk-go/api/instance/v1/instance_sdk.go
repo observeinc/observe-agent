@@ -56,15 +56,6 @@ func (enum Arch) String() string {
 	return string(enum)
 }
 
-func (enum Arch) Values() []Arch {
-	return []Arch{
-		"unknown_arch",
-		"x86_64",
-		"arm",
-		"arm64",
-	}
-}
-
 func (enum Arch) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -97,15 +88,6 @@ func (enum AttachServerVolumeRequestVolumeType) String() string {
 	return string(enum)
 }
 
-func (enum AttachServerVolumeRequestVolumeType) Values() []AttachServerVolumeRequestVolumeType {
-	return []AttachServerVolumeRequestVolumeType{
-		"unknown_volume_type",
-		"l_ssd",
-		"b_ssd",
-		"sbs_volume",
-	}
-}
-
 func (enum AttachServerVolumeRequestVolumeType) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -135,14 +117,6 @@ func (enum BootType) String() string {
 		return "local"
 	}
 	return string(enum)
-}
-
-func (enum BootType) Values() []BootType {
-	return []BootType{
-		"local",
-		"bootscript",
-		"rescue",
-	}
 }
 
 func (enum BootType) MarshalJSON() ([]byte, error) {
@@ -178,16 +152,6 @@ func (enum IPState) String() string {
 	return string(enum)
 }
 
-func (enum IPState) Values() []IPState {
-	return []IPState{
-		"unknown_state",
-		"detached",
-		"attached",
-		"pending",
-		"error",
-	}
-}
-
 func (enum IPState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -220,15 +184,6 @@ func (enum IPType) String() string {
 	return string(enum)
 }
 
-func (enum IPType) Values() []IPType {
-	return []IPType{
-		"unknown_iptype",
-		"nat",
-		"routed_ipv4",
-		"routed_ipv6",
-	}
-}
-
 func (enum IPType) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -258,14 +213,6 @@ func (enum ImageState) String() string {
 		return "available"
 	}
 	return string(enum)
-}
-
-func (enum ImageState) Values() []ImageState {
-	return []ImageState{
-		"available",
-		"creating",
-		"error",
-	}
 }
 
 func (enum ImageState) MarshalJSON() ([]byte, error) {
@@ -300,15 +247,6 @@ func (enum ListServersRequestOrder) String() string {
 	return string(enum)
 }
 
-func (enum ListServersRequestOrder) Values() []ListServersRequestOrder {
-	return []ListServersRequestOrder{
-		"creation_date_desc",
-		"creation_date_asc",
-		"modification_date_desc",
-		"modification_date_asc",
-	}
-}
-
 func (enum ListServersRequestOrder) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -339,13 +277,6 @@ func (enum PlacementGroupPolicyMode) String() string {
 	return string(enum)
 }
 
-func (enum PlacementGroupPolicyMode) Values() []PlacementGroupPolicyMode {
-	return []PlacementGroupPolicyMode{
-		"optional",
-		"enforced",
-	}
-}
-
 func (enum PlacementGroupPolicyMode) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -374,13 +305,6 @@ func (enum PlacementGroupPolicyType) String() string {
 		return "max_availability"
 	}
 	return string(enum)
-}
-
-func (enum PlacementGroupPolicyType) Values() []PlacementGroupPolicyType {
-	return []PlacementGroupPolicyType{
-		"max_availability",
-		"low_latency",
-	}
 }
 
 func (enum PlacementGroupPolicyType) MarshalJSON() ([]byte, error) {
@@ -414,14 +338,6 @@ func (enum PrivateNICState) String() string {
 	return string(enum)
 }
 
-func (enum PrivateNICState) Values() []PrivateNICState {
-	return []PrivateNICState{
-		"available",
-		"syncing",
-		"syncing_error",
-	}
-}
-
 func (enum PrivateNICState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -451,14 +367,6 @@ func (enum SecurityGroupPolicy) String() string {
 		return "unknown_policy"
 	}
 	return string(enum)
-}
-
-func (enum SecurityGroupPolicy) Values() []SecurityGroupPolicy {
-	return []SecurityGroupPolicy{
-		"unknown_policy",
-		"accept",
-		"drop",
-	}
 }
 
 func (enum SecurityGroupPolicy) MarshalJSON() ([]byte, error) {
@@ -492,14 +400,6 @@ func (enum SecurityGroupRuleAction) String() string {
 	return string(enum)
 }
 
-func (enum SecurityGroupRuleAction) Values() []SecurityGroupRuleAction {
-	return []SecurityGroupRuleAction{
-		"unknown_action",
-		"accept",
-		"drop",
-	}
-}
-
 func (enum SecurityGroupRuleAction) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -529,14 +429,6 @@ func (enum SecurityGroupRuleDirection) String() string {
 		return "unknown_direction"
 	}
 	return string(enum)
-}
-
-func (enum SecurityGroupRuleDirection) Values() []SecurityGroupRuleDirection {
-	return []SecurityGroupRuleDirection{
-		"unknown_direction",
-		"inbound",
-		"outbound",
-	}
 }
 
 func (enum SecurityGroupRuleDirection) MarshalJSON() ([]byte, error) {
@@ -572,16 +464,6 @@ func (enum SecurityGroupRuleProtocol) String() string {
 	return string(enum)
 }
 
-func (enum SecurityGroupRuleProtocol) Values() []SecurityGroupRuleProtocol {
-	return []SecurityGroupRuleProtocol{
-		"unknown_protocol",
-		"TCP",
-		"UDP",
-		"ICMP",
-		"ANY",
-	}
-}
-
 func (enum SecurityGroupRuleProtocol) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -611,14 +493,6 @@ func (enum SecurityGroupState) String() string {
 		return "available"
 	}
 	return string(enum)
-}
-
-func (enum SecurityGroupState) Values() []SecurityGroupState {
-	return []SecurityGroupState{
-		"available",
-		"syncing",
-		"syncing_error",
-	}
 }
 
 func (enum SecurityGroupState) MarshalJSON() ([]byte, error) {
@@ -656,18 +530,6 @@ func (enum ServerAction) String() string {
 	return string(enum)
 }
 
-func (enum ServerAction) Values() []ServerAction {
-	return []ServerAction{
-		"poweron",
-		"backup",
-		"stop_in_place",
-		"poweroff",
-		"terminate",
-		"reboot",
-		"enable_routed_ip",
-	}
-}
-
 func (enum ServerAction) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -696,13 +558,6 @@ func (enum ServerIPIPFamily) String() string {
 		return "inet"
 	}
 	return string(enum)
-}
-
-func (enum ServerIPIPFamily) Values() []ServerIPIPFamily {
-	return []ServerIPIPFamily{
-		"inet",
-		"inet6",
-	}
 }
 
 func (enum ServerIPIPFamily) MarshalJSON() ([]byte, error) {
@@ -736,14 +591,6 @@ func (enum ServerIPProvisioningMode) String() string {
 	return string(enum)
 }
 
-func (enum ServerIPProvisioningMode) Values() []ServerIPProvisioningMode {
-	return []ServerIPProvisioningMode{
-		"manual",
-		"dhcp",
-		"slaac",
-	}
-}
-
 func (enum ServerIPProvisioningMode) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -775,16 +622,6 @@ func (enum ServerIPState) String() string {
 		return "unknown_state"
 	}
 	return string(enum)
-}
-
-func (enum ServerIPState) Values() []ServerIPState {
-	return []ServerIPState{
-		"unknown_state",
-		"detached",
-		"attached",
-		"pending",
-		"error",
-	}
 }
 
 func (enum ServerIPState) MarshalJSON() ([]byte, error) {
@@ -821,17 +658,6 @@ func (enum ServerState) String() string {
 	return string(enum)
 }
 
-func (enum ServerState) Values() []ServerState {
-	return []ServerState{
-		"running",
-		"stopped",
-		"stopped in place",
-		"starting",
-		"stopping",
-		"locked",
-	}
-}
-
 func (enum ServerState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -861,14 +687,6 @@ func (enum ServerTypesAvailability) String() string {
 		return "available"
 	}
 	return string(enum)
-}
-
-func (enum ServerTypesAvailability) Values() []ServerTypesAvailability {
-	return []ServerTypesAvailability{
-		"available",
-		"scarce",
-		"shortage",
-	}
 }
 
 func (enum ServerTypesAvailability) MarshalJSON() ([]byte, error) {
@@ -905,17 +723,6 @@ func (enum SnapshotState) String() string {
 	return string(enum)
 }
 
-func (enum SnapshotState) Values() []SnapshotState {
-	return []SnapshotState{
-		"available",
-		"snapshotting",
-		"error",
-		"invalid_data",
-		"importing",
-		"exporting",
-	}
-}
-
 func (enum SnapshotState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -946,15 +753,6 @@ func (enum SnapshotVolumeType) String() string {
 		return "unknown_volume_type"
 	}
 	return string(enum)
-}
-
-func (enum SnapshotVolumeType) Values() []SnapshotVolumeType {
-	return []SnapshotVolumeType{
-		"unknown_volume_type",
-		"l_ssd",
-		"b_ssd",
-		"unified",
-	}
 }
 
 func (enum SnapshotVolumeType) MarshalJSON() ([]byte, error) {
@@ -988,16 +786,6 @@ func (enum TaskStatus) String() string {
 		return "pending"
 	}
 	return string(enum)
-}
-
-func (enum TaskStatus) Values() []TaskStatus {
-	return []TaskStatus{
-		"pending",
-		"started",
-		"success",
-		"failure",
-		"retry",
-	}
 }
 
 func (enum TaskStatus) MarshalJSON() ([]byte, error) {
@@ -1035,18 +823,6 @@ func (enum VolumeServerState) String() string {
 	return string(enum)
 }
 
-func (enum VolumeServerState) Values() []VolumeServerState {
-	return []VolumeServerState{
-		"available",
-		"snapshotting",
-		"fetching",
-		"resizing",
-		"saving",
-		"hotsyncing",
-		"error",
-	}
-}
-
 func (enum VolumeServerState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -1077,15 +853,6 @@ func (enum VolumeServerVolumeType) String() string {
 		return "l_ssd"
 	}
 	return string(enum)
-}
-
-func (enum VolumeServerVolumeType) Values() []VolumeServerVolumeType {
-	return []VolumeServerVolumeType{
-		"l_ssd",
-		"b_ssd",
-		"sbs_volume",
-		"scratch",
-	}
 }
 
 func (enum VolumeServerVolumeType) MarshalJSON() ([]byte, error) {
@@ -1123,18 +890,6 @@ func (enum VolumeState) String() string {
 	return string(enum)
 }
 
-func (enum VolumeState) Values() []VolumeState {
-	return []VolumeState{
-		"available",
-		"snapshotting",
-		"fetching",
-		"resizing",
-		"saving",
-		"hotsyncing",
-		"error",
-	}
-}
-
 func (enum VolumeState) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, enum)), nil
 }
@@ -1167,17 +922,6 @@ func (enum VolumeVolumeType) String() string {
 		return "l_ssd"
 	}
 	return string(enum)
-}
-
-func (enum VolumeVolumeType) Values() []VolumeVolumeType {
-	return []VolumeVolumeType{
-		"l_ssd",
-		"b_ssd",
-		"unified",
-		"scratch",
-		"sbs_volume",
-		"sbs_snapshot",
-	}
 }
 
 func (enum VolumeVolumeType) MarshalJSON() ([]byte, error) {
@@ -1665,12 +1409,6 @@ type Server struct {
 
 	// Zone: zone in which the Instance is located.
 	Zone scw.Zone `json:"zone"`
-
-	// AdminPasswordEncryptionSSHKeyID: the public_key value of this key is used to encrypt the admin password. When set to an empty string, reset this value and admin_password_encrypted_value to an empty string so a new password may be generated.
-	AdminPasswordEncryptionSSHKeyID *string `json:"admin_password_encryption_ssh_key_id"`
-
-	// AdminPasswordEncryptedValue: this value is reset when admin_password_encryption_ssh_key_id is set to an empty string.
-	AdminPasswordEncryptedValue *string `json:"admin_password_encrypted_value"`
 }
 
 // IP: ip.
@@ -2233,11 +1971,8 @@ type CreatePrivateNICRequest struct {
 	// Tags: private NIC tags.
 	Tags []string `json:"tags,omitempty"`
 
-	// Deprecated: IPIDs: ip_ids defined from IPAM.
-	IPIDs *[]string `json:"ip_ids,omitempty"`
-
-	// IpamIPIDs: UUID of IPAM ips, to be attached to the instance in the requested private network.
-	IpamIPIDs []string `json:"ipam_ip_ids,omitempty"`
+	// IPIDs: ip_ids defined from IPAM.
+	IPIDs []string `json:"ip_ids,omitempty"`
 }
 
 // CreatePrivateNICResponse: create private nic response.
@@ -2388,7 +2123,7 @@ type CreateServerRequest struct {
 	// PlacementGroup: placement group ID if Instance must be part of a placement group.
 	PlacementGroup *string `json:"placement_group,omitempty"`
 
-	// AdminPasswordEncryptionSSHKeyID: the public_key value of this key is used to encrypt the admin password.
+	// AdminPasswordEncryptionSSHKeyID: UUID of the SSH RSA key that will be used to encrypt the initial admin password for OS requiring it. Mandatory for Windows OS.
 	AdminPasswordEncryptionSSHKeyID *string `json:"admin_password_encryption_ssh_key_id,omitempty"`
 }
 
@@ -2476,6 +2211,15 @@ type CreateVolumeRequest struct {
 // CreateVolumeResponse: create volume response.
 type CreateVolumeResponse struct {
 	Volume *Volume `json:"volume"`
+}
+
+// DeleteEncryptedRdpPasswordRequest: delete encrypted rdp password request.
+type DeleteEncryptedRdpPasswordRequest struct {
+	// Zone: zone to target. If none is passed will use default zone from the config.
+	Zone scw.Zone `json:"-"`
+
+	// ServerID: UUID of the Instance.
+	ServerID string `json:"-"`
 }
 
 // DeleteIPRequest: delete ip request.
@@ -2635,6 +2379,27 @@ type GetDashboardRequest struct {
 // GetDashboardResponse: get dashboard response.
 type GetDashboardResponse struct {
 	Dashboard *Dashboard `json:"dashboard"`
+}
+
+// GetEncryptedRdpPasswordRequest: get encrypted rdp password request.
+type GetEncryptedRdpPasswordRequest struct {
+	// Zone: zone to target. If none is passed will use default zone from the config.
+	Zone scw.Zone `json:"-"`
+
+	// ServerID: UUID of the Instance.
+	ServerID string `json:"-"`
+}
+
+// GetEncryptedRdpPasswordResponse: get encrypted rdp password response.
+type GetEncryptedRdpPasswordResponse struct {
+	// Value: the encrypted RDP password.
+	Value *string `json:"value"`
+
+	// AdminPasswordEncryptionSSHKeyDescription: the description of the SSH key used for ciphering.
+	AdminPasswordEncryptionSSHKeyDescription *string `json:"admin_password_encryption_ssh_key_description"`
+
+	// AdminPasswordEncryptionSSHKeyID: the UUID of the SSH key used for ciphering.
+	AdminPasswordEncryptionSSHKeyID *string `json:"admin_password_encryption_ssh_key_id"`
 }
 
 // GetIPRequest: get ip request.
@@ -3885,9 +3650,6 @@ type UpdateServerRequest struct {
 	// - Cannot be changed if the Instance is in a placement group.
 	// - Local storage requirements of the target commercial_types must be fulfilled (i.e. if an Instance has 80GB of local storage, it can be changed into a GP1-XS, which has a maximum of 150GB, but it cannot be changed into a DEV1-S, which has only 20GB).
 	CommercialType *string `json:"commercial_type,omitempty"`
-
-	// AdminPasswordEncryptionSSHKeyID: the public_key value of this key is used to encrypt the admin password. When set to an empty string, reset this value and admin_password_encrypted_value to an empty string so a new password may be generated.
-	AdminPasswordEncryptionSSHKeyID *string `json:"admin_password_encryption_ssh_key_id,omitempty"`
 }
 
 // UpdateServerResponse: update server response.
@@ -4134,9 +3896,6 @@ type setServerRequest struct {
 
 	// PrivateNics: instance private NICs.
 	PrivateNics []*PrivateNIC `json:"private_nics"`
-
-	// AdminPasswordEncryptionSSHKeyID: the public_key value of this key is used to encrypt the admin password. When set to an empty string, reset this value and admin_password_encrypted_value to an empty string so a new password may be generated.
-	AdminPasswordEncryptionSSHKeyID *string `json:"admin_password_encryption_ssh_key_id,omitempty"`
 }
 
 // setServerResponse: set server response.
@@ -6767,6 +6526,66 @@ func (s *API) ApplyBlockMigration(req *ApplyBlockMigrationRequest, opts ...scw.R
 	err = scwReq.SetBody(req)
 	if err != nil {
 		return err
+	}
+
+	err = s.client.Do(scwReq, nil, opts...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetEncryptedRdpPassword: Get the initial administrator password for Windows RDP. This password is encrypted using the SSH RSA key specified at the time of Instance creation.
+func (s *API) GetEncryptedRdpPassword(req *GetEncryptedRdpPasswordRequest, opts ...scw.RequestOption) (*GetEncryptedRdpPasswordResponse, error) {
+	var err error
+
+	if req.Zone == "" {
+		defaultZone, _ := s.client.GetDefaultZone()
+		req.Zone = defaultZone
+	}
+
+	if fmt.Sprint(req.Zone) == "" {
+		return nil, errors.New("field Zone cannot be empty in request")
+	}
+
+	if fmt.Sprint(req.ServerID) == "" {
+		return nil, errors.New("field ServerID cannot be empty in request")
+	}
+
+	scwReq := &scw.ScalewayRequest{
+		Method: "GET",
+		Path:   "/instance/v1/zones/" + fmt.Sprint(req.Zone) + "/servers/" + fmt.Sprint(req.ServerID) + "/encrypted_rdp_password",
+	}
+
+	var resp GetEncryptedRdpPasswordResponse
+
+	err = s.client.Do(scwReq, &resp, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// DeleteEncryptedRdpPassword: Delete the initial administrator password for Windows RDP.
+func (s *API) DeleteEncryptedRdpPassword(req *DeleteEncryptedRdpPasswordRequest, opts ...scw.RequestOption) error {
+	var err error
+
+	if req.Zone == "" {
+		defaultZone, _ := s.client.GetDefaultZone()
+		req.Zone = defaultZone
+	}
+
+	if fmt.Sprint(req.Zone) == "" {
+		return errors.New("field Zone cannot be empty in request")
+	}
+
+	if fmt.Sprint(req.ServerID) == "" {
+		return errors.New("field ServerID cannot be empty in request")
+	}
+
+	scwReq := &scw.ScalewayRequest{
+		Method: "DELETE",
+		Path:   "/instance/v1/zones/" + fmt.Sprint(req.Zone) + "/servers/" + fmt.Sprint(req.ServerID) + "/encrypted_rdp_password",
 	}
 
 	err = s.client.Do(scwReq, nil, opts...)
