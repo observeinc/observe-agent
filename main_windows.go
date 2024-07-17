@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	observeotel "observe/agent/cmd/collector"
+	observeotel "observe/otelcol"
 	"os"
 
 	"go.opentelemetry.io/collector/otelcol"

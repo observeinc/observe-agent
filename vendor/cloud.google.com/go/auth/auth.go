@@ -87,17 +87,13 @@ func (t *Token) IsValid() bool {
 }
 
 func (t *Token) isValidWithEarlyExpiry(earlyExpiry time.Duration) bool {
-	if t.isEmpty() {
+	if t == nil || t.Value == "" {
 		return false
 	}
 	if t.Expiry.IsZero() {
 		return true
 	}
 	return !t.Expiry.Round(0).Add(-earlyExpiry).Before(timeNow())
-}
-
-func (t *Token) isEmpty() bool {
-	return t == nil || t.Value == ""
 }
 
 // Credentials holds Google credentials, including
@@ -258,7 +254,7 @@ type cachedTokenProvider struct {
 func (c *cachedTokenProvider) Token(ctx context.Context) (*Token, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.cachedToken.IsValid() || (!c.autoRefresh && !c.cachedToken.isEmpty()) {
+	if c.cachedToken.IsValid() || !c.autoRefresh {
 		return c.cachedToken, nil
 	}
 	t, err := c.tp.Token(ctx)
