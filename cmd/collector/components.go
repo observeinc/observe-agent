@@ -24,6 +24,7 @@ import (
 	k8sattributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	filterprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	awsecscontainermetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	dockerstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -126,6 +127,7 @@ func components() (otelcol.Factories, error) {
 		k8sattributesprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -137,6 +139,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[k8sattributesprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0"
 	factories.ProcessorModules[resourcedetectionprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0"
 	factories.ProcessorModules[transformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0"
+	factories.ProcessorModules[filterprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.105.0"
 
 	factories.Connectors, err = connector.MakeFactoryMap(
 		countconnector.NewFactory(),

@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0
