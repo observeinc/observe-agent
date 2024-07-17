@@ -45,7 +45,13 @@ jobs:
           args: release --prepare --clean --snapshot --verbose --parallelism 8
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-      - run: ls -l && ls -l dist/ && ls -l /var/lib/docker/
+      - id: docker-save #Save docker images to tar
+        run: docker save -o dist/observe-agent-docker.tar observeinc/observe-agent
+      - run: ls -l && ls -l dist/     
+      - id: docker-load #Load docker images from tar into docker 
+        run: |
+          docker load --input dist/observe-agent-docker.tar
+          docker images
       - name: Upload build artifacts 
         uses: actions/upload-artifact@v4        
         with:
