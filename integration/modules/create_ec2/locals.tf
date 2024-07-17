@@ -55,7 +55,7 @@ locals {
       architecture      = "x86_64"
     }
 
-    DOCKER_AMAZON_LINUX_2023 = {
+    DOCKER_AMD64_AMAZON_LINUX_2023 = {
       ami_instance_type = "t3.small"
       ami_id            = "ami-0a2781a262879e465"
       ami_description   = "Used for Docker testing - Amazon Linux 2023 AMI 2023.4.20240528.0 x86_64 HVM kernel-6.1"
@@ -63,8 +63,8 @@ locals {
       sleep             = 60
       user_data         = "user_data/yumbased_docker.sh"
       distribution      = "docker"
-      package_type      = ".rpm"
-      architecture      = "x86_64"
+      package_type      = ".tar"
+      architecture      = "amd64"
     }
 
     # RHEL_8_4_0 = {

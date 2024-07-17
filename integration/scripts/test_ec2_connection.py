@@ -7,10 +7,7 @@ import re
 import time 
 from utils import *
 
-@print_test_decorator
-def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
-    pass 
-    
+
     
 @print_test_decorator
 def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
@@ -63,7 +60,12 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
             time.sleep(1)        
         raise RuntimeError("❌ The UserdataExecution file did not finish successfully in time")  
 
-
+@print_test_decorator
+def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
+    #Since our test is being done on a linux EC2, we can just check it initializes and runs similar to linux test
+    run_test_linux(remote_host, env_vars)
+    pass 
+    
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    

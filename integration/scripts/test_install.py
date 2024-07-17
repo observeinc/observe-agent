@@ -85,7 +85,21 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     else:        
         print("✅ Installation test passed")
         
-    
+
+@print_test_decorator
+def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
+
+    filename, full_path= get_installation_package(env_vars)
+    home_dir = "/home/{}".format(env_vars["user"])
+
+    remote_host.put_file(full_path, home_dir)
+    result = remote_host.run_command('docker load --input {}'.format(filename))
+    if result.stderr:
+        print(result)
+        raise RuntimeError("❌ Installation error in docker load")
+    else:
+        print("✅ Installation test passed")
+
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict):       
@@ -130,6 +144,9 @@ if __name__ == '__main__':
         run_test_linux(remote_host, env_vars)
     elif "windows" in env_vars["machine_config"]["distribution"]:
         run_test_windows(remote_host, env_vars)
+    elif "docker" in env_vars["machine_config"]["distribution"]:
+        run_test_docker(remote_host, env_vars)
+
 
 
 
