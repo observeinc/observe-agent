@@ -1,0 +1,51 @@
+receivers:
+  filestats/agent:
+    include: '/etc/observe-agent/otel-collector.yaml'
+    collection_interval: 240m
+    initial_delay: 60s
+
+  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
+    include: [/etc/observe-agent/otel-collector.yaml]
+    start_at: beginning
+    poll_interval: 5m
+    multiline:
+      line_end_pattern: ENDOFLINEPATTERN
+
+  prometheus/agent:
+    config:
+      scrape_configs:
+        - job_name: 'otelcol'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['0.0.0.0:8888']
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '.*grpc_io.*'
+              action: drop
+
+  journald/agent:
+    units:
+      - observe-agent
+    priority: info
+
+service:
+  pipelines:
+    metrics/agent-filestats:
+       receivers: [filestats/agent]
+       processors: [resourcedetection, resourcedetection/cloud]
+       exporters: [otlphttp/observe]
+
+    metrics/agent-internal:
+      receivers: [prometheus/agent, count]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      exporters: [otlphttp/observe]
+
+    logs/agent-journald:
+      receivers: [journald/agent]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      exporters: [otlphttp/observe, count]
+
+    logs/agent-config:
+       receivers: [filelog/agent-config]
+       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+       exporters: [otlphttp/observe]
