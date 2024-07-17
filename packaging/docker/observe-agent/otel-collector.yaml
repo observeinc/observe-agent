@@ -100,6 +100,11 @@ processors:
     timeout: 2s
     override: false
     
+  filter/count:
+    error_mode: ignore
+    metrics:
+      metric:
+          - 'IsMatch(name, ".*")'
 
 exporters:
   otlphttp/observe:
@@ -111,34 +116,16 @@ exporters:
       queue_size: 100
     retry_on_failure:
       enabled: true
+  
+  debug:
 
 service:
   pipelines:
-    metrics/agent-filestats:
-       receivers: [filestats/agent]
-       processors: [resourcedetection, resourcedetection/cloud]
-       exporters: [otlphttp/observe]
-
-    metrics/agent-internal:
-      receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe]
-
     metrics/forward:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
       exporters: [otlphttp/observe]
 
-    logs/agent-journald:
-      receivers: [journald/agent]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe, count]
-
-    logs/agent-config:
-       receivers: [filelog/agent-config]
-       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-       exporters: [otlphttp/observe]
-    
     logs/forward: 
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
@@ -148,6 +135,11 @@ service:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
       exporters: [otlphttp/observe]
+
+    metrics/count-nooop:
+      receivers: [count]
+      processors: [filter/count]
+      exporters: [debug]
 
   extensions: [health_check, file_storage]
   telemetry:
