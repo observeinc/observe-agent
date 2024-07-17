@@ -46,12 +46,19 @@ jobs:
         env:         
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - id: docker-save #Save docker images to tar
-        run: docker save -o dist/observe-agent-docker.tar observeinc/observe-agent
+        run: |
+          amd64_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "amd64"| grep "observe-agent" | sort -r -k4 | head -n 1)
+          arm64v8_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "arm64v8"| grep "observe-agent" | sort -r -k4 | head -n 1)
+          docker save -o dist/observe-agent_docker_arm64v8.tar ${arm64v8_image}
+          docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
       - run: ls -l && ls -l dist/     
       - id: docker-load #Load docker images from tar into docker 
         run: |
-          docker load --input dist/observe-agent-docker.tar
+          docker load --input dist/observe-agent_docker_amd64.tar
           docker images
+          docker load --input dist/observe-agent_docker_arm64v8.tar
+          docker images
+
       - name: Upload build artifacts 
         uses: actions/upload-artifact@v4        
         with:
