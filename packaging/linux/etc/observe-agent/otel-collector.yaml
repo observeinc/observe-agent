@@ -16,35 +16,6 @@ receivers:
       http:
         endpoint: localhost:4318
 
-  filestats/agent:
-    include: '/etc/observe-agent/otel-collector.yaml'
-    collection_interval: 240m
-    initial_delay: 60s
-
-  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
-    include: [/etc/observe-agent/otel-collector.yaml]
-    start_at: beginning
-    poll_interval: 5m
-    multiline:
-      line_end_pattern: ENDOFLINEPATTERN
-
-  prometheus/agent:
-    config:
-      scrape_configs:
-        - job_name: 'otelcol'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:8888']
-          metric_relabel_configs:
-            - source_labels: [__name__]
-              regex: '.*grpc_io.*'
-              action: drop
-
-  journald/agent:
-    units:
-      - observe-agent
-    priority: info
-
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
   # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
@@ -99,7 +70,12 @@ processors:
     detectors: ["gcp", "ecs", "ec2", "azure"]
     timeout: 2s
     override: false
-    
+
+  filter/count:
+    error_mode: ignore
+    metrics:
+      metric:
+          - 'IsMatch(name, ".*")'
 
 exporters:
   otlphttp/observe:
@@ -111,33 +87,15 @@ exporters:
       queue_size: 100
     retry_on_failure:
       enabled: true
+  
+  debug:
 
 service:
   pipelines:
-    metrics/agent-filestats:
-       receivers: [filestats/agent]
-       processors: [resourcedetection, resourcedetection/cloud]
-       exporters: [otlphttp/observe]
-
-    metrics/agent-internal:
-      receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe]
-
     metrics/forward:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
       exporters: [otlphttp/observe]
-
-    logs/agent-journald:
-      receivers: [journald/agent]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe, count]
-
-    logs/agent-config:
-       receivers: [filelog/agent-config]
-       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-       exporters: [otlphttp/observe]
     
     logs/forward: 
       receivers: [otlp]
@@ -148,6 +106,11 @@ service:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
       exporters: [otlphttp/observe]
+
+    metrics/count-nooop:
+      receivers: [count]
+      processors: [filter/count]
+      exporters: [debug]
 
   extensions: [health_check, file_storage]
   telemetry:

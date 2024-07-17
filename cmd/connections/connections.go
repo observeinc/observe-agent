@@ -57,4 +57,5 @@ func (c ConnectionType) GetConfigFilePaths() []string {
 
 var AllConnectionTypes = []*ConnectionType{
 	&HostMonitoringConnectionType,
+	&SelfMonitoringConnectionType,
 }

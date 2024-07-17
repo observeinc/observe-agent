@@ -6,7 +6,7 @@ dist/
 agent.exe
 agent.exe~
 .DS_Store
-observe-agent/
+ocb-build/
 
 #integration
 *.pem
