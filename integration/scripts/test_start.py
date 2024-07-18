@@ -78,6 +78,10 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     if not agent_status:
             u.die("❌ Error in Observe Agent Status Test ")
 
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
+    pass 
+
 
 @u.print_test_decorator
 def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:    
@@ -120,5 +124,7 @@ if __name__ == '__main__':
         run_test_linux(remote_host, env_vars)
     elif "windows" in env_vars["machine_config"]["distribution"]:
         run_test_windows(remote_host, env_vars)
+    elif "docker" in env_vars["machine_config"]["distribution"]:
+        run_test_docker(remote_host, env_vars)
 
 
