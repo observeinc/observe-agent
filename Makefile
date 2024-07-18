@@ -21,3 +21,7 @@ build-ocb:
 	cp ./ocb-build/go.sum ./cmd/collector/go.sum
 	go mod tidy && go work vendor 
 	cd ./cmd/collector && go mod tidy && go work vendor
+
+install-tools:
+	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
+	
