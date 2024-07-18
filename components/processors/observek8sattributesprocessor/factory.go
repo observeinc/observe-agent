@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 
-	"observe/agent/cmd/components/processors/observek8sattributesprocessor/internal/metadata"
+	"observe/agent/components/processors/observek8sattributesprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
