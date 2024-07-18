@@ -58,7 +58,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
         --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
         --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
         --pid host \
-        $(docker images --format "{{.Repository}}:{{.Tag}}" | grep SNAPSHOT)'
+        $(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep SNAPSHOT)'
     #docker_prefix='docker run $(docker images --format "{{.Repository}}:{{.Tag}}")'
     config_file_linux = '/etc/observe-agent/observe-agent.yaml'
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
