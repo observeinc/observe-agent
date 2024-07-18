@@ -3,12 +3,11 @@ import os
 import sys
 import re
 import time 
-from utils import *
+import utils as u
 
 
-
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host:u.Host, env_vars: dict) -> None:  
 
     """
     Test to validate observe-agent version and config file loaded is correct 
@@ -49,8 +48,8 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     pass   
 
 
-@print_test_decorator
-def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
     docker_prefix='docker run \
         --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
         --mount type=bind,source=/snap,target=/hostfs/snap,readonly \
@@ -67,7 +66,7 @@ def run_test_docker(remote_host: Host, env_vars: dict) -> None:
 
     #Docker doesn't create a observe-agent.yaml by default so we have to create it, upload to host and let docker
     # mount via $(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml
-    create_default_config_file(destination_file_path = "/tmp/observe-agent.yaml")
+    u.create_default_config_file(destination_file_path = "/tmp/observe-agent.yaml")
     remote_host.put_file(local_path="/tmp/observe-agent.yaml", remote_path=home_dir)
 
     #Run command to get version & config-file info 
@@ -92,8 +91,8 @@ def run_test_docker(remote_host: Host, env_vars: dict) -> None:
 
     print (" ✅ Verified version and config file succesfully! ")    
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:    
 
     """
     Test to validate observe-agent version and config file loaded is correct 
@@ -133,8 +132,8 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
 if __name__ == '__main__':
 
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    

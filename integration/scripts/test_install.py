@@ -6,8 +6,7 @@ import sys
 import re
 import time 
 import inspect 
-from utils import * 
-
+import utils as u
 
 
 def get_installation_package(env_vars: dict) -> tuple:
@@ -43,8 +42,8 @@ def get_installation_package(env_vars: dict) -> tuple:
             print(f"Found matching file {filename} at: {full_path}")
             return filename, full_path
 
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
 
     """
     Test to install local observe-agent on a windows ec2 instance and validate command ran successfully 
@@ -86,8 +85,8 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         print("✅ Installation test passed")
         
 
-@print_test_decorator
-def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
 
     filename, full_path= get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
@@ -101,8 +100,8 @@ def run_test_docker(remote_host: Host, env_vars: dict) -> None:
         print("✅ Installation test passed")
 
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict):       
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict):       
     """
     Test to install local observe-agent on a linux ec2 instance and validate command ran successfully 
 
@@ -131,8 +130,8 @@ def run_test_linux(remote_host: Host, env_vars: dict):
 
 if __name__ == '__main__':
     
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    

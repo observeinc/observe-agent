@@ -5,12 +5,11 @@ import os
 import sys
 import re
 import time 
-from utils import *
-
+import utils as u
 
     
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
 
     """
     This test validates that the UserdataExecution.log finished successfully 
@@ -60,15 +59,15 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
             time.sleep(1)        
         raise RuntimeError("❌ The UserdataExecution file did not finish successfully in time")  
 
-@print_test_decorator
-def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
     #Since our test is being done on a linux EC2, we can just check it initializes and runs similar to linux test
     run_test_linux(remote_host, env_vars)
     pass 
     
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:    
     """
     This test validates that the cloud-init file finished successfully 
     and ec2 instance is in stable state prior to running other
@@ -101,8 +100,8 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
 
 if __name__ == '__main__':
     
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    

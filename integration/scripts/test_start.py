@@ -4,10 +4,10 @@ import sys
 import re
 import time 
 import pprint
-from utils import *
+import utils as u
 from collections import defaultdict
 
-def check_status_loop(remote_host: Host, start_timeout: int, status_command: str) -> bool:
+def check_status_loop(remote_host: u.Host, start_timeout: int, status_command: str) -> bool:
     """Run Check Status Command in a loop to wait for observe-agent to start
 
     Args:
@@ -41,8 +41,8 @@ def check_status_loop(remote_host: Host, start_timeout: int, status_command: str
     return agent_status
     
 
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
     """
     Test to check if observe-agent is running correctly 
 
@@ -76,11 +76,11 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     #Check Agent Status 
     agent_status=check_status_loop(remote_host, start_timeout, status_command)
     if not agent_status:
-            die("❌ Error in Observe Agent Status Test ")
+            u.die("❌ Error in Observe Agent Status Test ")
 
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:    
 
    """
     Test to check if observe-agent is running correctly 
@@ -102,13 +102,13 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
    #Check Agent Status 
    agent_status=check_status_loop(remote_host, start_timeout, status_command)
    if not agent_status:
-        die("❌ Error in Observe Agent Status Test ")
+        u.die("❌ Error in Observe Agent Status Test ")
         
 
 if __name__ == '__main__':
 
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    
