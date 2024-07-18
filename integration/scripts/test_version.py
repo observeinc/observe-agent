@@ -50,7 +50,7 @@ def run_test_windows(remote_host:u.Host, env_vars: dict) -> None:
 
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
-    docker_prefix='docker run \
+    docker_prefix='sudo docker run \
         --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
         --mount type=bind,source=/snap,target=/hostfs/snap,readonly \
         --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly \
