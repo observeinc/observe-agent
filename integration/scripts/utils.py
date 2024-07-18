@@ -10,6 +10,52 @@ import time
 import json 
 import pprint 
 
+
+
+def create_default_config_file(destination_file_path: str = "/tmp/observe-agent.yaml") -> None:
+    
+    """
+    Creates a defailt observe-agent.yaml at destination. Useful for docker testing since this is not mounted 
+
+    Args:
+       destination_file_path (str, optional): path to create the config file. Defaults to "/tmp/observe-agent.yaml".
+
+    """
+
+    file_content = """
+    # Observe data token (ex: a1b2c3d4e5f6g7h8i9k0:l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6)
+    token: "${OBSERVE_TOKEN}"
+
+    # Target Observe collection url (ex: https://123456789012.collect.observeinc.com/)
+    observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
+
+    host_monitoring:
+    enabled: true
+    logs: 
+        enabled: true
+    metrics:
+        enabled: true
+
+    # otel_config_overrides:
+    #   exporters:
+    #     debug:
+    #       verbosity: detailed
+    #       sampling_initial: 5
+    #       sampling_thereafter: 200
+    #   service:
+    #     pipelines:
+    #       # This will override the existing metrics/host_monitoring pipeline and output to stdout debug instead
+    #       metrics/host_monitoring:
+    #         receivers: [hostmetrics/host-monitoring]
+    #         processors: [memory_limiter]
+    #         exporters: [debug]
+    # """
+
+    # Create the file and write the content to it
+    with open(destination_file_path, "w") as file:
+        file.write(file_content)
+    print(f"File '{destination_file_path}' created successfully.")
+
 def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)

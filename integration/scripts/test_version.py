@@ -5,6 +5,8 @@ import re
 import time 
 from utils import *
 
+
+
 @print_test_decorator
 def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
 
@@ -49,7 +51,46 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
 
 @print_test_decorator
 def run_test_docker(remote_host: Host, env_vars: dict) -> None:  
-    pass 
+    docker_prefix='docker run \
+        --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
+        --mount type=bind,source=/snap,target=/hostfs/snap,readonly \
+        --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly \
+        --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly \
+        --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
+        --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
+        --pid host \
+        $(docker images --format "{{.Repository}}:{{.Tag}}" | grep SNAPSHOT)'
+    #docker_prefix='docker run $(docker images --format "{{.Repository}}:{{.Tag}}")'
+    config_file_linux = '/etc/observe-agent/observe-agent.yaml'
+    version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
+    home_dir = "/home/{}".format(env_vars["user"])
+
+    #Docker doesn't create a observe-agent.yaml by default so we have to create it, upload to host and let docker
+    # mount via $(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml
+    create_default_config_file(destination_file_path = "/tmp/observe-agent.yaml")
+    remote_host.put_file(local_path="/tmp/observe-agent.yaml", remote_path=home_dir)
+
+    #Run command to get version & config-file info 
+    result = remote_host.run_command('{} version'.format(docker_prefix))
+
+    # Split the output by newlines and extract everything after the colon          
+    for line in result.stdout.splitlines():        
+        if ":" in line:
+            _, version = line.split(":", 1)
+            version = version.strip()  # Remove leading/trailing whitespace
+        print(f"Version: {version}")
+    for line in result.stderr.splitlines():           
+        if ":" in line:
+            _, config_file = line.split(":", 1)
+            config_file = config_file.strip()  # Remove leading/trailing whitespace
+        print(f"Config File: {config_file}")
+    
+    if config_file != config_file_linux: 
+        raise ValueError(f" ❌ Invalid config file: {config_file}")
+    if not version_pattern.match(version):
+        raise ValueError(f" ❌ Invalid version: {version}")
+
+    print (" ✅ Verified version and config file succesfully! ")    
 
 @print_test_decorator
 def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
@@ -107,3 +148,6 @@ if __name__ == '__main__':
         run_test_windows(remote_host, env_vars)
     elif "docker" in env_vars["machine_config"]["distribution"]:
         run_test_docker(remote_host, env_vars)
+
+
+# docker run --mount type=bind,source=/proc,target=/hostfs/proc,readonly --mount type=bind,source=/snap,target=/hostfs/snap,readonly --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml --pid host $(docker images --format "{{.Repository}}:{{.Tag}}")
