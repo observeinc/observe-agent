@@ -80,7 +80,39 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
-    pass 
+
+   docker_prefix='sudo docker run -d --restart always \
+        --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
+        --mount type=bind,source=/snap,target=/hostfs/snap,readonly \
+        --mount type=bind,source=/boot,target=/hostfs/boot,readonly \
+        --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly \
+        --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly \
+        --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
+        --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
+        --pid host \
+        $(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep SNAPSHOT)'
+   start_command='start'
+   get_container_command = (
+    "sudo docker ps --filter \"status=running\" --format \"{{.ID}} {{.Image}} {{.CreatedAt}}\" | "
+    "grep \"SNAPSHOT\" | sort -k3 -r | head -n 1 | awk '{print $1}'"
+    )  
+   start_timeout = 30 #how long to wait for observe-agent to start   
+
+   #Start Observe Agent 
+   result = remote_host.run_command(docker_prefix + ' ' + start_command)  
+   if result.stderr:
+        u.die("❌ Error starting observe-agent container")
+
+   #Get Observe Agent Container ID
+   container_id = remote_host.run_command(get_container_command)
+   status_command='sudo docker exec {} ./observe-agent status'.format(container_id.stdout.strip()) 
+   if not container_id:
+        u.die("❌ Error in finding observe-agent container")
+
+   #Check Agent Status 
+   agent_status=check_status_loop(remote_host, start_timeout, status_command)
+   if not agent_status:
+        u.die("❌ Error in Observe Agent Status Test ")
 
 
 @u.print_test_decorator
