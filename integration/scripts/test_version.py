@@ -5,6 +5,29 @@ import re
 import time 
 import utils as u
 
+def extract_version_config(result: any) -> tuple:
+    """Extract version name and config file from ssh result output 
+
+    Args:
+        result (any): ssh result output
+
+    Returns:
+        tuple: config_file, version of the installed observe-agent package 
+    """
+ 
+     # Split the output by newlines and extract everything after the colon
+    for line in result.stdout.splitlines():      
+        if ":" in line:
+            _, version = line.split(":", 1)
+            version = version.strip()  # Remove leading/trailing whitespace
+        print(f"Version: {version}")
+    for line in result.stderr.splitlines():      
+        if ":" in line:
+            _, config_file = line.split(":", 1)
+            config_file = config_file.strip()  # Remove leading/trailing whitespace
+        print(f"Config File: {config_file}")
+    return config_file, version
+
 
 @u.print_test_decorator
 def run_test_windows(remote_host:u.Host, env_vars: dict) -> None:  
@@ -25,18 +48,7 @@ def run_test_windows(remote_host:u.Host, env_vars: dict) -> None:
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
 
     result = remote_host.run_command('Set-Location "${Env:Programfiles}\\Observe\\observe-agent"; ./observe-agent version')    
-    # Split the output by newlines and extract everything after the colon
-    for line in result.stdout.splitlines():      
-        if ":" in line:
-            _, version = line.split(":", 1)
-            version = version.strip()  # Remove leading/trailing whitespace
-        print(f"Version: {version}")
-    for line in result.stderr.splitlines():      
-        if ":" in line:
-            _, config_file = line.split(":", 1)
-            config_file = config_file.strip()  # Remove leading/trailing whitespace
-        print(f"Config File: {config_file}")
-
+    config_file, version = extract_version_config(result)
      
     if config_file != config_file_windows:
         raise ValueError(f" ❌ Invalid config file: {config_file}")
@@ -70,18 +82,8 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
 
     #Run command to get version & config-file info 
     result = remote_host.run_command('{} version'.format(docker_prefix))
+    config_file, version = extract_version_config(result)
 
-    # Split the output by newlines and extract everything after the colon          
-    for line in result.stdout.splitlines():        
-        if ":" in line:
-            _, version = line.split(":", 1)
-            version = version.strip()  # Remove leading/trailing whitespace
-        print(f"Version: {version}")
-    for line in result.stderr.splitlines():           
-        if ":" in line:
-            _, config_file = line.split(":", 1)
-            config_file = config_file.strip()  # Remove leading/trailing whitespace
-        print(f"Config File: {config_file}")
     
     if config_file != config_file_linux: 
         raise ValueError(f" ❌ Invalid config file: {config_file}")
@@ -108,18 +110,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
   
     result = remote_host.run_command('observe-agent version')    
-    # Split the output by newlines and extract everything after the colon
-    for line in result.stdout.splitlines():      
-        if ":" in line:
-            _, version = line.split(":", 1)
-            version = version.strip()  # Remove leading/trailing whitespace
-        print(f"Version: {version}")
-    for line in result.stderr.splitlines():      
-        if ":" in line:
-            _, config_file = line.split(":", 1)
-            config_file = config_file.strip()  # Remove leading/trailing whitespace
-        print(f"Config File: {config_file}")
-
+    config_file, version = extract_version_config(result)
     
     if config_file != config_file_linux:
         raise ValueError(f" ❌ Invalid config file: {config_file}")
@@ -148,4 +139,3 @@ if __name__ == '__main__':
         run_test_docker(remote_host, env_vars)
 
 
-# docker run --mount type=bind,source=/proc,target=/hostfs/proc,readonly --mount type=bind,source=/snap,target=/hostfs/snap,readonly --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml --pid host $(docker images --format "{{.Repository}}:{{.Tag}}")
