@@ -7,7 +7,7 @@ import pprint
 import utils as u
 from collections import defaultdict
 
-def check_status_loop(remote_host: u.Host, start_timeout: int, status_command: str) -> bool:
+def _check_status_loop(remote_host: u.Host, start_timeout: int, status_command: str) -> bool:
     """Run Check Status Command in a loop to wait for observe-agent to start
 
     Args:
@@ -74,7 +74,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         raise RuntimeError("❌ Error in start_agent_windows.ps1 powershell script")  
     
     #Check Agent Status 
-    agent_status=check_status_loop(remote_host, start_timeout, status_command)
+    agent_status=_check_status_loop(remote_host, start_timeout, status_command)
     if not agent_status:
             u.die("❌ Error in Observe Agent Status Test ")
 
@@ -110,7 +110,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
         u.die("❌ Error in finding observe-agent container")
 
    #Check Agent Status 
-   agent_status=check_status_loop(remote_host, start_timeout, status_command)
+   agent_status=_check_status_loop(remote_host, start_timeout, status_command)
    if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
 
@@ -136,7 +136,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
    remote_host.run_command(start_command)
    
    #Check Agent Status 
-   agent_status=check_status_loop(remote_host, start_timeout, status_command)
+   agent_status=_check_status_loop(remote_host, start_timeout, status_command)
    if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
         

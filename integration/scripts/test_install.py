@@ -9,7 +9,7 @@ import inspect
 import utils as u
 
 
-def get_installation_package(env_vars: dict) -> tuple:
+def _get_installation_package(env_vars: dict) -> tuple:
     """Returns the full path and filename to the built distribution package
 
     Args:
@@ -56,7 +56,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         RuntimeError: Installation error in powershell script
     """
     # Get built dist. installation package path for machine 
-    filename, full_path = get_installation_package(env_vars)    
+    filename, full_path = _get_installation_package(env_vars)    
 
     # Set windows home dir paths for consistency 
     home_dir = r"/C:/Users/{}".format(env_vars["user"]) #for user in sftp 
@@ -88,7 +88,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
 
-    filename, full_path= get_installation_package(env_vars)
+    filename, full_path= _get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
 
     remote_host.put_file(full_path, home_dir)
@@ -112,7 +112,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict):
     Raises:
         RuntimeError: Unknown distribution type passed  
     """
-    filename, full_path= get_installation_package(env_vars)
+    filename, full_path= _get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
 
     remote_host.put_file(full_path, home_dir)

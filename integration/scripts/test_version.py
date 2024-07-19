@@ -5,7 +5,7 @@ import re
 import time 
 import utils as u
 
-def extract_version_config(result: any) -> tuple:
+def _extract_version_config(result: any) -> tuple:
     """Extract version name and config file from ssh result output 
 
     Args:
@@ -48,7 +48,7 @@ def run_test_windows(remote_host:u.Host, env_vars: dict) -> None:
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
 
     result = remote_host.run_command('Set-Location "${Env:Programfiles}\\Observe\\observe-agent"; ./observe-agent version')    
-    config_file, version = extract_version_config(result)
+    config_file, version = _extract_version_config(result)
      
     if config_file != config_file_windows:
         raise ValueError(f" ❌ Invalid config file: {config_file}")
@@ -82,7 +82,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
 
     #Run command to get version & config-file info 
     result = remote_host.run_command('{} version'.format(docker_prefix))
-    config_file, version = extract_version_config(result)
+    config_file, version = _extract_version_config(result)
 
     
     if config_file != config_file_linux: 
@@ -110,7 +110,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
   
     result = remote_host.run_command('observe-agent version')    
-    config_file, version = extract_version_config(result)
+    config_file, version = _extract_version_config(result)
     
     if config_file != config_file_linux:
         raise ValueError(f" ❌ Invalid config file: {config_file}")
