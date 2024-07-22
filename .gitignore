@@ -1,5 +1,6 @@
 # build
 agent
+observe-agent
 output-logs
 ./observe-agent
 dist/
