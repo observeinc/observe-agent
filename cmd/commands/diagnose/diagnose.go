@@ -6,7 +6,7 @@ package diagnose
 import (
 	"embed"
 	"fmt"
-	"observe/agent/cmd"
+	"observe-agent/cmd"
 	"os"
 	"text/template"
 

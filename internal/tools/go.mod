@@ -1,4 +1,4 @@
-module observe/agent/internal/tools
+module observe-agent/internal/tools
 
 go 1.22.3
 

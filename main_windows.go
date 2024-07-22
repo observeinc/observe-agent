@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"golang.org/x/sys/windows"
 
-	"observe/agent/cmd"
-	"observe/agent/cmd/config"
+	"observe-agent/cmd"
+	"observe-agent/cmd/config"
 
 	"golang.org/x/sys/windows/svc"
 )

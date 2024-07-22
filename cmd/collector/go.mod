@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.105.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.105.0
-	github.com/observeinc/observe/agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
+	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/processor/batchprocessor v0.105.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.105.0
 	go.opentelemetry.io/collector/receiver v0.105.0

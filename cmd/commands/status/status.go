@@ -6,7 +6,7 @@ package status
 import (
 	"embed"
 	"html/template"
-	"observe/agent/cmd"
+	"observe-agent/cmd"
 	"os"
 
 	"github.com/spf13/cobra"

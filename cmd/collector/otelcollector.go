@@ -1,7 +1,7 @@
 package observeotel
 
 import (
-	"observe/agent/build"
+	"observe-agent/build"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
