@@ -10,6 +10,7 @@ import time
 import json 
 import pprint 
 
+
 def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)

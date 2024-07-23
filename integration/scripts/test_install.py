@@ -6,11 +6,10 @@ import sys
 import re
 import time 
 import inspect 
-from utils import * 
+import utils as u
 
 
-
-def get_installation_package(env_vars: dict) -> tuple:
+def _get_installation_package(env_vars: dict) -> tuple:
     """Returns the full path and filename to the built distribution package
 
     Args:
@@ -43,8 +42,8 @@ def get_installation_package(env_vars: dict) -> tuple:
             print(f"Found matching file {filename} at: {full_path}")
             return filename, full_path
 
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
 
     """
     Test to install local observe-agent on a windows ec2 instance and validate command ran successfully 
@@ -57,7 +56,7 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         RuntimeError: Installation error in powershell script
     """
     # Get built dist. installation package path for machine 
-    filename, full_path = get_installation_package(env_vars)    
+    filename, full_path = _get_installation_package(env_vars)    
 
     # Set windows home dir paths for consistency 
     home_dir = r"/C:/Users/{}".format(env_vars["user"]) #for user in sftp 
@@ -85,10 +84,24 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
     else:        
         print("✅ Installation test passed")
         
-    
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict):       
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
+
+    filename, full_path= _get_installation_package(env_vars)
+    home_dir = "/home/{}".format(env_vars["user"])
+
+    remote_host.put_file(full_path, home_dir)
+    result = remote_host.run_command('sudo docker load --input {}'.format(filename))
+    if result.stderr:
+        print(result)
+        raise RuntimeError("❌ Installation error in docker load")
+    else:
+        print("✅ Installation test passed")
+
+
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict):       
     """
     Test to install local observe-agent on a linux ec2 instance and validate command ran successfully 
 
@@ -99,7 +112,7 @@ def run_test_linux(remote_host: Host, env_vars: dict):
     Raises:
         RuntimeError: Unknown distribution type passed  
     """
-    filename, full_path= get_installation_package(env_vars)
+    filename, full_path= _get_installation_package(env_vars)
     home_dir = "/home/{}".format(env_vars["user"])
 
     remote_host.put_file(full_path, home_dir)
@@ -117,8 +130,8 @@ def run_test_linux(remote_host: Host, env_vars: dict):
 
 if __name__ == '__main__':
     
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    
@@ -130,6 +143,9 @@ if __name__ == '__main__':
         run_test_linux(remote_host, env_vars)
     elif "windows" in env_vars["machine_config"]["distribution"]:
         run_test_windows(remote_host, env_vars)
+    elif "docker" in env_vars["machine_config"]["distribution"]:
+        run_test_docker(remote_host, env_vars)
+
 
 
 

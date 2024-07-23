@@ -4,10 +4,10 @@ import sys
 import re
 import time 
 import pprint
-from utils import *
+import utils as u
 from collections import defaultdict
 
-def check_status_loop(remote_host: Host, start_timeout: int, status_command: str) -> bool:
+def _check_status_loop(remote_host: u.Host, start_timeout: int, status_command: str) -> bool:
     """Run Check Status Command in a loop to wait for observe-agent to start
 
     Args:
@@ -41,8 +41,8 @@ def check_status_loop(remote_host: Host, start_timeout: int, status_command: str
     return agent_status
     
 
-@print_test_decorator
-def run_test_windows(remote_host: Host, env_vars: dict) -> None:  
+@u.print_test_decorator
+def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
     """
     Test to check if observe-agent is running correctly 
 
@@ -74,13 +74,49 @@ def run_test_windows(remote_host: Host, env_vars: dict) -> None:
         raise RuntimeError("❌ Error in start_agent_windows.ps1 powershell script")  
     
     #Check Agent Status 
-    agent_status=check_status_loop(remote_host, start_timeout, status_command)
+    agent_status=_check_status_loop(remote_host, start_timeout, status_command)
     if not agent_status:
-            die("❌ Error in Observe Agent Status Test ")
+            u.die("❌ Error in Observe Agent Status Test ")
+
+@u.print_test_decorator
+def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:  
+
+   docker_prefix='sudo docker run -d --restart always \
+        --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
+        --mount type=bind,source=/snap,target=/hostfs/snap,readonly \
+        --mount type=bind,source=/boot,target=/hostfs/boot,readonly \
+        --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly \
+        --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly \
+        --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
+        --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
+        --pid host \
+        $(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep SNAPSHOT)'
+   start_command='start'
+   get_container_command = (
+    "sudo docker ps --filter \"status=running\" --format \"{{.ID}} {{.Image}} {{.CreatedAt}}\" | "
+    "grep \"SNAPSHOT\" | sort -k3 -r | head -n 1 | awk '{print $1}'"
+    )  
+   start_timeout = 30 #how long to wait for observe-agent to start   
+
+   #Start Observe Agent 
+   result = remote_host.run_command(docker_prefix + ' ' + start_command)  
+   if result.stderr:
+        u.die("❌ Error starting observe-agent container")
+
+   #Get Observe Agent Container ID
+   container_id = remote_host.run_command(get_container_command)
+   status_command='sudo docker exec {} ./observe-agent status'.format(container_id.stdout.strip()) 
+   if not container_id:
+        u.die("❌ Error in finding observe-agent container")
+
+   #Check Agent Status 
+   agent_status=_check_status_loop(remote_host, start_timeout, status_command)
+   if not agent_status:
+        u.die("❌ Error in Observe Agent Status Test ")
 
 
-@print_test_decorator
-def run_test_linux(remote_host: Host, env_vars: dict) -> None:    
+@u.print_test_decorator
+def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:    
 
    """
     Test to check if observe-agent is running correctly 
@@ -100,15 +136,15 @@ def run_test_linux(remote_host: Host, env_vars: dict) -> None:
    remote_host.run_command(start_command)
    
    #Check Agent Status 
-   agent_status=check_status_loop(remote_host, start_timeout, status_command)
+   agent_status=_check_status_loop(remote_host, start_timeout, status_command)
    if not agent_status:
-        die("❌ Error in Observe Agent Status Test ")
+        u.die("❌ Error in Observe Agent Status Test ")
         
 
 if __name__ == '__main__':
 
-    env_vars = get_env_vars()
-    remote_host = Host(host_ip=env_vars["host"],
+    env_vars = u.get_env_vars()
+    remote_host = u.Host(host_ip=env_vars["host"],
                        username=env_vars["user"],
                        key_file_path=env_vars["key_filename"],
                        password=env_vars["password"])    
@@ -120,5 +156,7 @@ if __name__ == '__main__':
         run_test_linux(remote_host, env_vars)
     elif "windows" in env_vars["machine_config"]["distribution"]:
         run_test_windows(remote_host, env_vars)
+    elif "docker" in env_vars["machine_config"]["distribution"]:
+        run_test_docker(remote_host, env_vars)
 
 

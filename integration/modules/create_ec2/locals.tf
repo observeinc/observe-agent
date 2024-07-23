@@ -15,6 +15,19 @@ locals {
       architecture      = "amd64"
     }
 
+    DOCKER_AMD64_UBUNTU_22_04_LTS = {
+      # ami used in testing
+      ami_instance_type = "t3.small"
+      ami_id            = "ami-036cafe742923b3d9"
+      ami_description   = "Used for Docker testing - Ubuntu Server 22.04 LTS (HVM)- EBS General Purpose (SSD) Volume Type. Support available from Canonical"
+      default_user      = "ubuntu"
+      sleep             = 120
+      user_data         = "user_data/aptbased_docker.sh"
+      distribution      = "docker"
+      package_type      = ".tar"
+      architecture      = "amd64"
+    }
+
     # UBUNTU_20_04_LTS = {
     #   # ami used in testing
     #   ami_instance_type = "t3.small"
@@ -54,7 +67,7 @@ locals {
       package_type      = ".rpm"
       architecture      = "x86_64"
     }
-
+         
     # RHEL_8_4_0 = {
     #   ami_instance_type = "t3.small"
     #   ami_id            = "ami-054965c6cd7c6e462"
