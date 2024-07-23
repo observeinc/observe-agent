@@ -75,10 +75,11 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     version_pattern = re.compile(r'^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$')
     home_dir = "/home/{}".format(env_vars["user"])
 
-    #Docker doesn't create a observe-agent.yaml by default so we have to create it, upload to host and let docker
+    # Upload default observe-agent.yaml to remote host home dir 
     # mount via $(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml
-    u.create_default_config_file(destination_file_path = "/tmp/observe-agent.yaml")
-    remote_host.put_file(local_path="/tmp/observe-agent.yaml", remote_path=home_dir)
+    observe_agent_file_path = os.path.abspath(os.path.join(os.getcwd(), '..',  'packaging/linux/config/observe-agent.yaml'))
+    print(f"Path to 'observe-agent.yaml' file: {observe_agent_file_path }")
+    remote_host.put_file(local_path=observe_agent_file_path, remote_path=home_dir)
 
     #Run command to get version & config-file info 
     result = remote_host.run_command('{} version'.format(docker_prefix))
