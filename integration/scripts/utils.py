@@ -15,7 +15,7 @@ import pprint
 def create_default_config_file(destination_file_path: str = "/tmp/observe-agent.yaml") -> None:
     
     """
-    Creates a defailt observe-agent.yaml at destination. Useful for docker testing since this is not mounted 
+    Creates a default observe-agent.yaml at destination. Useful for docker testing since this is not mounted 
 
     Args:
        destination_file_path (str, optional): path to create the config file. Defaults to "/tmp/observe-agent.yaml".
