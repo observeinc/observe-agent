@@ -1,5 +1,6 @@
 ## go-test: Runs Go tests across all packages
 go-test:
+	go work vendor
 	go build ./...
 	go test -v ./...
 
