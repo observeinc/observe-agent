@@ -893,6 +893,8 @@ go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.0 h1:SAF6JFrj
 go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.0/go.mod h1:bWMg+SNk/PwEMiLWV0eCFNL4Er59aXsdDKq+2JzMOkE=
 go.opentelemetry.io/collector/connector v0.105.0 h1:hmTsI6rnPAXsdVJ+wYrgeNTCrQzxzglU37qPlNSKTy0=
 go.opentelemetry.io/collector/connector v0.105.0/go.mod h1:xQnq1Ygd/F4Kb93E0UsKus5YDINeyQ6GzCkxoujI9TE=
+go.opentelemetry.io/collector/connector/forwardconnector v0.105.0 h1:e9gvf11xfijwraZLBf3IHXEk1YpXxMoJfqXarYo7ZNU=
+go.opentelemetry.io/collector/connector/forwardconnector v0.105.0/go.mod h1:XIeSscBCAcpywFa7oVwTOpdHjRojS7No6Yz34YhFBp4=
 go.opentelemetry.io/collector/consumer v0.105.0 h1:pO5Tspoz7yvEs81+904HfDjByP8Z7uuNk+7pOr3lRHM=
 go.opentelemetry.io/collector/consumer v0.105.0/go.mod h1:tnaPDHUfKBJ01OnsJNRecniG9iciE+xHYLqamYwFQOQ=
 go.opentelemetry.io/collector/exporter v0.105.0 h1:O2xmjfaRbkbpo3XkwEcnuBHCoXc5kS9CjYO8geu+3vo=

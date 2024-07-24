@@ -42,6 +42,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.105.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.0
 	go.opentelemetry.io/collector/connector v0.105.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.105.0
 	go.opentelemetry.io/collector/exporter v0.105.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.105.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.105.0

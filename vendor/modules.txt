@@ -1422,6 +1422,10 @@ go.opentelemetry.io/collector/confmap/provider/yamlprovider
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/connector
 go.opentelemetry.io/collector/connector/internal
+# go.opentelemetry.io/collector/connector/forwardconnector v0.105.0
+## explicit; go 1.21.0
+go.opentelemetry.io/collector/connector/forwardconnector
+go.opentelemetry.io/collector/connector/forwardconnector/internal/metadata
 # go.opentelemetry.io/collector/consumer v0.105.0
 ## explicit; go 1.21.0
 go.opentelemetry.io/collector/consumer

@@ -50,4 +50,6 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.105.0
 
 connectors:
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.105.0
+
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.105.0
