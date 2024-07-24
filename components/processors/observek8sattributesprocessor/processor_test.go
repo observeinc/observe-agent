@@ -50,8 +50,7 @@ var (
 func TestK8sEventsProcessor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			kep, err := newK8sEventsProcessor()
-			require.NoError(t, err)
+			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
 			logs, err := kep.processLogs(test.inLogs)
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
 				sl := logs.ResourceLogs().At(i).ScopeLogs()

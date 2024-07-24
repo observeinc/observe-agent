@@ -9,7 +9,7 @@ release:
 
 ## install-ocb: Installs correct version of ocb binary
 install-ocb:
-	curl --proto '=https' --tlsv1.2 -L -o "$(HOME)/bin/ocb" https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.104.0/ocb_0.104.0_darwin_arm64
+	curl --proto '=https' --tlsv1.2 -L -o "$(HOME)/bin/ocb" https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.105.0/ocb_0.105.0_darwin_arm64
 	@chmod +x "$(HOME)/bin/ocb"
 
 ## build-ocb: Builds project using ocb
