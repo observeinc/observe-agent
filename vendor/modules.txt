@@ -2424,4 +2424,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 # github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ./components/processors/observek8sattributesprocessor
-# observe-agent/components/processors/observek8sattributesprocessor/internal/metadata => ./components/processors/observek8sattributesprocessor/internal/metadata
