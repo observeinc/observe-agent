@@ -2,8 +2,8 @@
 go-test:
 	go work vendor
 	go build ./...
-	go test -v ./...
-
+	go list -f '{{.Dir}}' -m | xargs go test -v ./...
+	
 ## release: Releases current tag through goreleaser
 release:
 	goreleaser release --clean
