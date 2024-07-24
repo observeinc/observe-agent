@@ -1,12 +1,18 @@
 package observek8sattributesprocessor
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
+
+type observeTransformFacets struct {
+	facets map[string]string
+}
 
 type logWithResource struct {
 	logName            string
@@ -18,7 +24,7 @@ type logWithResource struct {
 	severityNumber     plog.SeverityNumber
 }
 
-type k8sEventProcessorTest struct {
+type K8sEventProcessorTest struct {
 	name          string
 	inLogs        plog.Logs
 	outAttributes []map[string]interface{}
@@ -27,20 +33,44 @@ type k8sEventProcessorTest struct {
 var (
 	podStatusInLogs = []logWithResource{
 		{
-			logName:          "test1",
+			logName:          "noObserveTransformAttributes",
 			testBodyFilepath: "./testdata/podObjectEvent.json",
+		},
+		{
+			logName:          "existingObserveTransformAttributes",
+			testBodyFilepath: "./testdata/podObjectEvent.json",
+			recordAttributes: map[string]any{
+				"observe_transform": map[string]any{
+					"facets": map[string]any{
+						"other_key": "test",
+					},
+				},
+			},
 		},
 	}
 	podStatusOutAttributes = []map[string]interface{}{
 		{
-			"observe_transform.facets.status": "Terminating",
-			"name":                            "test1",
+			"observe_transform": map[string]interface{}{
+				"facets": map[string]interface{}{
+					"status": "Terminating",
+				},
+			},
+			"name": "noObserveTransformAttributes",
+		},
+		{
+			"observe_transform": map[string]interface{}{
+				"facets": map[string]interface{}{
+					"status":    "Terminating",
+					"other_key": "test",
+				},
+			},
+			"name": "existingObserveTransformAttributes",
 		},
 	}
 
-	tests = []k8sEventProcessorTest{
+	tests = []K8sEventProcessorTest{
 		{
-			name:          "test1",
+			name:          "noObserveTransformAttributes",
 			inLogs:        testResourceLogs(podStatusInLogs),
 			outAttributes: podStatusOutAttributes,
 		},
@@ -51,12 +81,12 @@ func TestK8sEventsProcessor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
-			logs, err := kep.processLogs(test.inLogs)
+			logs, err := kep.processLogs(context.Background(), test.inLogs)
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
 				sl := logs.ResourceLogs().At(i).ScopeLogs()
 				for j := 0; j < sl.Len(); j++ {
 					lr := sl.At(j).LogRecords()
-					require.Equal(t, test.outAttributes[j], lr.At(0).Attributes().AsRaw())
+					require.Equal(t, test.outAttributes[i], lr.At(0).Attributes().AsRaw())
 				}
 			}
 

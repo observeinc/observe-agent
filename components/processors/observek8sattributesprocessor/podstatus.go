@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	PodStatusAttributeKey = "observe_transform.facets.status"
+	PodStatusAttributeKey = "status"
 	// from https://github.com/kubernetes/kubernetes/blob/abe6321296123aaba8e83978f7d17951ab1b64fd/pkg/util/node/node.go#L43
 	nodeUnreachablePodReason = "NodeLost"
 )
@@ -18,14 +18,23 @@ type OTELKubernetesEvent struct {
 	Object v1.Pod `json:"object"`
 }
 
+var PodStatusAction = K8sEventProcessorAction{
+	Key:      PodStatusAttributeKey,
+	ValueFn:  getStatus,
+	FilterFn: filterFn,
+}
+
+func filterFn(event K8sEvent) bool {
+	return event.Kind == "Pod"
+}
+
 func getStatus(objLog plog.LogRecord) string {
-	var event OTELKubernetesEvent
-	err := json.Unmarshal([]byte(objLog.Body().AsString()), &event)
+	var p v1.Pod
+	err := json.Unmarshal([]byte(objLog.Body().AsString()), &p)
 	if err != nil {
-		fmt.Printf("Error %v", err)
 		return "Unknown"
 	}
-	p := event.Object
+	// based on https://github.com/kubernetes/kubernetes/blob/0d3b859af81e6a5f869a7766c8d45afd1c600b04/pkg/printers/internalversion/printers.go#L901
 	reason := string(p.Status.Phase)
 	if p.Status.Reason != "" {
 		reason = p.Status.Reason
