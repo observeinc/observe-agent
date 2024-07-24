@@ -20,7 +20,7 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &component.Config{}
 }
 
 func createLogsProcessor(
