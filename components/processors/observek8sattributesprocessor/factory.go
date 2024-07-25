@@ -3,6 +3,8 @@ package observek8sattributesprocessor
 import (
 	"context"
 
+	"github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor/internal/metadata"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -13,9 +15,9 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		Type,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, LogsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 

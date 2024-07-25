@@ -1,4 +1,4 @@
-module observe-agent/components/processors/observek8sattributesprocessor
+module github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor
 
 go 1.22.3
 

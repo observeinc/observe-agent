@@ -41,7 +41,7 @@ func NewConfigureCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init-config",
 		Short: "Initialize agent configuration",
-		Long:  `This command takes in parameters and creates an initialized observe agent configuration file. Will overwrite existing config files with default values.`,
+		Long:  `This command takes in parameters and creates an initialized observe agent configuration file. Will overwrite existing config file and should only be used to initialize.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configValues := FlatAgentConfig{
 				Token:                         viper.GetString("token"),
