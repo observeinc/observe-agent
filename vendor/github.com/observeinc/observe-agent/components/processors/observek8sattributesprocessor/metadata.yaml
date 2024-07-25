@@ -1,7 +1,0 @@
-type: observek8sattributes
-scope_name: observe-agent/processor/observek8sattributes
-
-status:
-  class: processor
-  stability:
-    beta: [traces, metrics, logs]
