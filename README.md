@@ -41,26 +41,26 @@ Current OTEL Collector Version: `v0.105.0`
 
 This section lists the components that are included in the Observe Distribution of the OpenTelemetry Collector.
 
-| Receivers                                                | Processors                                      | Exporters                    | Extensions                           | Connectors                  |
-|----------------------------------------------------------|-------------------------------------------------|------------------------------|--------------------------------------|-----------------------------|
-| [awsecscontainermetrics][awsecscontainermetricsreceiver] | [attributes][attributesprocessor]               | [debug][debugexporter]       | [file_storage][filestorage]          | [count][countconnector]     |
-| [docker_stats][dockerstatsreceiver]                      | [batch][batchprocessor]                         | [file][fileexporter]         | [health_check][healthcheckextension] | [forward][forwardconnector] |
-| [elasticsearch][elasticsearchreceiver]                   | [filter][filterprocessor]                       | [otlphttp][otlphttpexporter] | [zpages][zpagesextension]            |                             |
-| [filelog][filelogreceiver]                               | [k8sattributes][k8sattributesprocessor]         |                              |                                      |                             |
-| [filestats][filestatsreceiver]                           | [memory_limiter][memorylimiterprocessor]        |                              |                                      |                             |
-| [hostmetrics][hostmetricsreceiver]                       | [resourcedetection][resourcedetectionprocessor] |                              |                                      |                             |
-| [iis][iisreceiver]                                       | [transform][transformprocessor]                 |                              |                                      |                             |
-| [journald][journaldreceiver]                             |                                                 |                              |                                      |                             |
-| [k8s_cluster][k8sclusterreceiver]                        |                                                 |                              |                                      |                             |
-| [k8sobjects][k8sobjectsreceiver]                         |                                                 |                              |                                      |                             |
-| [kafkametrics][kafkametricsreceiver]                     |                                                 |                              |                                      |                             |
-| [kafka][kafkareceiver]                                   |                                                 |                              |                                      |                             |
-| [kubeletstats][kubeletstatsreceiver]                     |                                                 |                              |                                      |                             |
-| [otlp][otlpreceiver]                                     |                                                 |                              |                                      |                             |
-| [prometheus][prometheusreceiver]                         |                                                 |                              |                                      |                             |
-| [redis][redisreceiver]                                   |                                                 |                              |                                      |                             |
-| [statsd][statsdreceiver]                                 |                                                 |                              |                                      |                             |
-| [windowseventlog][windowseventlogreceiver]               |                                                 |                              |                                      |                             |
+| Receivers                                                | Processors                                            | Exporters                    | Extensions                           | Connectors                  |
+|----------------------------------------------------------|-------------------------------------------------------|------------------------------|--------------------------------------|-----------------------------|
+| [awsecscontainermetrics][awsecscontainermetricsreceiver] | [attributes][attributesprocessor]                     | [debug][debugexporter]       | [file_storage][filestorage]          | [count][countconnector]     |
+| [docker_stats][dockerstatsreceiver]                      | [batch][batchprocessor]                               | [file][fileexporter]         | [health_check][healthcheckextension] | [forward][forwardconnector] |
+| [elasticsearch][elasticsearchreceiver]                   | [filter][filterprocessor]                             | [otlphttp][otlphttpexporter] | [zpages][zpagesextension]            |                             |
+| [filelog][filelogreceiver]                               | [k8sattributes][k8sattributesprocessor]               |                              |                                      |                             |
+| [filestats][filestatsreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                              |                                      |                             |
+| [hostmetrics][hostmetricsreceiver]                       | [observek8sattributes][observek8sattributesprocessor] |                              |                                      |                             |
+| [iis][iisreceiver]                                       | [resourcedetection][resourcedetectionprocessor]       |                              |                                      |                             |
+| [journald][journaldreceiver]                             | [transform][transformprocessor]                       |                              |                                      |                             |
+| [k8s_cluster][k8sclusterreceiver]                        |                                                       |                              |                                      |                             |
+| [k8sobjects][k8sobjectsreceiver]                         |                                                       |                              |                                      |                             |
+| [kafkametrics][kafkametricsreceiver]                     |                                                       |                              |                                      |                             |
+| [kafka][kafkareceiver]                                   |                                                       |                              |                                      |                             |
+| [kubeletstats][kubeletstatsreceiver]                     |                                                       |                              |                                      |                             |
+| [otlp][otlpreceiver]                                     |                                                       |                              |                                      |                             |
+| [prometheus][prometheusreceiver]                         |                                                       |                              |                                      |                             |
+| [redis][redisreceiver]                                   |                                                       |                              |                                      |                             |
+| [statsd][statsdreceiver]                                 |                                                       |                              |                                      |                             |
+| [windowseventlog][windowseventlogreceiver]               |                                                       |                              |                                      |                             |
 
 [awsecscontainermetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/awsecscontainermetricsreceiver
 [dockerstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/dockerstatsreceiver
@@ -85,6 +85,7 @@ This section lists the components that are included in the Observe Distribution 
 [filterprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/filterprocessor
 [k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/k8sattributesprocessor
 [memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.105.0/processor/memorylimiterprocessor
+[observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
 [resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/resourcedetectionprocessor
 [transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/transformprocessor
 [debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.105.0/exporter/debugexporter
