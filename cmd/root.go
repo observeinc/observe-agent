@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"observe/agent/cmd/config"
+	"observe-agent/cmd/config"
 	"os"
 
 	"github.com/spf13/cobra"

@@ -4,9 +4,9 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package start
 
 import (
-	"observe/agent/cmd"
+	"observe-agent/cmd"
+	"observe-agent/cmd/config"
 	observeotel "observe/otelcol"
-	"observe/agent/cmd/config"
 	"os"
 
 	"github.com/spf13/cobra"

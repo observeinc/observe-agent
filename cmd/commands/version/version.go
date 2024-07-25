@@ -5,8 +5,8 @@ package version
 
 import (
 	"fmt"
-	"observe/agent/build"
-	"observe/agent/cmd"
+	"observe-agent/build"
+	"observe-agent/cmd"
 
 	"github.com/spf13/cobra"
 )
