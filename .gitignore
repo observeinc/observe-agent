@@ -1,7 +1,7 @@
 # build
 agent
 output-logs
-./observe-agent
+/observe-agent
 dist/
 agent.exe
 agent.exe~

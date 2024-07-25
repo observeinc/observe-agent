@@ -1,9 +1,4 @@
 receivers:
-  filestats/agent:
-    include: 'C:\Program Files\Observe\observe-agent\config\otel-collector.yaml'
-    collection_interval: 240m
-    initial_delay: 60s
-
   filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
     include: ['C:\Program Files\Observe\observe-agent\config\otel-collector.yaml']
     start_at: beginning
@@ -25,11 +20,6 @@ receivers:
 
 service:
   pipelines:
-    metrics/agent-filestats:
-       receivers: [filestats/agent]
-       processors: [resourcedetection, resourcedetection/cloud]
-       exporters: [otlphttp/observe]
-
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
