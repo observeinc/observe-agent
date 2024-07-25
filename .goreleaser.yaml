@@ -73,6 +73,8 @@ archives:
         dst: "observe-agent.yaml"
       - src: "packaging/windows/connections/host_monitoring/*"
         dst: "connections/host_monitoring"
+      - src: "packaging/windows/connections/self_monitoring/*"
+        dst: "connections/self_monitoring"
 
 changelog:
   use: github

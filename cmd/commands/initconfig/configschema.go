@@ -14,8 +14,13 @@ type HostMonitoringConfig struct {
 	Metrics HostMonitoringMetricsConfig
 }
 
+type SelfMonitoringConfig struct {
+	Enabled bool `yaml:"enabled"`
+}
+
 type AgentConfig struct {
 	Token          string               `yaml:"token"`
 	ObserveURL     string               `yaml:"observe_url"`
+	SelfMonitoring SelfMonitoringConfig `yaml:"self_monitoring"`
 	HostMonitoring HostMonitoringConfig `yaml:"host_monitoring"`
 }

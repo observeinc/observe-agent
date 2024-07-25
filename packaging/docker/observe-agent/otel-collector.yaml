@@ -16,35 +16,6 @@ receivers:
       http:
         endpoint: localhost:4318
 
-  filestats/agent:
-    include: '/etc/observe-agent/otel-collector.yaml'
-    collection_interval: 240m
-    initial_delay: 60s
-
-  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
-    include: [/etc/observe-agent/otel-collector.yaml]
-    start_at: beginning
-    poll_interval: 5m
-    multiline:
-      line_end_pattern: ENDOFLINEPATTERN
-
-  prometheus/agent:
-    config:
-      scrape_configs:
-        - job_name: 'otelcol'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:8888']
-          metric_relabel_configs:
-            - source_labels: [__name__]
-              regex: '.*grpc_io.*'
-              action: drop
-
-  journald/agent:
-    units:
-      - observe-agent
-    priority: info
-
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
   # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements

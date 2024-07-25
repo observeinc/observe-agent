@@ -7,6 +7,9 @@ observe_url: {{ .ObserveURL }}
 # Debug mode - Sets agent log level to debug
 debug: false
 
+self_monitoring:
+  enabled: {{ .SelfMonitoring_Enabled }}
+
 host_monitoring:
   enabled: {{ .HostMonitoring_Enabled }}
   logs: 
