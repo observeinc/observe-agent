@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor
 
-go 1.22.3
+go 1.22.5
 
 require (
 	github.com/stretchr/testify v1.9.0

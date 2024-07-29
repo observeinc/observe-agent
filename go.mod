@@ -1,6 +1,6 @@
 module observe-agent
 
-go 1.22.3
+go 1.22.5
 
 require (
 	github.com/prometheus/client_model v0.6.1
