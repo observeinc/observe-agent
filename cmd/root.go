@@ -54,6 +54,7 @@ func init() {
 
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
+	// viper := viper.NewWithOptions(viper.KeyDelimiter("::"))
 	if CfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
