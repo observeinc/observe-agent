@@ -54,7 +54,10 @@ func init() {
 
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
-	// viper := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	// Some keys in OTEL component configs use "." as part of the key but viper ends up parsing that into
+	// a subobject since the default key delimiter is "." which causes config validation to fail.
+	// We set it to "::" here to prevent that behavior. This call modifies the global viper instance.
+	viper.SetOptions(viper.KeyDelimiter("::"))
 	if CfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
