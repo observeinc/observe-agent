@@ -50,8 +50,8 @@ This section lists the components that are included in the Observe Distribution 
 | [filestats][filestatsreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                              |                                      |                             |
 | [hostmetrics][hostmetricsreceiver]                       | [observek8sattributes][observek8sattributesprocessor] |                              |                                      |                             |
 | [iis][iisreceiver]                                       | [resourcedetection][resourcedetectionprocessor]       |                              |                                      |                             |
-| [journald][journaldreceiver]                             | [transform][transformprocessor]                       |                              |                                      |                             |
-| [k8s_cluster][k8sclusterreceiver]                        |                                                       |                              |                                      |                             |
+| [journald][journaldreceiver]                             | [span][spanprocessor]                                 |                              |                                      |                             |
+| [k8s_cluster][k8sclusterreceiver]                        | [transform][transformprocessor]                       |                              |                                      |                             |
 | [k8sobjects][k8sobjectsreceiver]                         |                                                       |                              |                                      |                             |
 | [kafkametrics][kafkametricsreceiver]                     |                                                       |                              |                                      |                             |
 | [kafka][kafkareceiver]                                   |                                                       |                              |                                      |                             |
@@ -87,6 +87,7 @@ This section lists the components that are included in the Observe Distribution 
 [memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.105.0/processor/memorylimiterprocessor
 [observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
 [resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/resourcedetectionprocessor
+[spanprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/spanprocessor
 [transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/transformprocessor
 [debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.105.0/exporter/debugexporter
 [fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/exporter/fileexporter
