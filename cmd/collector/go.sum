@@ -654,6 +654,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattribute
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0/go.mod h1:pranRmnWRkzDsn9a16BzSqX6HJ6XjjVVFmMhyZPEzt0=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0 h1:c/amt4jBLbjIpi4CtRUjQW2gdQbVA607TEX8BCgCwe4=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0/go.mod h1:HIqvjexbr/OzqucODsCSJabuXZPS8PaLYhNPeeU8xUA=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0 h1:gHr1z0EpNmolRkEEEr01Lq/OYm/nNYaWRN+V32J0cuk=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0/go.mod h1:FXzm0twR7yvayJ8ozR0d6JY4X4ehUbyRwFPnh10wf3k=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0 h1:/6i9boKkDmL6hAa4rXPAH4iLVIKAPFfl33OX21usXZk=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0/go.mod h1:5BAgFbVX+kgOXqFZVOZNko/xUSXIWbHgHC2hwdhAMbo=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.105.0 h1:grQp+Da5IeTn4PGTnBU2fwu9ktSsytmTvQ4oYYXXD0s=
