@@ -690,6 +690,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.105.0/go.mod h1:fmDaERWZHzWKfGe4QVqJNMou6zjdmuu86oCUCikxZ44=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.105.0 h1:Lys0FAkWPs64Mt754aEynmlxy5RMOqdcyVEu96YPCFQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.105.0/go.mod h1:ci0in9sSH/2OOjW95Xq5f67j4bTYYWQ7RUuZPTfyh3o=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0 h1:cQeHLKssdlnTS8P69LhJcPQRRwXQnkfTJ8B6hlHq+1M=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0/go.mod h1:zvImfBdXzdRXcq+pnPEqQVvbgAw2UgSBKWy0ymz/Gk4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0 h1:7TK97dlX5yKl/Hlj1KvfC3RQPtwc9uGBVGDTvsLIHQU=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0/go.mod h1:OV/epvVwWKgGny7ZRuL2q4Ge4RRx0hoWiIppHy8ndXc=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=

@@ -27,6 +27,8 @@ make build-ocb
 
 This command should add the new dependencies and code in the correct places. You can build the agent afterwards with `go build` to confirm. 
 
+Afterwards, you should add the new component to the `Components` section below. 
+
 ## Running
 
 To start the observe agent after building the binary run the following command. 
@@ -60,6 +62,7 @@ This section lists the components that are included in the Observe Distribution 
 | [prometheus][prometheusreceiver]                         |                                                       |                              |                                      |                             |
 | [redis][redisreceiver]                                   |                                                       |                              |                                      |                             |
 | [statsd][statsdreceiver]                                 |                                                       |                              |                                      |                             |
+| [tcplog][tcplogreceiver]                                 |                                                       |                              |                                      |                             |
 | [windowseventlog][windowseventlogreceiver]               |                                                       |                              |                                      |                             |
 
 [awsecscontainermetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/awsecscontainermetricsreceiver
@@ -79,6 +82,7 @@ This section lists the components that are included in the Observe Distribution 
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/prometheusreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.102.0/receiver/redisreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/statsdreceiver
+[tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/tcplogreceiver
 [windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/receiver/windowseventlogreceiver
 [attributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.105.0/processor/attributesprocessor
 [batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.105.0/processor/batchprocessor
