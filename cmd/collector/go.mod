@@ -14,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.105.0
@@ -31,6 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0
 	github.com/spf13/cobra v1.8.1
 	go.opentelemetry.io/collector/component v0.105.0

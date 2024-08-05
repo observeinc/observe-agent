@@ -21,6 +21,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.105.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0
   - gomod: github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
     path: ./components/processors/observek8sattributesprocessor
 
@@ -43,6 +44,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.105.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0
 
 extensions:

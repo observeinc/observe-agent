@@ -827,6 +827,7 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/file
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/stdout
@@ -922,6 +923,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0
+## explicit; go 1.21.0
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
@@ -1042,6 +1047,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceive
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0
+## explicit; go 1.21.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver

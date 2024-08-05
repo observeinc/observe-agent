@@ -26,6 +26,7 @@ import (
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	filterprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
+	spanprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	observek8sattributesprocessor "github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	awsecscontainermetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
@@ -44,6 +45,7 @@ import (
 	prometheusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	redisreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	statsdreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	tcplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	windowseventlogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 )
 
@@ -82,6 +84,7 @@ func components() (otelcol.Factories, error) {
 		prometheusreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
+		tcplogreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
 	)
 	if err != nil {
@@ -105,6 +108,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[prometheusreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.105.0"
 	factories.ReceiverModules[redisreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.105.0"
 	factories.ReceiverModules[statsdreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.105.0"
+	factories.ReceiverModules[tcplogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.105.0"
 	factories.ReceiverModules[windowseventlogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.105.0"
 
 	factories.Exporters, err = exporter.MakeFactoryMap(
@@ -130,6 +134,7 @@ func components() (otelcol.Factories, error) {
 		resourcedetectionprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
+		spanprocessor.NewFactory(),
 		observek8sattributesprocessor.NewFactory(),
 	)
 	if err != nil {
@@ -143,6 +148,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[resourcedetectionprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.105.0"
 	factories.ProcessorModules[transformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.105.0"
 	factories.ProcessorModules[filterprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.105.0"
+	factories.ProcessorModules[spanprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.105.0"
 	factories.ProcessorModules[observek8sattributesprocessor.NewFactory().Type()] = "github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000"
 
 	factories.Connectors, err = connector.MakeFactoryMap(
