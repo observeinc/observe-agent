@@ -20,15 +20,16 @@ type OTELKubernetesEvent struct {
 
 var PodStatusAction = K8sEventProcessorAction{
 	Key:      PodStatusAttributeKey,
-	ValueFn:  getStatus,
-	FilterFn: filterFn,
+	ValueFn:  getPodStatus,
+	FilterFn: filterPodEvents,
 }
 
-func filterFn(event K8sEvent) bool {
+func filterPodEvents(event K8sEvent) bool {
 	return event.Kind == "Pod"
 }
 
-func getStatus(objLog plog.LogRecord) string {
+// Generates the Pod "status" facet. Assumes that objLog is a log from a Pod event.
+func getPodStatus(objLog plog.LogRecord) any {
 	var p v1.Pod
 	err := json.Unmarshal([]byte(objLog.Body().AsString()), &p)
 	if err != nil {

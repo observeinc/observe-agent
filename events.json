@@ -1,0 +1,1897 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71519",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Successfully assigned observe/observe-agent-daemonset-logs-metrics-agent-v7fq6 to minikube",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b577bd3c0b1",
+                "namespace": "observe",
+                "resourceVersion": "71523",
+                "uid": "0b8aad82-8a0d-400d-a1ec-d0b166252e48"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:56Z",
+            "message": "Pulling image \"observeinc/kube-cluster-info:v0.11.1\"",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b57994d3499",
+                "namespace": "observe",
+                "resourceVersion": "73370",
+                "uid": "9b022b3f-6a9d-479d-b5a7-c9c1db62a9cf"
+            },
+            "reason": "Pulling",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:05Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 972ms (2.681s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b5839266743",
+                "namespace": "observe",
+                "resourceVersion": "71580",
+                "uid": "4f925301-44b2-4076-bf3e-0e6467e4de3b"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:57Z",
+            "message": "Created container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b583a33416f",
+                "namespace": "observe",
+                "resourceVersion": "73374",
+                "uid": "94076183-ac72-4dd2-a235-ef68a0990630"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:56Z",
+            "message": "Started container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b583c4cc4a0",
+                "namespace": "observe",
+                "resourceVersion": "73201",
+                "uid": "4a35c9e6-b2e3-44e7-9349-11e30ebe681a"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:06Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:57Z",
+            "message": "Container image \"otel/opentelemetry-collector-contrib:0.104.0\" already present on machine",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:06Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b586c04f48a",
+                "namespace": "observe",
+                "resourceVersion": "73202",
+                "uid": "233be7d1-3a01-43e0-92d3-7a1299910b24"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:06Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:57Z",
+            "message": "Created container daemonset-logs-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:06Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b586d3f1b64",
+                "namespace": "observe",
+                "resourceVersion": "73203",
+                "uid": "2f8b74cd-7664-4393-b9b6-332b048d92da"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:06Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:57Z",
+            "message": "Started container daemonset-logs-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:06Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9b586f4b4e60",
+                "namespace": "observe",
+                "resourceVersion": "73204",
+                "uid": "00e0e838-5378-4a72-9d52-3fcfbbc7b68a"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.105:13133/\": dial tcp 10.244.120.105:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9cf5ff09bc2f",
+                "namespace": "observe",
+                "resourceVersion": "73121",
+                "uid": "7c4b880c-049b-4fe3-8fdb-567f9e3f6f97"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.105:13133/\": dial tcp 10.244.120.105:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9cf5ff09f5cd",
+                "namespace": "observe",
+                "resourceVersion": "73120",
+                "uid": "d51638db-7bc9-447c-b609-4df94e024bf3"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 5,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:49Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:56Z",
+            "message": "Pod sandbox changed, it will be killed and re-created.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9cf7a693a636",
+                "namespace": "observe",
+                "resourceVersion": "73368",
+                "uid": "141d90be-11cf-4f9a-8817-896b707b021c"
+            },
+            "reason": "SandboxChanged",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:56Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:56Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 950ms (2.864s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9cf928b01c22",
+                "namespace": "observe",
+                "resourceVersion": "73196",
+                "uid": "b3098308-8e34-44b3-8421-68e03c294a4a"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:32Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.111:13133/\": dial tcp 10.244.120.111:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9d0079386399",
+                "namespace": "observe",
+                "resourceVersion": "73325",
+                "uid": "3ce2fea5-ebce-417f-9686-666323548adb"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:27Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.111:13133/\": dial tcp 10.244.120.111:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9d007938a8c5",
+                "namespace": "observe",
+                "resourceVersion": "73301",
+                "uid": "2bc96e48-2439-4a13-8243-adee42181172"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:27Z",
+            "message": "Container daemonset-logs-metrics failed liveness probe, will be restarted",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9d007951bff2",
+                "namespace": "observe",
+                "resourceVersion": "73303",
+                "uid": "3149f9a7-6ba3-4837-ba17-be1ad68f64ca"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:57Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6",
+                "namespace": "observe",
+                "resourceVersion": "71521",
+                "uid": "37796797-38c6-4b8f-86cb-333cae3b674e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:57Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 1.021s (1.021s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-v7fq6.17eb9d07672bc50f",
+                "namespace": "observe",
+                "resourceVersion": "73373",
+                "uid": "ec519f02-ed90-4884-9f45-17551f0e2c14"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{daemonset-logs-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-daemonset-logs-metrics-agent-w6czd",
+                "namespace": "observe",
+                "resourceVersion": "69700",
+                "uid": "86c96ab4-a9b3-4180-a6ed-aee75cfec94a"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Stopping container daemonset-logs-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent-w6czd.17eb9b5767f3e64b",
+                "namespace": "observe",
+                "resourceVersion": "71480",
+                "uid": "7587c878-0298-401d-8c28-727f60c76420"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "DaemonSet",
+                "name": "observe-agent-daemonset-logs-metrics-agent",
+                "namespace": "observe",
+                "resourceVersion": "69804",
+                "uid": "a8b7d242-efae-412c-b654-4018fd97a119"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Created pod: observe-agent-daemonset-logs-metrics-agent-v7fq6",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-daemonset-logs-metrics-agent.17eb9b577b5980cb",
+                "namespace": "observe",
+                "resourceVersion": "71520",
+                "uid": "839d7c9f-3c26-4739-8d9e-d4c2785d6636"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71486",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Successfully assigned observe/observe-agent-deployment-cluster-events-578869d64b-9l4w2 to minikube",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b5768fa4afb",
+                "namespace": "observe",
+                "resourceVersion": "71490",
+                "uid": "c27b4ba4-42ef-4170-addb-e53a678c4eb8"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:57Z",
+            "message": "Pulling image \"observeinc/kube-cluster-info:v0.11.1\"",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b5789106052",
+                "namespace": "observe",
+                "resourceVersion": "73372",
+                "uid": "17a5e653-28cf-4d93-a614-0a376a907657"
+            },
+            "reason": "Pulling",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:04Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 976ms (1.981s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b57ff2ed7b0",
+                "namespace": "observe",
+                "resourceVersion": "71568",
+                "uid": "042e818b-8941-4de8-a6e5-abd46e711f4a"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:54Z",
+            "message": "Created container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b580000d198",
+                "namespace": "observe",
+                "resourceVersion": "73174",
+                "uid": "dacd36d3-fbd8-4f34-ad95-1945e5bc2cd1"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:54Z",
+            "message": "Started container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b580247b57c",
+                "namespace": "observe",
+                "resourceVersion": "73175",
+                "uid": "a42e7ba4-a386-4273-871d-99f28e2c63cd"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:55Z",
+            "message": "Container image \"observe-agent:test-k8s\" already present on machine",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b582f286d24",
+                "namespace": "observe",
+                "resourceVersion": "73176",
+                "uid": "4f2d1c67-46a5-489b-9b94-2a6033c866f4"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:55Z",
+            "message": "Created container deployment-cluster-events",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b5830c9a786",
+                "namespace": "observe",
+                "resourceVersion": "73179",
+                "uid": "e797f211-84d4-4033-a73e-1244042f3db1"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:05Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:55Z",
+            "message": "Started container deployment-cluster-events",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:05Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9b583282da23",
+                "namespace": "observe",
+                "resourceVersion": "73181",
+                "uid": "5c543424-ff87-4e3e-9029-bdbfbc87f12f"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.107:13133/status\": dial tcp 10.244.120.107:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cf5ec342a3e",
+                "namespace": "observe",
+                "resourceVersion": "73116",
+                "uid": "9cd98f2b-fd2a-45a7-aebe-67104b05f8c6"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.107:13133/status\": dial tcp 10.244.120.107:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cf5ec35ca42",
+                "namespace": "observe",
+                "resourceVersion": "73115",
+                "uid": "ffb15dab-4564-47d3-b3e5-0339ccbe39a2"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 5,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:49Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:57Z",
+            "message": "Pod sandbox changed, it will be killed and re-created.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cf7a75a5e1f",
+                "namespace": "observe",
+                "resourceVersion": "73371",
+                "uid": "a3857da5-af7d-4056-8387-0381c7b721d5"
+            },
+            "reason": "SandboxChanged",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:54Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:54Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 1.081s (1.081s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cf8b6deea10",
+                "namespace": "observe",
+                "resourceVersion": "73173",
+                "uid": "ef8822a0-cb56-4600-8126-e34372b78db9"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:22Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:32Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.106:13133/status\": dial tcp 10.244.120.106:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cff3c68b7b6",
+                "namespace": "observe",
+                "resourceVersion": "73314",
+                "uid": "f7d19482-b88d-4755-ba18-e8c07a05837f"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:22Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:32Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.106:13133/status\": dial tcp 10.244.120.106:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9cff3c6bce3d",
+                "namespace": "observe",
+                "resourceVersion": "73313",
+                "uid": "e12bfdcb-d88f-4c0d-ae7a-67c9ba31f531"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:32Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+                "namespace": "observe",
+                "resourceVersion": "71488",
+                "uid": "6e40db9d-7848-4ea7-a720-349db27cf6e9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:32Z",
+            "message": "error determining status: rpc error: code = Unavailable desc = connection error: desc = \"error reading server preface: read unix @-\u003e/run/cri-dockerd.sock: read: connection reset by peer\"",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-9l4w2.17eb9d01906e8f8d",
+                "namespace": "observe",
+                "resourceVersion": "73315",
+                "uid": "64a83dd1-fd66-409d-b272-36f9fb323aa8"
+            },
+            "reason": "FailedSync",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-events}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-f8dkf",
+                "namespace": "observe",
+                "resourceVersion": "69668",
+                "uid": "26f4cec3-019b-451a-8082-e959842d97ef"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Stopping container deployment-cluster-events",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-f8dkf.17eb9b576652ff3e",
+                "namespace": "observe",
+                "resourceVersion": "71459",
+                "uid": "5a0caba6-bd72-43b6-a762-50697d209594"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-vfcs4",
+                "namespace": "observe",
+                "resourceVersion": "71461",
+                "uid": "a3dd90b9-7d2a-4b4f-92c9-ba8564b3516c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Successfully assigned observe/observe-agent-deployment-cluster-events-578869d64b-vfcs4 to minikube",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b-vfcs4.17eb9b57671952ba",
+                "namespace": "observe",
+                "resourceVersion": "71473",
+                "uid": "053c460f-841b-4878-b6f2-570a9f726d18"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "observe-agent-deployment-cluster-events-578869d64b",
+                "namespace": "observe",
+                "resourceVersion": "69778",
+                "uid": "da6eee48-3603-4377-9529-7a877095e9ca"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Created pod: observe-agent-deployment-cluster-events-578869d64b-vfcs4",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b.17eb9b5766cdebfe",
+                "namespace": "observe",
+                "resourceVersion": "71467",
+                "uid": "fc56a865-268c-4abd-99d0-3882cfd1ce57"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "observe-agent-deployment-cluster-events-578869d64b",
+                "namespace": "observe",
+                "resourceVersion": "71481",
+                "uid": "da6eee48-3603-4377-9529-7a877095e9ca"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Created pod: observe-agent-deployment-cluster-events-578869d64b-9l4w2",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-events-578869d64b.17eb9b5768dd8666",
+                "namespace": "observe",
+                "resourceVersion": "71487",
+                "uid": "661b1514-4ac9-431c-ad5a-b67642188938"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71494",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Successfully assigned observe/observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg to minikube",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57699be737",
+                "namespace": "observe",
+                "resourceVersion": "71502",
+                "uid": "77c975ca-8fcb-4651-b7cc-ddcb779441a1"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:59:03Z",
+            "message": "Pulling image \"observeinc/kube-cluster-info:v0.11.1\"",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b578852062e",
+                "namespace": "observe",
+                "resourceVersion": "73396",
+                "uid": "9fc93c2d-dfef-4718-b359-7deef7abfcd5"
+            },
+            "reason": "Pulling",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:03Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:03Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 1.018s (1.018s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:03Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57c5016873",
+                "namespace": "observe",
+                "resourceVersion": "71558",
+                "uid": "1591eca9-0da9-49a8-ad9b-2e11e5260211"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:03Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:59:04Z",
+            "message": "Created container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:03Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57c628435c",
+                "namespace": "observe",
+                "resourceVersion": "73399",
+                "uid": "9f738eb4-c884-4e2f-929b-8600627e1406"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:03Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:55Z",
+            "message": "Started container kube-cluster-info",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:03Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57c8531701",
+                "namespace": "observe",
+                "resourceVersion": "73184",
+                "uid": "ef383415-2892-4cd2-ae9b-278a05ca0294"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:56Z",
+            "message": "Container image \"otel/opentelemetry-collector-contrib:0.104.0\" already present on machine",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57f25c13ab",
+                "namespace": "observe",
+                "resourceVersion": "73193",
+                "uid": "b2c9d23a-36c6-403e-88f9-30fece65c550"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:56Z",
+            "message": "Created container deployment-cluster-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57f474f6b3",
+                "namespace": "observe",
+                "resourceVersion": "73195",
+                "uid": "c62de7ed-00ba-411b-9836-b4c02dcf4e0d"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:56Z",
+            "message": "Started container deployment-cluster-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:04Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9b57f72b6f88",
+                "namespace": "observe",
+                "resourceVersion": "73199",
+                "uid": "f94868eb-5d89-46e4-a715-0755eaebb903"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.104:13133/\": dial tcp 10.244.120.104:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9cf5f128e45a",
+                "namespace": "observe",
+                "resourceVersion": "73117",
+                "uid": "14012067-3873-4666-b635-e24906af5658"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:47Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.104:13133/\": dial tcp 10.244.120.104:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9cf5f12b8822",
+                "namespace": "observe",
+                "resourceVersion": "73118",
+                "uid": "ca6e2b31-a4d7-4dc2-a34b-77b4b9f0462d"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 5,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:49Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:59:03Z",
+            "message": "Pod sandbox changed, it will be killed and re-created.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9cf7aaf72f36",
+                "namespace": "observe",
+                "resourceVersion": "73386",
+                "uid": "96d4aae6-8eee-4ab6-9944-316292194c2a"
+            },
+            "reason": "SandboxChanged",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:57:55Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:57:55Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 959ms (1.96s including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:58:00Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9cf8f00e9763",
+                "namespace": "observe",
+                "resourceVersion": "73182",
+                "uid": "2c0e8276-7235-4d32-a0f7-73c664c59413"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 3,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:32Z",
+            "message": "Readiness probe failed: Get \"http://10.244.120.108:13133/\": dial tcp 10.244.120.108:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9d006b71d324",
+                "namespace": "observe",
+                "resourceVersion": "73316",
+                "uid": "5daf8115-6cde-4fb2-9695-240c337ded71"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:27Z",
+            "message": "Liveness probe failed: Get \"http://10.244.120.108:13133/\": dial tcp 10.244.120.108:13133: connect: invalid argument",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9d006b71d377",
+                "namespace": "observe",
+                "resourceVersion": "73296",
+                "uid": "73fd755b-e930-4f08-a57e-6c99972cc17d"
+            },
+            "reason": "Unhealthy",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:58:27Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:58:27Z",
+            "message": "Container deployment-cluster-metrics failed liveness probe, will be restarted",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9d006b888315",
+                "namespace": "observe",
+                "resourceVersion": "73299",
+                "uid": "d51db0ea-8cd2-4e89-8905-721de4c8a8d3"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:59:04Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.initContainers{kube-cluster-info}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+                "namespace": "observe",
+                "resourceVersion": "71496",
+                "uid": "9fcd5dc2-b325-49ce-8556-cce7fd5449d7"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:59:04Z",
+            "message": "Successfully pulled image \"observeinc/kube-cluster-info:v0.11.1\" in 971ms (971ms including waiting). Image size: 19308076 bytes.",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:04Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg.17eb9d0900c7b8b2",
+                "namespace": "observe",
+                "resourceVersion": "73398",
+                "uid": "c66fb44e-16fd-4e02-8ba4-081a6dd1ff18"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{deployment-cluster-metrics}",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-c4kp9",
+                "namespace": "observe",
+                "resourceVersion": "69677",
+                "uid": "8d977039-3501-4224-8b3f-3b9c105435c3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Stopping container deployment-cluster-metrics",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-c4kp9.17eb9b5766ab5433",
+                "namespace": "observe",
+                "resourceVersion": "71464",
+                "uid": "776369f1-031a-4ee0-a5e1-5dcaf163a8d6"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "minikube",
+            "source": {
+                "component": "kubelet",
+                "host": "minikube"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-lzc9l",
+                "namespace": "observe",
+                "resourceVersion": "71466",
+                "uid": "cb91f7c2-c4c5-4975-9d95-5541d165a5be"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Successfully assigned observe/observe-agent-deployment-cluster-metrics-c9b5df57f-lzc9l to minikube",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f-lzc9l.17eb9b57674b3ed6",
+                "namespace": "observe",
+                "resourceVersion": "71475",
+                "uid": "64719dd7-3af4-494b-859f-6c787f0b00fe"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f",
+                "namespace": "observe",
+                "resourceVersion": "69801",
+                "uid": "51daa305-0328-48fe-9a30-ed5a321d52e3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Created pod: observe-agent-deployment-cluster-metrics-c9b5df57f-lzc9l",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f.17eb9b5766fc5d51",
+                "namespace": "observe",
+                "resourceVersion": "71472",
+                "uid": "8362aa8f-78c2-4e0b-bc97-11e1938a0a43"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:28:02Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f",
+                "namespace": "observe",
+                "resourceVersion": "71477",
+                "uid": "51daa305-0328-48fe-9a30-ed5a321d52e3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:28:02Z",
+            "message": "Created pod: observe-agent-deployment-cluster-metrics-c9b5df57f-6f6gg",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:28:02Z",
+                "name": "observe-agent-deployment-cluster-metrics-c9b5df57f.17eb9b57697262cc",
+                "namespace": "observe",
+                "resourceVersion": "71497",
+                "uid": "b74fafe6-915d-430b-9d77-54aaf161e862"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2024-08-14T13:59:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Endpoints",
+                "name": "observe-agent-deployment-cluster-metrics",
+                "namespace": "observe",
+                "resourceVersion": "73220",
+                "uid": "ca884d54-c9c4-42b2-a353-da0785e9f221"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2024-08-14T13:59:17Z",
+            "message": "Failed to update endpoint observe/observe-agent-deployment-cluster-metrics: Operation cannot be fulfilled on endpoints \"observe-agent-deployment-cluster-metrics\": the object has been modified; please apply your changes to the latest version and try again",
+            "metadata": {
+                "creationTimestamp": "2024-08-14T13:59:17Z",
+                "name": "observe-agent-deployment-cluster-metrics.17eb9d0c19daa18e",
+                "namespace": "observe",
+                "resourceVersion": "73436",
+                "uid": "1d49839c-a719-4b27-a840-f75985988cec"
+            },
+            "reason": "FailedToUpdateEndpoint",
+            "reportingComponent": "endpoint-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "endpoint-controller"
+            },
+            "type": "Warning"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}
