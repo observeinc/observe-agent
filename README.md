@@ -39,7 +39,7 @@ To start the observe agent after building the binary run the following command.
 
 ## Components
 
-Current OTEL Collector Version: `v0.105.0`
+Current OTEL Collector Version: `v0.107.0`
 
 This section lists the components that are included in the Observe Distribution of the OpenTelemetry Collector.
 
