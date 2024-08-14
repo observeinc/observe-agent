@@ -18,11 +18,11 @@ var HostMonitoringConnectionType = ConnectionType{
 			colConfigFilePath: "host.yaml",
 		},
 		{
-			configYAMLPath:    "metrics.enabled",
+			configYAMLPath:    "metrics::enabled",
 			colConfigFilePath: "metrics.yaml",
 		},
 		{
-			configYAMLPath:    "logs.enabled",
+			configYAMLPath:    "logs::enabled",
 			colConfigFilePath: "logs.yaml",
 		},
 	},

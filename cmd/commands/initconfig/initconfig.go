@@ -46,10 +46,10 @@ func NewConfigureCmd() *cobra.Command {
 			configValues := FlatAgentConfig{
 				Token:                         viper.GetString("token"),
 				ObserveURL:                    viper.GetString("observe_url"),
-				SelfMonitoring_Enabled:        viper.GetBool("self_monitoring.enabled"),
-				HostMonitoring_Enabled:        viper.GetBool("host_monitoring.enabled"),
-				HostMonitoring_LogsEnabled:    viper.GetBool("host_monitoring.logs.enabled"),
-				HostMonitoring_MetricsEnabled: viper.GetBool("host_monitoring.metrics.enabled"),
+				SelfMonitoring_Enabled:        viper.GetBool("self_monitoring::enabled"),
+				HostMonitoring_Enabled:        viper.GetBool("host_monitoring::enabled"),
+				HostMonitoring_LogsEnabled:    viper.GetBool("host_monitoring::logs::enabled"),
+				HostMonitoring_MetricsEnabled: viper.GetBool("host_monitoring::metrics::enabled"),
 			}
 			var outputPath string
 			if config_path != "" {
@@ -82,14 +82,14 @@ func RegisterConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&config_path, "config_path", "", "", "Path to write config output file to")
 	cmd.PersistentFlags().StringVar(&token, "token", "", "Observe token")
 	cmd.PersistentFlags().StringVar(&observe_url, "observe_url", "", "Observe data collection url")
-	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring.enabled", true, "Enable self monitoring")
-	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring.enabled", true, "Enable host monitoring")
-	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_enabled, "host_monitoring.logs.enabled", true, "Enable host monitoring logs")
-	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_enabled, "host_monitoring.metrics.enabled", true, "Enable host monitoring metrics")
+	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
+	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring::enabled", true, "Enable host monitoring")
+	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_enabled, "host_monitoring::logs::enabled", true, "Enable host monitoring logs")
+	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_enabled, "host_monitoring::metrics::enabled", true, "Enable host monitoring metrics")
 	viper.BindPFlag("token", cmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("observe_url", cmd.PersistentFlags().Lookup("observe_url"))
-	viper.BindPFlag("self_monitoring.enabled", cmd.PersistentFlags().Lookup("self_monitoring.enabled"))
-	viper.BindPFlag("host_monitoring.enabled", cmd.PersistentFlags().Lookup("host_monitoring.enabled"))
-	viper.BindPFlag("host_monitoring.logs.enabled", cmd.PersistentFlags().Lookup("host_monitoring.logs.enabled"))
-	viper.BindPFlag("host_monitoring.metrics.enabled", cmd.PersistentFlags().Lookup("host_monitoring.metrics.enabled"))
+	viper.BindPFlag("self_monitoring::enabled", cmd.PersistentFlags().Lookup("self_monitoring::enabled"))
+	viper.BindPFlag("host_monitoring::enabled", cmd.PersistentFlags().Lookup("host_monitoring::enabled"))
+	viper.BindPFlag("host_monitoring::logs::enabled", cmd.PersistentFlags().Lookup("host_monitoring::logs::enabled"))
+	viper.BindPFlag("host_monitoring::metrics::enabled", cmd.PersistentFlags().Lookup("host_monitoring::metrics::enabled"))
 }
