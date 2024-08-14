@@ -30,12 +30,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.107.0
-	github.com/spf13/cobra v1.8.1
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.107.0
@@ -57,6 +57,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.0
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
+	golang.org/x/sys v0.24.0
 )
 
 require (
@@ -187,6 +188,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
@@ -239,6 +241,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
@@ -254,8 +257,10 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
+	go.mongodb.org/mongo-driver v1.16.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.107.0 // indirect
 	go.opentelemetry.io/collector/client v1.13.0 // indirect
@@ -312,7 +317,6 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
@@ -340,10 +344,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
+replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ../../components/processors/observek8sattributesprocessor
+
 replace k8s.io/api => k8s.io/api v0.29.3
 
 replace k8s.io/apimachinery => k8s.io/apimachinery v0.29.3
 
 replace k8s.io/client-go => k8s.io/client-go v0.29.3
-
-replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../../components/processors/observek8sattributesprocessor
