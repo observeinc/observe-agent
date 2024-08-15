@@ -1,6 +1,6 @@
 receivers:
   hostmetrics/host-monitoring:
-    collection_interval: 20s
+    collection_interval: 60s
     root_path: /hostfs
     scrapers:
       cpu:
@@ -33,22 +33,30 @@ receivers:
       processes:
       process:
         metrics:
+          process.cpu.time:
+            enabled: false
+          process.disk.io:
+            enabled: false
+          process.memory.usage:
+            enabled: false
+          process.memory.virtual:
+            enabled: false
           process.context_switches:
-            enabled: true
+            enabled: false
           process.cpu.utilization:
-            enabled: true
+            enabled: false
           process.disk.operations:
-            enabled: true      
+            enabled: false      
           process.memory.utilization:
-            enabled: true      
+            enabled: false      
           process.open_file_descriptors:
-            enabled: true      
+            enabled: false      
           process.paging.faults:
-            enabled: true      
+            enabled: false      
           process.signals_pending:
-            enabled: true      
+            enabled: false      
           process.threads:
-            enabled: true
+            enabled: false
         mute_process_name_error: true
         mute_process_exe_error: true
         mute_process_io_error: true
