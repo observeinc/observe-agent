@@ -513,24 +513,95 @@
       ],
       "containerStatuses":[
          {
-            "containerID":"containerd://022d7cedb7b98f84a6048375eaed1eb071c2ffb93f63353c6b3874f93c10f283",
-            "image":"723346149663.dkr.ecr.us-west-2.amazonaws.com/o2-dumper:latest",
-            "imageID":"723346149663.dkr.ecr.us-west-2.amazonaws.com/o2-dumper@sha256:25c5d2df91013ba70e10a986eab716662fc4437dd9a23051614c2d47105a2739",
-            "lastState":{
-               
+            "containerID": "docker://27e5a33803d1bf972d76ff701cf64169811167d5be9d4672ba265201b4811715",
+            "image": "otel/opentelemetry-collector-contrib:0.104.0",
+            "imageID": "docker-pullable://otel/opentelemetry-collector-contrib@sha256:e07e325e303e86f4a87a617491e921b579a92da6d404007394757ac910bf9587",
+            "lastState": {
+                  "terminated": {
+                     "containerID": "docker://85c5a15d9c592ab65a74cc22c5ced1d5dd60d9d0a55390c045a93fad057a8099",
+                     "exitCode": 2,
+                     "finishedAt": "2024-08-15T03:40:38Z",
+                     "reason": "Error",
+                     "startedAt": "2024-08-14T14:00:37Z"
+                  }
             },
-            "name":"purge-old-datasets",
-            "ready":false,
-            "restartCount":0,
-            "started":false,
-            "state":{
-               "terminated":{
-                  "containerID":"containerd://022d7cedb7b98f84a6048375eaed1eb071c2ffb93f63353c6b3874f93c10f283",
-                  "exitCode":0,
-                  "finishedAt":"2024-07-18T18:53:11Z",
-                  "reason":"Completed",
-                  "startedAt":"2024-07-18T18:53:00Z"
+            "name": "deployment-cluster-metrics",
+            "ready": true,
+            "restartCount": 1,
+            "started": true,
+            "state": {
+                  "running": {
+                     "startedAt": "2024-08-15T03:40:38Z"
+                  }
+            }
+         },
+         {
+            "containerID": "docker://6521895498486496",
+            "image": "otel/opentelemetry-collector-contrib:0.104.0",
+            "imageID": "docker-pullable://otel/opentelemetry-collector-contrib@sha256:e07e325e303e86f4a87a617491e921b579a92da6d404007394757ac910bf9587",
+            "lastState": {
+               "terminated": {
+                  "containerID": "docker://6521895498486496",
+                  "exitCode": 2,
+                  "finishedAt": "2024-08-15T03:40:38Z",
+                  "reason": "Error",
+                  "startedAt": "2024-08-14T14:00:37Z"
                }
+            },
+            "name": "deployment-cluster-metrics",
+            "ready": true,
+            "restartCount": 1,
+            "started": true,
+            "state": {
+               "running": {
+                  "startedAt": "2024-08-15T03:40:38Z"
+               }
+            }
+         },
+         {
+            "containerID": "docker://6884237457842122313290",
+            "image": "otel/opentelemetry-collector-contrib:0.104.0",
+            "imageID": "docker-pullable://otel/opentelemetry-collector-contrib@sha256:e07e325e303e86f4a87a617491e921b579a92da6d404007394757ac910bf9587",
+            "lastState": {
+                "terminated": {
+                    "containerID": "docker://6884237457842122313290",
+                    "exitCode": 2,
+                    "finishedAt": "2024-08-15T03:40:38Z",
+                    "reason": "Error",
+                    "startedAt": "2024-08-14T14:00:37Z"
+                }
+            },
+            "name": "deployment-cluster-metrics",
+            "ready": true,
+            "restartCount": 3,
+            "started": true,
+            "state": {
+                "running": {
+                    "startedAt": "2024-08-15T03:40:38Z"
+                }
+            }
+         },
+         {
+            "containerID": "docker://6547986743222555",
+            "image": "otel/opentelemetry-collector-contrib:0.104.0",
+            "imageID": "docker-pullable://otel/opentelemetry-collector-contrib@sha256:e07e325e303e86f4a87a617491e921b579a92da6d404007394757ac910bf9587",
+            "lastState": {
+                "terminated": {
+                    "containerID": "docker://6547986743222555",
+                    "exitCode": 2,
+                    "finishedAt": "2024-08-15T03:40:38Z",
+                    "reason": "Error",
+                    "startedAt": "2024-08-14T14:00:37Z"
+                }
+            },
+            "name": "deployment-cluster-events",
+            "ready": false,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+                "running": {
+                    "startedAt": "2024-08-15T03:40:38Z"
+                }
             }
          }
       ],

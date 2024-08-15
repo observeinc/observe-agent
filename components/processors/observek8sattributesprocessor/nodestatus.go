@@ -2,6 +2,7 @@ package observek8sattributesprocessor
 
 import (
 	"encoding/json"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	apiv1 "k8s.io/api/core/v1"
@@ -12,21 +13,16 @@ const (
 )
 
 var NodeStatusAction = K8sEventProcessorAction{
-	Key:      NodeStatusAttributeKey,
-	ValueFn:  getNodeStatus,
-	FilterFn: filterNodeEvents,
-}
-
-func filterNodeEvents(event K8sEvent) bool {
-	return event.Kind == "Node"
+	ComputeAttributes: getNodeStatus,
+	FilterFn:          filterNodeEvents,
 }
 
 // Generates the Node "status" facet. Assumes that objLog is a log from a Node event.
-func getNodeStatus(objLog plog.LogRecord) any {
+func getNodeStatus(objLog plog.LogRecord) (attributes, error) {
 	var n apiv1.Node
 	err := json.Unmarshal([]byte(objLog.Body().AsString()), &n)
 	if err != nil {
-		return "Error while computing status"
+		return nil, errors.New("could not unmarshal Node")
 	}
 	// based on https://github.com/kubernetes/kubernetes/blob/dbc2b0a5c7acc349ea71a14e49913661eaf708d2/pkg/printers/internalversion/printers.go#L1835
 	// Although with a simplified logic that is faster to compute and uses less memory
@@ -49,5 +45,5 @@ func getNodeStatus(objLog plog.LogRecord) any {
 		status += ", SchedulingDisabled"
 	}
 
-	return status
+	return attributes{NodeStatusAttributeKey: status}, nil
 }

@@ -3,6 +3,7 @@ package observek8sattributesprocessor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,10 +22,13 @@ type K8sEventsProcessor struct {
 	actions []K8sEventProcessorAction
 }
 
+type attributes map[string]any
+
+type transform func(plog.LogRecord) (attributes, error)
+
 type K8sEventProcessorAction struct {
-	Key      string
-	ValueFn  func(plog.LogRecord) any
-	FilterFn func(K8sEvent) bool
+	ComputeAttributes transform
+	FilterFn          func(K8sEvent) bool
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
@@ -32,7 +36,7 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		cfg:    cfg,
 		logger: logger,
 		actions: []K8sEventProcessorAction{
-			PodStatusAction, NodeStatusAction, NodeRolesAction,
+			PodStatusAction, NodeStatusAction, NodeRolesAction, PodContainersCountsAction,
 		},
 	}
 }
@@ -79,49 +83,88 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 						facetsMap = facets.Map()
 					} else {
 						facetsMap = transformMap.PutEmptyMap("facets")
+						// Make sure we have capacity for at least as many actions as we have defined
+						// Actions could generate more than one facet, that's taken care of afterwards.
+						facetsMap.EnsureCapacity(len(kep.actions))
 					}
 
-					// This is where the custom processor actually computes the value
-					value := action.ValueFn(lr)
+					// This is where the custom processor actually computes the transformed value(s)
+					values, err := action.ComputeAttributes(lr)
+					if err != nil {
+						return logs, err
+					}
 
-					// TODO [eg] we probably want to make this more modular. For
-					// now using FromRaw for complex types is fine, since we
-					// don't plan to generate arbitrarily complex/nested facets.
-					// For some time coming we will produce facets that are at
-					// most slices of simple types of map of simple types,
-					// nothing beyond that.
-					switch typed := value.(type) {
-					case string:
-						facetsMap.PutStr(action.Key, typed)
-					case int64:
-						facetsMap.PutInt(action.Key, typed)
-					case bool:
-						facetsMap.PutBool(action.Key, typed)
-					case float64:
-						facetsMap.PutDouble(action.Key, typed)
-					case []string:
-						// []string can't fallback to using FromRaw([]any), as
-						// the default implementation of FromRaw is not smart
-						// enough to understand that the slice contains all
-						// string, and inserts them as bytes, instead
-						slc := facetsMap.PutEmptySlice(action.Key)
-						slc.EnsureCapacity(len(typed))
-						for _, str := range typed {
-							slc.AppendEmpty().SetStr(str)
+					facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
+					for key, val := range values {
+						if err := mapPut(facetsMap, key, val); err != nil {
+							return logs, err
 						}
-					case map[string]string:
-						// Same reasoning as []string
-						mp := facetsMap.PutEmptyMap(action.Key)
-						mp.EnsureCapacity(len(typed))
-						for k, v := range typed {
-							mp.PutStr(k, v)
-						}
-					default:
-						kep.logger.Error("sending the generated facet to Observe in bytes since no custom serialization logic is implemented", zap.Error(err))
 					}
 				}
 			}
 		}
 	}
 	return logs, nil
+}
+
+func slicePut(theSlice pcommon.Slice, value any) error {
+	elem := theSlice.AppendEmpty()
+	switch typed := value.(type) {
+	case string:
+		elem.SetStr(typed)
+	case int64:
+		elem.SetInt(typed)
+	case bool:
+		elem.SetBool(typed)
+	case float64:
+		elem.SetDouble(typed)
+	// Let's not complicate things and avoid putting maps/slices into slices.
+	// There's gotta be an easier way to model the processor's output to avoid it
+	default:
+		return errors.New("sending the generated facet to Observe in bytes since no custom serialization logic is implemented")
+	}
+
+	return nil
+}
+
+// puts "anything" into a map, with some assumptions and intentional
+// limitations:
+//
+//   - No nested slices: can only put "base types" inside slices (although
+//     elements of a slice can be of different [base] types).
+//
+//   - Not all "base types" are covered. For instance, numbers are only int64 and float64.
+//
+//   - No maps with keys of arbitrary types: only string
+func mapPut(theMap pcommon.Map, key string, value any) error {
+	switch typed := value.(type) {
+	case string:
+		theMap.PutStr(key, typed)
+	case int64:
+		theMap.PutInt(key, typed)
+	case bool:
+		theMap.PutBool(key, typed)
+	case float64:
+		theMap.PutDouble(key, typed)
+	case []any:
+		slc := theMap.PutEmptySlice(key)
+		slc.EnsureCapacity(len(typed))
+		for _, elem := range typed {
+			slicePut(slc, elem)
+		}
+	case attributes:
+		// This is potentially arbitrarily recursive. We don't care about
+		// checking the nesting level since we will never need to define
+		// processors with more than one nesting level
+		new := theMap.PutEmptyMap(key)
+		new.EnsureCapacity(len(typed))
+		for k, v := range typed {
+			mapPut(new, k, v)
+		}
+	default:
+		return errors.New("sending the generated facet to Observe in bytes since no custom serialization logic is implemented")
+	}
+
+	return nil
+
 }

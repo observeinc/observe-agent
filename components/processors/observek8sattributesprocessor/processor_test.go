@@ -45,7 +45,6 @@ func TestK8sEventsProcessor(t *testing.T) {
 			name: "noObserveTransformAttributes",
 			inLogs: createResourceLogs(
 				logWithResource{
-					logName:          "noObserveTransformAttributes",
 					testBodyFilepath: "./testdata/podObjectEvent.json",
 				},
 			),
@@ -57,7 +56,6 @@ func TestK8sEventsProcessor(t *testing.T) {
 			name: "existingObserveTransformAttributes",
 			inLogs: createResourceLogs(
 				logWithResource{
-					logName:          "existingObserveTransformAttributes",
 					testBodyFilepath: "./testdata/podObjectEvent.json",
 					recordAttributes: map[string]any{
 						"observe_transform": map[string]interface{}{
@@ -98,6 +96,19 @@ func TestK8sEventsProcessor(t *testing.T) {
 				{"observe_transform.facets.status", "Ready"},
 				{"observe_transform.facets.roles | length(@)", float64(2)},
 				{"observe_transform.facets.roles", []any{"anotherRole!", "control-plane"}},
+			},
+		},
+		{
+			name: "Pod container counts",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEvent.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.restarts", int64(5)},
+				{"observe_transform.facets.total_containers", int64(4)},
+				{"observe_transform.facets.ready_containers", int64(3)},
 			},
 		},
 	} {

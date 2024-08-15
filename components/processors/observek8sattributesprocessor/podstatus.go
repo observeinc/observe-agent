@@ -2,6 +2,7 @@ package observek8sattributesprocessor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,26 +15,17 @@ const (
 	nodeUnreachablePodReason = "NodeLost"
 )
 
-type OTELKubernetesEvent struct {
-	Object v1.Pod `json:"object"`
-}
-
 var PodStatusAction = K8sEventProcessorAction{
-	Key:      PodStatusAttributeKey,
-	ValueFn:  getPodStatus,
-	FilterFn: filterPodEvents,
-}
-
-func filterPodEvents(event K8sEvent) bool {
-	return event.Kind == "Pod"
+	ComputeAttributes: getPodStatus,
+	FilterFn:          filterPodEvents,
 }
 
 // Generates the Pod "status" facet. Assumes that objLog is a log from a Pod event.
-func getPodStatus(objLog plog.LogRecord) any {
+func getPodStatus(objLog plog.LogRecord) (attributes, error) {
 	var p v1.Pod
 	err := json.Unmarshal([]byte(objLog.Body().AsString()), &p)
 	if err != nil {
-		return "Unknown"
+		return nil, errors.New("Unknown")
 	}
 	// based on https://github.com/kubernetes/kubernetes/blob/0d3b859af81e6a5f869a7766c8d45afd1c600b04/pkg/printers/internalversion/printers.go#L901
 	reason := string(p.Status.Phase)
@@ -100,5 +92,5 @@ func getPodStatus(objLog plog.LogRecord) any {
 		reason = "Terminating"
 	}
 
-	return reason
+	return attributes{PodStatusAttributeKey: reason}, nil
 }
