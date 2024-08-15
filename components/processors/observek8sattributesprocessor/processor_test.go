@@ -2,125 +2,176 @@ package observek8sattributesprocessor
 
 import (
 	"context"
-	"io/ioutil"
+	"encoding/json"
+	"os"
 	"testing"
 
+	"github.com/jmespath/go-jmespath"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
-type observeTransformFacets struct {
-	facets map[string]string
-}
+// TODO [eg] refactor the testing infrastructure
 
 type logWithResource struct {
 	logName            string
 	resourceAttributes map[string]any
-	recordAttributes   map[string]any
-	severityText       string
-	body               string
-	testBodyFilepath   string
-	severityNumber     plog.SeverityNumber
+	// These attributes simulate the enrichments performed on top of the raw
+	// event by the pipelines in the agent config (generated from the template
+	// in the helm repo)
+	recordAttributes map[string]any
+	severityText     string
+	body             string
+	testBodyFilepath string
+	severityNumber   plog.SeverityNumber
 }
 
-type K8sEventProcessorTest struct {
-	name          string
-	inLogs        plog.Logs
-	outAttributes []map[string]interface{}
+// models a jmespath query against the processed results
+type queryWithResult struct {
+	path      string
+	expResult any
 }
 
-var (
-	podStatusInLogs = []logWithResource{
-		{
-			logName:          "noObserveTransformAttributes",
-			testBodyFilepath: "./testdata/podObjectEvent.json",
-		},
-		{
-			logName:          "existingObserveTransformAttributes",
-			testBodyFilepath: "./testdata/podObjectEvent.json",
-			recordAttributes: map[string]any{
-				"observe_transform": map[string]any{
-					"facets": map[string]any{
-						"other_key": "test",
-					},
-				},
-			},
-		},
-	}
-	podStatusOutAttributes = []map[string]interface{}{
-		{
-			"observe_transform": map[string]interface{}{
-				"facets": map[string]interface{}{
-					"status": "Terminating",
-				},
-			},
-			"name": "noObserveTransformAttributes",
-		},
-		{
-			"observe_transform": map[string]interface{}{
-				"facets": map[string]interface{}{
-					"status":    "Terminating",
-					"other_key": "test",
-				},
-			},
-			"name": "existingObserveTransformAttributes",
-		},
-	}
-
-	tests = []K8sEventProcessorTest{
-		{
-			name:          "noObserveTransformAttributes",
-			inLogs:        testResourceLogs(podStatusInLogs),
-			outAttributes: podStatusOutAttributes,
-		},
-	}
-)
+type k8sEventProcessorTest struct {
+	name            string
+	inLogs          plog.Logs
+	expectedResults []queryWithResult
+}
 
 func TestK8sEventsProcessor(t *testing.T) {
-	for _, test := range tests {
+	for _, test := range []k8sEventProcessorTest{
+		{
+			name: "noObserveTransformAttributes",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEvent.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.status", "Terminating"},
+			},
+		},
+		{ // Tests that we don't override/drop other facets computed in OTTL
+			name: "existingObserveTransformAttributes",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEvent.json",
+					recordAttributes: map[string]any{
+						"observe_transform": map[string]interface{}{
+							"facets": map[string]interface{}{
+								"other_key": "test",
+							},
+						},
+						"name": "existingObserveTransformAttributes",
+					},
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.status", "Terminating"},
+				{"observe_transform.facets.other_key", "test"},
+			},
+		},
+		{
+			name: "Node Status and Role",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/nodeObjectEventSimple.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.status", "Ready"},
+				{"observe_transform.facets.roles | length(@)", float64(1)},
+				{"observe_transform.facets.roles[0]", "control-plane"},
+			},
+		},
+		{
+			name: "Node Status and Multiple Roles",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/nodeObjectEventAlternativeRoleKey.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.status", "Ready"},
+				{"observe_transform.facets.roles | length(@)", float64(2)},
+				{"observe_transform.facets.roles", []any{"anotherRole!", "control-plane"}},
+			},
+		},
+		{
+			name: "Pod container counts",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEvent.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.restarts", int64(5)},
+				{"observe_transform.facets.total_containers", int64(4)},
+				{"observe_transform.facets.ready_containers", int64(3)},
+			},
+		},
+		{
+			name: "Pod readiness gates",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEventWithReadinessGates.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.readinessGatesReady", int64(1)},
+				{"observe_transform.facets.readinessGatesTotal", int64(2)},
+			},
+		},
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
 			logs, err := kep.processLogs(context.Background(), test.inLogs)
-			for i := 0; i < logs.ResourceLogs().Len(); i++ {
-				sl := logs.ResourceLogs().At(i).ScopeLogs()
-				for j := 0; j < sl.Len(); j++ {
-					lr := sl.At(j).LogRecords()
-					require.Equal(t, test.outAttributes[i], lr.At(0).Attributes().AsRaw())
-				}
-			}
-
 			require.NoError(t, err)
+			// Since we don't do correlation among different logs, each testcase
+			// "Logs" contains only one ResourceLog with one ScopeLog and a single LogRecord
+			out := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+			for _, query := range test.expectedResults {
+				queryJmes, err := jmespath.Compile(query.path)
+				require.NoErrorf(t, err, "path %v is not a valid jmespath", query.path)
+				res, err := queryJmes.Search(out)
+				require.NoError(t, err, "error in extracting jmespath")
+				require.Equal(t, query.expResult, res, "Processed log doesn't match the expected query")
+			}
 		})
 	}
 }
 
-func testResourceLogs(lwrs []logWithResource) plog.Logs {
+// Creates Logs with a single log.
+func createResourceLogs(lwr logWithResource) plog.Logs {
 	ld := plog.NewLogs()
 
-	for i, lwr := range lwrs {
-		rl := ld.ResourceLogs().AppendEmpty()
+	rl := ld.ResourceLogs().AppendEmpty()
 
-		// Add resource level attributes
-		//nolint:errcheck
-		rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
-		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
-		l := ls.AppendEmpty()
-		// Add record level attributes
-		//nolint:errcheck
-		l.Attributes().FromRaw(lwrs[i].recordAttributes)
-		l.Attributes().PutStr("name", lwr.logName)
-		// Set body & severity fields
-		if lwr.body != "" {
-			l.Body().SetStr(lwr.body)
-		} else if lwr.testBodyFilepath != "" {
-			file, err := ioutil.ReadFile(lwr.testBodyFilepath)
-			if err == nil {
-				l.Body().SetStr(string(file))
-			}
+	// Add resource level attributes
+	//nolint:errcheck
+	rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
+	ls := rl.ScopeLogs().AppendEmpty().LogRecords()
+	l := ls.AppendEmpty()
+	// Add record level attributes
+	//nolint:errcheck
+	l.Attributes().FromRaw(lwr.recordAttributes)
+	l.Attributes().PutStr("name", lwr.logName)
+	// Set body & severity fields
+	if lwr.body != "" {
+		// Check that the body is a valid json
+		_, err := json.Marshal(lwr.body)
+		if err != nil {
+			panic(err)
 		}
-		l.SetSeverityText(lwr.severityText)
-		l.SetSeverityNumber(lwr.severityNumber)
+		l.Body().SetStr(lwr.body)
+	} else if lwr.testBodyFilepath != "" {
+		file, err := os.ReadFile(lwr.testBodyFilepath)
+		if err == nil {
+			l.Body().SetStr(string(file))
+		}
 	}
+	l.SetSeverityText(lwr.severityText)
+	l.SetSeverityNumber(lwr.severityNumber)
 	return ld
 }

@@ -339,6 +339,14 @@
       "uid":"e06298c7-c46f-4389-9fa2-c0bd57031b9c"
    },
    "spec":{
+      "readinessGates":[
+         {
+            "conditionType": "existingReadinessGateCondition"
+         },
+         {
+            "conditionType": "anotherConditionTypeJustForTheSakeOfIt"
+         }
+      ],
       "containers":[
          {
             "args":[
@@ -509,6 +517,30 @@
             "lastTransitionTime":"2024-07-18T18:53:00Z",
             "status":"True",
             "type":"PodScheduled"
+         },
+         {
+            "lastProbeTime":null,
+            "lastTransitionTime":"2024-07-18T18:53:00Z",
+            "status":"True",
+            "type":"existingReadinessGateCondition"
+         },
+         {
+            "lastProbeTime":null,
+            "lastTransitionTime":"2024-07-18T18:53:00Z",
+            "status":"False",
+            "type":"existingReadinessGateCondition"
+         },
+         {
+            "lastProbeTime":null,
+            "lastTransitionTime":"2024-07-18T18:53:00Z",
+            "status":"True",
+            "type":"absentReadinessGateCondition"
+         },
+         {
+            "lastProbeTime":null,
+            "lastTransitionTime":"2024-07-18T18:53:00Z",
+            "status":"False",
+            "type":"absentReadinessGateCondition"
          }
       ],
       "containerStatuses":[
