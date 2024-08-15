@@ -4,8 +4,17 @@ type HostMonitoringLogsConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-type HostMonitoringMetricsConfig struct {
+type HostMonitoringHostMetricsConfig struct {
 	Enabled bool `yaml:"enabled"`
+}
+
+type HostMonitoringProcessMetricsConfig struct {
+	Enabled bool `yaml:"enabled"`
+}
+
+type HostMonitoringMetricsConfig struct {
+	Host    HostMonitoringHostMetricsConfig
+	Process HostMonitoringProcessMetricsConfig
 }
 
 type HostMonitoringConfig struct {

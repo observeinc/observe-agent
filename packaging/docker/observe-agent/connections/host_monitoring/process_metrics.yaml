@@ -1,35 +1,8 @@
 receivers:
-  hostmetrics/host-monitoring:
-    collection_interval: 20s
+  hostmetrics/host-monitoring-process:
+    collection_interval: 60s
+    root_path: /hostfs
     scrapers:
-      cpu:
-        metrics:
-          system.cpu.utilization:
-            enabled: true
-          system.cpu.frequency:
-            enabled: true
-          system.cpu.logical.count:
-            enabled: true
-          system.cpu.physical.count:
-            enabled: true
-      load:
-      memory:
-        metrics:
-          system.memory.utilization:
-            enabled: true
-          system.linux.memory.available:
-            enabled: true
-      disk:
-      filesystem:
-        metrics:
-          system.filesystem.utilization:
-            enabled: true
-      network:
-      paging:
-        metrics:
-          system.paging.utilization:
-            enabled: true
-      processes:
       process:
         metrics:
           process.context_switches:
@@ -55,7 +28,7 @@ receivers:
 
 service:
   pipelines:
-    metrics/host_monitoring:
-      receivers: [hostmetrics/host-monitoring]
+    metrics/host_monitoring_process:
+      receivers: [hostmetrics/host-monitoring-process]
       processors: [memory_limiter, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe]

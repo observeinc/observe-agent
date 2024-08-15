@@ -31,14 +31,19 @@ func Test_InitConfigCommand(t *testing.T) {
 						Enabled: true,
 					},
 					Metrics: HostMonitoringMetricsConfig{
-						Enabled: true,
+						Host: HostMonitoringHostMetricsConfig{
+							Enabled: true,
+						},
+						Process: HostMonitoringProcessMetricsConfig{
+							Enabled: false,
+						},
 					},
 				},
 			},
 			expectErr: "",
 		},
 		{
-			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--self_monitoring::enabled=false", "--host_monitoring::enabled=false", "--host_monitoring::logs::enabled=false", "--host_monitoring::metrics::enabled=false"},
+			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--self_monitoring::enabled=false", "--host_monitoring::enabled=false", "--host_monitoring::logs::enabled=false", "--host_monitoring::metrics::host::enabled=false", "--host_monitoring::metrics::process::enabled=false"},
 			expectedConfig: AgentConfig{
 				Token:      "test-token",
 				ObserveURL: "test-url",
@@ -48,7 +53,12 @@ func Test_InitConfigCommand(t *testing.T) {
 						Enabled: false,
 					},
 					Metrics: HostMonitoringMetricsConfig{
-						Enabled: false,
+						Host: HostMonitoringHostMetricsConfig{
+							Enabled: false,
+						},
+						Process: HostMonitoringProcessMetricsConfig{
+							Enabled: false,
+						},
 					},
 				},
 			},
