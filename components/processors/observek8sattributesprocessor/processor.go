@@ -36,7 +36,7 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		cfg:    cfg,
 		logger: logger,
 		actions: []K8sEventProcessorAction{
-			PodStatusAction, NodeStatusAction, NodeRolesAction, PodContainersCountsAction,
+			PodStatusAction, NodeStatusAction, NodeRolesAction, PodContainersCountsAction, PodReadinessAction,
 		},
 	}
 }
@@ -91,13 +91,15 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					// This is where the custom processor actually computes the transformed value(s)
 					values, err := action.ComputeAttributes(lr)
 					if err != nil {
-						return logs, err
+						kep.logger.Error("could not compute attributes", zap.Error(err))
+						continue
 					}
 
 					facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
 					for key, val := range values {
 						if err := mapPut(facetsMap, key, val); err != nil {
-							return logs, err
+							kep.logger.Error("could not write attributes", zap.Error(err))
+							continue
 						}
 					}
 				}
@@ -121,7 +123,7 @@ func slicePut(theSlice pcommon.Slice, value any) error {
 	// Let's not complicate things and avoid putting maps/slices into slices.
 	// There's gotta be an easier way to model the processor's output to avoid it
 	default:
-		return errors.New("sending the generated facet to Observe in bytes since no custom serialization logic is implemented")
+		return errors.New("unrecognised type. Cannot be added to a slice")
 	}
 
 	return nil
@@ -140,6 +142,8 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 	switch typed := value.(type) {
 	case string:
 		theMap.PutStr(key, typed)
+	case int:
+		theMap.PutInt(key, int64(typed))
 	case int64:
 		theMap.PutInt(key, typed)
 	case bool:
@@ -162,7 +166,7 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 			mapPut(new, k, v)
 		}
 	default:
-		return errors.New("sending the generated facet to Observe in bytes since no custom serialization logic is implemented")
+		return errors.New("unrecognised type. Cannot be put into a map")
 	}
 
 	return nil

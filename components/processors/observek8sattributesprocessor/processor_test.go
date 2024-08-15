@@ -111,6 +111,18 @@ func TestK8sEventsProcessor(t *testing.T) {
 				{"observe_transform.facets.ready_containers", int64(3)},
 			},
 		},
+		{
+			name: "Pod readiness gates",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEventWithReadinessGates.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.readinessGatesReady", int64(1)},
+				{"observe_transform.facets.readinessGatesTotal", int64(2)},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})

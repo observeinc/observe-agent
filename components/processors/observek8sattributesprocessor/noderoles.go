@@ -31,7 +31,7 @@ func getNodeRoles(objLog plog.LogRecord) (attributes, error) {
 	var node v1.Node
 	err := json.Unmarshal([]byte(objLog.Body().AsString()), &node)
 	if err != nil {
-		return nil, errors.New("Error while unmarshalling Node")
+		return nil, errors.New("could not unmarshal Node")
 	}
 	// based on https://github.com/kubernetes/kubernetes/blob/dbc2b0a5c7acc349ea71a14e49913661eaf708d2/pkg/printers/internalversion/printers.go#L183https://github.com/kubernetes/kubernetes/blob/1e12d92a5179dbfeb455c79dbf9120c8536e5f9c/pkg/printers/internalversion/printers.go#L14875
 	roles := sets.NewString()
