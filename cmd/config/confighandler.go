@@ -35,6 +35,7 @@ func GetAllOtelConfigFilePaths() ([]string, string, error) {
 		}
 		configFilePaths = append(configFilePaths, overridePath)
 	}
+	fmt.Println("Config file paths:", configFilePaths)
 	return configFilePaths, overridePath, nil
 }
 
