@@ -15,7 +15,10 @@ host_monitoring:
   logs: 
     enabled: true
   metrics:
-    enabled: true
+    host:
+      enabled: true
+    process:
+      enabled: false
     
 # otel_config_overrides:
 #   exporters:

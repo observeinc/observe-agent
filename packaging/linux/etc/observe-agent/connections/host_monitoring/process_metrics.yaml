@@ -1,0 +1,33 @@
+receivers:
+  hostmetrics/host-monitoring-process:
+    collection_interval: 60s
+    scrapers:
+      process:
+        metrics:
+          process.context_switches:
+            enabled: true
+          process.cpu.utilization:
+            enabled: true
+          process.disk.operations:
+            enabled: true      
+          process.memory.utilization:
+            enabled: true      
+          process.open_file_descriptors:
+            enabled: true      
+          process.paging.faults:
+            enabled: true      
+          process.signals_pending:
+            enabled: true      
+          process.threads:
+            enabled: true
+        mute_process_name_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
+
+service:
+  pipelines:
+    metrics/host_monitoring_process:
+      receivers: [hostmetrics/host-monitoring-process]
+      processors: [memory_limiter, resourcedetection, resourcedetection/cloud, batch]
+      exporters: [otlphttp/observe]
