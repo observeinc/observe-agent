@@ -1,10 +1,6 @@
 package observek8sattributesprocessor
 
 import (
-	"encoding/json"
-	"errors"
-
-	"go.opentelemetry.io/collector/pdata/plog"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -20,16 +16,16 @@ const (
 //
 // We compute more facets into a single action to avoid iterating over the
 // same slice multiple times in different actions.
-var PodReadinessAction = K8sEventProcessorAction{
-	ComputeAttributes: getPodReadiness,
-	FilterFn:          filterPodEvents,
+type PodReadinessAction struct{}
+
+func NewPodReadinessAction() PodReadinessAction {
+	return PodReadinessAction{}
 }
 
-func getPodReadiness(objLog plog.LogRecord) (attributes, error) {
-	var pod v1.Pod
-	err := json.Unmarshal([]byte(objLog.Body().AsString()), &pod)
+func (PodReadinessAction) ComputeAttributes(obj any) (attributes, error) {
+	pod, err := getPod(obj)
 	if err != nil {
-		return nil, errors.New("could not unmarshal Pod")
+		return nil, err
 	}
 	readinessGatesReady := 0
 

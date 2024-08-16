@@ -9,34 +9,30 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 )
 
-type K8sEvent struct {
-	Kind       string `json:"kind,omitempty"`
-	ApiVersion string `json:"apiVersion,omitempty"`
-}
+const (
+	EventKindPod  = "Pod"
+	EventKindNode = "Node"
+)
 
 type K8sEventsProcessor struct {
-	cfg     component.Config
-	logger  *zap.Logger
-	actions []K8sEventProcessorAction
-}
-
-type attributes map[string]any
-
-type transform func(plog.LogRecord) (attributes, error)
-
-type K8sEventProcessorAction struct {
-	ComputeAttributes transform
-	FilterFn          func(K8sEvent) bool
+	cfg         component.Config
+	logger      *zap.Logger
+	nodeActions []K8sEventProcessorAction
+	podActions  []K8sEventProcessorAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
 	return &K8sEventsProcessor{
 		cfg:    cfg,
 		logger: logger,
-		actions: []K8sEventProcessorAction{
-			PodStatusAction, NodeStatusAction, NodeRolesAction, PodContainersCountsAction, PodReadinessAction,
+		podActions: []K8sEventProcessorAction{
+			NewPodStatusAction(), NewPodContainersCountsAction(), NewPodReadinessAction(), NewPodConditionsAction(),
+		},
+		nodeActions: []K8sEventProcessorAction{
+			NewNodeStatusAction(), NewNodeRolesAction(),
 		},
 	}
 }
@@ -51,6 +47,51 @@ func (kep *K8sEventsProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
+func (kep *K8sEventsProcessor) getActionsForEvent(event any) []K8sEventProcessorAction {
+	switch event.(type) {
+	case v1.Pod:
+		return kep.podActions
+	case v1.Node:
+		return kep.nodeActions
+	default:
+		return nil
+	}
+}
+
+// Unmarshals a LogRecord into either a Node or Pod object.
+// Returns it as "any", since there's no common interface for the two.
+// "any" is also what we use as input parameter type for the ComputeAttributes() signature
+func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) any {
+	// Get the event type by unmarshalling it selectively
+	var event K8sEvent
+	bodyStr := lr.Body().AsString()
+	err := json.Unmarshal([]byte(bodyStr), &event)
+	if err != nil {
+		kep.logger.Error("failed to unmarshal event", zap.Error(err))
+		return nil
+	}
+	switch event.Kind {
+	case EventKindNode:
+		var node v1.Node
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &node)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Node event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return any(node)
+	case EventKindPod:
+		var pod v1.Pod
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &pod)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Pod event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return any(pod)
+	default:
+		return nil
+	}
+}
+
 func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
 	rls := logs.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -59,19 +100,19 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 			lrs := sls.At(j).LogRecords()
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
-				var event K8sEvent
-				bodyStr := lr.Body().AsString()
-				err := json.Unmarshal([]byte(bodyStr), &event)
-				if err != nil {
-					kep.logger.Error("failed to unmarshal event", zap.Error(err))
-					continue
-				}
 				var transformMap pcommon.Map
 				var facetsMap pcommon.Map
-				for _, action := range kep.actions {
-					if action.FilterFn != nil && !action.FilterFn(event) {
-						continue
-					}
+
+				object := kep.unmarshalEvent(lr)
+				if object == nil {
+					// unmarshalEven would have already logged the error
+					continue
+				}
+
+				// Get the actions that can compute attributes for the event type
+				actions := kep.getActionsForEvent(object)
+
+				for _, action := range actions {
 					transform, exists := lr.Attributes().Get("observe_transform")
 					if exists {
 						transformMap = transform.Map()
@@ -85,11 +126,11 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 						facetsMap = transformMap.PutEmptyMap("facets")
 						// Make sure we have capacity for at least as many actions as we have defined
 						// Actions could generate more than one facet, that's taken care of afterwards.
-						facetsMap.EnsureCapacity(len(kep.actions))
+						facetsMap.EnsureCapacity(len(kep.podActions))
 					}
 
 					// This is where the custom processor actually computes the transformed value(s)
-					values, err := action.ComputeAttributes(lr)
+					values, err := action.ComputeAttributes(object)
 					if err != nil {
 						kep.logger.Error("could not compute attributes", zap.Error(err))
 						continue
