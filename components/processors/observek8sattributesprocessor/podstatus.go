@@ -1,12 +1,7 @@
 package observek8sattributesprocessor
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/plog"
-	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -15,27 +10,27 @@ const (
 	nodeUnreachablePodReason = "NodeLost"
 )
 
-var PodStatusAction = K8sEventProcessorAction{
-	ComputeAttributes: getPodStatus,
-	FilterFn:          filterPodEvents,
+type PodStatusAction struct{}
+
+func NewPodStatusAction() PodStatusAction {
+	return PodStatusAction{}
 }
 
-// Generates the Pod "status" facet. Assumes that objLog is a log from a Pod event.
-func getPodStatus(objLog plog.LogRecord) (attributes, error) {
-	var p v1.Pod
-	err := json.Unmarshal([]byte(objLog.Body().AsString()), &p)
+// Generates the Pod "status" facet.
+func (PodStatusAction) ComputeAttributes(obj any) (attributes, error) {
+	pod, err := getPod(obj)
 	if err != nil {
-		return nil, errors.New("Unknown")
+		return nil, err
 	}
 	// based on https://github.com/kubernetes/kubernetes/blob/0d3b859af81e6a5f869a7766c8d45afd1c600b04/pkg/printers/internalversion/printers.go#L901
-	reason := string(p.Status.Phase)
-	if p.Status.Reason != "" {
-		reason = p.Status.Reason
+	reason := string(pod.Status.Phase)
+	if pod.Status.Reason != "" {
+		reason = pod.Status.Reason
 	}
 
 	initializing := false
-	for i := range p.Status.InitContainerStatuses {
-		container := p.Status.InitContainerStatuses[i]
+	for i := range pod.Status.InitContainerStatuses {
+		container := pod.Status.InitContainerStatuses[i]
 		switch {
 		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
 			continue
@@ -55,15 +50,15 @@ func getPodStatus(objLog plog.LogRecord) (attributes, error) {
 			reason = "Init:" + container.State.Waiting.Reason
 			initializing = true
 		default:
-			reason = fmt.Sprintf("Init:%d/%d", i, len(p.Spec.InitContainers))
+			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
 			initializing = true
 		}
 		break
 	}
 	if !initializing {
 		hasRunning := false
-		for i := len(p.Status.ContainerStatuses) - 1; i >= 0; i-- {
-			container := p.Status.ContainerStatuses[i]
+		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
+			container := pod.Status.ContainerStatuses[i]
 
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
@@ -86,9 +81,9 @@ func getPodStatus(objLog plog.LogRecord) (attributes, error) {
 		}
 	}
 
-	if p.DeletionTimestamp != nil && p.Status.Reason == nodeUnreachablePodReason {
+	if pod.DeletionTimestamp != nil && pod.Status.Reason == nodeUnreachablePodReason {
 		reason = "Unknown"
-	} else if p.DeletionTimestamp != nil {
+	} else if pod.DeletionTimestamp != nil {
 		reason = "Terminating"
 	}
 
