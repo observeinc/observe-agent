@@ -132,12 +132,13 @@ func TestK8sEventsProcessor(t *testing.T) {
 			),
 			expectedResults: []queryWithResult{
 				// Conditions must be a map with 5 elements
-				{"observe_transform.facets.conditions | length(@)", float64(5)},
-				{"observe_transform.facets.conditions.PodReadyToStartContainers", false},
-				{"observe_transform.facets.conditions.Initialized", true},
-				{"observe_transform.facets.conditions.Ready", false},
-				{"observe_transform.facets.conditions.ContainersReady", false},
-				{"observe_transform.facets.conditions.PodScheduled", true},
+				{"observe_transform.facets.conditions | length(@)", float64(6)},
+				{"observe_transform.facets.conditions.PodReadyToStartContainers", "False"},
+				{"observe_transform.facets.conditions.Initialized", "True"},
+				{"observe_transform.facets.conditions.Ready", "False"},
+				{"observe_transform.facets.conditions.ContainersReady", "False"},
+				{"observe_transform.facets.conditions.PodScheduled", "True"},
+				{"observe_transform.facets.conditions.TestCondition", "Unknown"},
 			},
 		},
 	} {
