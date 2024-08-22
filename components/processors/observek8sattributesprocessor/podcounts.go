@@ -1,13 +1,5 @@
 package observek8sattributesprocessor
 
-import (
-	"encoding/json"
-	"errors"
-
-	"go.opentelemetry.io/collector/pdata/plog"
-	v1 "k8s.io/api/core/v1"
-)
-
 const (
 	// This action will be ignored and not written in any of the facets, since
 	// we return map[string]any
@@ -21,16 +13,16 @@ const (
 //
 // We compute more facets into a single action to avoid iterating over the
 // same slice multiple times in different actions.
-var PodContainersCountsAction = K8sEventProcessorAction{
-	ComputeAttributes: getPodCounts,
-	FilterFn:          filterPodEvents,
+type PodContainersCountsAction struct{}
+
+func NewPodContainersCountsAction() PodContainersCountsAction {
+	return PodContainersCountsAction{}
 }
 
-func getPodCounts(objLog plog.LogRecord) (attributes, error) {
-	var p v1.Pod
-	err := json.Unmarshal([]byte(objLog.Body().AsString()), &p)
+func (PodContainersCountsAction) ComputeAttributes(obj any) (attributes, error) {
+	pod, err := getPod(obj)
 	if err != nil {
-		return nil, errors.New("Unknown")
+		return nil, err
 	}
 	// we use int32 since containerStatuses.restartCount is int32
 	var restartsCount int32
@@ -39,7 +31,7 @@ func getPodCounts(objLog plog.LogRecord) (attributes, error) {
 	var readyContainers int64
 	var allContainers int64
 
-	for _, stat := range p.Status.ContainerStatuses {
+	for _, stat := range pod.Status.ContainerStatuses {
 		restartsCount += stat.RestartCount
 		allContainers++
 		if stat.Ready {

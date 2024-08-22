@@ -509,6 +509,12 @@
             "lastTransitionTime":"2024-07-18T18:53:00Z",
             "status":"True",
             "type":"PodScheduled"
+         },
+         {
+            "lastProbeTime":null,
+            "lastTransitionTime":"2024-07-18T18:53:00Z",
+            "status":"Unknown",
+            "type":"TestCondition"
          }
       ],
       "containerStatuses":[

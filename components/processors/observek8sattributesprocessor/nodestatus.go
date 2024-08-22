@@ -1,10 +1,6 @@
 package observek8sattributesprocessor
 
 import (
-	"encoding/json"
-	"errors"
-
-	"go.opentelemetry.io/collector/pdata/plog"
 	apiv1 "k8s.io/api/core/v1"
 )
 
@@ -12,23 +8,23 @@ const (
 	NodeStatusAttributeKey = "status"
 )
 
-var NodeStatusAction = K8sEventProcessorAction{
-	ComputeAttributes: getNodeStatus,
-	FilterFn:          filterNodeEvents,
+type NodeStatusAction struct{}
+
+func NewNodeStatusAction() NodeStatusAction {
+	return NodeStatusAction{}
 }
 
 // Generates the Node "status" facet. Assumes that objLog is a log from a Node event.
-func getNodeStatus(objLog plog.LogRecord) (attributes, error) {
-	var n apiv1.Node
-	err := json.Unmarshal([]byte(objLog.Body().AsString()), &n)
+func (NodeStatusAction) ComputeAttributes(obj any) (attributes, error) {
+	node, err := getNode(obj)
 	if err != nil {
-		return nil, errors.New("could not unmarshal Node")
+		return nil, err
 	}
 	// based on https://github.com/kubernetes/kubernetes/blob/dbc2b0a5c7acc349ea71a14e49913661eaf708d2/pkg/printers/internalversion/printers.go#L1835
 	// Although with a simplified logic that is faster to compute and uses less memory
 	var status string
 	// For now, we only care about "Ready"/"Not Ready", that's why we simplify the logic
-	for _, condition := range n.Status.Conditions {
+	for _, condition := range node.Status.Conditions {
 		if condition.Type != apiv1.NodeReady {
 			continue
 		}
@@ -41,7 +37,7 @@ func getNodeStatus(objLog plog.LogRecord) (attributes, error) {
 	if status == "" {
 		status = "Unknown"
 	}
-	if n.Spec.Unschedulable {
+	if node.Spec.Unschedulable {
 		status += ", SchedulingDisabled"
 	}
 

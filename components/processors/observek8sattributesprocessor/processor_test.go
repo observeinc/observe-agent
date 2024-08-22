@@ -123,6 +123,24 @@ func TestK8sEventsProcessor(t *testing.T) {
 				{"observe_transform.facets.readinessGatesTotal", int64(2)},
 			},
 		},
+		{
+			name: "Pod conditions",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podObjectEvent.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				// Conditions must be a map with 5 elements
+				{"observe_transform.facets.conditions | length(@)", float64(6)},
+				{"observe_transform.facets.conditions.PodReadyToStartContainers", "False"},
+				{"observe_transform.facets.conditions.Initialized", "True"},
+				{"observe_transform.facets.conditions.Ready", "False"},
+				{"observe_transform.facets.conditions.ContainersReady", "False"},
+				{"observe_transform.facets.conditions.PodScheduled", "True"},
+				{"observe_transform.facets.conditions.TestCondition", "Unknown"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
