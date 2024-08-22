@@ -141,6 +141,17 @@ func TestK8sEventsProcessor(t *testing.T) {
 				{"observe_transform.facets.conditions.TestCondition", "Unknown"},
 			},
 		},
+		{
+			name: "Node Pool",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/nodeObjectEventSimple.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.nodePool", "test-node-group"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
