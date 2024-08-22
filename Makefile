@@ -17,7 +17,7 @@ install-ocb:
 build-ocb:
 	$(HOME)/bin/ocb --skip-compilation --config=builder-config.yaml
 	sed -i -e 's/package main/package observeotel/g' ocb-build/components.go
-	sed -i -e 's/\/Users\/.*\/dev\/observe-agent\//..\/..\//g' ocb-build/go.mod
+	sed -i -e 's/\/Users\/.*observe-agent\//..\/..\//g' ocb-build/go.mod
 	cp ./ocb-build/components.go ./cmd/collector/components.go
 	cp ./ocb-build/go.mod ./cmd/collector/go.mod
 	cp ./ocb-build/go.sum ./cmd/collector/go.sum
