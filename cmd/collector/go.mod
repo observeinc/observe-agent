@@ -352,5 +352,3 @@ replace k8s.io/api => k8s.io/api v0.29.3
 replace k8s.io/apimachinery => k8s.io/apimachinery v0.29.3
 
 replace k8s.io/client-go => k8s.io/client-go v0.29.3
-
-replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../../components/processors/observek8sattributesprocessor
