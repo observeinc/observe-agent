@@ -14,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.107.0
@@ -36,6 +37,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.107.0
+	github.com/spf13/cobra v1.8.1
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.107.0
@@ -57,7 +59,6 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.0
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
-	golang.org/x/sys v0.24.0
 )
 
 require (
@@ -241,7 +242,6 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
@@ -317,6 +317,7 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
@@ -344,10 +345,12 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ../../components/processors/observek8sattributesprocessor
+replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => /Users/alex.lew/dev/observe-agent/components/processors/observek8sattributesprocessor
 
 replace k8s.io/api => k8s.io/api v0.29.3
 
 replace k8s.io/apimachinery => k8s.io/apimachinery v0.29.3
 
 replace k8s.io/client-go => k8s.io/client-go v0.29.3
+
+replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../../components/processors/observek8sattributesprocessor
