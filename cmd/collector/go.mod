@@ -345,7 +345,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => /Users/alex.lew/dev/observe-agent/components/processors/observek8sattributesprocessor
+replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ../../components/processors/observek8sattributesprocessor
 
 replace k8s.io/api => k8s.io/api v0.29.3
 
