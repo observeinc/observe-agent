@@ -22,7 +22,8 @@
             "minikube.k8s.io/updated_at": "2024_08_13T16_47_02_0700",
             "minikube.k8s.io/version": "v1.33.1",
             "node-role.kubernetes.io/control-plane": "",
-            "node.kubernetes.io/exclude-from-external-load-balancers": ""
+            "node.kubernetes.io/exclude-from-external-load-balancers": "",
+            "eks.amazonaws.com/nodegroup": "test-node-group"
         },
         "name": "minikube",
         "resourceVersion": "78297",
