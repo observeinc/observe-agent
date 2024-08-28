@@ -1,8 +1,6 @@
 package observek8sattributesprocessor
 
 import (
-	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -12,6 +10,12 @@ type K8sEvent struct {
 }
 
 type attributes map[string]any
+
+func (atts attributes) addAttributes(other attributes) {
+	for k, v := range other {
+		atts[k] = v
+	}
+}
 
 // Action that processes a K8S object and computes custom attributes for it
 type K8sEventProcessorAction interface {
@@ -23,22 +27,47 @@ type K8sEventProcessorAction interface {
 	ComputeAttributes(any) (attributes, error)
 }
 
-// Type asserts obj to v1.Node, returning an error if the underlying concrete
-// value is not of type Node
-func getNode(obj any) (v1.Node, error) {
-	node, ok := obj.(v1.Node)
-	if !ok {
-		return node, fmt.Errorf("cannot convert %v to Node", obj)
-	}
-	return node, nil
+type podAction interface {
+	ComputeAttributes(v1.Pod) (attributes, error)
+}
+type nodeAction interface {
+	ComputeAttributes(v1.Node) (attributes, error)
 }
 
-// Type asserts obj to v1.Pod, returning an error if the underlying concrete
-// value is not of type Pod
-func getPod(obj any) (v1.Pod, error) {
-	pod, ok := obj.(v1.Pod)
-	if !ok {
-		return pod, fmt.Errorf("cannot convert %v to Pod", obj)
+func (proc *K8sEventsProcessor) RunActions(obj any) (attributes, error) {
+	switch typed := obj.(type) {
+	case v1.Pod:
+		return proc.runPodActions(typed)
+	case v1.Node:
+		return proc.runNodeActions(typed)
 	}
-	return pod, nil
+	return attributes{}, nil
+}
+
+func (m *K8sEventsProcessor) runPodActions(pod v1.Pod) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.podActions {
+		atts, err := action.ComputeAttributes(pod)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runNodeActions(node v1.Node) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.nodeActions {
+		atts, err := action.ComputeAttributes(node)
+		if err != nil {
+			return res, err
+		}
+		// we can do this without worrying about overriding facets since we
+		// design facets whithin an entity to have different keys
+		for k, v := range atts {
+			res[k] = v
+		}
+	}
+	return res, nil
 }

@@ -20,18 +20,18 @@ const (
 type K8sEventsProcessor struct {
 	cfg         component.Config
 	logger      *zap.Logger
-	nodeActions []K8sEventProcessorAction
-	podActions  []K8sEventProcessorAction
+	nodeActions []nodeAction
+	podActions  []podAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
 	return &K8sEventsProcessor{
 		cfg:    cfg,
 		logger: logger,
-		podActions: []K8sEventProcessorAction{
+		podActions: []podAction{
 			NewPodStatusAction(), NewPodContainersCountsAction(), NewPodReadinessAction(), NewPodConditionsAction(),
 		},
-		nodeActions: []K8sEventProcessorAction{
+		nodeActions: []nodeAction{
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
 		},
 	}
@@ -45,17 +45,6 @@ func (kep *K8sEventsProcessor) Start(_ context.Context, _ component.Host) error 
 func (kep *K8sEventsProcessor) Shutdown(_ context.Context) error {
 	kep.logger.Info("observek8sattributes processor shutting down.")
 	return nil
-}
-
-func (kep *K8sEventsProcessor) getActionsForEvent(event any) []K8sEventProcessorAction {
-	switch event.(type) {
-	case v1.Pod:
-		return kep.podActions
-	case v1.Node:
-		return kep.nodeActions
-	default:
-		return nil
-	}
 }
 
 // Unmarshals a LogRecord into either a Node or Pod object.
@@ -109,39 +98,34 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					continue
 				}
 
-				// Get the actions that can compute attributes for the event type
-				actions := kep.getActionsForEvent(object)
+				transform, exists := lr.Attributes().Get("observe_transform")
+				if exists {
+					transformMap = transform.Map()
+				} else {
+					transformMap = lr.Attributes().PutEmptyMap("observe_transform")
+				}
+				facets, exists := transformMap.Get("facets")
+				if exists {
+					facetsMap = facets.Map()
+				} else {
+					facetsMap = transformMap.PutEmptyMap("facets")
+					// Make sure we have capacity for at least as many actions as we have defined
+					// Actions could generate more than one facet, that's taken care of afterwards.
+					facetsMap.EnsureCapacity(len(kep.podActions))
+				}
 
-				for _, action := range actions {
-					transform, exists := lr.Attributes().Get("observe_transform")
-					if exists {
-						transformMap = transform.Map()
-					} else {
-						transformMap = lr.Attributes().PutEmptyMap("observe_transform")
-					}
-					facets, exists := transformMap.Get("facets")
-					if exists {
-						facetsMap = facets.Map()
-					} else {
-						facetsMap = transformMap.PutEmptyMap("facets")
-						// Make sure we have capacity for at least as many actions as we have defined
-						// Actions could generate more than one facet, that's taken care of afterwards.
-						facetsMap.EnsureCapacity(len(kep.podActions))
-					}
+				// This is where the custom processor actually computes the transformed value(s)
+				values, err := kep.RunActions(object)
+				if err != nil {
+					kep.logger.Error("could not compute attributes", zap.Error(err))
+					continue
+				}
 
-					// This is where the custom processor actually computes the transformed value(s)
-					values, err := action.ComputeAttributes(object)
-					if err != nil {
-						kep.logger.Error("could not compute attributes", zap.Error(err))
+				facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
+				for key, val := range values {
+					if err := mapPut(facetsMap, key, val); err != nil {
+						kep.logger.Error("could not write attributes", zap.Error(err))
 						continue
-					}
-
-					facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
-					for key, val := range values {
-						if err := mapPut(facetsMap, key, val); err != nil {
-							kep.logger.Error("could not write attributes", zap.Error(err))
-							continue
-						}
 					}
 				}
 			}
