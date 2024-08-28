@@ -1,7 +1,9 @@
 package observek8sattributesprocessor
 
 import (
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type K8sEvent struct {
@@ -33,13 +35,18 @@ type podAction interface {
 type nodeAction interface {
 	ComputeAttributes(v1.Node) (attributes, error)
 }
+type jobAction interface {
+	ComputeAttributes(batchv1.Job) (attributes, error)
+}
 
-func (proc *K8sEventsProcessor) RunActions(obj any) (attributes, error) {
+func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
 	switch typed := obj.(type) {
-	case v1.Pod:
-		return proc.runPodActions(typed)
-	case v1.Node:
-		return proc.runNodeActions(typed)
+	case *v1.Pod:
+		return proc.runPodActions(*typed)
+	case *v1.Node:
+		return proc.runNodeActions(*typed)
+	case *batchv1.Job:
+		return proc.runJobActions(*typed)
 	}
 	return attributes{}, nil
 }
@@ -68,6 +75,18 @@ func (m *K8sEventsProcessor) runNodeActions(node v1.Node) (attributes, error) {
 		for k, v := range atts {
 			res[k] = v
 		}
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runJobActions(job batchv1.Job) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.jobActions {
+		atts, err := action.ComputeAttributes(job)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
 	}
 	return res, nil
 }

@@ -171,7 +171,6 @@ func (PodReadinessAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 // ---------------------------------- Pod "conditions" ----------------------------------
 
 // Gather all Pod conditions into a single facet named "conditions"
-// (with actual type: map[string]bool)
 type PodConditionsAction struct{}
 
 func NewPodConditionsAction() PodConditionsAction {

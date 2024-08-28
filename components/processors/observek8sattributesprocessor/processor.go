@@ -9,12 +9,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	EventKindPod  = "Pod"
 	EventKindNode = "Node"
+	EventKindJob  = "Job"
 )
 
 type K8sEventsProcessor struct {
@@ -22,6 +25,7 @@ type K8sEventsProcessor struct {
 	logger      *zap.Logger
 	nodeActions []nodeAction
 	podActions  []podAction
+	jobActions  []jobAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
@@ -33,6 +37,9 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		},
 		nodeActions: []nodeAction{
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
+		},
+		jobActions: []jobAction{
+			NewJobStatusAction(),
 		},
 	}
 }
@@ -48,9 +55,7 @@ func (kep *K8sEventsProcessor) Shutdown(_ context.Context) error {
 }
 
 // Unmarshals a LogRecord into either a Node or Pod object.
-// Returns it as "any", since there's no common interface for the two.
-// "any" is also what we use as input parameter type for the ComputeAttributes() signature
-func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) any {
+func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 	// Get the event type by unmarshalling it selectively
 	var event K8sEvent
 	bodyStr := lr.Body().AsString()
@@ -61,21 +66,29 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) any {
 	}
 	switch event.Kind {
 	case EventKindNode:
-		var node v1.Node
+		var node corev1.Node
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &node)
 		if err != nil {
 			kep.logger.Error("failed to unmarshal Node event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
 			return nil
 		}
-		return any(node)
+		return &node
 	case EventKindPod:
-		var pod v1.Pod
+		var pod corev1.Pod
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &pod)
 		if err != nil {
 			kep.logger.Error("failed to unmarshal Pod event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
 			return nil
 		}
-		return any(pod)
+		return &pod
+	case EventKindJob:
+		var job batchv1.Job
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &job)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Job event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &job
 	default:
 		return nil
 	}
