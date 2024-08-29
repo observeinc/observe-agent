@@ -1,6 +1,7 @@
 package observek8sattributesprocessor
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,9 @@ type nodeAction interface {
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
 }
+type daemonSetAction interface {
+	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
+}
 
 func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
 	switch typed := obj.(type) {
@@ -47,6 +51,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runNodeActions(*typed)
 	case *batchv1.Job:
 		return proc.runJobActions(*typed)
+	case *appsv1.DaemonSet:
+		return proc.runDaemonSetActions(*typed)
 	}
 	return attributes{}, nil
 }
@@ -83,6 +89,18 @@ func (m *K8sEventsProcessor) runJobActions(job batchv1.Job) (attributes, error) 
 	res := attributes{}
 	for _, action := range m.jobActions {
 		atts, err := action.ComputeAttributes(job)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runDaemonSetActions(daemonset appsv1.DaemonSet) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.daemonSetActions {
+		atts, err := action.ComputeAttributes(daemonset)
 		if err != nil {
 			return res, err
 		}

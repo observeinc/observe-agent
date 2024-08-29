@@ -9,23 +9,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	EventKindPod  = "Pod"
-	EventKindNode = "Node"
-	EventKindJob  = "Job"
+	EventKindPod       = "Pod"
+	EventKindNode      = "Node"
+	EventKindJob       = "Job"
+	EventKindDaemonSet = "DaemonSet"
 )
 
 type K8sEventsProcessor struct {
-	cfg         component.Config
-	logger      *zap.Logger
-	nodeActions []nodeAction
-	podActions  []podAction
-	jobActions  []jobAction
+	cfg              component.Config
+	logger           *zap.Logger
+	nodeActions      []nodeAction
+	podActions       []podAction
+	jobActions       []jobAction
+	daemonSetActions []daemonSetAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
@@ -40,6 +43,9 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		},
 		jobActions: []jobAction{
 			NewJobStatusAction(), NewJobDurationAction(),
+		},
+		daemonSetActions: []daemonSetAction{
+			NewDaemonsetSelectorAction(),
 		},
 	}
 }
@@ -89,6 +95,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &job
+	case EventKindDaemonSet:
+		var daemonSet appsv1.DaemonSet
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &daemonSet)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal daemonSet event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &daemonSet
 	default:
 		return nil
 	}
