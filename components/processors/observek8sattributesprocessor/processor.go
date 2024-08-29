@@ -39,7 +39,7 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
 		},
 		jobActions: []jobAction{
-			NewJobStatusAction(),
+			NewJobStatusAction(), NewJobDurationAction(),
 		},
 	}
 }
