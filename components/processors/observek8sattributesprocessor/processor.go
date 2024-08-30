@@ -19,6 +19,7 @@ const (
 	EventKindPod       = "Pod"
 	EventKindNode      = "Node"
 	EventKindJob       = "Job"
+	EventKindCronJob   = "CronJob"
 	EventKindDaemonSet = "DaemonSet"
 )
 
@@ -28,6 +29,7 @@ type K8sEventsProcessor struct {
 	nodeActions      []nodeAction
 	podActions       []podAction
 	jobActions       []jobAction
+	cronJobActions   []cronJobAction
 	daemonSetActions []daemonSetAction
 }
 
@@ -46,6 +48,9 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		},
 		daemonSetActions: []daemonSetAction{
 			NewDaemonsetSelectorAction(),
+		},
+		cronJobActions: []cronJobAction{
+			NewCronJobActiveAction(),
 		},
 	}
 }
@@ -95,11 +100,19 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &job
+	case EventKindCronJob:
+		var cronJob batchv1.CronJob
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &cronJob)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal CronJob event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &cronJob
 	case EventKindDaemonSet:
 		var daemonSet appsv1.DaemonSet
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &daemonSet)
 		if err != nil {
-			kep.logger.Error("failed to unmarshal daemonSet event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			kep.logger.Error("failed to unmarshal DaemonSet event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
 			return nil
 		}
 		return &daemonSet

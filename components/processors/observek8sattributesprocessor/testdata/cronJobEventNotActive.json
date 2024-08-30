@@ -1,0 +1,118 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "CronJob",
+    "metadata": {
+        "creationTimestamp": "2024-08-30T11:51:53Z",
+        "generation": 1,
+        "managedFields": [
+            {
+                "apiVersion": "batch/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:spec": {
+                        "f:concurrencyPolicy": {},
+                        "f:failedJobsHistoryLimit": {},
+                        "f:jobTemplate": {
+                            "f:metadata": {
+                                "f:name": {}
+                            },
+                            "f:spec": {
+                                "f:template": {
+                                    "f:spec": {
+                                        "f:containers": {
+                                            "k:{\"name\":\"my-cronjob\"}": {
+                                                ".": {},
+                                                "f:command": {},
+                                                "f:image": {},
+                                                "f:imagePullPolicy": {},
+                                                "f:name": {},
+                                                "f:resources": {},
+                                                "f:terminationMessagePath": {},
+                                                "f:terminationMessagePolicy": {}
+                                            }
+                                        },
+                                        "f:dnsPolicy": {},
+                                        "f:restartPolicy": {},
+                                        "f:schedulerName": {},
+                                        "f:securityContext": {},
+                                        "f:terminationGracePeriodSeconds": {}
+                                    }
+                                }
+                            }
+                        },
+                        "f:schedule": {},
+                        "f:successfulJobsHistoryLimit": {},
+                        "f:suspend": {}
+                    }
+                },
+                "manager": "kubectl-create",
+                "operation": "Update",
+                "time": "2024-08-30T11:51:53Z"
+            },
+            {
+                "apiVersion": "batch/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:lastScheduleTime": {},
+                        "f:lastSuccessfulTime": {}
+                    }
+                },
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-08-30T12:03:03Z"
+            }
+        ],
+        "name": "my-cronjob",
+        "namespace": "k8sexplorer",
+        "resourceVersion": "429546",
+        "uid": "e597eaec-290e-40db-93a4-cde6cb19f2f3"
+    },
+    "spec": {
+        "concurrencyPolicy": "Allow",
+        "failedJobsHistoryLimit": 1,
+        "jobTemplate": {
+            "metadata": {
+                "creationTimestamp": null,
+                "name": "my-cronjob"
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "creationTimestamp": null
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "/bin/sh",
+                                    "-c",
+                                    "echo 'Hello, World!'"
+                                ],
+                                "image": "busybox",
+                                "imagePullPolicy": "Always",
+                                "name": "my-cronjob",
+                                "resources": {},
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "OnFailure",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 30
+                    }
+                }
+            }
+        },
+        "schedule": "*/1 * * * *",
+        "successfulJobsHistoryLimit": 3,
+        "suspend": false
+    },
+    "status": {
+        "lastScheduleTime": "2024-08-30T12:03:00Z",
+        "lastSuccessfulTime": "2024-08-30T12:03:03Z"
+    }
+}
