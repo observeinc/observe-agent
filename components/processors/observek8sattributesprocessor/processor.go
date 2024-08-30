@@ -9,30 +9,43 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	EventKindPod  = "Pod"
-	EventKindNode = "Node"
+	EventKindPod       = "Pod"
+	EventKindNode      = "Node"
+	EventKindJob       = "Job"
+	EventKindDaemonSet = "DaemonSet"
 )
 
 type K8sEventsProcessor struct {
-	cfg         component.Config
-	logger      *zap.Logger
-	nodeActions []K8sEventProcessorAction
-	podActions  []K8sEventProcessorAction
+	cfg              component.Config
+	logger           *zap.Logger
+	nodeActions      []nodeAction
+	podActions       []podAction
+	jobActions       []jobAction
+	daemonSetActions []daemonSetAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
 	return &K8sEventsProcessor{
 		cfg:    cfg,
 		logger: logger,
-		podActions: []K8sEventProcessorAction{
+		podActions: []podAction{
 			NewPodStatusAction(), NewPodContainersCountsAction(), NewPodReadinessAction(), NewPodConditionsAction(),
 		},
-		nodeActions: []K8sEventProcessorAction{
+		nodeActions: []nodeAction{
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
+		},
+		jobActions: []jobAction{
+			NewJobStatusAction(), NewJobDurationAction(),
+		},
+		daemonSetActions: []daemonSetAction{
+			NewDaemonsetSelectorAction(),
 		},
 	}
 }
@@ -47,21 +60,8 @@ func (kep *K8sEventsProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (kep *K8sEventsProcessor) getActionsForEvent(event any) []K8sEventProcessorAction {
-	switch event.(type) {
-	case v1.Pod:
-		return kep.podActions
-	case v1.Node:
-		return kep.nodeActions
-	default:
-		return nil
-	}
-}
-
 // Unmarshals a LogRecord into either a Node or Pod object.
-// Returns it as "any", since there's no common interface for the two.
-// "any" is also what we use as input parameter type for the ComputeAttributes() signature
-func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) any {
+func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 	// Get the event type by unmarshalling it selectively
 	var event K8sEvent
 	bodyStr := lr.Body().AsString()
@@ -72,21 +72,37 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) any {
 	}
 	switch event.Kind {
 	case EventKindNode:
-		var node v1.Node
+		var node corev1.Node
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &node)
 		if err != nil {
 			kep.logger.Error("failed to unmarshal Node event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
 			return nil
 		}
-		return any(node)
+		return &node
 	case EventKindPod:
-		var pod v1.Pod
+		var pod corev1.Pod
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &pod)
 		if err != nil {
 			kep.logger.Error("failed to unmarshal Pod event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
 			return nil
 		}
-		return any(pod)
+		return &pod
+	case EventKindJob:
+		var job batchv1.Job
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &job)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Job event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &job
+	case EventKindDaemonSet:
+		var daemonSet appsv1.DaemonSet
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &daemonSet)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal daemonSet event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &daemonSet
 	default:
 		return nil
 	}
@@ -109,39 +125,34 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					continue
 				}
 
-				// Get the actions that can compute attributes for the event type
-				actions := kep.getActionsForEvent(object)
+				transform, exists := lr.Attributes().Get("observe_transform")
+				if exists {
+					transformMap = transform.Map()
+				} else {
+					transformMap = lr.Attributes().PutEmptyMap("observe_transform")
+				}
+				facets, exists := transformMap.Get("facets")
+				if exists {
+					facetsMap = facets.Map()
+				} else {
+					facetsMap = transformMap.PutEmptyMap("facets")
+					// Make sure we have capacity for at least as many actions as we have defined
+					// Actions could generate more than one facet, that's taken care of afterwards.
+					facetsMap.EnsureCapacity(len(kep.podActions))
+				}
 
-				for _, action := range actions {
-					transform, exists := lr.Attributes().Get("observe_transform")
-					if exists {
-						transformMap = transform.Map()
-					} else {
-						transformMap = lr.Attributes().PutEmptyMap("observe_transform")
-					}
-					facets, exists := transformMap.Get("facets")
-					if exists {
-						facetsMap = facets.Map()
-					} else {
-						facetsMap = transformMap.PutEmptyMap("facets")
-						// Make sure we have capacity for at least as many actions as we have defined
-						// Actions could generate more than one facet, that's taken care of afterwards.
-						facetsMap.EnsureCapacity(len(kep.podActions))
-					}
+				// This is where the custom processor actually computes the transformed value(s)
+				values, err := kep.RunActions(object)
+				if err != nil {
+					kep.logger.Error("could not compute attributes", zap.Error(err))
+					continue
+				}
 
-					// This is where the custom processor actually computes the transformed value(s)
-					values, err := action.ComputeAttributes(object)
-					if err != nil {
-						kep.logger.Error("could not compute attributes", zap.Error(err))
+				facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
+				for key, val := range values {
+					if err := mapPut(facetsMap, key, val); err != nil {
+						kep.logger.Error("could not write attributes", zap.Error(err))
 						continue
-					}
-
-					facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
-					for key, val := range values {
-						if err := mapPut(facetsMap, key, val); err != nil {
-							kep.logger.Error("could not write attributes", zap.Error(err))
-							continue
-						}
 					}
 				}
 			}

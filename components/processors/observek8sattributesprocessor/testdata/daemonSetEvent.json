@@ -1,0 +1,658 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "DaemonSet",
+    "metadata": {
+        "annotations": {
+            "deprecated.daemonset.template.generation": "1",
+            "meta.helm.sh/release-name": "observe-agent",
+            "meta.helm.sh/release-namespace": "k8sexplorer"
+        },
+        "creationTimestamp": "2024-08-23T15:51:29Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/instance": "observe-agent",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "daemonset-logs-metrics",
+            "app.kubernetes.io/version": "0.106.1",
+            "helm.sh/chart": "daemonset-logs-metrics-0.101.1"
+        },
+        "managedFields": [
+            {
+                "apiVersion": "apps/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:deprecated.daemonset.template.generation": {},
+                            "f:meta.helm.sh/release-name": {},
+                            "f:meta.helm.sh/release-namespace": {}
+                        },
+                        "f:labels": {
+                            ".": {},
+                            "f:app.kubernetes.io/instance": {},
+                            "f:app.kubernetes.io/managed-by": {},
+                            "f:app.kubernetes.io/name": {},
+                            "f:app.kubernetes.io/version": {},
+                            "f:helm.sh/chart": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:revisionHistoryLimit": {},
+                        "f:selector": {},
+                        "f:template": {
+                            "f:metadata": {
+                                "f:annotations": {
+                                    ".": {},
+                                    "f:checksum/config": {},
+                                    "f:observe_monitor_path": {},
+                                    "f:observe_monitor_port": {},
+                                    "f:observe_monitor_purpose": {},
+                                    "f:observe_monitor_scrape": {}
+                                },
+                                "f:labels": {
+                                    ".": {},
+                                    "f:app.kubernetes.io/instance": {},
+                                    "f:app.kubernetes.io/name": {},
+                                    "f:component": {}
+                                }
+                            },
+                            "f:spec": {
+                                "f:containers": {
+                                    "k:{\"name\":\"daemonset-logs-metrics\"}": {
+                                        ".": {},
+                                        "f:args": {},
+                                        "f:command": {},
+                                        "f:env": {
+                                            ".": {},
+                                            "k:{\"name\":\"K8S_NODE_NAME\"}": {
+                                                ".": {},
+                                                "f:name": {},
+                                                "f:valueFrom": {
+                                                    ".": {},
+                                                    "f:fieldRef": {}
+                                                }
+                                            },
+                                            "k:{\"name\":\"MY_POD_IP\"}": {
+                                                ".": {},
+                                                "f:name": {},
+                                                "f:valueFrom": {
+                                                    ".": {},
+                                                    "f:fieldRef": {}
+                                                }
+                                            },
+                                            "k:{\"name\":\"OBSERVE_CLUSTER_NAME\"}": {
+                                                ".": {},
+                                                "f:name": {},
+                                                "f:valueFrom": {
+                                                    ".": {},
+                                                    "f:configMapKeyRef": {}
+                                                }
+                                            },
+                                            "k:{\"name\":\"OBSERVE_CLUSTER_UID\"}": {
+                                                ".": {},
+                                                "f:name": {},
+                                                "f:valueFrom": {
+                                                    ".": {},
+                                                    "f:configMapKeyRef": {}
+                                                }
+                                            }
+                                        },
+                                        "f:image": {},
+                                        "f:imagePullPolicy": {},
+                                        "f:livenessProbe": {
+                                            ".": {},
+                                            "f:failureThreshold": {},
+                                            "f:httpGet": {
+                                                ".": {},
+                                                "f:path": {},
+                                                "f:port": {},
+                                                "f:scheme": {}
+                                            },
+                                            "f:initialDelaySeconds": {},
+                                            "f:periodSeconds": {},
+                                            "f:successThreshold": {},
+                                            "f:timeoutSeconds": {}
+                                        },
+                                        "f:name": {},
+                                        "f:ports": {
+                                            ".": {},
+                                            "k:{\"containerPort\":14250,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":14268,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":4317,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":4318,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":6831,\"protocol\":\"UDP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":8888,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            },
+                                            "k:{\"containerPort\":9411,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:hostPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            }
+                                        },
+                                        "f:readinessProbe": {
+                                            ".": {},
+                                            "f:failureThreshold": {},
+                                            "f:httpGet": {
+                                                ".": {},
+                                                "f:path": {},
+                                                "f:port": {},
+                                                "f:scheme": {}
+                                            },
+                                            "f:initialDelaySeconds": {},
+                                            "f:periodSeconds": {},
+                                            "f:successThreshold": {},
+                                            "f:timeoutSeconds": {}
+                                        },
+                                        "f:resources": {
+                                            ".": {},
+                                            "f:requests": {
+                                                ".": {},
+                                                "f:cpu": {},
+                                                "f:memory": {}
+                                            }
+                                        },
+                                        "f:securityContext": {
+                                            ".": {},
+                                            "f:runAsGroup": {},
+                                            "f:runAsUser": {}
+                                        },
+                                        "f:terminationMessagePath": {},
+                                        "f:terminationMessagePolicy": {},
+                                        "f:volumeMounts": {
+                                            ".": {},
+                                            "k:{\"mountPath\":\"/conf\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {}
+                                            },
+                                            "k:{\"mountPath\":\"/hostfs\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:mountPropagation": {},
+                                                "f:name": {},
+                                                "f:readOnly": {}
+                                            },
+                                            "k:{\"mountPath\":\"/observe-agent-conf\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {}
+                                            },
+                                            "k:{\"mountPath\":\"/var/lib/docker/containers\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {},
+                                                "f:readOnly": {}
+                                            },
+                                            "k:{\"mountPath\":\"/var/lib/otelcol\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {}
+                                            },
+                                            "k:{\"mountPath\":\"/var/log/pods\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {},
+                                                "f:readOnly": {}
+                                            }
+                                        }
+                                    }
+                                },
+                                "f:dnsPolicy": {},
+                                "f:initContainers": {
+                                    ".": {},
+                                    "k:{\"name\":\"kube-cluster-info\"}": {
+                                        ".": {},
+                                        "f:env": {
+                                            ".": {},
+                                            "k:{\"name\":\"NAMESPACE\"}": {
+                                                ".": {},
+                                                "f:name": {},
+                                                "f:valueFrom": {
+                                                    ".": {},
+                                                    "f:fieldRef": {}
+                                                }
+                                            }
+                                        },
+                                        "f:image": {},
+                                        "f:imagePullPolicy": {},
+                                        "f:name": {},
+                                        "f:resources": {},
+                                        "f:terminationMessagePath": {},
+                                        "f:terminationMessagePolicy": {}
+                                    }
+                                },
+                                "f:restartPolicy": {},
+                                "f:schedulerName": {},
+                                "f:securityContext": {},
+                                "f:serviceAccount": {},
+                                "f:serviceAccountName": {},
+                                "f:terminationGracePeriodSeconds": {},
+                                "f:volumes": {
+                                    ".": {},
+                                    "k:{\"name\":\"daemonset-logs-metrics-configmap\"}": {
+                                        ".": {},
+                                        "f:configMap": {
+                                            ".": {},
+                                            "f:defaultMode": {},
+                                            "f:items": {},
+                                            "f:name": {}
+                                        },
+                                        "f:name": {}
+                                    },
+                                    "k:{\"name\":\"hostfs\"}": {
+                                        ".": {},
+                                        "f:hostPath": {
+                                            ".": {},
+                                            "f:path": {},
+                                            "f:type": {}
+                                        },
+                                        "f:name": {}
+                                    },
+                                    "k:{\"name\":\"observe-agent-deployment-config\"}": {
+                                        ".": {},
+                                        "f:configMap": {
+                                            ".": {},
+                                            "f:defaultMode": {},
+                                            "f:items": {},
+                                            "f:name": {}
+                                        },
+                                        "f:name": {}
+                                    },
+                                    "k:{\"name\":\"varlibdockercontainers\"}": {
+                                        ".": {},
+                                        "f:hostPath": {
+                                            ".": {},
+                                            "f:path": {},
+                                            "f:type": {}
+                                        },
+                                        "f:name": {}
+                                    },
+                                    "k:{\"name\":\"varlibotelcol\"}": {
+                                        ".": {},
+                                        "f:hostPath": {
+                                            ".": {},
+                                            "f:path": {},
+                                            "f:type": {}
+                                        },
+                                        "f:name": {}
+                                    },
+                                    "k:{\"name\":\"varlogpods\"}": {
+                                        ".": {},
+                                        "f:hostPath": {
+                                            ".": {},
+                                            "f:path": {},
+                                            "f:type": {}
+                                        },
+                                        "f:name": {}
+                                    }
+                                }
+                            }
+                        },
+                        "f:updateStrategy": {
+                            "f:rollingUpdate": {
+                                ".": {},
+                                "f:maxSurge": {},
+                                "f:maxUnavailable": {}
+                            },
+                            "f:type": {}
+                        }
+                    }
+                },
+                "manager": "helm",
+                "operation": "Update",
+                "time": "2024-08-23T15:51:29Z"
+            },
+            {
+                "apiVersion": "apps/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:currentNumberScheduled": {},
+                        "f:desiredNumberScheduled": {},
+                        "f:numberAvailable": {},
+                        "f:numberReady": {},
+                        "f:observedGeneration": {},
+                        "f:updatedNumberScheduled": {}
+                    }
+                },
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-08-29T09:58:38Z"
+            }
+        ],
+        "name": "observe-agent-daemonset-logs-metrics-agent",
+        "namespace": "k8sexplorer",
+        "resourceVersion": "407943",
+        "uid": "29f00d89-6af9-4f11-af3e-7473257ffb7e"
+    },
+    "spec": {
+        "revisionHistoryLimit": 10,
+        "selector": {
+            "matchLabels": {
+                "app.kubernetes.io/instance": "observe-agent",
+                "app.kubernetes.io/name": "daemonset-logs-metrics",
+                "component": "agent-collector"
+            }
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "checksum/config": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+                    "observe_monitor_path": "/metrics",
+                    "observe_monitor_port": "8888",
+                    "observe_monitor_purpose": "observecollection",
+                    "observe_monitor_scrape": "true"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app.kubernetes.io/instance": "observe-agent",
+                    "app.kubernetes.io/name": "daemonset-logs-metrics",
+                    "component": "agent-collector"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "args": [
+                            "--config=/conf/relay.yaml",
+                            "start",
+                            "--config=/observe-agent-conf/observe-agent.yaml",
+                            "--otel-config=/conf/relay.yaml"
+                        ],
+                        "command": [
+                            "/observe-agent"
+                        ],
+                        "env": [
+                            {
+                                "name": "MY_POD_IP",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "status.podIP"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "OBSERVE_CLUSTER_NAME",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "name",
+                                        "name": "cluster-name"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "OBSERVE_CLUSTER_UID",
+                                "valueFrom": {
+                                    "configMapKeyRef": {
+                                        "key": "id",
+                                        "name": "cluster-info"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "K8S_NODE_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "spec.nodeName"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "observeinc/observe-agent:1.0.0",
+                        "imagePullPolicy": "IfNotPresent",
+                        "livenessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/status",
+                                "port": 13133,
+                                "scheme": "HTTP"
+                            },
+                            "initialDelaySeconds": 30,
+                            "periodSeconds": 5,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "name": "daemonset-logs-metrics",
+                        "ports": [
+                            {
+                                "containerPort": 6831,
+                                "hostPort": 6831,
+                                "name": "jaeger-compact",
+                                "protocol": "UDP"
+                            },
+                            {
+                                "containerPort": 14250,
+                                "hostPort": 14250,
+                                "name": "jaeger-grpc",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 14268,
+                                "hostPort": 14268,
+                                "name": "jaeger-thrift",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 8888,
+                                "name": "metrics",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 4317,
+                                "hostPort": 4317,
+                                "name": "otlp",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 4318,
+                                "hostPort": 4318,
+                                "name": "otlp-http",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 9411,
+                                "hostPort": 9411,
+                                "name": "zipkin",
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/status",
+                                "port": 13133,
+                                "scheme": "HTTP"
+                            },
+                            "initialDelaySeconds": 30,
+                            "periodSeconds": 5,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "resources": {
+                            "requests": {
+                                "cpu": "250m",
+                                "memory": "256Mi"
+                            }
+                        },
+                        "securityContext": {
+                            "runAsGroup": 0,
+                            "runAsUser": 0
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/conf",
+                                "name": "daemonset-logs-metrics-configmap"
+                            },
+                            {
+                                "mountPath": "/observe-agent-conf",
+                                "name": "observe-agent-deployment-config"
+                            },
+                            {
+                                "mountPath": "/var/log/pods",
+                                "name": "varlogpods",
+                                "readOnly": true
+                            },
+                            {
+                                "mountPath": "/var/lib/docker/containers",
+                                "name": "varlibdockercontainers",
+                                "readOnly": true
+                            },
+                            {
+                                "mountPath": "/var/lib/otelcol",
+                                "name": "varlibotelcol"
+                            },
+                            {
+                                "mountPath": "/hostfs",
+                                "mountPropagation": "HostToContainer",
+                                "name": "hostfs",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "initContainers": [
+                    {
+                        "env": [
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "observeinc/kube-cluster-info:v0.11.1",
+                        "imagePullPolicy": "Always",
+                        "name": "kube-cluster-info",
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "serviceAccount": "observe-agent-service-account",
+                "serviceAccountName": "observe-agent-service-account",
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "key": "relay",
+                                    "path": "relay.yaml"
+                                }
+                            ],
+                            "name": "daemonset-logs-metrics"
+                        },
+                        "name": "daemonset-logs-metrics-configmap"
+                    },
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "key": "relay",
+                                    "path": "observe-agent.yaml"
+                                }
+                            ],
+                            "name": "observe-agent"
+                        },
+                        "name": "observe-agent-deployment-config"
+                    },
+                    {
+                        "hostPath": {
+                            "path": "/var/log/pods",
+                            "type": ""
+                        },
+                        "name": "varlogpods"
+                    },
+                    {
+                        "hostPath": {
+                            "path": "/var/lib/docker/containers",
+                            "type": ""
+                        },
+                        "name": "varlibdockercontainers"
+                    },
+                    {
+                        "hostPath": {
+                            "path": "/var/lib/otelcol",
+                            "type": "DirectoryOrCreate"
+                        },
+                        "name": "varlibotelcol"
+                    },
+                    {
+                        "hostPath": {
+                            "path": "/",
+                            "type": ""
+                        },
+                        "name": "hostfs"
+                    }
+                ]
+            }
+        },
+        "updateStrategy": {
+            "rollingUpdate": {
+                "maxSurge": 0,
+                "maxUnavailable": 1
+            },
+            "type": "RollingUpdate"
+        }
+    },
+    "status": {
+        "currentNumberScheduled": 1,
+        "desiredNumberScheduled": 1,
+        "numberAvailable": 1,
+        "numberMisscheduled": 0,
+        "numberReady": 1,
+        "observedGeneration": 1,
+        "updatedNumberScheduled": 1
+    }
+}

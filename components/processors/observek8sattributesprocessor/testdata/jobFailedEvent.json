@@ -1,0 +1,139 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "creationTimestamp": "2024-08-28T13:18:29Z",
+        "generation": 1,
+        "labels": {
+            "batch.kubernetes.io/controller-uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1",
+            "batch.kubernetes.io/job-name": "test2",
+            "controller-uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1",
+            "job-name": "test2"
+        },
+        "managedFields": [
+            {
+                "apiVersion": "batch/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:spec": {
+                        "f:backoffLimit": {},
+                        "f:completionMode": {},
+                        "f:completions": {},
+                        "f:manualSelector": {},
+                        "f:parallelism": {},
+                        "f:podReplacementPolicy": {},
+                        "f:suspend": {},
+                        "f:template": {
+                            "f:spec": {
+                                "f:containers": {
+                                    "k:{\"name\":\"test2\"}": {
+                                        ".": {},
+                                        "f:command": {},
+                                        "f:image": {},
+                                        "f:imagePullPolicy": {},
+                                        "f:name": {},
+                                        "f:resources": {},
+                                        "f:terminationMessagePath": {},
+                                        "f:terminationMessagePolicy": {}
+                                    }
+                                },
+                                "f:dnsPolicy": {},
+                                "f:restartPolicy": {},
+                                "f:schedulerName": {},
+                                "f:securityContext": {},
+                                "f:terminationGracePeriodSeconds": {}
+                            }
+                        }
+                    }
+                },
+                "manager": "kubectl-create",
+                "operation": "Update",
+                "time": "2024-08-28T13:18:29Z"
+            },
+            {
+                "apiVersion": "batch/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:active": {},
+                        "f:ready": {},
+                        "f:startTime": {},
+                        "f:terminating": {},
+                        "f:uncountedTerminatedPods": {}
+                    }
+                },
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-08-28T13:18:32Z"
+            }
+        ],
+        "name": "test2",
+        "namespace": "k8sexplorer",
+        "resourceVersion": "382101",
+        "uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1"
+    },
+    "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "selector": {
+            "matchLabels": {
+                "batch.kubernetes.io/controller-uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1"
+            }
+        },
+        "suspend": false,
+        "template": {
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1",
+                    "batch.kubernetes.io/job-name": "test2",
+                    "controller-uid": "28d8ad20-3097-44e5-80d6-430b43f16cb1",
+                    "job-name": "test2"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "sleep",
+                            "200"
+                        ],
+                        "image": "busybox",
+                        "imagePullPolicy": "Always",
+                        "name": "test2",
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Never",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30
+            }
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastProbeTime": "2024-08-28T14:03:08Z",
+                "lastTransitionTime": "2024-08-28T14:03:08Z",
+                "message": "Job has reached the specified backoff limit",
+                "reason": "BackoffLimitExceeded",
+                "status": "True",
+                "type": "Failed"
+            }
+        ],
+        "failed": 7,
+        "ready": 0,
+        "startTime": "2024-08-28T13:52:25Z",
+        "terminating": 0,
+        "uncountedTerminatedPods": {}
+    }
+}
