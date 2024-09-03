@@ -107,9 +107,5 @@ func (NodeRolesAction) ComputeAttributes(node v1.Node) (attributes, error) {
 		}
 	}
 
-	ret := make([]any, 0, roles.Len())
-	for _, role := range roles.List() {
-		ret = append(ret, role)
-	}
-	return attributes{NodeRolesAttributeKey: ret}, nil
+	return attributes{NodeRolesAttributeKey: roles.List()}, nil
 }

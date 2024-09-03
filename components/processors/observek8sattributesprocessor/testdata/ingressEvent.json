@@ -1,0 +1,112 @@
+{
+    "apiVersion": "networking.k8s.io/v1",
+    "kind": "Ingress",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"networking.k8s.io/v1\",\"kind\":\"Ingress\",\"metadata\":{\"annotations\":{\"kubernetes.io/ingress.class\":\"nginx\",\"nginx.ingress.kubernetes.io/auth-signin\":\"https://$host/oauth2/start?rd=$request_uri\",\"nginx.ingress.kubernetes.io/auth-url\":\"https://$host/oauth2/auth\",\"o11y.io/audit\":\"2023-10-31\",\"o11y.io/team\":\"Infra\",\"observeinc.com/kubectl-nonce\":\"1\"},\"labels\":{\"observeinc.com/app\":\"prometheus\",\"observeinc.com/environment\":\"eng\"},\"name\":\"prometheus\",\"namespace\":\"monitoring\"},\"spec\":{\"rules\":[{\"host\":\"prometheus.observe-eng.com\",\"http\":{\"paths\":[{\"backend\":{\"service\":{\"name\":\"prometheus\",\"port\":{\"name\":\"prometheus\"}}},\"path\":\"/\",\"pathType\":\"ImplementationSpecific\"}]}}],\"tls\":[{\"hosts\":[\"prometheus.observe-eng.com\"],\"secretName\":\"starcert-tls\"}]}}\n",
+            "kubernetes.io/ingress.class": "nginx",
+            "nginx.ingress.kubernetes.io/auth-signin": "https://$host/oauth2/start?rd=$request_uri",
+            "nginx.ingress.kubernetes.io/auth-url": "https://$host/oauth2/auth",
+            "o11y.io/audit": "2023-10-31",
+            "o11y.io/team": "Infra",
+            "observeinc.com/kubectl-nonce": "1"
+        },
+        "creationTimestamp": "2024-04-25T22:51:42Z",
+        "generation": 1,
+        "labels": {
+            "observeinc.com/app": "prometheus",
+            "observeinc.com/environment": "eng"
+        },
+        "managedFields": [
+            {
+                "apiVersion": "networking.k8s.io/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:kubectl.kubernetes.io/last-applied-configuration": {},
+                            "f:kubernetes.io/ingress.class": {},
+                            "f:nginx.ingress.kubernetes.io/auth-signin": {},
+                            "f:nginx.ingress.kubernetes.io/auth-url": {},
+                            "f:o11y.io/audit": {},
+                            "f:o11y.io/team": {},
+                            "f:observeinc.com/kubectl-nonce": {}
+                        },
+                        "f:labels": {
+                            ".": {},
+                            "f:observeinc.com/app": {},
+                            "f:observeinc.com/environment": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:rules": {},
+                        "f:tls": {}
+                    }
+                },
+                "manager": "kubectl-client-side-apply",
+                "operation": "Update",
+                "time": "2024-04-25T22:51:42Z"
+            },
+            {
+                "apiVersion": "networking.k8s.io/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:loadBalancer": {
+                            "f:ingress": {}
+                        }
+                    }
+                },
+                "manager": "nginx-ingress-controller",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-04-26T17:44:59Z"
+            }
+        ],
+        "name": "prometheus",
+        "namespace": "monitoring",
+        "resourceVersion": "741757",
+        "uid": "4cb12882-1113-40b2-b4ec-e3a0dad283a7"
+    },
+    "spec": {
+        "rules": [
+            {
+                "host": "prometheus.observe-eng.com",
+                "http": {
+                    "paths": [
+                        {
+                            "backend": {
+                                "service": {
+                                    "name": "prometheus",
+                                    "port": {
+                                        "name": "prometheus"
+                                    }
+                                }
+                            },
+                            "path": "/",
+                            "pathType": "ImplementationSpecific"
+                        }
+                    ]
+                }
+            }
+        ],
+        "tls": [
+            {
+                "hosts": [
+                    "prometheus.observe-eng.com"
+                ],
+                "secretName": "starcert-tls"
+            }
+        ]
+    },
+    "status": {
+        "loadBalancer": {
+            "ingress": [
+                {
+                    "hostname": "someUniqueElbIdentifier.elb.us-west-2.amazonaws.com"
+                }
+            ]
+        }
+    }
+}

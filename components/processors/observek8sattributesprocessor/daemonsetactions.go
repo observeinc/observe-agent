@@ -15,10 +15,9 @@ func NewDaemonsetSelectorAction() DaemonSetSelectorAction {
 	return DaemonSetSelectorAction{}
 }
 
-// ---------------------------------- Daemonset "selector" ----------------------------------
+// ---------------------------------- DaemonSet "selector" ----------------------------------
 
-// Generates the Daemonset "status" facet. Same logic as kubectl printer
-// https://github.com/kubernetes/kubernetes/blob/0d3b859af81e6a5f869a7766c8d45afd1c600b04/pkg/printers/internalversion/printers.go#L1204
+// Generates the Daemonset "selector" facet.
 func (DaemonSetSelectorAction) ComputeAttributes(daemonset appsv1.DaemonSet) (attributes, error) {
 	selecotString := metav1.FormatLabelSelector(daemonset.Spec.Selector)
 	return attributes{DaemonsetSelectorAttributeKey: selecotString}, nil

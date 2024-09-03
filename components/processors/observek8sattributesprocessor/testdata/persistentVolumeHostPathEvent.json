@@ -1,0 +1,99 @@
+{
+    "apiVersion": "v1",
+    "kind": "PersistentVolume",
+    "metadata": {
+        "annotations": {
+            "hostPathProvisionerIdentity": "f7711d29-f074-4a45-84e4-6fb6f18b8715",
+            "pv.kubernetes.io/provisioned-by": "k8s.io/minikube-hostpath"
+        },
+        "creationTimestamp": "2024-09-03T11:05:38Z",
+        "finalizers": [
+            "kubernetes.io/pv-protection"
+        ],
+        "managedFields": [
+            {
+                "apiVersion": "v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:phase": {}
+                    }
+                },
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-09-03T11:05:38Z"
+            },
+            {
+                "apiVersion": "v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:hostPathProvisionerIdentity": {},
+                            "f:pv.kubernetes.io/provisioned-by": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:accessModes": {},
+                        "f:capacity": {
+                            ".": {},
+                            "f:storage": {}
+                        },
+                        "f:claimRef": {
+                            ".": {},
+                            "f:apiVersion": {},
+                            "f:kind": {},
+                            "f:name": {},
+                            "f:namespace": {},
+                            "f:resourceVersion": {},
+                            "f:uid": {}
+                        },
+                        "f:hostPath": {
+                            ".": {},
+                            "f:path": {},
+                            "f:type": {}
+                        },
+                        "f:persistentVolumeReclaimPolicy": {},
+                        "f:storageClassName": {},
+                        "f:volumeMode": {}
+                    }
+                },
+                "manager": "storage-provisioner",
+                "operation": "Update",
+                "time": "2024-09-03T11:05:38Z"
+            }
+        ],
+        "name": "pvc-301d82c3-2fa7-45b9-8fb3-3de3bd8d405c",
+        "resourceVersion": "570946",
+        "uid": "eb72ef22-1f9e-4389-a952-31925343d6e2"
+    },
+    "spec": {
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "capacity": {
+            "storage": "1Gi"
+        },
+        "claimRef": {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "name": "dummy-pvc",
+            "namespace": "k8sexplorer",
+            "resourceVersion": "570942",
+            "uid": "301d82c3-2fa7-45b9-8fb3-3de3bd8d405c"
+        },
+        "hostPath": {
+            "path": "/tmp/hostpath-provisioner/k8sexplorer/dummy-pvc",
+            "type": ""
+        },
+        "persistentVolumeReclaimPolicy": "Delete",
+        "storageClassName": "standard",
+        "volumeMode": "Filesystem"
+    },
+    "status": {
+        "lastPhaseTransitionTime": "2024-09-03T11:05:38Z",
+        "phase": "Bound"
+    }
+}

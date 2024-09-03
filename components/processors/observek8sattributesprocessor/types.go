@@ -3,7 +3,8 @@ package observek8sattributesprocessor
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,10 +32,10 @@ type K8sEventProcessorAction interface {
 }
 
 type podAction interface {
-	ComputeAttributes(v1.Pod) (attributes, error)
+	ComputeAttributes(corev1.Pod) (attributes, error)
 }
 type nodeAction interface {
-	ComputeAttributes(v1.Node) (attributes, error)
+	ComputeAttributes(corev1.Node) (attributes, error)
 }
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
@@ -45,12 +46,27 @@ type cronJobAction interface {
 type daemonSetAction interface {
 	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
 }
+type statefulSetAction interface {
+	ComputeAttributes(appsv1.StatefulSet) (attributes, error)
+}
+type persistentVolumeClaimAction interface {
+	ComputeAttributes(corev1.PersistentVolumeClaim) (attributes, error)
+}
+type persistentVolumeAction interface {
+	ComputeAttributes(corev1.PersistentVolume) (attributes, error)
+}
+type ingressAction interface {
+	ComputeAttributes(netv1.Ingress) (attributes, error)
+}
+type serviceAccountAction interface {
+	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
+}
 
 func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
 	switch typed := obj.(type) {
-	case *v1.Pod:
+	case *corev1.Pod:
 		return proc.runPodActions(*typed)
-	case *v1.Node:
+	case *corev1.Node:
 		return proc.runNodeActions(*typed)
 	case *batchv1.Job:
 		return proc.runJobActions(*typed)
@@ -58,11 +74,21 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runCronJobActions(*typed)
 	case *appsv1.DaemonSet:
 		return proc.runDaemonSetActions(*typed)
+	case *appsv1.StatefulSet:
+		return proc.runStatefulSetActions(*typed)
+	case *corev1.PersistentVolume:
+		return proc.runPersistentVolumeActions(*typed)
+	case *corev1.PersistentVolumeClaim:
+		return proc.runPersistentVolumeClaimActions(*typed)
+	case *netv1.Ingress:
+		return proc.runIngressActions(*typed)
+	case *corev1.ServiceAccount:
+		return proc.runServiceAccountActions(*typed)
 	}
 	return attributes{}, nil
 }
 
-func (m *K8sEventsProcessor) runPodActions(pod v1.Pod) (attributes, error) {
+func (m *K8sEventsProcessor) runPodActions(pod corev1.Pod) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.podActions {
 		atts, err := action.ComputeAttributes(pod)
@@ -74,7 +100,7 @@ func (m *K8sEventsProcessor) runPodActions(pod v1.Pod) (attributes, error) {
 	return res, nil
 }
 
-func (m *K8sEventsProcessor) runNodeActions(node v1.Node) (attributes, error) {
+func (m *K8sEventsProcessor) runNodeActions(node corev1.Node) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.nodeActions {
 		atts, err := action.ComputeAttributes(node)
@@ -114,10 +140,70 @@ func (m *K8sEventsProcessor) runCronJobActions(cronJob batchv1.CronJob) (attribu
 	return res, nil
 }
 
+func (m *K8sEventsProcessor) runStatefulSetActions(statefulset appsv1.StatefulSet) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.statefulSetActions {
+		atts, err := action.ComputeAttributes(statefulset)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
 func (m *K8sEventsProcessor) runDaemonSetActions(daemonset appsv1.DaemonSet) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.daemonSetActions {
 		atts, err := action.ComputeAttributes(daemonset)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runPersistentVolumeActions(pvc corev1.PersistentVolume) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.persistentVolumeActions {
+		atts, err := action.ComputeAttributes(pvc)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runPersistentVolumeClaimActions(pvc corev1.PersistentVolumeClaim) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.persistentVolumeClaimActions {
+		atts, err := action.ComputeAttributes(pvc)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runIngressActions(ingress netv1.Ingress) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.ingressActions {
+		atts, err := action.ComputeAttributes(ingress)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runServiceAccountActions(serviceAccount corev1.ServiceAccount) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.serviceAccountActions {
+		atts, err := action.ComputeAttributes(serviceAccount)
 		if err != nil {
 			return res, err
 		}
