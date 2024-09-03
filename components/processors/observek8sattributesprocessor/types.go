@@ -1,6 +1,9 @@
 package observek8sattributesprocessor
 
 import (
+	"sort"
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -21,6 +24,29 @@ func (atts attributes) addAttributes(other attributes) {
 	}
 }
 
+type Set map[string]string
+
+// FormatLabels converts label map into plain string
+func FormatLabels(labelMap map[string]string) string {
+	l := Set(labelMap).String()
+	if l == "" {
+		l = "<none>"
+	}
+	return l
+}
+
+// String returns all labels listed as a human readable string.
+// Conveniently, exactly the format that ParseSelector takes.
+func (ls Set) String() string {
+	selector := make([]string, 0, len(ls))
+	for key, value := range ls {
+		selector = append(selector, key+"="+value)
+	}
+	// Sort for determinism.
+	sort.StringSlice(selector).Sort()
+	return strings.Join(selector, ",")
+}
+
 // Action that processes a K8S object and computes custom attributes for it
 type K8sEventProcessorAction interface {
 	// Computes attributes for a k8s entity.  Since entities like Pod, Node,
@@ -37,18 +63,27 @@ type podAction interface {
 type nodeAction interface {
 	ComputeAttributes(corev1.Node) (attributes, error)
 }
+type serviceAction interface {
+	ComputeAttributes(corev1.Service) (attributes, error)
+}
+type serviceAccountAction interface {
+	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
+}
+
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
 }
 type cronJobAction interface {
 	ComputeAttributes(batchv1.CronJob) (attributes, error)
 }
-type daemonSetAction interface {
-	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
-}
+
 type statefulSetAction interface {
 	ComputeAttributes(appsv1.StatefulSet) (attributes, error)
 }
+type daemonSetAction interface {
+	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
+}
+
 type persistentVolumeClaimAction interface {
 	ComputeAttributes(corev1.PersistentVolumeClaim) (attributes, error)
 }
@@ -57,9 +92,6 @@ type persistentVolumeAction interface {
 }
 type ingressAction interface {
 	ComputeAttributes(netv1.Ingress) (attributes, error)
-}
-type serviceAccountAction interface {
-	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
 }
 type endpointsAction interface {
 	ComputeAttributes(corev1.Endpoints) (attributes, error)
@@ -71,6 +103,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runPodActions(*typed)
 	case *corev1.Node:
 		return proc.runNodeActions(*typed)
+	case *corev1.Service:
+		return proc.runServiceActions(*typed)
 	case *batchv1.Job:
 		return proc.runJobActions(*typed)
 	case *batchv1.CronJob:
@@ -221,6 +255,18 @@ func (m *K8sEventsProcessor) runEndpointsActions(endpoints corev1.Endpoints) (at
 	res := attributes{}
 	for _, action := range m.endpointsActions {
 		atts, err := action.ComputeAttributes(endpoints)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runServiceActions(service corev1.Service) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.serviceActions {
+		atts, err := action.ComputeAttributes(service)
 		if err != nil {
 			return res, err
 		}

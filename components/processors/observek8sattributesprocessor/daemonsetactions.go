@@ -19,6 +19,6 @@ func NewDaemonsetSelectorAction() DaemonSetSelectorAction {
 
 // Generates the Daemonset "selector" facet.
 func (DaemonSetSelectorAction) ComputeAttributes(daemonset appsv1.DaemonSet) (attributes, error) {
-	selecotString := metav1.FormatLabelSelector(daemonset.Spec.Selector)
-	return attributes{DaemonsetSelectorAttributeKey: selecotString}, nil
+	selectorString := metav1.FormatLabelSelector(daemonset.Spec.Selector)
+	return attributes{DaemonsetSelectorAttributeKey: selectorString}, nil
 }
