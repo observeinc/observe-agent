@@ -39,6 +39,9 @@ type nodeAction interface {
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
 }
+type cronJobAction interface {
+	ComputeAttributes(batchv1.CronJob) (attributes, error)
+}
 type daemonSetAction interface {
 	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
 }
@@ -51,6 +54,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runNodeActions(*typed)
 	case *batchv1.Job:
 		return proc.runJobActions(*typed)
+	case *batchv1.CronJob:
+		return proc.runCronJobActions(*typed)
 	case *appsv1.DaemonSet:
 		return proc.runDaemonSetActions(*typed)
 	}
@@ -89,6 +94,18 @@ func (m *K8sEventsProcessor) runJobActions(job batchv1.Job) (attributes, error) 
 	res := attributes{}
 	for _, action := range m.jobActions {
 		atts, err := action.ComputeAttributes(job)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runCronJobActions(cronJob batchv1.CronJob) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.cronJobActions {
+		atts, err := action.ComputeAttributes(cronJob)
 		if err != nil {
 			return res, err
 		}
