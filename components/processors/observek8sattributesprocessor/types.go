@@ -61,6 +61,9 @@ type ingressAction interface {
 type serviceAccountAction interface {
 	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
 }
+type endpointsAction interface {
+	ComputeAttributes(corev1.Endpoints) (attributes, error)
+}
 
 func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
 	switch typed := obj.(type) {
@@ -84,6 +87,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runIngressActions(*typed)
 	case *corev1.ServiceAccount:
 		return proc.runServiceAccountActions(*typed)
+	case *corev1.Endpoints:
+		return proc.runEndpointsActions(*typed)
 	}
 	return attributes{}, nil
 }
@@ -204,6 +209,18 @@ func (m *K8sEventsProcessor) runServiceAccountActions(serviceAccount corev1.Serv
 	res := attributes{}
 	for _, action := range m.serviceAccountActions {
 		atts, err := action.ComputeAttributes(serviceAccount)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runEndpointsActions(endpoints corev1.Endpoints) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.endpointsActions {
+		atts, err := action.ComputeAttributes(endpoints)
 		if err != nil {
 			return res, err
 		}

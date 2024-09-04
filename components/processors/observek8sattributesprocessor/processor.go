@@ -21,6 +21,7 @@ const (
 	EventKindPod            = "Pod"
 	EventKindNode           = "Node"
 	EventKindServiceAccount = "ServiceAccount"
+	EventKindEndpoints      = "Endpoints"
 	// APPS
 	EventKindStatefulSet = "StatefulSet"
 	EventKindDaemonSet   = "DaemonSet"
@@ -32,15 +33,16 @@ const (
 	EventKindPersistentVolumeClaim = "PersistentVolumeClaim"
 	// NETWORK
 	EventKindIngress = "Ingress"
-	// RBAC
 )
 
 type K8sEventsProcessor struct {
 	cfg    component.Config
 	logger *zap.Logger
 
-	nodeActions    []nodeAction
-	podActions     []podAction
+	nodeActions      []nodeAction
+	podActions       []podAction
+	endpointsActions []endpointsAction
+
 	jobActions     []jobAction
 	cronJobActions []cronJobAction
 
@@ -65,27 +67,34 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		nodeActions: []nodeAction{
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
 		},
+		endpointsActions: []endpointsAction{
+			NewEndpointsStatusAction(),
+		},
 		jobActions: []jobAction{
 			NewJobStatusAction(), NewJobDurationAction(),
 		},
 		cronJobActions: []cronJobAction{
 			NewCronJobActiveAction(),
 		},
+
 		daemonSetActions: []daemonSetAction{
 			NewDaemonsetSelectorAction(),
 		},
 		statefulSetActions: []statefulSetAction{
 			NewStatefulsetSelectorAction(),
 		},
+
 		persistentVolumeActions: []persistentVolumeAction{
 			NewPersistentVolumeTypeAction(),
 		},
 		persistentVolumeClaimActions: []persistentVolumeClaimAction{
 			NewPersistentVolumeClaimSelectorAction(),
 		},
+
 		ingressActions: []ingressAction{
 			NewIngressRulesAction(), NewIngressLoadBalancerAction(),
 		},
+
 		serviceAccountActions: []serviceAccountAction{
 			NewServiceAccountSecretsNamesAction(),
 		},
@@ -129,6 +138,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &pod
+	case EventKindEndpoints:
+		var endpoints corev1.Endpoints
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &endpoints)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Endpoints event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &endpoints
 	case EventKindServiceAccount:
 		var sa corev1.ServiceAccount
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &sa)
