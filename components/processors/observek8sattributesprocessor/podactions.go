@@ -108,7 +108,7 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 		reason = "Terminating"
 	}
 
-	return attributes{PodStatusAttributeKey: reason}, nil
+	return attributes{PodStatusAttributeKey: reason, "test": false}, nil
 }
 
 // ---------------------------------- various Pod "counts" ----------------------------------

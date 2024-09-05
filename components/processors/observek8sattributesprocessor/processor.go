@@ -23,6 +23,7 @@ const (
 	EventKindService        = "Service"
 	EventKindServiceAccount = "ServiceAccount"
 	EventKindEndpoints      = "Endpoints"
+	EventKindConfigMap      = "ConfigMap"
 	// APPS
 	EventKindStatefulSet = "StatefulSet"
 	EventKindDaemonSet   = "DaemonSet"
@@ -45,6 +46,7 @@ type K8sEventsProcessor struct {
 	endpointsActions      []endpointsAction
 	serviceActions        []serviceAction
 	serviceAccountActions []serviceAccountAction
+	configMapActions      []configMapAction
 
 	jobActions     []jobAction
 	cronJobActions []cronJobAction
@@ -76,6 +78,9 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		},
 		serviceAccountActions: []serviceAccountAction{
 			NewServiceAccountSecretsNamesAction(),
+		},
+		configMapActions: []configMapAction{
+			NewConfigMapDataAction(),
 		},
 
 		jobActions: []jobAction{
@@ -166,6 +171,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &sa
+	case EventKindConfigMap:
+		var configMap corev1.ConfigMap
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &configMap)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal ConfigMap event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &configMap
 	case EventKindStatefulSet:
 		var statefulSet appsv1.StatefulSet
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &statefulSet)
