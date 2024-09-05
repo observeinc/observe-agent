@@ -1,0 +1,223 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "StatefulSet",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"StatefulSet\",\"metadata\":{\"annotations\":{},\"name\":\"redis-ephemeral\",\"namespace\":\"testbox\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"redis-ephemeral\"}},\"serviceName\":\"redis-ephemeral\",\"template\":{\"metadata\":{\"labels\":{\"app\":\"redis-ephemeral\"}},\"spec\":{\"containers\":[{\"command\":[\"/usr/local/bin/redis-server\",\"/etc/redis/redis.conf\"],\"image\":\"redis:7.0.11-bullseye\",\"name\":\"redis\",\"ports\":[{\"containerPort\":6379,\"name\":\"redis\"}],\"resources\":{\"requests\":{\"cpu\":0.1,\"memory\":\"128M\"}},\"volumeMounts\":[{\"mountPath\":\"/etc/redis/\",\"name\":\"redis-ephemeral-config\"}]}],\"volumes\":[{\"configMap\":{\"name\":\"redis-ephemeral-config\"},\"name\":\"redis-ephemeral-config\"}]}}}}\n"
+        },
+        "creationTimestamp": "2024-07-24T01:28:16Z",
+        "generation": 1,
+        "managedFields": [
+            {
+                "apiVersion": "apps/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:persistentVolumeClaimRetentionPolicy": {
+                            ".": {},
+                            "f:whenDeleted": {},
+                            "f:whenScaled": {}
+                        },
+                        "f:podManagementPolicy": {},
+                        "f:replicas": {},
+                        "f:revisionHistoryLimit": {},
+                        "f:selector": {},
+                        "f:serviceName": {},
+                        "f:template": {
+                            "f:metadata": {
+                                "f:labels": {
+                                    ".": {},
+                                    "f:app": {}
+                                }
+                            },
+                            "f:spec": {
+                                "f:containers": {
+                                    "k:{\"name\":\"redis\"}": {
+                                        ".": {},
+                                        "f:command": {},
+                                        "f:image": {},
+                                        "f:imagePullPolicy": {},
+                                        "f:name": {},
+                                        "f:ports": {
+                                            ".": {},
+                                            "k:{\"containerPort\":6379,\"protocol\":\"TCP\"}": {
+                                                ".": {},
+                                                "f:containerPort": {},
+                                                "f:name": {},
+                                                "f:protocol": {}
+                                            }
+                                        },
+                                        "f:resources": {
+                                            ".": {},
+                                            "f:requests": {
+                                                ".": {},
+                                                "f:cpu": {},
+                                                "f:memory": {}
+                                            }
+                                        },
+                                        "f:terminationMessagePath": {},
+                                        "f:terminationMessagePolicy": {},
+                                        "f:volumeMounts": {
+                                            ".": {},
+                                            "k:{\"mountPath\":\"/etc/redis/\"}": {
+                                                ".": {},
+                                                "f:mountPath": {},
+                                                "f:name": {}
+                                            }
+                                        }
+                                    }
+                                },
+                                "f:dnsPolicy": {},
+                                "f:restartPolicy": {},
+                                "f:schedulerName": {},
+                                "f:securityContext": {},
+                                "f:terminationGracePeriodSeconds": {},
+                                "f:volumes": {
+                                    ".": {},
+                                    "k:{\"name\":\"redis-ephemeral-config\"}": {
+                                        ".": {},
+                                        "f:configMap": {
+                                            ".": {},
+                                            "f:defaultMode": {},
+                                            "f:name": {}
+                                        },
+                                        "f:name": {}
+                                    }
+                                }
+                            }
+                        },
+                        "f:updateStrategy": {
+                            "f:rollingUpdate": {
+                                ".": {},
+                                "f:partition": {}
+                            },
+                            "f:type": {}
+                        }
+                    }
+                },
+                "manager": "kubectl-client-side-apply",
+                "operation": "Update",
+                "time": "2024-07-24T01:28:16Z"
+            },
+            {
+                "apiVersion": "apps/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:availableReplicas": {},
+                        "f:collisionCount": {},
+                        "f:currentReplicas": {},
+                        "f:currentRevision": {},
+                        "f:observedGeneration": {},
+                        "f:readyReplicas": {},
+                        "f:replicas": {},
+                        "f:updateRevision": {},
+                        "f:updatedReplicas": {}
+                    }
+                },
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2024-07-24T01:28:18Z"
+            }
+        ],
+        "name": "redis-ephemeral",
+        "namespace": "testbox",
+        "resourceVersion": "8463632",
+        "uid": "5e90c4bb-eac8-45a1-be75-b4b7b068e96a"
+    },
+    "spec": {
+        "persistentVolumeClaimRetentionPolicy": {
+            "whenDeleted": "Retain",
+            "whenScaled": "Retain"
+        },
+        "podManagementPolicy": "OrderedReady",
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+            "matchLabels": {
+                "app": "redis-ephemeral"
+            }
+        },
+        "serviceName": "redis-ephemeral",
+        "template": {
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "redis-ephemeral"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "/usr/local/bin/redis-server",
+                            "/etc/redis/redis.conf"
+                        ],
+                        "image": "redis:7.0.11-bullseye",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "redis",
+                        "ports": [
+                            {
+                                "containerPort": 6379,
+                                "name": "redis",
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "128M"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/redis/",
+                                "name": "redis-ephemeral-config"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "name": "redis-ephemeral-config"
+                        },
+                        "name": "redis-ephemeral-config"
+                    }
+                ]
+            }
+        },
+        "updateStrategy": {
+            "rollingUpdate": {
+                "partition": 0
+            },
+            "type": "RollingUpdate"
+        }
+    },
+    "status": {
+        "availableReplicas": 1,
+        "collisionCount": 0,
+        "currentReplicas": 1,
+        "currentRevision": "redis-ephemeral-784f45f78f",
+        "observedGeneration": 1,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updateRevision": "redis-ephemeral-784f45f78f",
+        "updatedReplicas": 1
+    }
+}

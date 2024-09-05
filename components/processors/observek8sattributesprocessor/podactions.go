@@ -19,6 +19,18 @@ const (
 	PodReadinessGatesTotalAttributeKey = "readinessGatesTotal"
 
 	PodConditionsAttributeKey = "conditions"
+
+	PodCronJobNameAttributeKey = "cronJobName"
+	OwnerKindCronJob           = "CronJob"
+
+	PodJobNameAttributeKey = "jobName"
+	OwnerKindJob           = "Job"
+
+	PodDaemonSetNameAttributeKey = "daemonSetName"
+	OwnerKindDaemonSet           = "DaemonSet"
+
+	PodStatefulSetNameAttributeKey = "statefulSetName"
+	OwnerKindStatefulSet           = "StatefulSet"
 )
 
 // ---------------------------------- Pod "status" ----------------------------------
@@ -189,4 +201,76 @@ func (PodConditionsAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	// The key is the name of the face (and of this action),
 	// This facet's value is a map itself with k-v pairs, keyed with strings
 	return attributes{PodConditionsAttributeKey: conditions}, nil
+}
+
+// ---------------------------------- Pod "jobName" ----------------------------------
+
+type PodJobNameAction struct{}
+
+func NewPodJobAction() PodJobNameAction {
+	return PodJobNameAction{}
+}
+
+// Name of the job this Pod belongs to (only present if the owner is a Job resource)
+func (PodJobNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == OwnerKindJob {
+			return attributes{PodJobNameAttributeKey: ref.Name}, nil
+		}
+	}
+	return attributes{}, nil
+}
+
+// ---------------------------------- Pod "cronJobName" ----------------------------------
+
+type PodCronJobNameAction struct{}
+
+func NewPodCronJobNameAction() PodCronJobNameAction {
+	return PodCronJobNameAction{}
+}
+
+// Name of the cronJob this Pod belongs to (only present if the owner is a CronJobName resource)
+func (PodCronJobNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == OwnerKindCronJob {
+			return attributes{PodCronJobNameAttributeKey: ref.Name}, nil
+		}
+	}
+	return attributes{}, nil
+}
+
+// ---------------------------------- Pod "daemonSetName" ----------------------------------
+
+type PodDaemonSetNameAction struct{}
+
+func NewPodDaemonSetNameAction() PodDaemonSetNameAction {
+	return PodDaemonSetNameAction{}
+}
+
+// Name of the cronJob this Pod belongs to (only present if the owner is a DaemonSetName resource)
+func (PodDaemonSetNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == OwnerKindDaemonSet {
+			return attributes{PodDaemonSetNameAttributeKey: ref.Name}, nil
+		}
+	}
+	return attributes{}, nil
+}
+
+// ---------------------------------- Pod "statefulSetName" ----------------------------------
+
+type PodStatefulSetNameAction struct{}
+
+func NewPodStatefulSetNameAction() PodStatefulSetNameAction {
+	return PodStatefulSetNameAction{}
+}
+
+// Name of the cronJob this Pod belongs to (only present if the owner is a StatefulSetName resource)
+func (PodStatefulSetNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == OwnerKindStatefulSet {
+			return attributes{PodStatefulSetNameAttributeKey: ref.Name}, nil
+		}
+	}
+	return attributes{}, nil
 }

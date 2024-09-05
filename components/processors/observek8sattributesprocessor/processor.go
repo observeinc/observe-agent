@@ -12,25 +12,49 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	EventKindPod       = "Pod"
-	EventKindNode      = "Node"
-	EventKindJob       = "Job"
-	EventKindCronJob   = "CronJob"
-	EventKindDaemonSet = "DaemonSet"
+	// CORE
+	EventKindPod            = "Pod"
+	EventKindNode           = "Node"
+	EventKindServiceAccount = "ServiceAccount"
+	EventKindEndpoints      = "Endpoints"
+	// APPS
+	EventKindStatefulSet = "StatefulSet"
+	EventKindDaemonSet   = "DaemonSet"
+	// WORKLOAD
+	EventKindJob     = "Job"
+	EventKindCronJob = "CronJob"
+	// STORAGE
+	EventKindPersistentVolume      = "PersistentVolume"
+	EventKindPersistentVolumeClaim = "PersistentVolumeClaim"
+	// NETWORK
+	EventKindIngress = "Ingress"
 )
 
 type K8sEventsProcessor struct {
-	cfg              component.Config
-	logger           *zap.Logger
+	cfg    component.Config
+	logger *zap.Logger
+
 	nodeActions      []nodeAction
 	podActions       []podAction
-	jobActions       []jobAction
-	cronJobActions   []cronJobAction
-	daemonSetActions []daemonSetAction
+	endpointsActions []endpointsAction
+
+	jobActions     []jobAction
+	cronJobActions []cronJobAction
+
+	daemonSetActions   []daemonSetAction
+	statefulSetActions []statefulSetAction
+
+	persistentVolumeActions      []persistentVolumeAction
+	persistentVolumeClaimActions []persistentVolumeClaimAction
+
+	ingressActions []ingressAction
+
+	serviceAccountActions []serviceAccountAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
@@ -43,14 +67,36 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		nodeActions: []nodeAction{
 			NewNodeStatusAction(), NewNodeRolesAction(), NewNodePoolAction(),
 		},
+		endpointsActions: []endpointsAction{
+			NewEndpointsStatusAction(),
+		},
 		jobActions: []jobAction{
 			NewJobStatusAction(), NewJobDurationAction(),
 		},
+		cronJobActions: []cronJobAction{
+			NewCronJobActiveAction(),
+		},
+
 		daemonSetActions: []daemonSetAction{
 			NewDaemonsetSelectorAction(),
 		},
-		cronJobActions: []cronJobAction{
-			NewCronJobActiveAction(),
+		statefulSetActions: []statefulSetAction{
+			NewStatefulsetSelectorAction(),
+		},
+
+		persistentVolumeActions: []persistentVolumeAction{
+			NewPersistentVolumeTypeAction(),
+		},
+		persistentVolumeClaimActions: []persistentVolumeClaimAction{
+			NewPersistentVolumeClaimSelectorAction(),
+		},
+
+		ingressActions: []ingressAction{
+			NewIngressRulesAction(), NewIngressLoadBalancerAction(),
+		},
+
+		serviceAccountActions: []serviceAccountAction{
+			NewServiceAccountSecretsNamesAction(),
 		},
 	}
 }
@@ -92,6 +138,38 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &pod
+	case EventKindEndpoints:
+		var endpoints corev1.Endpoints
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &endpoints)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Endpoints event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &endpoints
+	case EventKindServiceAccount:
+		var sa corev1.ServiceAccount
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &sa)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal ServiceAccount event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &sa
+	case EventKindPersistentVolumeClaim:
+		var persistentVolumeClaim corev1.PersistentVolumeClaim
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &persistentVolumeClaim)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal PersistentVolumeClaim event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &persistentVolumeClaim
+	case EventKindPersistentVolume:
+		var persistentVolume corev1.PersistentVolume
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &persistentVolume)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal PersistentVolume event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &persistentVolume
 	case EventKindJob:
 		var job batchv1.Job
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &job)
@@ -108,6 +186,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &cronJob
+	case EventKindStatefulSet:
+		var statefulSet appsv1.StatefulSet
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &statefulSet)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal StatefulSet event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &statefulSet
 	case EventKindDaemonSet:
 		var daemonSet appsv1.DaemonSet
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &daemonSet)
@@ -116,6 +202,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &daemonSet
+	case EventKindIngress:
+		var ingress netv1.Ingress
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &ingress)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Ingress event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &ingress
 	default:
 		return nil
 	}
@@ -215,7 +309,7 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 		theMap.PutBool(key, typed)
 	case float64:
 		theMap.PutDouble(key, typed)
-	case []any:
+	case []string:
 		slc := theMap.PutEmptySlice(key)
 		slc.EnsureCapacity(len(typed))
 		for _, elem := range typed {
