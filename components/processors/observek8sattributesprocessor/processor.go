@@ -77,7 +77,7 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 			NewServiceLBIngressAction(), NewServiceSelectorAction(), NewServicePortsAction(),
 		},
 		serviceAccountActions: []serviceAccountAction{
-			NewServiceAccountSecretsNamesAction(),
+			NewServiceAccountSecretsNamesAction(), NewServiceAccountSecretsAction(), NewServiceAccountImagePullSecretsAction(),
 		},
 		configMapActions: []configMapAction{
 			NewConfigMapDataAction(),

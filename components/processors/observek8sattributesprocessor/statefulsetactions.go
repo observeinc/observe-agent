@@ -9,13 +9,13 @@ const (
 	StatefulsetSelectorAttributeKey = "selector"
 )
 
+// ---------------------------------- StatefulSet "selector" ----------------------------------
+
 type StatefulSetSelectorAction struct{}
 
 func NewStatefulsetSelectorAction() StatefulSetSelectorAction {
 	return StatefulSetSelectorAction{}
 }
-
-// ---------------------------------- StatefulSet "selector" ----------------------------------
 
 // Generates the Statefulset "selector" facet.
 func (StatefulSetSelectorAction) ComputeAttributes(statefulSet appsv1.StatefulSet) (attributes, error) {

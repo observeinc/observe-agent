@@ -108,10 +108,10 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 		reason = "Terminating"
 	}
 
-	return attributes{PodStatusAttributeKey: reason, "test": false}, nil
+	return attributes{PodStatusAttributeKey: reason}, nil
 }
 
-// ---------------------------------- various Pod "counts" ----------------------------------
+// ---------------------------------- various Pod counts ----------------------------------
 
 // This action computes various facets for Pod by aggregating "status" values
 // across all containers of a Pod.
@@ -229,7 +229,7 @@ func NewPodCronJobNameAction() PodCronJobNameAction {
 	return PodCronJobNameAction{}
 }
 
-// Name of the cronJob this Pod belongs to (only present if the owner is a CronJobName resource)
+// Name of the cronJob this Pod belongs to (only present if the owner is a CronJob resource)
 func (PodCronJobNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == OwnerKindCronJob {
@@ -247,7 +247,7 @@ func NewPodDaemonSetNameAction() PodDaemonSetNameAction {
 	return PodDaemonSetNameAction{}
 }
 
-// Name of the cronJob this Pod belongs to (only present if the owner is a DaemonSetName resource)
+// Name of the cronJob this Pod belongs to (only present if the owner is a DaemonSet resource)
 func (PodDaemonSetNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == OwnerKindDaemonSet {
@@ -265,7 +265,7 @@ func NewPodStatefulSetNameAction() PodStatefulSetNameAction {
 	return PodStatefulSetNameAction{}
 }
 
-// Name of the cronJob this Pod belongs to (only present if the owner is a StatefulSetName resource)
+// Name of the cronJob this Pod belongs to (only present if the owner is a StatefulSet resource)
 func (PodStatefulSetNameAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == OwnerKindStatefulSet {

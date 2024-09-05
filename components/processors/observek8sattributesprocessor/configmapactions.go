@@ -8,7 +8,7 @@ const (
 	ConfigMapDataAttributeKey = "data"
 )
 
-// ---------------------------------- ConfigMap "endpoints" ----------------------------------
+// ---------------------------------- ConfigMap "data" ----------------------------------
 
 type ConfigMapDataAction struct{}
 
@@ -16,7 +16,7 @@ func NewConfigMapDataAction() ConfigMapDataAction {
 	return ConfigMapDataAction{}
 }
 
-// Generates the ConfigMap "endpoints" facet, which is a list of all individual endpoints, encoded as strings
+// Generates the ConfigMap "data" facet, calculated as the total number of entries in data and binaryData
 func (ConfigMapDataAction) ComputeAttributes(configMap corev1.ConfigMap) (attributes, error) {
 	return attributes{ConfigMapDataAttributeKey: len(configMap.Data) + len(configMap.BinaryData)}, nil
 }

@@ -9,6 +9,8 @@ const (
 	PersistentVolumeClaimSelectorAttributeKey = "selector"
 )
 
+// ---------------------------------- PersistentVolumeClaim "selector" ----------------------------------
+
 type PersistentVolumeClaimSelectorAction struct{}
 
 func NewPersistentVolumeClaimSelectorAction() PersistentVolumeClaimSelectorAction {

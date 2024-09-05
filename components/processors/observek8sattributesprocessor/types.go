@@ -72,6 +72,9 @@ type serviceAction interface {
 type serviceAccountAction interface {
 	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
 }
+type configMapAction interface {
+	ComputeAttributes(corev1.ConfigMap) (attributes, error)
+}
 
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
@@ -98,9 +101,6 @@ type ingressAction interface {
 }
 type endpointsAction interface {
 	ComputeAttributes(corev1.Endpoints) (attributes, error)
-}
-type configMapAction interface {
-	ComputeAttributes(corev1.ConfigMap) (attributes, error)
 }
 
 func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
@@ -261,6 +261,18 @@ func (m *K8sEventsProcessor) runServiceActions(service corev1.Service) (attribut
 	return res, nil
 }
 
+func (m *K8sEventsProcessor) runConfigMapActions(configMap corev1.ConfigMap) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.configMapActions {
+		atts, err := action.ComputeAttributes(configMap)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
 func (m *K8sEventsProcessor) runServiceAccountActions(serviceAccount corev1.ServiceAccount) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.serviceAccountActions {
@@ -277,18 +289,6 @@ func (m *K8sEventsProcessor) runEndpointsActions(endpoints corev1.Endpoints) (at
 	res := attributes{}
 	for _, action := range m.endpointsActions {
 		atts, err := action.ComputeAttributes(endpoints)
-		if err != nil {
-			return res, err
-		}
-		res.addAttributes(atts)
-	}
-	return res, nil
-}
-
-func (m *K8sEventsProcessor) runConfigMapActions(configMap corev1.ConfigMap) (attributes, error) {
-	res := attributes{}
-	for _, action := range m.configMapActions {
-		atts, err := action.ComputeAttributes(configMap)
 		if err != nil {
 			return res, err
 		}

@@ -13,13 +13,14 @@ const (
 	JobDurationAttributeKey = "duration"
 )
 
+// ---------------------------------- Job "status" ----------------------------------
+
 type JobStatusAction struct{}
 
 func NewJobStatusAction() JobStatusAction {
 	return JobStatusAction{}
 }
 
-// ---------------------------------- Job "status" ----------------------------------
 func jobHasCondition(job batch.Job, conditionType batch.JobConditionType) bool {
 	for _, condition := range job.Status.Conditions {
 		if condition.Type == conditionType {
@@ -49,13 +50,13 @@ func (JobStatusAction) ComputeAttributes(job batch.Job) (attributes, error) {
 	return attributes{JobStatusAttributeKey: status}, nil
 }
 
+// ---------------------------------- Job "duration" ----------------------------------
+
 type JobDurationAction struct{}
 
 func NewJobDurationAction() JobDurationAction {
 	return JobDurationAction{}
 }
-
-// ---------------------------------- Job "duration" ----------------------------------
 
 // Implementation taken from https://github.com/kubernetes/apimachinery/blob/master/pkg/util/duration/duration.go
 // HumanDuration returns a succinct representation of the provided duration
