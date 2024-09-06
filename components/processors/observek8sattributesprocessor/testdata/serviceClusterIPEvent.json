@@ -1,0 +1,82 @@
+{
+    "apiVersion": "v1",
+    "kind": "Service",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"redis-ephemeral\"},\"name\":\"redis-ephemeral\",\"namespace\":\"testbox\"},\"spec\":{\"clusterIP\":\"None\",\"ports\":[{\"name\":\"redis\",\"port\":6379}],\"selector\":{\"app\":\"redis-ephemeral\"}}}\n"
+        },
+        "creationTimestamp": "2024-07-24T01:28:16Z",
+        "labels": {
+            "app": "redis-ephemeral"
+        },
+        "managedFields": [
+            {
+                "apiVersion": "v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                        },
+                        "f:labels": {
+                            ".": {},
+                            "f:app": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:clusterIP": {},
+                        "f:internalTrafficPolicy": {},
+                        "f:ports": {
+                            ".": {},
+                            "k:{\"port\":6379,\"protocol\":\"TCP\"}": {
+                                ".": {},
+                                "f:name": {},
+                                "f:port": {},
+                                "f:protocol": {},
+                                "f:targetPort": {}
+                            }
+                        },
+                        "f:selector": {},
+                        "f:sessionAffinity": {},
+                        "f:type": {}
+                    }
+                },
+                "manager": "kubectl-client-side-apply",
+                "operation": "Update",
+                "time": "2024-07-24T01:28:16Z"
+            }
+        ],
+        "name": "redis-ephemeral",
+        "namespace": "testbox",
+        "resourceVersion": "8463573",
+        "uid": "7bb88341-41b8-4797-a102-4b2e4ca4211a"
+    },
+    "spec": {
+        "clusterIP": "None",
+        "clusterIPs": [
+            "None"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+            "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+            {
+                "name": "redis",
+                "port": 6379,
+                "protocol": "TCP",
+                "targetPort": 6379
+            }
+        ],
+        "selector": {
+            "app": "redis-ephemeral"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+    },
+    "status": {
+        "loadBalancer": {}
+    }
+}
