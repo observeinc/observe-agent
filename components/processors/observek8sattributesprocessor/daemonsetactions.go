@@ -6,19 +6,19 @@ import (
 )
 
 const (
-	DaemonsetSelectorAttributeKey = "selector"
+	DaemonSetSelectorAttributeKey = "selector"
 )
 
 type DaemonSetSelectorAction struct{}
 
-func NewDaemonsetSelectorAction() DaemonSetSelectorAction {
+func NewDaemonSetSelectorAction() DaemonSetSelectorAction {
 	return DaemonSetSelectorAction{}
 }
 
 // ---------------------------------- DaemonSet "selector" ----------------------------------
 
-// Generates the Daemonset "selector" facet.
+// Generates the DaemonSet "selector" facet.
 func (DaemonSetSelectorAction) ComputeAttributes(daemonset appsv1.DaemonSet) (attributes, error) {
-	selectorString := metav1.FormatLabelSelector(daemonset.Spec.Selector)
-	return attributes{DaemonsetSelectorAttributeKey: selectorString}, nil
+	selecotString := metav1.FormatLabelSelector(daemonset.Spec.Selector)
+	return attributes{DaemonSetSelectorAttributeKey: selecotString}, nil
 }

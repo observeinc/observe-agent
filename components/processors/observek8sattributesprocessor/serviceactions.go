@@ -76,7 +76,7 @@ func NewServiceSelectorAction() ServiceSelectorAction {
 // Generates the Service "selector" facet.
 func (ServiceSelectorAction) ComputeAttributes(service corev1.Service) (attributes, error) {
 	selectorString := FormatLabels(service.Spec.Selector)
-	return attributes{DaemonsetSelectorAttributeKey: selectorString}, nil
+	return attributes{DaemonSetSelectorAttributeKey: selectorString}, nil
 
 }
 

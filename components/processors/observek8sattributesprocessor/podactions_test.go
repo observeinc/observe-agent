@@ -79,6 +79,18 @@ func TestPodActions(t *testing.T) {
 				{"observe_transform.facets.conditions.TestCondition", "Unknown"},
 			},
 		},
+		{
+			name: "Pod conditions",
+			inLogs: createResourceLogs(
+				logWithResource{
+					testBodyFilepath: "./testdata/podTestEvent.json",
+				},
+			),
+			expectedResults: []queryWithResult{
+				// Conditions must be a map with 5 elements
+				{"observe_transform.facets.conditions | length(@)", float64(5)},
+			},
+		},
 	} {
 		runTest(t, test)
 	}

@@ -26,6 +26,7 @@ func formatIngressRules(rules []netv1.IngressRule) string {
 }
 
 // ---------------------------------- Ingress "rules" ----------------------------------
+
 type IngressRulesAction struct{}
 
 func NewIngressRulesAction() IngressRulesAction {
@@ -38,6 +39,7 @@ func (IngressRulesAction) ComputeAttributes(ingress netv1.Ingress) (attributes, 
 }
 
 // ---------------------------------- Ingress "loadBalancer" ----------------------------------
+
 type IngressLoadBalancerAction struct{}
 
 func NewIngressLoadBalancerAction() IngressLoadBalancerAction {

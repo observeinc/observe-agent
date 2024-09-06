@@ -23,9 +23,11 @@ const (
 	EventKindService        = "Service"
 	EventKindServiceAccount = "ServiceAccount"
 	EventKindEndpoints      = "Endpoints"
+	EventKindConfigMap      = "ConfigMap"
 	// APPS
 	EventKindStatefulSet = "StatefulSet"
 	EventKindDaemonSet   = "DaemonSet"
+	EventKindDeployment  = "Deployment"
 	// WORKLOAD
 	EventKindJob     = "Job"
 	EventKindCronJob = "CronJob"
@@ -45,12 +47,14 @@ type K8sEventsProcessor struct {
 	endpointsActions      []endpointsAction
 	serviceActions        []serviceAction
 	serviceAccountActions []serviceAccountAction
+	configMapActions      []configMapAction
 
 	jobActions     []jobAction
 	cronJobActions []cronJobAction
 
 	daemonSetActions   []daemonSetAction
 	statefulSetActions []statefulSetAction
+	deploymentActions  []deploymentAction
 
 	persistentVolumeActions      []persistentVolumeAction
 	persistentVolumeClaimActions []persistentVolumeClaimAction
@@ -75,7 +79,10 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 			NewServiceLBIngressAction(), NewServiceSelectorAction(), NewServicePortsAction(),
 		},
 		serviceAccountActions: []serviceAccountAction{
-			NewServiceAccountSecretsNamesAction(),
+			NewServiceAccountSecretsNamesAction(), NewServiceAccountSecretsAction(), NewServiceAccountImagePullSecretsAction(),
+		},
+		configMapActions: []configMapAction{
+			NewConfigMapDataAction(),
 		},
 
 		jobActions: []jobAction{
@@ -85,11 +92,14 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 			NewCronJobActiveAction(),
 		},
 
+		deploymentActions: []deploymentAction{
+			NewDeploymentSelectorAction(),
+		},
 		statefulSetActions: []statefulSetAction{
 			NewStatefulsetSelectorAction(),
 		},
 		daemonSetActions: []daemonSetAction{
-			NewDaemonsetSelectorAction(),
+			NewDaemonSetSelectorAction(),
 		},
 
 		persistentVolumeActions: []persistentVolumeAction{
@@ -166,6 +176,22 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &sa
+	case EventKindConfigMap:
+		var configMap corev1.ConfigMap
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &configMap)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal ConfigMap event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &configMap
+	case EventKindDeployment:
+		var deployment appsv1.Deployment
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &deployment)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Deployment event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &deployment
 	case EventKindStatefulSet:
 		var statefulSet appsv1.StatefulSet
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &statefulSet)

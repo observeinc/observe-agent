@@ -8,6 +8,8 @@ const (
 	PersistentVolumeTypeAttributeKey = "volumeType"
 )
 
+// ---------------------------------- PersistentVolume "type" ----------------------------------
+
 type PersistentVolumeTypeAction struct{}
 
 func NewPersistentVolumeTypeAction() PersistentVolumeTypeAction {

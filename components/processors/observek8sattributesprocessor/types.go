@@ -4,6 +4,9 @@ import (
 	"sort"
 	"strings"
 
+	"log"
+
+	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -69,6 +72,9 @@ type serviceAction interface {
 type serviceAccountAction interface {
 	ComputeAttributes(corev1.ServiceAccount) (attributes, error)
 }
+type configMapAction interface {
+	ComputeAttributes(corev1.ConfigMap) (attributes, error)
+}
 
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
@@ -84,6 +90,9 @@ type daemonSetAction interface {
 	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
 }
 
+type deploymentAction interface {
+	ComputeAttributes(appsv1.Deployment) (attributes, error)
+}
 type persistentVolumeClaimAction interface {
 	ComputeAttributes(corev1.PersistentVolumeClaim) (attributes, error)
 }
@@ -105,6 +114,10 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runNodeActions(*typed)
 	case *corev1.Service:
 		return proc.runServiceActions(*typed)
+	case *corev1.ServiceAccount:
+		return proc.runServiceAccountActions(*typed)
+	case *corev1.ConfigMap:
+		return proc.runConfigMapActions(*typed)
 	case *batchv1.Job:
 		return proc.runJobActions(*typed)
 	case *batchv1.CronJob:
@@ -113,14 +126,14 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runDaemonSetActions(*typed)
 	case *appsv1.StatefulSet:
 		return proc.runStatefulSetActions(*typed)
+	case *appsv1.Deployment:
+		return proc.runDeploymentActions(*typed)
 	case *corev1.PersistentVolume:
 		return proc.runPersistentVolumeActions(*typed)
 	case *corev1.PersistentVolumeClaim:
 		return proc.runPersistentVolumeClaimActions(*typed)
 	case *netv1.Ingress:
 		return proc.runIngressActions(*typed)
-	case *corev1.ServiceAccount:
-		return proc.runServiceAccountActions(*typed)
 	case *corev1.Endpoints:
 		return proc.runEndpointsActions(*typed)
 	}
@@ -128,6 +141,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 }
 
 func (m *K8sEventsProcessor) runPodActions(pod corev1.Pod) (attributes, error) {
+	log.Printf("PROCESSING POD TEST")
+	m.logger.Log(zapcore.DebugLevel, "PROCESSING POD TEST")
 	res := attributes{}
 	for _, action := range m.podActions {
 		atts, err := action.ComputeAttributes(pod)
@@ -215,6 +230,18 @@ func (m *K8sEventsProcessor) runPersistentVolumeActions(pvc corev1.PersistentVol
 	return res, nil
 }
 
+func (m *K8sEventsProcessor) runDeploymentActions(deployent appsv1.Deployment) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.deploymentActions {
+		atts, err := action.ComputeAttributes(deployent)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
 func (m *K8sEventsProcessor) runPersistentVolumeClaimActions(pvc corev1.PersistentVolumeClaim) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.persistentVolumeClaimActions {
@@ -239,6 +266,30 @@ func (m *K8sEventsProcessor) runIngressActions(ingress netv1.Ingress) (attribute
 	return res, nil
 }
 
+func (m *K8sEventsProcessor) runServiceActions(service corev1.Service) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.serviceActions {
+		atts, err := action.ComputeAttributes(service)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runConfigMapActions(configMap corev1.ConfigMap) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.configMapActions {
+		atts, err := action.ComputeAttributes(configMap)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
 func (m *K8sEventsProcessor) runServiceAccountActions(serviceAccount corev1.ServiceAccount) (attributes, error) {
 	res := attributes{}
 	for _, action := range m.serviceAccountActions {
@@ -255,18 +306,6 @@ func (m *K8sEventsProcessor) runEndpointsActions(endpoints corev1.Endpoints) (at
 	res := attributes{}
 	for _, action := range m.endpointsActions {
 		atts, err := action.ComputeAttributes(endpoints)
-		if err != nil {
-			return res, err
-		}
-		res.addAttributes(atts)
-	}
-	return res, nil
-}
-
-func (m *K8sEventsProcessor) runServiceActions(service corev1.Service) (attributes, error) {
-	res := attributes{}
-	for _, action := range m.serviceActions {
-		atts, err := action.ComputeAttributes(service)
 		if err != nil {
 			return res, err
 		}
