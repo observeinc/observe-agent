@@ -5,9 +5,6 @@ param (
     $observe_token
 )
 
-Write-Output $observe_collection_endpoint
-Write-Output $observe_token
-
 $installer_url="https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Windows_x86_64.zip"
 $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
