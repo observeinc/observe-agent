@@ -10,7 +10,6 @@ $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
 $temp_dir="C:\temp"
-Write-Output (Test-Path "$observeagent_install_dir\observe-agent.yaml")
 
 New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
