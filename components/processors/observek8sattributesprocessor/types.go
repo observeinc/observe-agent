@@ -90,6 +90,9 @@ type daemonSetAction interface {
 	ComputeAttributes(appsv1.DaemonSet) (attributes, error)
 }
 
+type deploymentAction interface {
+	ComputeAttributes(appsv1.Deployment) (attributes, error)
+}
 type persistentVolumeClaimAction interface {
 	ComputeAttributes(corev1.PersistentVolumeClaim) (attributes, error)
 }
@@ -123,6 +126,8 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 		return proc.runDaemonSetActions(*typed)
 	case *appsv1.StatefulSet:
 		return proc.runStatefulSetActions(*typed)
+	case *appsv1.Deployment:
+		return proc.runDeploymentActions(*typed)
 	case *corev1.PersistentVolume:
 		return proc.runPersistentVolumeActions(*typed)
 	case *corev1.PersistentVolumeClaim:
@@ -217,6 +222,18 @@ func (m *K8sEventsProcessor) runPersistentVolumeActions(pvc corev1.PersistentVol
 	res := attributes{}
 	for _, action := range m.persistentVolumeActions {
 		atts, err := action.ComputeAttributes(pvc)
+		if err != nil {
+			return res, err
+		}
+		res.addAttributes(atts)
+	}
+	return res, nil
+}
+
+func (m *K8sEventsProcessor) runDeploymentActions(deployent appsv1.Deployment) (attributes, error) {
+	res := attributes{}
+	for _, action := range m.deploymentActions {
+		atts, err := action.ComputeAttributes(deployent)
 		if err != nil {
 			return res, err
 		}
