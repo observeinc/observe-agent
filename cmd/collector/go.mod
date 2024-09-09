@@ -2,7 +2,7 @@
 
 module observe/otelcol
 
-go 1.22.5
+go 1.22.7
 
 require (
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
