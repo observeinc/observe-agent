@@ -4,9 +4,6 @@ import (
 	"sort"
 	"strings"
 
-	"log"
-
-	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -141,8 +138,6 @@ func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error
 }
 
 func (m *K8sEventsProcessor) runPodActions(pod corev1.Pod) (attributes, error) {
-	log.Printf("PROCESSING POD TEST")
-	m.logger.Log(zapcore.DebugLevel, "PROCESSING POD TEST")
 	res := attributes{}
 	for _, action := range m.podActions {
 		atts, err := action.ComputeAttributes(pod)
