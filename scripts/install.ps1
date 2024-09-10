@@ -14,6 +14,7 @@ $temp_dir="C:\temp"
 New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
+New-Item -ItemType Directory -Force -Path $observeagent_install_dir\connections
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
 
 Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
@@ -26,7 +27,7 @@ if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
 Expand-Archive -Force -LiteralPath $local_installer -DestinationPath "$temp_dir\observe-agent_Windows_x86_64"
 Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\observe-agent.exe -Destination $observeagent_install_dir
 Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\otel-collector.yaml -Destination $observeagent_install_dir\config\otel-collector.yaml
-Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\connections\ -Destination $observeagent_install_dir\connections -Recurse
+Copy-Item -Force -Path $temp_dir\observe-agent_Windows_x86_64\connections\* -Destination $observeagent_install_dir\connections -Recurse
 
 # If there's already an observe-agent.yaml we don't copy the template from the downloaded installation package and leave existing observe-agent.yaml alone
 if (-Not (Test-Path "$observeagent_install_dir\observe-agent.yaml"))
