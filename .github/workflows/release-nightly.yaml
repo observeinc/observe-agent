@@ -9,9 +9,8 @@ on:
         default: "main"
 
 permissions:
-  contents: write
-  # packages: write
-  # issues: write
+    id-token: write
+    contents: write
 
 jobs:
   goreleaser:
