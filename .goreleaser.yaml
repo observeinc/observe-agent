@@ -558,7 +558,8 @@ nfpms:
 
 dockers:
   - image_templates:
-      - &amd64_image "docker.io/observeinc/observe-agent:{{ .Version }}-amd64"
+      - &amd64_image_dockerhub "docker.io/observeinc/observe-agent:{{ .Version }}-amd64"
+      - &amd64_image_ecr "723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:{{ .Version }}-amd64"
     dockerfile: packaging/docker/Dockerfile
     use: buildx
     goos: linux
@@ -568,7 +569,8 @@ dockers:
     extra_files:
       - packaging/docker
   - image_templates:
-      - &arm64v8_image "docker.io/observeinc/observe-agent:{{ .Version }}-arm64v8"
+      - &arm64v8_image_dockerhub "docker.io/observeinc/observe-agent:{{ .Version }}-arm64v8"
+      - &arm64v8_image_ecr "723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:{{ .Version }}-arm64v8"
     dockerfile: packaging/docker/Dockerfile
     use: buildx
     goos: linux
@@ -581,13 +583,21 @@ dockers:
 docker_manifests:
   - name_template: "docker.io/observeinc/observe-agent:{{ .Version }}"
     image_templates:
-      - *amd64_image
-      - *arm64v8_image
+      - *amd64_image_dockerhub
+      - *arm64v8_image_dockerhub
   - name_template: "docker.io/observeinc/observe-agent:latest"
     image_templates:
-      - *amd64_image
-      - *arm64v8_image
-
+      - *amd64_image_dockerhub
+      - *arm64v8_image_dockerhub
+  - name_template: 723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:{{ .Version }}
+    image_templates:
+      - *amd64_image_ecr
+      - *arm64v8_image_ecr
+  - name_template: 723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:latest
+    image_templates:
+      - *amd64_image_ecr
+      - *arm64v8_image_ecr
+      
 # winget:
 #   - # Name of the recipe
 #     #
