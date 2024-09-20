@@ -570,7 +570,7 @@ dockers:
       - packaging/docker
   - image_templates:
       - &arm64v8_image_dockerhub "docker.io/observeinc/observe-agent:{{ .Version }}-arm64v8"
-      - &arm64v8_image_dockerhub "723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:{{ .Version }}-arm64v8"
+      - &arm64v8_image_ecr "723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent:{{ .Version }}-arm64v8"
     dockerfile: packaging/docker/Dockerfile
     use: buildx
     goos: linux

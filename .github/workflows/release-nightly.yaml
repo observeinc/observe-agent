@@ -9,8 +9,8 @@ on:
         default: "main"
 
 permissions:
-    id-token: write
-    contents: write
+  id-token: write
+  contents: write
 
 jobs:
   goreleaser:
