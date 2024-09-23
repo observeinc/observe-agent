@@ -953,6 +953,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.107.0
+## explicit; go 1.21.0
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.107.0
 ## explicit; go 1.21.0
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor

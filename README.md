@@ -52,10 +52,10 @@ This section lists the components that are included in the Observe Distribution 
 | [filestats][filestatsreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                                                        |                                      |                             |
 | [hostmetrics][hostmetricsreceiver]                       | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                      |                             |
 | [iis][iisreceiver]                                       | [redaction][redactionprocessor]                       |                                                        |                                      |                             |
-| [journald][journaldreceiver]                             | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                      |                             |
-| [k8s_cluster][k8sclusterreceiver]                        | [span][spanprocessor]                                 |                                                        |                                      |                             |
-| [k8sobjects][k8sobjectsreceiver]                         | [transform][transformprocessor]                       |                                                        |                                      |                             |
-| [kafkametrics][kafkametricsreceiver]                     |                                                       |                                                        |                                      |                             |
+| [journald][journaldreceiver]                             | [resource][resourceprocessor]                         |                                                        |                                      |                             |
+| [k8s_cluster][k8sclusterreceiver]                        | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                      |                             |
+| [k8sobjects][k8sobjectsreceiver]                         | [span][spanprocessor]                                 |                                                        |                                      |                             |
+| [kafkametrics][kafkametricsreceiver]                     | [transform][transformprocessor]                       |                                                        |                                      |                             |
 | [kafka][kafkareceiver]                                   |                                                       |                                                        |                                      |                             |
 | [kubeletstats][kubeletstatsreceiver]                     |                                                       |                                                        |                                      |                             |
 | [mongodb][mongodbreceiver]                               |                                                       |                                                        |                                      |                             |
@@ -93,6 +93,7 @@ This section lists the components that are included in the Observe Distribution 
 [memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.107.0/processor/memorylimiterprocessor
 [observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
 [redactionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.107.0/processor/redactionprocessor
+[resourceprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.107.0/processor/resourceprocessor
 [resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.107.0/processor/resourcedetectionprocessor
 [spanprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.107.0/processor/spanprocessor
 [transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.107.0/processor/transformprocessor
