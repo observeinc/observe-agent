@@ -36,6 +36,6 @@ host_monitoring:
 #         exporters: [debug]
 #       # This is a net new pipeline
 #       logs/new-pipeline:
-#         receivers: [hostmetrics/host-monitoring]
+#         receivers: [filelog/host_monitoring]
 #         processors: [memory_limiter]
 #         exporters: [debug]
