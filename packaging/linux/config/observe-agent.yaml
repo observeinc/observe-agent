@@ -7,16 +7,21 @@ observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
 # Debug mode - Sets agent log level to debug
 debug: false
 
+# collect metrics and logs pertaining to the agent itself
 self_monitoring:
   enabled: true
 
+# collect metrics and logs about the host system
 host_monitoring:
   enabled: true
+  # collect logs of all running processes from the host system
   logs: 
     enabled: true
   metrics:
+    # collect metrics about the host system
     host:
       enabled: true
+    # collect metrics about the processes running on the host system
     process:
       enabled: false
     
@@ -36,6 +41,6 @@ host_monitoring:
 #         exporters: [debug]
 #       # This is a net new pipeline
 #       logs/new-pipeline:
-#         receivers: [hostmetrics/host-monitoring]
+#         receivers: [filelog/host_monitoring]
 #         processors: [memory_limiter]
 #         exporters: [debug]
