@@ -31,14 +31,14 @@ install-ocb:
 ## build-ocb: Builds project using ocb
 build-ocb:
 	$(OCB) --skip-compilation --config=builder-config.yaml
-	sed -i -e 's/package main/package observeotel/g' ocb-build/components.go
-	sed -i -e 's/\/Users\/.*observe-agent\//..\/..\//g' ocb-build/go.mod
-	sed -i -e 's/\/home\/.*observe-agent\//..\/..\//g' ocb-build/go.mod
-	cp ./ocb-build/components.go ./cmd/collector/components.go
-	cp ./ocb-build/go.mod ./cmd/collector/go.mod
-	cp ./ocb-build/go.sum ./cmd/collector/go.sum
+	sed -i -e 's/package main/package observecol/g' ocb-build/components.go
+	sed -i -e 's/\/Users\/.*observe-agent\//..\//g' ocb-build/go.mod
+	sed -i -e 's/\/home\/.*observe-agent\//..\//g' ocb-build/go.mod
+	cp ./ocb-build/components.go ./observecol/components.go
+	cp ./ocb-build/go.mod ./observecol/go.mod
+	cp ./ocb-build/go.sum ./observecol/go.sum
 	go mod tidy && go work vendor 
-	cd ./cmd/collector && go mod tidy && go work vendor
+	cd ./observecol && go mod tidy && go work vendor
 
 install-tools:
 	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen

@@ -2,6 +2,6 @@ go 1.22.7
 
 use (
 	.
-	./cmd/collector
+	./observecol
 	./components/processors/observek8sattributesprocessor
 )

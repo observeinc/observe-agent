@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	observeotel "observe/otelcol"
+	"observecol"
 	"os"
 
 	"go.opentelemetry.io/collector/otelcol"
@@ -43,7 +43,7 @@ func run() error {
 		if overridePath != "" {
 			defer os.Remove(overridePath)
 		}
-		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
+		colSettings := observecol.GenerateCollectorSettings(configFilePaths)
 		if err := svc.Run("", otelcol.NewSvcHandler(*colSettings)); err != nil {
 			if errors.Is(err, windows.ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
 				// Per https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-startservicectrldispatchera#return-value

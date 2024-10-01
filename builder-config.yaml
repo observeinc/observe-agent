@@ -1,6 +1,6 @@
 dist:
-  name: observeotel
-  module: observe/otelcol
+  name: observecol
+  module: observecol
   description: Observe Distribution of OTEL Collector
   output_path: ./ocb-build
   otelcol_version: 0.107.0

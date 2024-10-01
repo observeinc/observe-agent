@@ -1,4 +1,4 @@
-package observeotel
+package observecol
 
 import (
 	"observe-agent/build"

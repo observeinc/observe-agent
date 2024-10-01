@@ -6,7 +6,7 @@ package start
 import (
 	"observe-agent/cmd"
 	"observe-agent/cmd/config"
-	observeotel "observe/otelcol"
+	"observecol"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -34,8 +34,8 @@ collector on the current host.`,
 			defer os.Remove(overridePath)
 		}
 		// Generate collector settings with all config files
-		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
-		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
+		colSettings := observecol.GenerateCollectorSettings(configFilePaths)
+		otelCmd := observecol.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},
 }
