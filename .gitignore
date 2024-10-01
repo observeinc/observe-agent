@@ -7,6 +7,10 @@ agent.exe
 agent.exe~
 .DS_Store
 ocb-build/
+go.sum
+go.work.sum
+observecol/go.sum
+components/processors/observek8sattributesprocessor/go.sum
 
 #integration
 *.pem

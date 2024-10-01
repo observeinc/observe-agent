@@ -4,17 +4,16 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"observe-agent/cmd"
-	_ "observe-agent/cmd/commands/diagnose"
-	_ "observe-agent/cmd/commands/initconfig"
-	_ "observe-agent/cmd/commands/start"
-	_ "observe-agent/cmd/commands/status"
-	_ "observe-agent/cmd/commands/version"
+	_ "github.com/observeinc/observe-agent/internal/commands/diagnose"
+	_ "github.com/observeinc/observe-agent/internal/commands/initconfig"
+	_ "github.com/observeinc/observe-agent/internal/commands/start"
+	_ "github.com/observeinc/observe-agent/internal/commands/status"
+	_ "github.com/observeinc/observe-agent/internal/commands/version"
+	"github.com/observeinc/observe-agent/internal/root"
 )
 
 func runInteractive() error {
-	cmd.Execute()
-
+	root.Execute()
 	return nil
 }
 

@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"observe-agent/cmd/connections"
-
+	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/spf13/viper"
 )
 
