@@ -8,9 +8,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/commands/start"
 	"github.com/observeinc/observe-agent/internal/root"
-	"github.com/observeinc/observe-agent/observecol"
 	"go.opentelemetry.io/collector/otelcol"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
@@ -28,20 +27,13 @@ func run() error {
 		}
 		root.CfgFile = os.Args[1]
 		root.InitConfig()
-		// Set Env Vars from config
-		err := config.SetEnvVars()
+		colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings()
 		if err != nil {
 			return err
 		}
-		//
-		configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths()
-		if err != nil {
-			return err
+		if cleanup != nil {
+			defer cleanup()
 		}
-		if overridePath != "" {
-			defer os.Remove(overridePath)
-		}
-		colSettings := observecol.GenerateCollectorSettings(configFilePaths)
 		if err := svc.Run("", otelcol.NewSvcHandler(*colSettings)); err != nil {
 			if errors.Is(err, windows.ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
 				// Per https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-startservicectrldispatchera#return-value

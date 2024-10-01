@@ -1,5 +1,7 @@
 package connections
 
+var HostMonitoringConnectionTypeName = "host_monitoring"
+
 type HostMonitoringConfig struct {
 	enabled bool
 	metrics struct {
@@ -10,9 +12,9 @@ type HostMonitoringConfig struct {
 	}
 }
 
-var HostMonitoringConnectionType = ConnectionType{
-	Name: "host_monitoring",
-	ConfigFields: []CollectorConfigFragment{
+var HostMonitoringConnectionType = MakeConnectionType(
+	"host_monitoring",
+	[]CollectorConfigFragment{
 		{
 			configYAMLPath:    "enabled",
 			colConfigFilePath: "host.yaml",
@@ -34,4 +36,5 @@ var HostMonitoringConnectionType = ConnectionType{
 			colConfigFilePath: "logs.yaml",
 		},
 	},
-}
+	HostMonitoringConnectionTypeName,
+)
