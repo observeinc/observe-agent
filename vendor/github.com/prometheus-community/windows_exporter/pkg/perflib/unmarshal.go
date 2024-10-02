@@ -1,6 +1,7 @@
 package perflib
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"github.com/go-kit/log/level"
 )
 
-// Conversion factors
+// Conversion factors.
 const (
 	TicksToSecondScaleFactor = 1 / 1e7
 	WindowsEpoch             = 116444736000000000
@@ -17,7 +18,7 @@ const (
 
 func UnmarshalObject(obj *PerfObject, vs interface{}, logger log.Logger) error {
 	if obj == nil {
-		return fmt.Errorf("counter not found")
+		return errors.New("counter not found")
 	}
 	rv := reflect.ValueOf(vs)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -47,7 +48,7 @@ func UnmarshalObject(obj *PerfObject, vs interface{}, logger log.Logger) error {
 			}
 		}
 
-		for i := 0; i < target.NumField(); i++ {
+		for i := range target.NumField() {
 			f := rt.Field(i)
 			tag := f.Tag.Get("perflib")
 			if tag == "" {

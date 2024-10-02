@@ -9,8 +9,6 @@ import (
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-
-	"go.opentelemetry.io/collector/internal/globalgates"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
@@ -114,21 +112,29 @@ type retrievedSettings struct {
 }
 
 // RetrievedOption options to customize Retrieved values.
-type RetrievedOption func(*retrievedSettings)
+type RetrievedOption interface {
+	apply(*retrievedSettings)
+}
+
+type retrievedOptionFunc func(*retrievedSettings)
+
+func (of retrievedOptionFunc) apply(e *retrievedSettings) {
+	of(e)
+}
 
 // WithRetrievedClose overrides the default Retrieved.Close function.
 // The default Retrieved.Close function does nothing and always returns nil.
 func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
-	return func(settings *retrievedSettings) {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.closeFunc = closeFunc
-	}
+	})
 }
 
 func withStringRepresentation(stringRepresentation string) RetrievedOption {
-	return func(settings *retrievedSettings) {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.stringRepresentation = stringRepresentation
 		settings.isSetString = true
-	}
+	})
 }
 
 // NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
@@ -137,20 +143,14 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
-		if globalgates.StrictlyTypedInputGate.IsEnabled() {
-			// If the string is not valid YAML, we try to use it verbatim as a string.
-			strRep := string(yamlBytes)
-			return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
-		}
-		return nil, err
+		// If the string is not valid YAML, we try to use it verbatim as a string.
+		strRep := string(yamlBytes)
+		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
 	}
 
-	switch v := rawConf.(type) {
+	switch rawConf.(type) {
 	case string:
-		val := v
-		if globalgates.StrictlyTypedInputGate.IsEnabled() {
-			val = string(yamlBytes)
-		}
+		val := string(yamlBytes)
 		return NewRetrieved(val, append(opts, withStringRepresentation(val))...)
 	default:
 		opts = append(opts, withStringRepresentation(string(yamlBytes)))
@@ -170,7 +170,7 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	}
 	set := retrievedSettings{}
 	for _, opt := range opts {
-		opt(&set)
+		opt.apply(&set)
 	}
 	return &Retrieved{
 		rawConf:              rawConf,

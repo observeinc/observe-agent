@@ -13,8 +13,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -26,7 +29,7 @@ const zExtensionName = "zextensionname"
 type Extensions struct {
 	telemetry    component.TelemetrySettings
 	extMap       map[component.ID]extension.Extension
-	instanceIDs  map[component.ID]*component.InstanceID
+	instanceIDs  map[component.ID]*componentstatus.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
 	reporter     status.Reporter
 }
@@ -41,12 +44,12 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 		ext := bes.extMap[extID]
 		bes.reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStarting),
+			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 		if err := ext.Start(ctx, host); err != nil {
 			bes.reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(err),
+				componentstatus.NewPermanentErrorEvent(err),
 			)
 			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
 			extLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start extension", zap.Error(err))
@@ -68,19 +71,19 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 		ext := bes.extMap[extID]
 		bes.reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopping),
+			componentstatus.NewEvent(componentstatus.StatusStopping),
 		)
 		if err := ext.Shutdown(ctx); err != nil {
 			bes.reporter.ReportStatus(
 				instanceID,
-				component.NewPermanentErrorEvent(err),
+				componentstatus.NewPermanentErrorEvent(err),
 			)
 			errs = multierr.Append(errs, err)
 			continue
 		}
 		bes.reporter.ReportStatus(
 			instanceID,
-			component.NewStatusEvent(component.StatusStopped),
+			componentstatus.NewEvent(componentstatus.StatusStopped),
 		)
 	}
 
@@ -90,7 +93,7 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 func (bes *Extensions) NotifyPipelineReady() error {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return fmt.Errorf("failed to notify extension %q: %w", extID, err)
 			}
@@ -103,7 +106,7 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
 			errs = multierr.Append(errs, pw.NotReady())
 		}
 	}
@@ -114,7 +117,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if cw, ok := ext.(extension.ConfigWatcher); ok {
+		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
 			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
 			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
 		}
@@ -122,10 +125,10 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
+func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if sw, ok := ext.(extension.StatusWatcher); ok {
+		if sw, ok := ext.(componentstatus.Watcher); ok {
 			sw.ComponentStatusChanged(source, event)
 		}
 	}
@@ -167,19 +170,28 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry component.TelemetrySettings
-	BuildInfo component.BuildInfo
+	Telemetry  component.TelemetrySettings
+	BuildInfo  component.BuildInfo
+	ModuleInfo extension.ModuleInfo
 
 	// Extensions builder for extensions.
-	Extensions *extension.Builder
+	Extensions builders.Extension
 }
 
-type Option func(*Extensions)
+type Option interface {
+	apply(*Extensions)
+}
+
+type optionFunc func(*Extensions)
+
+func (of optionFunc) apply(e *Extensions) {
+	of(e)
+}
 
 func WithReporter(reporter status.Reporter) Option {
-	return func(e *Extensions) {
+	return optionFunc(func(e *Extensions) {
 		e.reporter = reporter
-	}
+	})
 }
 
 // New creates a new Extensions from Config.
@@ -187,26 +199,23 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts := &Extensions{
 		telemetry:    set.Telemetry,
 		extMap:       make(map[component.ID]extension.Extension),
-		instanceIDs:  make(map[component.ID]*component.InstanceID),
+		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
 		reporter:     &nopReporter{},
 	}
 
 	for _, opt := range options {
-		opt(exts)
+		opt.apply(exts)
 	}
 
 	for _, extID := range cfg {
-		instanceID := &component.InstanceID{
-			ID:   extID,
-			Kind: component.KindExtension,
-		}
+		instanceID := componentstatus.NewInstanceIDWithPipelineIDs(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
+			ModuleInfo:        set.ModuleInfo,
 		}
-		extSet.TelemetrySettings.ReportStatus = status.NewReportStatusFunc(instanceID, exts.reporter.ReportStatus)
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 
 		ext, err := set.Extensions.Create(ctx, extSet)
@@ -234,6 +243,6 @@ type nopReporter struct{}
 
 func (r *nopReporter) Ready() {}
 
-func (r *nopReporter) ReportStatus(*component.InstanceID, *component.StatusEvent) {}
+func (r *nopReporter) ReportStatus(*componentstatus.InstanceID, *componentstatus.Event) {}
 
-func (r *nopReporter) ReportOKIfStarting(*component.InstanceID) {}
+func (r *nopReporter) ReportOKIfStarting(*componentstatus.InstanceID) {}
