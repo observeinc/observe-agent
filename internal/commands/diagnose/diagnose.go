@@ -6,7 +6,7 @@ package diagnose
 import (
 	"embed"
 	"fmt"
-	"observe-agent/cmd"
+	"observe-agent/internal/root"
 	"os"
 	"text/template"
 
@@ -35,7 +35,7 @@ to attempt to identify issues that could cause the agent to function improperly.
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(diagnoseCmd)
+	root.RootCmd.AddCommand(diagnoseCmd)
 
 	// Here you will define your flags and configuration settings.
 

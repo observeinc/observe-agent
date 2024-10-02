@@ -6,7 +6,7 @@ package status
 import (
 	"embed"
 	"html/template"
-	"observe-agent/cmd"
+	"observe-agent/internal/root"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -30,7 +30,7 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(statusCmd)
+	root.RootCmd.AddCommand(statusCmd)
 
 	// Here you will define your flags and configuration settings.
 

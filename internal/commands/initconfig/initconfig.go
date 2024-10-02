@@ -7,7 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"observe-agent/cmd"
+	"observe-agent/internal/root"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -78,7 +78,7 @@ func NewConfigureCmd() *cobra.Command {
 func init() {
 	configureCmd := NewConfigureCmd()
 	RegisterConfigFlags(configureCmd)
-	cmd.RootCmd.AddCommand(configureCmd)
+	root.RootCmd.AddCommand(configureCmd)
 }
 
 func RegisterConfigFlags(cmd *cobra.Command) {

@@ -4,8 +4,8 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package start
 
 import (
-	"observe-agent/cmd"
-	"observe-agent/cmd/config"
+	"observe-agent/internal/config"
+	"observe-agent/internal/root"
 	"observecol"
 	"os"
 
@@ -43,7 +43,7 @@ collector on the current host.`,
 func init() {
 	startCmd.PersistentFlags().String("otel-config", "", "Path to additional otel configuration file")
 	viper.BindPFlag("otelConfigFile", startCmd.PersistentFlags().Lookup("otel-config"))
-	cmd.RootCmd.AddCommand(startCmd)
+	root.RootCmd.AddCommand(startCmd)
 
 	// Here you will define your flags and configuration settings.
 
