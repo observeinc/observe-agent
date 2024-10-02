@@ -4,8 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package start
 
 import (
+	"context"
 	"observe-agent/cmd"
+	logger "observe-agent/cmd/commands/util"
 	"observe-agent/cmd/config"
+	"observe-agent/cmd/connections"
 	observeotel "observe/otelcol"
 	"os"
 
@@ -20,13 +23,19 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := logger.WithCtx(context.Background(), logger.Get())
 		// Set Env Vars from config
 		err := config.SetEnvVars()
 		if err != nil {
 			return err
 		}
-		//
-		configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths()
+		// Set up our temp dir annd temp config files
+		tmpDir, err := os.MkdirTemp("", connections.TempFilesFolder)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmpDir)
+		configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths(ctx, tmpDir)
 		if err != nil {
 			return err
 		}
