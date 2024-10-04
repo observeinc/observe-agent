@@ -24,6 +24,7 @@ const (
 	EventKindServiceAccount = "ServiceAccount"
 	EventKindEndpoints      = "Endpoints"
 	EventKindConfigMap      = "ConfigMap"
+	EventKindSecret         = "Secret"
 	// APPS
 	EventKindStatefulSet = "StatefulSet"
 	EventKindDaemonSet   = "DaemonSet"
@@ -42,6 +43,7 @@ type K8sEventsProcessor struct {
 	cfg    component.Config
 	logger *zap.Logger
 
+	// --------------- actions that generate new attribute(s) ---------------
 	nodeActions           []nodeAction
 	podActions            []podAction
 	endpointsActions      []endpointsAction
@@ -60,12 +62,18 @@ type K8sEventsProcessor struct {
 	persistentVolumeClaimActions []persistentVolumeClaimAction
 
 	ingressActions []ingressAction
+
+	// --------------- actions that edit the body of an event IN PLACE ---------------
+	secretBodyActions []secretBodyAction
+	// Other slices should be: <anotherObject>BodyActions []bodyAction
 }
 
 func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsProcessor {
 	return &K8sEventsProcessor{
 		cfg:    cfg,
 		logger: logger,
+
+		// --------------- actions that generate new attribute(s) ---------------
 		podActions: []podAction{
 			NewPodStatusAction(), NewPodContainersCountsAction(), NewPodReadinessAction(), NewPodConditionsAction(),
 		},
@@ -112,6 +120,11 @@ func newK8sEventsProcessor(logger *zap.Logger, cfg component.Config) *K8sEventsP
 		ingressActions: []ingressAction{
 			NewIngressRulesAction(), NewIngressLoadBalancerAction(),
 		},
+
+		// --------------- actions that edit the body of an event IN PLACE ---------------
+		secretBodyActions: []secretBodyAction{
+			NewSecretRedactorBodyAction(),
+		},
 	}
 }
 
@@ -125,7 +138,10 @@ func (kep *K8sEventsProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// Unmarshals a LogRecord into either a Node or Pod object.
+// Unmarshals a LogRecord into the corresponding k8s object.
+// It does so by first unmarshaling the event into a minimal struct that
+// contains the event type. Based on such type, it then unmarshals the whole
+// event into the typed API object.
 func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 	// Get the event type by unmarshalling it selectively
 	var event K8sEvent
@@ -184,6 +200,14 @@ func (kep *K8sEventsProcessor) unmarshalEvent(lr plog.LogRecord) metav1.Object {
 			return nil
 		}
 		return &configMap
+	case EventKindSecret:
+		var secret corev1.Secret
+		err := json.Unmarshal([]byte(lr.Body().AsString()), &secret)
+		if err != nil {
+			kep.logger.Error("failed to unmarshal Secret event %v", zap.Error(err), zap.String("event", lr.Body().AsString()))
+			return nil
+		}
+		return &secret
 	case EventKindDeployment:
 		var deployment appsv1.Deployment
 		err := json.Unmarshal([]byte(lr.Body().AsString()), &deployment)
@@ -270,6 +294,23 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					continue
 				}
 
+				// ALWAYS RUN BODY ACTIONS FIRST
+				// The attributes should always be computed on the MODIFIED body.
+				err := kep.RunBodyActions(object)
+				if err != nil {
+					kep.logger.Error("could not run body actions", zap.Error(err))
+					continue
+				}
+				// We now re-marshal the object
+				reMarshsalledBody, err := json.Marshal(object)
+				if err != nil {
+					kep.logger.Error("could not re-marshal body", zap.Error(err))
+					continue
+				}
+				// And update the body of the log record
+				lr.Body().SetStr(string(reMarshsalledBody))
+
+				// Add attributes["observe_transform"]["facets"] if it doesn't exist
 				transform, exists := lr.Attributes().Get("observe_transform")
 				if exists {
 					transformMap = transform.Map()
@@ -286,13 +327,14 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					facetsMap.EnsureCapacity(len(kep.podActions))
 				}
 
-				// This is where the custom processor actually computes the transformed value(s)
+				// Compute custom attributes
 				values, err := kep.RunActions(object)
 				if err != nil {
 					kep.logger.Error("could not compute attributes", zap.Error(err))
 					continue
 				}
 
+				// Add them to the facets
 				facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
 				for key, val := range values {
 					if err := mapPut(facetsMap, key, val); err != nil {

@@ -57,6 +57,7 @@ type K8sEventProcessorAction interface {
 	ComputeAttributes(any) (attributes, error)
 }
 
+// Actions that generate new attributes based on the unmarshalled (typed) k8s object
 type podAction interface {
 	ComputeAttributes(corev1.Pod) (attributes, error)
 }
@@ -72,7 +73,6 @@ type serviceAccountAction interface {
 type configMapAction interface {
 	ComputeAttributes(corev1.ConfigMap) (attributes, error)
 }
-
 type jobAction interface {
 	ComputeAttributes(batchv1.Job) (attributes, error)
 }
@@ -103,6 +103,41 @@ type endpointsAction interface {
 	ComputeAttributes(corev1.Endpoints) (attributes, error)
 }
 
+// Actions that modify the body of the event IN PLACE
+// Note that these actions accept a pointer to an object!
+type secretBodyAction interface {
+	Modify(*corev1.Secret) error
+}
+
+// Runs actions that modify parts of the body of this event IN PLACE.  Since we
+// want these actions to modify body attributes, these actions intentionally DO
+// NOT DeepCopy() the object and must run BEFORE the actions that generate new
+// attributes.
+// This is useful, for instance, when we want to redact secrets' values, to
+// prevent generating attributes that contain secret's values before redacting
+// them.
+// TODO [eg] check if there's actually no copying going on here
+func (proc *K8sEventsProcessor) RunBodyActions(obj metav1.Object) error {
+	switch typed := obj.(type) {
+	case *corev1.Secret:
+		err := proc.runSecretBodyActions(typed)
+		return err
+	}
+
+	return nil
+}
+
+func (m *K8sEventsProcessor) runSecretBodyActions(secret *corev1.Secret) error {
+	for _, action := range m.secretBodyActions {
+		err := action.Modify(secret)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Runs actions that generate new attributes for an (unmarshalled) object.
 func (proc *K8sEventsProcessor) RunActions(obj metav1.Object) (attributes, error) {
 	switch typed := obj.(type) {
 	case *corev1.Pod:

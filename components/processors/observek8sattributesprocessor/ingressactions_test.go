@@ -19,6 +19,6 @@ func TestIngressActions(t *testing.T) {
 			},
 		},
 	} {
-		runTest(t, testCase)
+		runTest(t, testCase, LogLocationAttributes)
 	}
 }
