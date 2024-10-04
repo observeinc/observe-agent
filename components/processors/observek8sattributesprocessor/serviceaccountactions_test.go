@@ -26,6 +26,6 @@ func TestServiceAccountActions(t *testing.T) {
 			},
 		},
 	} {
-		runTest(t, testCase)
+		runTest(t, testCase, LogLocationAttributes)
 	}
 }

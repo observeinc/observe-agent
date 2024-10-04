@@ -19,6 +19,6 @@ func TestCronJobActions(t *testing.T) {
 			},
 		},
 	} {
-		runTest(t, testCase)
+		runTest(t, testCase, LogLocationAttributes)
 	}
 }

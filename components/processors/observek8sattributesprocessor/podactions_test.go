@@ -92,7 +92,7 @@ func TestPodActions(t *testing.T) {
 			},
 		},
 	} {
-		runTest(t, test)
+		runTest(t, test, LogLocationAttributes)
 	}
 
 }
