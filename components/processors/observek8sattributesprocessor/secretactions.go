@@ -16,10 +16,21 @@ func NewSecretRedactorBodyAction() SecretRedactorBodyAction {
 
 // ---------------------------------- Secret "data" values' redaction ----------------------------------
 
-// Redacts secrets' values
-func (SecretRedactorBodyAction) Modify(secret *corev1.Secret) error {
+func redactSecretKeys(secret *corev1.Secret) {
 	for key := range secret.Data {
 		secret.Data[key] = []byte(RedactedSecretValue)
 	}
+	for key := range secret.StringData {
+		secret.StringData[key] = RedactedSecretValue
+	}
+}
+
+// Redacts secrets' values
+func (SecretRedactorBodyAction) Modify(secret *corev1.Secret) error {
+	redactSecretKeys(secret)
+
+	annotations := secret.GetAnnotations()
+	delete(annotations, corev1.LastAppliedConfigAnnotation)
+	secret.SetAnnotations(annotations)
 	return nil
 }

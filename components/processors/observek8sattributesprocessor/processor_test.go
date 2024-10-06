@@ -31,10 +31,27 @@ type queryWithResult struct {
 	expResult any
 }
 
+// Functions that check the body of a logRecord post processor actions
+// These "custom" check functions are a powerful way to introspect the body
+// of a log record (as a raw JSON string).
+// Implementations of these functions most likely start with unmarshalling
+// the body string to an API object of choice
+type checkBodyFunc func(t *testing.T, body string)
+
+// Functions that check the attributes of a logRecord post processor actions
+// These custom actions take as input the key-value attributes as a
+// map[string]any
+type checkAttributesFunc func(t *testing.T, attributes map[string]any) //nolint:unused
+
 type k8sEventProcessorTest struct {
 	name            string
 	inLogs          plog.Logs
 	expectedResults []queryWithResult
+	// Actions that are only ran when testing the body of a resulting logRecord
+	checkBodyFunctions []checkBodyFunc
+	// Actions that are only ran when testing the attributes a resulting
+	// logRecord
+	checkAttributesFunctions []checkAttributesFunc //nolint:unused
 }
 
 // LogLocation is the part of the log where to check for matches. At the moment,
@@ -62,8 +79,14 @@ func runTest(t *testing.T, test k8sEventProcessorTest, location LogLocation) {
 			// map[string]any to be able to query it with jmespath.
 			body := logRecord.Body().AsString()
 			json.Unmarshal([]byte(body), &out)
+			for _, fn := range test.checkBodyFunctions {
+				fn(t, body)
+			}
 		case LogLocationAttributes:
 			out = logRecord.Attributes().AsRaw()
+			for _, fn := range test.checkAttributesFunctions {
+				fn(t, out)
+			}
 		}
 		for _, query := range test.expectedResults {
 			queryJmes, err := jmespath.Compile(query.path)
