@@ -1,5 +1,7 @@
 package connections
 
+var HostMonitoringConnectionTypeName = "host_monitoring"
+
 type HostMonitoringConfig struct {
 	enabled bool
 	metrics struct {
@@ -34,4 +36,5 @@ var HostMonitoringConnectionType = ConnectionType{
 			colConfigFilePath: "logs.yaml",
 		},
 	},
+	Type: HostMonitoringConnectionTypeName,
 }

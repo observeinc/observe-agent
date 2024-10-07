@@ -1,5 +1,7 @@
 package connections
 
+var SelfMonitoringConnectionTypeName = "self_monitoring"
+
 type SelfMonitoringConfig struct {
 	enabled bool
 }
@@ -12,4 +14,5 @@ var SelfMonitoringConnectionType = ConnectionType{
 			colConfigFilePath: "logs_and_metrics.yaml",
 		},
 	},
+	Type: SelfMonitoringConnectionTypeName,
 }

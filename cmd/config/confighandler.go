@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,14 +13,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-func GetAllOtelConfigFilePaths() ([]string, string, error) {
+func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, string, error) {
 	// Initialize config file paths with base config
 	configFilePaths := []string{filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")}
 	var err error
 	// Get additional config paths based on connection configs
 	for _, conn := range connections.AllConnectionTypes {
 		if viper.IsSet(conn.Name) {
-			configFilePaths = append(configFilePaths, conn.GetConfigFilePaths()...)
+			configFilePaths = append(configFilePaths, conn.GetConfigFilePaths(ctx, tmpDir)...)
 		}
 	}
 	// Read in otel-config flag and add to paths if set
