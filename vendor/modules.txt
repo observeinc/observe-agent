@@ -184,10 +184,8 @@ github.com/cenkalti/backoff/v4
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b
-## explicit; go 1.19
 # github.com/cncf/xds/go v0.0.0-20240723142845-024c85f92f20
-## go 1.19
+## explicit; go 1.19
 github.com/cncf/xds/go/udpa/annotations
 github.com/cncf/xds/go/xds/annotations/v3
 github.com/cncf/xds/go/xds/core/v3
@@ -262,19 +260,15 @@ github.com/elastic/lunes/dev-tools/mage/gotool
 ## explicit; go 1.13
 github.com/emicklei/go-restful/v3
 github.com/emicklei/go-restful/v3/log
-# github.com/envoyproxy/go-control-plane v0.12.1-0.20240621013728-1eb8caab5155
-## explicit; go 1.21
 # github.com/envoyproxy/go-control-plane v0.13.0
-## go 1.21
+## explicit; go 1.21
 github.com/envoyproxy/go-control-plane/envoy/annotations
 github.com/envoyproxy/go-control-plane/envoy/config/core/v3
 github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3
 github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3
 github.com/envoyproxy/go-control-plane/envoy/type/v3
-# github.com/envoyproxy/protoc-gen-validate v1.0.4
-## explicit; go 1.19
 # github.com/envoyproxy/protoc-gen-validate v1.1.0
-## go 1.19
+## explicit; go 1.19
 github.com/envoyproxy/protoc-gen-validate/validate
 # github.com/expr-lang/expr v1.16.9
 ## explicit; go 1.18
@@ -337,8 +331,6 @@ github.com/go-openapi/swag
 # github.com/go-resty/resty/v2 v2.13.1
 ## explicit; go 1.16
 github.com/go-resty/resty/v2
-# github.com/go-viper/mapstructure/v2 v2.0.0
-## explicit; go 1.18
 # github.com/go-viper/mapstructure/v2 v2.1.0
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
@@ -659,8 +651,6 @@ github.com/lightstep/go-expohisto/structure
 github.com/linode/linodego
 github.com/linode/linodego/internal/duration
 github.com/linode/linodego/internal/parseabletime
-# github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c
-## explicit; go 1.16
 # github.com/lufia/plan9stats v0.0.0-20240513124658-fba389f38bae
 ## explicit; go 1.16
 github.com/lufia/plan9stats
@@ -718,7 +708,11 @@ github.com/munnerz/goautoneg
 # github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 ## explicit
 github.com/mwitkow/go-conntrack
+# github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000 => .
+## explicit; go 1.22.7
 # github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
+## explicit; go 1.22.7
+# github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000 => ./observecol
 ## explicit; go 1.22.7
 # github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.110.0
 ## explicit; go 1.22.0
@@ -1169,8 +1163,6 @@ github.com/planetscale/vtprotobuf/types/known/wrapperspb
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c
-## explicit; go 1.14
 # github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55
 ## explicit; go 1.14
 github.com/power-devops/perfstat
@@ -1318,8 +1310,6 @@ github.com/shirou/gopsutil/v4/process
 # github.com/shoenig/go-m1cpu v0.1.6
 ## explicit; go 1.20
 github.com/shoenig/go-m1cpu
-# github.com/shoenig/test v1.7.1
-## explicit; go 1.18
 # github.com/sourcegraph/conc v0.3.0
 ## explicit; go 1.19
 github.com/sourcegraph/conc
@@ -1374,13 +1364,9 @@ github.com/tidwall/tinylru
 # github.com/tidwall/wal v1.1.7
 ## explicit; go 1.13
 github.com/tidwall/wal
-# github.com/tklauser/go-sysconf v0.3.12
-## explicit; go 1.18
 # github.com/tklauser/go-sysconf v0.3.14
 ## explicit; go 1.18
 github.com/tklauser/go-sysconf
-# github.com/tklauser/numcpus v0.6.1
-## explicit; go 1.18
 # github.com/tklauser/numcpus v0.8.0
 ## explicit; go 1.18
 github.com/tklauser/numcpus
@@ -1533,9 +1519,7 @@ go.opentelemetry.io/collector/config/configtls
 # go.opentelemetry.io/collector/config/internal v0.110.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/config/internal
-# go.opentelemetry.io/collector/confmap v0.107.0
-## explicit; go 1.22.0
-# go.opentelemetry.io/collector/confmap v1.16.0
+# go.opentelemetry.io/collector/confmap v1.17.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/confmap
 go.opentelemetry.io/collector/confmap/confmaptest
@@ -1627,16 +1611,12 @@ go.opentelemetry.io/collector/extension/extensioncapabilities
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/extension/zpagesextension
 go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata
-# go.opentelemetry.io/collector/featuregate v1.13.0
-## explicit; go 1.22.0
 # go.opentelemetry.io/collector/featuregate v1.16.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/featuregate
 # go.opentelemetry.io/collector/filter v0.110.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/filter
-# go.opentelemetry.io/collector/internal/globalgates v0.107.0
-## explicit; go 1.22.0
 # go.opentelemetry.io/collector/internal/globalgates v0.110.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/collector/internal/globalgates
@@ -1918,8 +1898,6 @@ golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/crypto/scrypt
-# golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-## explicit; go 1.20
 # golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 ## explicit; go 1.20
 golang.org/x/exp/constraints
@@ -2077,15 +2055,11 @@ google.golang.org/api/transport/http/internal/propagation
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
-## explicit; go 1.21
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20240930140551-af27646dc61f
 ## explicit; go 1.21
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.66.2
-## explicit; go 1.21
 # google.golang.org/grpc v1.67.1
 ## explicit; go 1.21
 google.golang.org/grpc
@@ -2203,6 +2177,8 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
+# k8s.io/api v0.31.0
+## explicit; go 1.22.0
 # k8s.io/api v0.31.1
 ## explicit; go 1.22.0
 k8s.io/api/admissionregistration/v1
@@ -2260,6 +2236,8 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 k8s.io/api/storagemigration/v1alpha1
+# k8s.io/apimachinery v0.31.0
+## explicit; go 1.22.0
 # k8s.io/apimachinery v0.31.1
 ## explicit; go 1.22.0
 k8s.io/apimachinery/pkg/api/equality
@@ -2593,8 +2571,6 @@ k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/kubelet v0.31.1
 ## explicit; go 1.22.0
 k8s.io/kubelet/pkg/apis/stats/v1alpha1
-# k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-## explicit; go 1.18
 # k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 ## explicit; go 1.18
 k8s.io/utils/buffer

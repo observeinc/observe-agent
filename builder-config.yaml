@@ -1,6 +1,6 @@
 dist:
-  name: observeotel
-  module: observe/otelcol
+  name: observecol
+  module: github.com/observeinc/observe-agent/observecol
   description: Observe Distribution of OTEL Collector
   output_path: ./ocb-build
   otelcol_version: 0.110.0
@@ -61,7 +61,6 @@ connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.110.0
 
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.110.0
-# replaces:
-#   - k8s.io/api => k8s.io/api v0.29.3
-#   - k8s.io/apimachinery => k8s.io/apimachinery v0.29.3
-#   - k8s.io/client-go => k8s.io/client-go v0.29.3
+
+replaces:
+  - github.com/observeinc/observe-agent => ../

@@ -4,11 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package start
 
 import (
-	"observe-agent/cmd"
-	"observe-agent/cmd/config"
-	observeotel "observe/otelcol"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/root"
+	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -34,8 +34,8 @@ collector on the current host.`,
 			defer os.Remove(overridePath)
 		}
 		// Generate collector settings with all config files
-		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
-		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
+		colSettings := observecol.GenerateCollectorSettings(configFilePaths)
+		otelCmd := observecol.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},
 }
@@ -43,7 +43,7 @@ collector on the current host.`,
 func init() {
 	startCmd.PersistentFlags().String("otel-config", "", "Path to additional otel configuration file")
 	viper.BindPFlag("otelConfigFile", startCmd.PersistentFlags().Lookup("otel-config"))
-	cmd.RootCmd.AddCommand(startCmd)
+	root.RootCmd.AddCommand(startCmd)
 
 	// Here you will define your flags and configuration settings.
 

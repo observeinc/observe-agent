@@ -23,7 +23,7 @@ builds:
     goos:
       - linux
       - darwin
-    ldflags: -s -w -X observe-agent/build.Version={{.Version}}
+    ldflags: -s -w -X github.com/observeinc/observe-agent/build.Version={{.Version}}
 
   - id: windows_build
     binary: observe-agent
@@ -34,7 +34,7 @@ builds:
     goarch:
       - amd64
       - '386'
-    ldflags: -s -w -X observe-agent/build.Version={{.Version}}
+    ldflags: -s -w -X github.com/observeinc/observe-agent/build.Version={{.Version}}
 
 archives:
   - id: default

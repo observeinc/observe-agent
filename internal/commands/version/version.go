@@ -5,9 +5,9 @@ package version
 
 import (
 	"fmt"
-	"observe-agent/build"
-	"observe-agent/cmd"
 
+	"github.com/observeinc/observe-agent/build"
+	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ is based on the package release.`,
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(versionCmd)
+	root.RootCmd.AddCommand(versionCmd)
 
 	// Here you will define your flags and configuration settings.
 

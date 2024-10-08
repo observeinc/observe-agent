@@ -1,7 +1,7 @@
-package observeotel
+package observecol
 
 import (
-	"observe-agent/build"
+	"github.com/observeinc/observe-agent/build"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
@@ -11,9 +11,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-
 	"go.opentelemetry.io/collector/otelcol"
-	collector "go.opentelemetry.io/collector/otelcol"
 )
 
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
@@ -24,16 +22,16 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	return ret
 }
 
-func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
+func GenerateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
 		Description: "Observe Distribution of Opentelemetry Collector",
 		Version:     build.Version,
 	}
-	set := &collector.CollectorSettings{
+	set := &otelcol.CollectorSettings{
 		BuildInfo: buildInfo,
 		Factories: components,
-		ConfigProviderSettings: collector.ConfigProviderSettings{
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs: URIs,
 				ProviderFactories: []confmap.ProviderFactory{
@@ -49,7 +47,7 @@ func GenerateCollectorSettings(URIs []string) *collector.CollectorSettings {
 	return set
 }
 
-func GetOtelCollectorCommand(otelconfig *collector.CollectorSettings) *cobra.Command {
+func GetOtelCollectorCommand(otelconfig *otelcol.CollectorSettings) *cobra.Command {
 	cmd := otelcol.NewCommand(*otelconfig)
 	return cmd
 }

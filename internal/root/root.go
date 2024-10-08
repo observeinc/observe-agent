@@ -1,13 +1,13 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 */
-package cmd
+package root
 
 import (
 	"fmt"
-	"observe-agent/cmd/config"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
