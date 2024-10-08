@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	CronJobActiveKey = "active"
+	CronJobActiveKey = "activeJobs"
 )
 
 type CronJobActiveAction struct{}
