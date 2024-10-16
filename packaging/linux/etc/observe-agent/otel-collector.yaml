@@ -87,7 +87,8 @@ exporters:
       queue_size: 100
     retry_on_failure:
       enabled: true
-  
+    compression: zstd
+
   debug:
 
 service:
