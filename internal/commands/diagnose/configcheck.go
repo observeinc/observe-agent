@@ -16,7 +16,7 @@ type ConfigTestResult struct {
 }
 
 func validateYaml(yamlContent []byte) error {
-	m := make(map[any]any)
+	m := make(map[string]any)
 	return yaml.Unmarshal(yamlContent, &m)
 }
 
