@@ -1,0 +1,6 @@
+Running check on config file {{ .ConfigFile }}
+{{- if .Passed }}
+Config file is valid YAML.
+{{- else }}
+⚠️ Config file parse failed with error {{ .Error }}
+{{- end }}
