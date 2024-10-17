@@ -41,15 +41,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(InitConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
 	RootCmd.PersistentFlags().StringVar(&CfgFile, "config", "", "config file path")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // InitConfig reads in config file and ENV variables if set.
