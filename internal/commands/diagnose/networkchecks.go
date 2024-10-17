@@ -47,7 +47,7 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 	if err != nil {
 		return NetworkTestResult{
 			Passed:       false,
-			Error:        "failed to parse response body",
+			Error:        fmt.Sprintf("failed to parse response body: %s", err.Error()),
 			ResponseCode: resp.StatusCode,
 			URL:          URL,
 		}
