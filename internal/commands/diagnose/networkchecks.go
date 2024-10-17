@@ -1,6 +1,7 @@
 package diagnose
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,11 +69,26 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 	}
 }
 
-func makeNetworkingTestRequest(url string) NetworkTestResult {
-	return makeTestRequest(url, make(map[string]string))
+func makeAuthTestRequest() (any, error) {
+	collector_url := viper.GetString("observe_url")
+	authToken := fmt.Sprintf("Bearer %s", viper.GetString("token"))
+	authTestResponse := makeTestRequest(collector_url, map[string]string{"Authorization": authToken})
+	return authTestResponse, nil
 }
 
-func makeAuthTestRequest(url string) NetworkTestResult {
-	authToken := fmt.Sprintf("Bearer %s", viper.GetString("token"))
-	return makeTestRequest(url, map[string]string{"Authorization": authToken})
+// const networkcheckTemplate = "networkcheck.tmpl"
+const authcheckTemplate = "authcheck.tmpl"
+
+var (
+	//go:embed authcheck.tmpl
+	authcheckTemplateFS embed.FS
+)
+
+func authDiagnostic() Diagnostic {
+	return Diagnostic{
+		check:        makeAuthTestRequest,
+		checkName:    "Auth Check",
+		templateName: authcheckTemplate,
+		templateFS:   authcheckTemplateFS,
+	}
 }

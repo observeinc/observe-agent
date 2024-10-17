@@ -11,27 +11,17 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-// const networkcheckTemplate = "networkcheck.tmpl"
-const authcheckTemplate = "authcheck.tmpl"
-
-var (
-	//go:embed authcheck.tmpl
-	authcheckTemplateFS embed.FS
-)
-
-var diagnostics = []struct {
+type Diagnostic struct {
 	check        func() (any, error)
+	checkName    string
 	templateName string
 	templateFS   embed.FS
-}{
-	{
-		authCheck,
-		authcheckTemplate,
-		authcheckTemplateFS,
-	},
+}
+
+var diagnostics = []Diagnostic{
+	authDiagnostic(),
 }
 
 // diagnoseCmd represents the diagnose command
@@ -40,30 +30,26 @@ var diagnoseCmd = &cobra.Command{
 	Short: "Run diagnostic checks.",
 	Long: `This command runs diagnostic checks for various settings and configurations
 to attempt to identify issues that could cause the agent to function improperly.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Print("Running diagnosis checks...\n\n")
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print("Running diagnosis checks...\n")
 		for _, diagnostic := range diagnostics {
+			fmt.Printf("\n%s\n================\n\n", diagnostic.checkName)
 			data, err := diagnostic.check()
 			if err != nil {
-				return err
+				fmt.Printf("⚠️ Failed to run check: %s\n", err.Error())
+				continue
 			}
 			t := template.Must(template.
 				New(diagnostic.templateName).
 				ParseFS(diagnostic.templateFS, diagnostic.templateName))
 			if err := t.ExecuteTemplate(os.Stdout, diagnostic.templateName, data); err != nil {
-				return err
+				fmt.Printf("⚠️ Failed to print output for check: %s\n", err.Error())
+				continue
 			}
 		}
-		return nil
 	},
 }
 
 func init() {
 	root.RootCmd.AddCommand(diagnoseCmd)
-}
-
-func authCheck() (any, error) {
-	collector_url := viper.GetString("observe_url")
-	authTestResponse := makeAuthTestRequest(collector_url)
-	return authTestResponse, nil
 }
