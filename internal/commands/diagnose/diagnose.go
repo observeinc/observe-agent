@@ -22,6 +22,7 @@ type Diagnostic struct {
 
 var diagnostics = []Diagnostic{
 	authDiagnostic(),
+	configDiagnostic(),
 }
 
 // diagnoseCmd represents the diagnose command
