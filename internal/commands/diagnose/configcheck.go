@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/observeinc/observe-agent/internal/root"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,22 +21,23 @@ func validateYaml(yamlContent []byte) error {
 }
 
 func checkConfig() (any, error) {
-	if root.CfgFile == "" {
+	configFile := viper.ConfigFileUsed()
+	if configFile == "" {
 		return nil, fmt.Errorf("no config file defined")
 	}
-	configFile, err := os.ReadFile(root.CfgFile)
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
-	if err = validateYaml(configFile); err != nil {
+	if err = validateYaml(contents); err != nil {
 		return ConfigTestResult{
-			root.CfgFile,
+			configFile,
 			false,
 			err.Error(),
 		}, nil
 	}
 	return ConfigTestResult{
-		ConfigFile: root.CfgFile,
+		ConfigFile: configFile,
 		Passed:     true,
 	}, nil
 }
