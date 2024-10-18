@@ -17,8 +17,8 @@ var CfgFile string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "observe-agent",
-	Short: "A runner for the Observe agent process along with CLI utils.",
-	Long: `A runner for the Observe agent process along with CLI utils to help with setup
+	Short: "Observe distribution of OTEL Collector",
+	Long: `Observe distribution of OTEL Collector along with CLI utils to help with setup
 and maintenance. To start the agent, run: observe-agent start`,
 }
 
