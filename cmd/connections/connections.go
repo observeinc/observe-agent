@@ -28,6 +28,9 @@ type ConnectionType struct {
 	Name         string
 	ConfigFields []CollectorConfigFragment
 	Type         string
+
+	configFolderPath string
+	getConfig        func() *viper.Viper
 }
 
 func GetConfigFolderPath() string {
@@ -48,7 +51,7 @@ func GetConfigFolderPath() string {
 }
 
 func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
-	return filepath.Join(GetConfigFolderPath(), c.Name, tplFilename)
+	return filepath.Join(c.configFolderPath, c.Name, tplFilename)
 }
 
 func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string, tplFilename string, confValues any) (string, error) {
@@ -71,20 +74,24 @@ func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string
 	return f.Name(), nil
 }
 
-func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) ([]string, error) {
+func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) []string {
 	paths := make([]string, 0)
 	for _, field := range c.ConfigFields {
 		val := rawConnConfig.GetBool(field.configYAMLPath)
 		if val && field.colConfigFilePath != "" {
-			configPath, _ := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, confValues)
-			paths = append(paths, configPath)
+			configPath, err := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, confValues)
+			if err != nil {
+				logger.FromCtx(ctx).Error("failed to render config template", zap.String("configPath", field.colConfigFilePath), zap.Error(err))
+			} else {
+				paths = append(paths, configPath)
+			}
 		}
 	}
-	return paths, nil
+	return paths
 }
 
 func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) []string {
-	var rawConnConfig = viper.Sub(c.Name)
+	var rawConnConfig = c.getConfig()
 	var configPaths []string
 	if rawConnConfig == nil || !rawConnConfig.GetBool("enabled") {
 		return configPaths
@@ -96,20 +103,51 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 		}
-		configPaths, _ = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		configPaths = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
 	case HostMonitoringConnectionTypeName:
 		conf := &HostMonitoringConfig{}
 		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 		}
-		configPaths, _ = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		configPaths = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+	default:
+		logger.FromCtx(ctx).Error("unknown connection type", zap.String("type", c.Type))
 	}
 
 	return configPaths
 }
 
+type ConnectionTypeOption func(*ConnectionType)
+
+func MakeConnectionType(Name string, ConfigFields []CollectorConfigFragment, Type string, opts ...ConnectionTypeOption) *ConnectionType {
+	var c = &ConnectionType{Name: Name, ConfigFields: ConfigFields, Type: Type}
+	c.getConfig = func() *viper.Viper {
+		return viper.Sub(c.Name)
+	}
+	c.configFolderPath = GetConfigFolderPath()
+
+	// Apply provided options
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
+}
+
+func WithConfigFolderPath(configFolderPath string) ConnectionTypeOption {
+	return func(c *ConnectionType) {
+		c.configFolderPath = configFolderPath
+	}
+}
+
+func WithGetConfig(getConfig func() *viper.Viper) ConnectionTypeOption {
+	return func(c *ConnectionType) {
+		c.getConfig = getConfig
+	}
+}
+
 var AllConnectionTypes = []*ConnectionType{
-	&HostMonitoringConnectionType,
-	&SelfMonitoringConnectionType,
+	HostMonitoringConnectionType,
+	SelfMonitoringConnectionType,
 }

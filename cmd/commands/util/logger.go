@@ -13,6 +13,11 @@ func Get() *zap.Logger {
 	return logger
 }
 
+func GetDev() *zap.Logger {
+	logger, _ := zap.NewDevelopment()
+	return logger
+}
+
 func FromCtx(ctx context.Context) *zap.Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
 		return l

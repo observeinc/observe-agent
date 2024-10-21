@@ -1,103 +1,112 @@
 package connections
 
-var MockConnectionType = ConnectionType{
-	Name: "test",
-	ConfigFields: []CollectorConfigFragment{
-		{configYAMLPath: "testField1", colConfigFilePath: "testConfig1.tpl"},
-		// {configYAMLPath: "field2", colConfigFilePath: "config2.tpl"},
-	},
-	Type: "test_type",
+import (
+	"context"
+	logger "observe-agent/cmd/commands/util"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/suite"
+)
+
+type ConnectionsTestSuite struct {
+	suite.Suite
+	tempDir         string
+	configFilesPath string
+	ctx             context.Context
 }
 
-// 'func TestConnections_RenderConfigTemplate(t *testing.T) {
-// 	// Create a temporary directory for test files
-// 	tempDir, err := os.MkdirTemp("", "test-connections")
-// 	assert.NoError(t, err)
-// 	defer os.RemoveAll(tempDir)
-// 	originalOsTempDir := os.TempDir
-// 	os.TempDir = func() string { return tempDir }
-// 	defer func() { os.Tempdir = originalOsTempDir }()
+func (suite *ConnectionsTestSuite) SetupSuite() {
+	suite.ctx = logger.WithCtx(context.Background(), logger.Get())
 
-// 	// Mock the GetConfigFolderPath function
-// 	originalGetConfigFolderPath := GetConfigFolderPath
-// 	GetConfigFolderPath = func() string { return "./" }
-// 	defer func() { GetConfigFolderPath = originalGetConfigFolderPath }()
+	tempDir, err := os.MkdirTemp("", "test-connections")
+	suite.NoError(err)
+	suite.tempDir = tempDir
 
-// 	// Test the RenderConfigTemplate function
-// 	ctx := context.Background()
-// 	confValues := struct{ Name string }{"World"}
-// 	result, err := ct.RenderConfigTemplate(ctx, "test.tpl", confValues)
+	_, filename, _, ok := runtime.Caller(0)
+	suite.True(ok)
+	suite.configFilesPath = path.Dir(filename)
+}
 
-// 	assert.NoError(t, err)
-// 	assert.NotEmpty(t, result)
+func (suite *ConnectionsTestSuite) TearDownSuite() {
+	os.RemoveAll(suite.tempDir)
+}
 
-// 	// Read the rendered content
-// 	renderedContent, err := os.ReadFile(result)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, "Hello, World!", string(renderedContent))
-// }
+func (suite *ConnectionsTestSuite) MakeConnectionType(configFields []CollectorConfigFragment, v *viper.Viper) *ConnectionType {
+	return MakeConnectionType("test", configFields, SelfMonitoringConnectionTypeName, WithConfigFolderPath(suite.configFilesPath), WithGetConfig(func() *viper.Viper { return v }))
+}
 
-// func TestConnectionType_ProcessConfigFields(t *testing.T) {
-// 	ct := &ConnectionType{
-// 		Name: "test",
-// 		ConfigFields: []CollectorConfigFragment{
-// 			{configYAMLPath: "field1", colConfigFilePath: "config1.tpl"},
-// 			{configYAMLPath: "field2", colConfigFilePath: "config2.tpl"},
-// 			{configYAMLPath: "field3", colConfigFilePath: ""},
-// 		},
-// 	}
+func TestConnectionsTestSuite(t *testing.T) {
+	suite.Run(t, new(ConnectionsTestSuite))
+}
 
-// 	// Mock viper configuration
-// 	v := viper.New()
-// 	v.Set("field1", true)
-// 	v.Set("field2", false)
-// 	v.Set("field3", true)
+func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
+	ct := suite.MakeConnectionType([]CollectorConfigFragment{
+		{configYAMLPath: "field1", colConfigFilePath: "config1.tpl"},
+	}, nil)
 
-// 	// Mock RenderConfigTemplate
-// 	originalRenderConfigTemplate := ct.RenderConfigTemplate
-// 	ct.RenderConfigTemplate = func(ctx context.Context, tplFilename string, confValues any) (string, error) {
-// 		return "/tmp/" + tplFilename, nil
-// 	}
-// 	defer func() { ct.RenderConfigTemplate = originalRenderConfigTemplate }()
+	// Test the RenderConfigTemplate function
+	ctx := context.Background()
+	confValues := struct{ Name string }{"World"}
+	result, err := ct.RenderConfigTemplate(ctx, suite.tempDir, "testHelloWorld.tpl", confValues)
 
-// 	ctx := context.Background()
-// 	confValues := struct{}{}
-// 	paths, err := ct.ProcessConfigFields(ctx, v, confValues)
+	suite.NoError(err)
+	suite.NotEmpty(result)
 
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, []string{"/tmp/config1.tpl"}, paths)
-// }
+	// Read the rendered content
+	renderedContent, err := os.ReadFile(result)
+	suite.NoError(err)
+	suite.Equal("Hello, World!", string(renderedContent))
+}
 
-// func TestConnectionType_GetConfigFilePaths(t *testing.T) {
-// 	ct := &ConnectionType{
-// 		Name: "test",
-// 		Type: "self_monitoring",
-// 		ConfigFields: []CollectorConfigFragment{
-// 			{configYAMLPath: "field1", colConfigFilePath: "config1.tpl"},
-// 			{configYAMLPath: "field2", colConfigFilePath: "config2.tpl"},
-// 		},
-// 	}
+func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
+	// Mock viper configuration
+	v := viper.New()
+	v.Set("field1", true)
+	v.Set("field2", false)
+	v.Set("field3", true)
 
-// 	// Mock viper configuration
-// 	v := viper.New()
-// 	v.Set("test.enabled", true)
-// 	v.Set("test.field1", true)
-// 	v.Set("test.field2", false)
+	ct := suite.MakeConnectionType([]CollectorConfigFragment{
+		{configYAMLPath: "field1", colConfigFilePath: "testConfig1.tpl"},
+		{configYAMLPath: "field2", colConfigFilePath: "testConfig2.tpl"},
+		{configYAMLPath: "field3", colConfigFilePath: ""},
+	}, v)
 
-// 	// Mock ProcessConfigFields
-// 	originalProcessConfigFields := ct.ProcessConfigFields
-// 	ct.ProcessConfigFields = func(ctx context.Context, rawConnConfig *viper.Viper, confValues any) ([]string, error) {
-// 		return []string{"/tmp/config1.tpl"}, nil
-// 	}
-// 	defer func() { ct.ProcessConfigFields = originalProcessConfigFields }()
+	confValues := struct{}{}
+	paths := ct.ProcessConfigFields(suite.ctx, suite.tempDir, v, confValues)
 
-// 	// Set viper.GetViper() to return our mock configuration
-// 	originalGetViper := viper.GetViper
-// 	viper.GetViper = func() *viper.Viper { return v }
-// 	defer func() { viper.GetViper = originalGetViper }()
+	suite.Len(paths, 1)
+	tmpFile := paths[0]
+	tmpConfName := tmpFile[strings.LastIndex(tmpFile, "-")+1:]
+	suite.Equal(ct.ConfigFields[0].colConfigFilePath, tmpConfName)
+}
 
-// 	ctx := context.Background()
-// 	paths := ct.GetConfigFilePaths(ctx)
+func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
+	// Mock viper configuration
+	v := viper.New()
+	v.Set("enabled", true)
+	v.Set("field1", true)
+	v.Set("field2", false)
+	v.Set("field3", false)
 
-// 	assert.Equal(t, []string{"/tmp/config1.tpl"}, paths)
-// }
+	ct := suite.MakeConnectionType([]CollectorConfigFragment{
+		{configYAMLPath: "field1", colConfigFilePath: "testConfig1.tpl"},
+		{configYAMLPath: "field2", colConfigFilePath: "testConfig2.tpl"},
+		{configYAMLPath: "field3", colConfigFilePath: ""},
+	}, v)
+
+	paths := ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	suite.Len(paths, 1)
+	tmpFile := paths[0]
+	tmpConfName := tmpFile[strings.LastIndex(tmpFile, "-")+1:]
+	suite.Equal(ct.ConfigFields[0].colConfigFilePath, tmpConfName)
+
+	// Does nothing if not enabled
+	v.Set("enabled", false)
+	paths = ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	suite.Len(paths, 0)
+}
