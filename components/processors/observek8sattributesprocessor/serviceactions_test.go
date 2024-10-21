@@ -12,24 +12,10 @@ func TestServiceActions(t *testing.T) {
 			},
 		},
 		{
-			name:   "Service LB Ingress of non-LB service",
-			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceClusterIPEvent.json"),
+			name:   "LB Ingress (working Service)",
+			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceLoadBalancer.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.loadBalancerIngress", nil},
-			},
-		},
-		{
-			name:   "Service LB Ingress of initializing LB service",
-			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceLoadBalancerPendingEvent.json"),
-			expectedResults: []queryWithResult{
-				{"observe_transform.facets.loadBalancerIngress", "<pending>"},
-			},
-		},
-		{
-			name:   "Service LB Ingress of working LB service",
-			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceLoadBalancerIngressEvent.json"),
-			expectedResults: []queryWithResult{
-				{"observe_transform.facets.loadBalancerIngress", "someLoadBalancerIdentifier.elb.us-west-2.amazonaws.com"},
+				{"observe_transform.facets.loadBalancerIngress", "someLoadBalancerIngressIdentifier.elb.us-west-2.amazonaws.com"},
 			},
 		},
 		{
@@ -37,6 +23,34 @@ func TestServiceActions(t *testing.T) {
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceClusterIPEvent.json"),
 			expectedResults: []queryWithResult{
 				{"observe_transform.facets.ports", "6379/TCP"},
+			},
+		},
+		{
+			name:   "External IPs",
+			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceLoadBalancer.json"),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.externalIPs", []interface{}{"someLoadBalancerIngressIdentifier.elb.us-west-2.amazonaws.com"}},
+			},
+		},
+		{
+			name:   "Pending LB",
+			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceLoadBalancerPendingEvent.json"),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.externalIPs", "Pending"},
+			},
+		},
+		{
+			name:   "Unknown Service type",
+			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceUnknown.json"),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.externalIPs", "Unknown"},
+			},
+		},
+		{
+			name:   "No External IPs",
+			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceClusterIPEvent.json"),
+			expectedResults: []queryWithResult{
+				{"observe_transform.facets.externalIPs", "None"},
 			},
 		},
 	} {
