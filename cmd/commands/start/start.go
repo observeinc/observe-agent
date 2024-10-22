@@ -14,7 +14,36 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	collector "go.opentelemetry.io/collector/otelcol"
 )
+
+func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), error) {
+	ctx := logger.WithCtx(context.Background(), logger.Get())
+	// Set Env Vars from config
+	err := config.SetEnvVars()
+	if err != nil {
+		return nil, nil, err
+	}
+	// Set up our temp dir annd temp config files
+	tmpDir, err := os.MkdirTemp("", connections.TempFilesFolder)
+	if err != nil {
+		return nil, nil, err
+	}
+	configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths(ctx, tmpDir)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return nil, nil, err
+	}
+	cleanup := func() {
+		if overridePath != "" {
+			os.Remove(overridePath)
+		}
+		os.RemoveAll(tmpDir)
+	}
+	// Generate collector settings with all config files
+	colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
+	return colSettings, cleanup, nil
+}
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -23,27 +52,13 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := logger.WithCtx(context.Background(), logger.Get())
-		// Set Env Vars from config
-		err := config.SetEnvVars()
+		colSettings, cleanup, err := SetupAndGenerateCollectorSettings()
 		if err != nil {
 			return err
 		}
-		// Set up our temp dir annd temp config files
-		tmpDir, err := os.MkdirTemp("", connections.TempFilesFolder)
-		if err != nil {
-			return err
+		if cleanup != nil {
+			defer cleanup()
 		}
-		defer os.RemoveAll(tmpDir)
-		configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths(ctx, tmpDir)
-		if err != nil {
-			return err
-		}
-		if overridePath != "" {
-			defer os.Remove(overridePath)
-		}
-		// Generate collector settings with all config files
-		colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
 		otelCmd := observeotel.GetOtelCollectorCommand(colSettings)
 		return otelCmd.RunE(cmd, args)
 	},

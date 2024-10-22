@@ -63,38 +63,37 @@ func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string
 	}
 	f, err := os.CreateTemp(tmpDir, fmt.Sprintf("*-%s", tplFilename))
 	if err != nil {
-		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.Error(err))
+		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.String("file", tplPath), zap.Error(err))
 		return "", err
 	}
 	err = tmpl.Execute(f, confValues)
 	if err != nil {
-		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.Error(err))
+		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("file", tplPath), zap.Error(err))
 		return "", err
 	}
 	return f.Name(), nil
 }
 
-func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) []string {
+func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) ([]string, error) {
 	paths := make([]string, 0)
 	for _, field := range c.ConfigFields {
 		val := rawConnConfig.GetBool(field.configYAMLPath)
 		if val && field.colConfigFilePath != "" {
 			configPath, err := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, confValues)
 			if err != nil {
-				logger.FromCtx(ctx).Error("failed to render config template", zap.String("configPath", field.colConfigFilePath), zap.Error(err))
-			} else {
-				paths = append(paths, configPath)
+				return nil, err
 			}
+			paths = append(paths, configPath)
 		}
 	}
-	return paths
+	return paths, nil
 }
 
-func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) []string {
+func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
 	var rawConnConfig = c.getConfig()
 	var configPaths []string
 	if rawConnConfig == nil || !rawConnConfig.GetBool("enabled") {
-		return configPaths
+		return configPaths, nil
 	}
 	switch c.Type {
 	case SelfMonitoringConnectionTypeName:
@@ -102,20 +101,28 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
+			return nil, err
 		}
-		configPaths = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		configPaths, err = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		if err != nil {
+			return nil, err
+		}
 	case HostMonitoringConnectionTypeName:
 		conf := &HostMonitoringConfig{}
 		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
+			return nil, err
 		}
-		configPaths = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		configPaths, err = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		logger.FromCtx(ctx).Error("unknown connection type", zap.String("type", c.Type))
+		return nil, fmt.Errorf("unknown connection type %s", c.Type)
 	}
-
-	return configPaths
+	return configPaths, nil
 }
 
 type ConnectionTypeOption func(*ConnectionType)

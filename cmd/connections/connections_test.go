@@ -77,7 +77,8 @@ func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
 	}, v)
 
 	confValues := struct{}{}
-	paths := ct.ProcessConfigFields(suite.ctx, suite.tempDir, v, confValues)
+	paths, err := ct.ProcessConfigFields(suite.ctx, suite.tempDir, v, confValues)
+	suite.NoError(err)
 
 	suite.Len(paths, 1)
 	tmpFile := paths[0]
@@ -99,7 +100,8 @@ func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
 		{configYAMLPath: "field3", colConfigFilePath: ""},
 	}, v)
 
-	paths := ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	paths, err := ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	suite.NoError(err)
 	suite.Len(paths, 1)
 	tmpFile := paths[0]
 	tmpConfName := tmpFile[strings.LastIndex(tmpFile, "-")+1:]
@@ -107,6 +109,7 @@ func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
 
 	// Does nothing if not enabled
 	v.Set("enabled", false)
-	paths = ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	paths, err = ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	suite.NoError(err)
 	suite.Len(paths, 0)
 }
