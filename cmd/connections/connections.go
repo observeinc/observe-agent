@@ -56,7 +56,7 @@ func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
 
 func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string, tplFilename string, confValues any) (string, error) {
 	tplPath := c.GetTemplateFilepath(tplFilename)
-	tmpl, err := template.ParseFiles(tplPath)
+	tmpl, err := template.New("").Funcs(GetTemplateFuncMap()).ParseFiles(tplPath)
 	if err != nil {
 		logger.FromCtx(ctx).Error("failed to parse config fragment template", zap.String("file", tplPath), zap.Error(err))
 		return "", err
@@ -66,7 +66,7 @@ func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string
 		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.String("file", tplPath), zap.Error(err))
 		return "", err
 	}
-	err = tmpl.Execute(f, confValues)
+	err = tmpl.ExecuteTemplate(f, tplFilename, confValues)
 	if err != nil {
 		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("file", tplPath), zap.Error(err))
 		return "", err

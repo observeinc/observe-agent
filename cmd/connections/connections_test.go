@@ -5,6 +5,7 @@ import (
 	logger "observe-agent/cmd/commands/util"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -50,9 +51,26 @@ func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
 	}, nil)
 
 	// Test the RenderConfigTemplate function
-	ctx := context.Background()
-	confValues := struct{ Name string }{"World"}
-	result, err := ct.RenderConfigTemplate(ctx, suite.tempDir, "testHelloWorld.tpl", confValues)
+	confValues := struct {
+		TestStr  string
+		TestArr1 []int
+		TestArr2 []int
+		TestObj  any
+	}{
+		TestStr:  "hello world",
+		TestArr1: []int{1, 2, 3},
+		TestArr2: []int{4, 5, 6},
+		TestObj: struct {
+			A string
+			B int
+			C []string
+		}{
+			A: "test",
+			B: 7,
+			C: []string{"test1", "test2", "test3"},
+		},
+	}
+	result, err := ct.RenderConfigTemplate(suite.ctx, suite.tempDir, "testHelloWorld.tpl", confValues)
 
 	suite.NoError(err)
 	suite.NotEmpty(result)
@@ -60,7 +78,9 @@ func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
 	// Read the rendered content
 	renderedContent, err := os.ReadFile(result)
 	suite.NoError(err)
-	suite.Equal("Hello, World!", string(renderedContent))
+	expectedContent, err := os.ReadFile(filepath.Join(suite.configFilesPath, "test", "testHelloWorld.yaml"))
+	suite.NoError(err)
+	suite.Equal(string(expectedContent), string(renderedContent))
 }
 
 func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {

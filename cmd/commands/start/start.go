@@ -30,15 +30,15 @@ func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), 
 		return nil, nil, err
 	}
 	configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths(ctx, tmpDir)
-	if err != nil {
-		os.RemoveAll(tmpDir)
-		return nil, nil, err
-	}
 	cleanup := func() {
 		if overridePath != "" {
 			os.Remove(overridePath)
 		}
 		os.RemoveAll(tmpDir)
+	}
+	if err != nil {
+		cleanup()
+		return nil, nil, err
 	}
 	// Generate collector settings with all config files
 	colSettings := observeotel.GenerateCollectorSettings(configFilePaths)
