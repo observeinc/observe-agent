@@ -6,9 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTmplValueToYaml(t *testing.T) {
+	assert.Equal(t, "\"y\"", TmplValueToYaml("y"))
+	assert.Equal(t, "a", TmplValueToYaml("a"))
+	assert.Equal(t, "5", TmplValueToYaml(5))
+	assert.Equal(t, "2.22", TmplValueToYaml(2.22))
+	assert.Equal(t, "true", TmplValueToYaml(true))
+}
+
 func TestTplInlineArray(t *testing.T) {
-	strSlice := []string{"a", "b", "c"}
-	assert.Equal(t, "[a,b,c]", TplInlineArray(strSlice))
+	strSlice := []string{"a", "b", "c", "y"}
+	assert.Equal(t, "[a,b,c,\"y\"]", TplInlineArray(strSlice))
 
 	intSlice := []int{1, 2, 3}
 	assert.Equal(t, "[1,2,3]", TplInlineArray(intSlice))

@@ -2,7 +2,6 @@ package connections
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"text/template"
 
@@ -13,6 +12,7 @@ func GetTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"inlineArrayInt": TplInlineArray[int],
 		"inlineArrayStr": TplInlineArray[string],
+		"valToYaml":      TmplValueToYaml,
 		"objToYaml":      TplToYaml,
 	}
 }
@@ -20,9 +20,17 @@ func GetTemplateFuncMap() template.FuncMap {
 func TplInlineArray[T any](arr []T) string {
 	strs := make([]string, len(arr))
 	for i := range arr {
-		strs[i] = fmt.Sprintf("%v", arr[i])
+		strs[i] = TmplValueToYaml(arr[i])
 	}
 	return "[" + strings.Join(strs, ",") + "]"
+}
+
+func TmplValueToYaml(value any) string {
+	b, err := yaml.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+	return strings.TrimSpace(string(b))
 }
 
 func TplToYaml(data any, tabSize int, numTabs int) string {
