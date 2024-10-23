@@ -1,7 +1,7 @@
 receivers:
   filelog/agent-config: 
-    include: [{{ filepaths }}]
-    start_at: {{ start_at }}
+    include: []
+    start_at: beginning
     poll_interval: 5m
     multiline:
       line_end_pattern: ENDOFLINEPATTERN
