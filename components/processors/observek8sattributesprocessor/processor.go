@@ -322,9 +322,6 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 					facetsMap = facets.Map()
 				} else {
 					facetsMap = transformMap.PutEmptyMap("facets")
-					// Make sure we have capacity for at least as many actions as we have defined
-					// Actions could generate more than one facet, that's taken care of afterwards.
-					facetsMap.EnsureCapacity(len(kep.podActions))
 				}
 
 				// Compute custom attributes
@@ -335,6 +332,8 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 				}
 
 				// Add them to the facets
+				// Ensre we have extra capacity for as many attributes as we
+				// have just compted
 				facetsMap.EnsureCapacity(facetsMap.Len() + len(values))
 				for key, val := range values {
 					if err := mapPut(facetsMap, key, val); err != nil {
@@ -353,14 +352,20 @@ func slicePut(theSlice pcommon.Slice, value any) error {
 	switch typed := value.(type) {
 	case string:
 		elem.SetStr(typed)
+	case int32:
+		elem.SetInt(int64(typed))
 	case int64:
 		elem.SetInt(typed)
 	case bool:
 		elem.SetBool(typed)
 	case float64:
 		elem.SetDouble(typed)
-	// Let's not complicate things and avoid putting maps/slices into slices.
-	// There's gotta be an easier way to model the processor's output to avoid it
+	case attributes:
+		elem.SetEmptyMap()
+		elem.Map().EnsureCapacity(len(typed))
+		for k, v := range typed {
+			mapPut(elem.Map(), k, v)
+		}
 	default:
 		return errors.New("unrecognised type. Cannot be added to a slice")
 	}
@@ -383,6 +388,8 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 		theMap.PutStr(key, typed)
 	case int:
 		theMap.PutInt(key, int64(typed))
+	case int32:
+		theMap.PutInt(key, int64(typed))
 	case int64:
 		theMap.PutInt(key, typed)
 	case bool:
@@ -390,6 +397,12 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 	case float64:
 		theMap.PutDouble(key, typed)
 	case []string:
+		slc := theMap.PutEmptySlice(key)
+		slc.EnsureCapacity(len(typed))
+		for _, elem := range typed {
+			slicePut(slc, elem)
+		}
+	case []attributes:
 		slc := theMap.PutEmptySlice(key)
 		slc.EnsureCapacity(len(typed))
 		for _, elem := range typed {

@@ -1,0 +1,68 @@
+{
+  "kind": "Ingress",
+  "apiVersion": "networking.k8s.io/v1",
+  "metadata": {
+    "name": "minimal-ingress",
+    "namespace": "k8smonitoring",
+    "uid": "8874fc28-72be-4c88-b15e-6d82af7c4f5d",
+    "resourceVersion": "862319",
+    "generation": 1,
+    "creationTimestamp": "2024-10-22T08:29:52Z",
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"networking.k8s.io/v1\",\"kind\":\"Ingress\",\"metadata\":{\"annotations\":{\"nginx.ingress.kubernetes.io/rewrite-target\":\"/\"},\"name\":\"minimal-ingress\",\"namespace\":\"k8smonitoring\"},\"spec\":{\"ingressClassName\":\"nginx-example\",\"rules\":[{\"http\":{\"paths\":[{\"backend\":{\"service\":{\"name\":\"test\",\"port\":{\"number\":80}}},\"path\":\"/testpath\",\"pathType\":\"Prefix\"}]}}]}}\n",
+      "nginx.ingress.kubernetes.io/rewrite-target": "/"
+    },
+    "managedFields": [
+      {
+        "manager": "kubectl-client-side-apply",
+        "operation": "Update",
+        "apiVersion": "networking.k8s.io/v1",
+        "time": "2024-10-22T08:29:52Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {},
+              "f:kubectl.kubernetes.io/last-applied-configuration": {},
+              "f:nginx.ingress.kubernetes.io/rewrite-target": {}
+            }
+          },
+          "f:spec": { "f:ingressClassName": {}, "f:rules": {} }
+        }
+      }
+    ]
+  },
+  "spec": {
+    "ingressClassName": "nginx-example",
+    "rules": [
+      {
+        "http": {
+          "paths": [
+            {
+              "path": "/testpath",
+              "pathType": "Prefix",
+              "backend": {
+                "service": { "name": "test", "port": { "number": 80 } }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "host": "test.com",
+        "http": {
+          "paths": [
+            {
+              "path": "/testpath2",
+              "pathType": "Prefix",
+              "backend": {
+                "resource": { "name": "testResource" }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "status": { "loadBalancer": {} }
+}
