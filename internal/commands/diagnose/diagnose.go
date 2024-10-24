@@ -23,6 +23,7 @@ type Diagnostic struct {
 
 var diagnostics = []Diagnostic{
 	configDiagnostic(),
+	otelconfigDiagnostic(),
 	authDiagnostic(),
 }
 
