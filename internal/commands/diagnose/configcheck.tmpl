@@ -1,6 +1,6 @@
-Running check on config file {{ .ConfigFile }}
+Running check on observe-agent config file {{ .ConfigFile }}
 {{- if .Passed }}
-Config file is valid YAML.
+Config file is valid.
 {{- else }}
-⚠️ Config file parse failed with error {{ .Error }}
+⚠️ Config file validation failed with error {{ .Error }}
 {{- end }}
