@@ -11,18 +11,19 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type Diagnostic struct {
-	check        func() (any, error)
+	check        func(*viper.Viper) (any, error)
 	checkName    string
 	templateName string
 	templateFS   embed.FS
 }
 
 var diagnostics = []Diagnostic{
-	authDiagnostic(),
 	configDiagnostic(),
+	authDiagnostic(),
 }
 
 // diagnoseCmd represents the diagnose command
@@ -32,10 +33,11 @@ var diagnoseCmd = &cobra.Command{
 	Long: `This command runs diagnostic checks for various settings and configurations
 to attempt to identify issues that could cause the agent to function improperly.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		v := viper.GetViper()
 		fmt.Print("Running diagnosis checks...\n")
 		for _, diagnostic := range diagnostics {
 			fmt.Printf("\n%s\n================\n\n", diagnostic.checkName)
-			data, err := diagnostic.check()
+			data, err := diagnostic.check(v)
 			if err != nil {
 				fmt.Printf("⚠️ Failed to run check: %s\n", err.Error())
 				continue
