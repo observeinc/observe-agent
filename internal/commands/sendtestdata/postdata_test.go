@@ -44,10 +44,11 @@ func TestPostTestDataToObserve(t *testing.T) {
 		httpmock.NewStringResponder(200, expectedResponse),
 	)
 
-	viper.Set("observe_url", "https://123456.collect.observe-eng.com/")
-	viper.Set("token", "test-token")
+	v := viper.New()
+	v.Set("observe_url", "https://123456.collect.observe-eng.com/")
+	v.Set("token", "test-token")
 	testData := map[string]string{"hello": "world"}
-	resp, err := PostTestDataToObserve(testData, "/test")
+	resp, err := PostTestDataToObserve(testData, "/test", v)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResponse, resp)
 }
