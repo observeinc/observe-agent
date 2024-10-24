@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
@@ -15,13 +16,17 @@ type ConfigTestResult struct {
 	Error      string
 }
 
-func validateYaml(yamlContent []byte) error {
-	m := make(map[string]any)
-	return yaml.Unmarshal(yamlContent, &m)
+func validateAgentConfigYaml(yamlContent []byte) error {
+	var conf config.AgentConfig
+	err := yaml.Unmarshal(yamlContent, &conf)
+	if err != nil {
+		return err
+	}
+	return conf.Validate()
 }
 
-func checkConfig() (any, error) {
-	configFile := viper.ConfigFileUsed()
+func checkConfig(v *viper.Viper) (any, error) {
+	configFile := v.ConfigFileUsed()
 	if configFile == "" {
 		return nil, fmt.Errorf("no config file defined")
 	}
@@ -29,7 +34,7 @@ func checkConfig() (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = validateYaml(contents); err != nil {
+	if err = validateAgentConfigYaml(contents); err != nil {
 		return ConfigTestResult{
 			configFile,
 			false,

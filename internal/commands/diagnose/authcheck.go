@@ -69,9 +69,9 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 	}
 }
 
-func makeAuthTestRequest() (any, error) {
-	collector_url := viper.GetString("observe_url")
-	authToken := fmt.Sprintf("Bearer %s", viper.GetString("token"))
+func makeAuthTestRequest(v *viper.Viper) (any, error) {
+	collector_url := v.GetString("observe_url")
+	authToken := fmt.Sprintf("Bearer %s", v.GetString("token"))
 	authTestResponse := makeTestRequest(collector_url, map[string]string{"Authorization": authToken})
 	return authTestResponse, nil
 }

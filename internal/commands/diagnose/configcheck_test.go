@@ -8,10 +8,10 @@ import (
 
 const testConfig = `
 # Observe data token
-token: "some token"
+token: "some:token"
 
 # Target Observe collection url
-observe_url: "localhost"
+observe_url: "https://collect.observeinc.com"
 
 # Debug mode - Sets agent log level to debug
 debug: false
@@ -38,22 +38,29 @@ host_monitoring:
 var (
 	validCases = []string{
 		testConfig,
-		"key:\n  spaceIndented: \"value\"",
+		"key:\n  twoSpaces: true\ntoken: some:token\nobserve_url: https://collect.observeinc.com",
 	}
 	invalidCases = []string{
+		// Invalid YAML
 		"key:\n\ttabIndented: \"value\"",
 		"key:\n  twoSpaces: true\n   threeSpaces: true",
 		"\tstartsWithTab: true",
+		// Invalid configs
+		"",
+		"token: some:token\nmissing: URL",
+		"missing: token\nobserve_url: https://collect.observeinc.com",
+		"token: bad token\nobserve_url: https://collect.observeinc.com",
+		"token: some:token\nobserve_url: bad url",
 	}
 )
 
-func Test_validateYaml(t *testing.T) {
+func Test_validateAgentConfigYaml(t *testing.T) {
 	for _, tc := range validCases {
-		err := validateYaml([]byte(tc))
+		err := validateAgentConfigYaml([]byte(tc))
 		assert.NoError(t, err)
 	}
 	for _, tc := range invalidCases {
-		err := validateYaml([]byte(tc))
+		err := validateAgentConfigYaml([]byte(tc))
 		assert.Error(t, err)
 	}
 }
