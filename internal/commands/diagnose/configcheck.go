@@ -11,18 +11,10 @@ import (
 )
 
 type ConfigTestResult struct {
-	ConfigFile string
-	Passed     bool
-	Error      string
-}
-
-func validateAgentConfigYaml(yamlContent []byte) error {
-	var conf config.AgentConfig
-	err := yaml.Unmarshal(yamlContent, &conf)
-	if err != nil {
-		return err
-	}
-	return conf.Validate()
+	ConfigFile     string
+	ParseSucceeded bool
+	IsValid        bool
+	Error          string
 }
 
 func checkConfig(v *viper.Viper) (any, error) {
@@ -34,16 +26,27 @@ func checkConfig(v *viper.Viper) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = validateAgentConfigYaml(contents); err != nil {
+	var conf config.AgentConfig
+	if err = yaml.Unmarshal(contents, &conf); err != nil {
 		return ConfigTestResult{
-			configFile,
-			false,
-			err.Error(),
+			ConfigFile:     configFile,
+			ParseSucceeded: false,
+			IsValid:        false,
+			Error:          err.Error(),
+		}, nil
+	}
+	if err = conf.Validate(); err != nil {
+		return ConfigTestResult{
+			ConfigFile:     configFile,
+			ParseSucceeded: true,
+			IsValid:        false,
+			Error:          err.Error(),
 		}, nil
 	}
 	return ConfigTestResult{
-		ConfigFile: configFile,
-		Passed:     true,
+		ConfigFile:     configFile,
+		ParseSucceeded: true,
+		IsValid:        true,
 	}, nil
 }
 

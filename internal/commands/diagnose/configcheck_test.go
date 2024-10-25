@@ -37,44 +37,27 @@ host_monitoring:
       enabled: false
 `
 
-var (
-	validCases = []string{
-		testConfig,
-		"key:\n  twoSpaces: true\ntoken: some:token\nobserve_url: https://collect.observeinc.com",
-	}
-	invalidCases = []string{
-		// Invalid YAML
-		"key:\n\ttabIndented: \"value\"",
-		"key:\n  twoSpaces: true\n   threeSpaces: true",
-		"\tstartsWithTab: true",
-		// Invalid configs
-		"",
-		"token: some:token\nmissing: URL",
-		"missing: token\nobserve_url: https://collect.observeinc.com",
-		"token: bad token\nobserve_url: https://collect.observeinc.com",
-		"token: some:token\nobserve_url: bad url",
-	}
-)
-
-func Test_validateAgentConfigYaml(t *testing.T) {
-	for _, tc := range validCases {
-		err := validateAgentConfigYaml([]byte(tc))
-		assert.NoError(t, err)
-	}
-	for _, tc := range invalidCases {
-		err := validateAgentConfigYaml([]byte(tc))
-		assert.Error(t, err)
-	}
+var testCases = []struct {
+	confStr     string
+	shouldParse bool
+	isValid     bool
+}{
+	// Invalid YAML
+	{"key:\n\ttabIndented: \"value\"", false, false},
+	{"key:\n  twoSpaces: true\n   threeSpaces: true", false, false},
+	{"\tstartsWithTab: true", false, false},
+	// Invalid Configs
+	{"", true, false},
+	{"token: some:token\nmissing: URL", true, false},
+	{"missing: token\nobserve_url: https://collect.observeinc.com", true, false},
+	{"token: bad token\nobserve_url: https://collect.observeinc.com", true, false},
+	{"token: some:token\nobserve_url: bad url", true, false},
+	// Valid configs
+	{testConfig, true, true},
+	{"key:\n  twoSpaces: true\ntoken: some:token\nobserve_url: https://collect.observeinc.com", true, true},
 }
 
 func Test_checkConfig(t *testing.T) {
-	testCases := []struct {
-		confStr    string
-		shouldPass bool
-	}{
-		{testConfig, true},
-		{invalidCases[len(invalidCases)-1], false},
-	}
 	for _, tc := range testCases {
 		f, err := os.CreateTemp("", "test-config-*.yaml")
 		assert.NoError(t, err)
@@ -87,13 +70,13 @@ func Test_checkConfig(t *testing.T) {
 		assert.NoError(t, err)
 		result, ok := resultAny.(ConfigTestResult)
 		assert.True(t, ok)
-		if tc.shouldPass {
+		if tc.isValid {
 			assert.Empty(t, result.Error)
-			assert.True(t, result.Passed)
 		} else {
 			assert.NotEmpty(t, result.Error)
-			assert.False(t, result.Passed)
 		}
+		assert.Equal(t, tc.shouldParse, result.ParseSucceeded)
+		assert.Equal(t, tc.isValid, result.IsValid)
 		assert.Equal(t, f.Name(), result.ConfigFile)
 	}
 }
