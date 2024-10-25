@@ -51,13 +51,13 @@ This section lists the components that are included in the Observe Distribution 
 | [filelog][filelogreceiver]                               | [k8sattributes][k8sattributesprocessor]               | [prometheusremotewrite][prometheusremotewriteexporter] |                                      |                             |
 | [filestats][filestatsreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                                                        |                                      |                             |
 | [hostmetrics][hostmetricsreceiver]                       | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                      |                             |
-| [iis][iisreceiver]                                       | [redaction][redactionprocessor]                       |                                                        |                                      |                             |
-| [journald][journaldreceiver]                             | [resource][resourceprocessor]                         |                                                        |                                      |                             |
-| [k8s_cluster][k8sclusterreceiver]                        | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                      |                             |
-| [k8sobjects][k8sobjectsreceiver]                         | [span][spanprocessor]                                 |                                                        |                                      |                             |
-| [kafkametrics][kafkametricsreceiver]                     | [transform][transformprocessor]                       |                                                        |                                      |                             |
-| [kafka][kafkareceiver]                                   |                                                       |                                                        |                                      |                             |
-| [kubeletstats][kubeletstatsreceiver]                     |                                                       |                                                        |                                      |                             |
+| [iis][iisreceiver]                                       | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                      |                             |
+| [journald][journaldreceiver]                             | [redaction][redactionprocessor]                       |                                                        |                                      |                             |
+| [k8s_cluster][k8sclusterreceiver]                        | [resource][resourceprocessor]                         |                                                        |                                      |                             |
+| [k8sobjects][k8sobjectsreceiver]                         | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                      |                             |
+| [kafkametrics][kafkametricsreceiver]                     | [span][spanprocessor]                                 |                                                        |                                      |                             |
+| [kafka][kafkareceiver]                                   | [tailsampling][tailsamplingprocessor]                 |                                                        |                                      |                             |
+| [kubeletstats][kubeletstatsreceiver]                     | [transform][transformprocessor]                       |                                                        |                                      |                             |
 | [mongodb][mongodbreceiver]                               |                                                       |                                                        |                                      |                             |
 | [otlp][otlpreceiver]                                     |                                                       |                                                        |                                      |                             |
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                      |                             |
@@ -65,6 +65,8 @@ This section lists the components that are included in the Observe Distribution 
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [windowseventlog][windowseventlogreceiver]               |                                                       |                                                        |                                      |                             |
+|                                                          |                                                       |                                                        |                                      |                             |
+|                                                          |                                                       |                                                        |                                      |                             |
 
 [awsecscontainermetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/awsecscontainermetricsreceiver
 [dockerstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/dockerstatsreceiver
@@ -92,10 +94,12 @@ This section lists the components that are included in the Observe Distribution 
 [k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/k8sattributesprocessor
 [memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.110.0/processor/memorylimiterprocessor
 [observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
+[probabilisticsamplerprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/probabilisticsamplerprocessor
 [redactionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/redactionprocessor
 [resourceprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/resourceprocessor
 [resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/resourcedetectionprocessor
 [spanprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/spanprocessor
+[tailsamplingprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/tailsamplingprocessor
 [transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/transformprocessor
 [debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.110.0/exporter/debugexporter
 [fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/exporter/fileexporter
