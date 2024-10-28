@@ -22,7 +22,8 @@ func checkOtelConfig(_ *viper.Viper) (any, error) {
 	if cleanup != nil {
 		defer cleanup()
 	}
-	// Copying the implementation from the `otelcol validate` command
+	// These are the same checks as the `otelcol validate` command:
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/command_validate.go
 	col, err := otelcol.NewCollector(*colSettings)
 	if err != nil {
 		return nil, err
