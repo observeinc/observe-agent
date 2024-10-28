@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   goreleaser:
-    if: contains('["obs-gh-alexlew", "obs-gh-mattcotter"]', github.actor)
+    if: contains('["obs-gh-alexlew", "obs-gh-mattcotter", "obs-gh-enricogiorio"]', github.actor)
     runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
