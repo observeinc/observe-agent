@@ -1,0 +1,5 @@
+{{- if .Passed }}
+OTEL configuration is valid.
+{{- else }}
+⚠️ OTEL configuration validation failed with error {{ .Error }}
+{{- end }}
