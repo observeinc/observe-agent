@@ -1,0 +1,13 @@
+string: hello world
+in-line-array: [1,2,3]
+multi-line-array:
+  - 4
+  - 5
+  - 6
+nested-obj:
+  a: test
+  b: 7
+  c:
+    - test1
+    - test2
+    - test3
