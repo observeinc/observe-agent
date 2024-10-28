@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const TestDataPath = "/observe-agent/test"
+const TestDataExtraPath = "/observe-agent/test"
 
 var defaultTestData = map[string]any{
 	"hello": "world",
@@ -34,7 +34,7 @@ func NewSendTestDataCmd() *cobra.Command {
 			} else {
 				testData = defaultTestData
 			}
-			respBody, err := PostTestDataToObserve(testData, TestDataPath, viper.GetViper())
+			respBody, err := PostDataToObserve(testData, TestDataExtraPath, viper.GetViper())
 			if err != nil {
 				return err
 			}

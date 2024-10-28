@@ -40,9 +40,9 @@ func PostTestData(data any, URL string, headers map[string]string) (string, erro
 	return bodyString, nil
 }
 
-func PostTestDataToObserve(data any, path string, v *viper.Viper) (string, error) {
+func PostDataToObserve(data any, extraPath string, v *viper.Viper) (string, error) {
 	collector_url := v.GetString("observe_url")
-	endpoint := fmt.Sprintf("%s/v1/http%s", strings.TrimRight(collector_url, "/"), path)
+	endpoint := fmt.Sprintf("%s/v1/http%s", strings.TrimRight(collector_url, "/"), extraPath)
 	authToken := fmt.Sprintf("Bearer %s", v.GetString("token"))
 	return PostTestData(data, endpoint, map[string]string{"Authorization": authToken})
 }

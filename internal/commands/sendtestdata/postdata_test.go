@@ -30,7 +30,7 @@ func TestPostTestData(t *testing.T) {
 	assert.Equal(t, expectedResponse, resp)
 }
 
-func TestPostTestDataToObserve(t *testing.T) {
+func TestPostDataToObserve(t *testing.T) {
 	httpmock.Activate()
 	t.Cleanup(httpmock.DeactivateAndReset)
 
@@ -48,7 +48,7 @@ func TestPostTestDataToObserve(t *testing.T) {
 	v.Set("observe_url", "https://123456.collect.observe-eng.com/")
 	v.Set("token", "test-token")
 	testData := map[string]string{"hello": "world"}
-	resp, err := PostTestDataToObserve(testData, "/test", v)
+	resp, err := PostDataToObserve(testData, "/test", v)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResponse, resp)
 }
