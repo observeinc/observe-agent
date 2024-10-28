@@ -1,17 +1,19 @@
 package diagnose
 
 import (
+	"os"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 const testConfig = `
 # Observe data token
-token: "some token"
+token: "some:token"
 
 # Target Observe collection url
-observe_url: "localhost"
+observe_url: "https://collect.observeinc.com"
 
 # Debug mode - Sets agent log level to debug
 debug: false
@@ -35,25 +37,46 @@ host_monitoring:
       enabled: false
 `
 
-var (
-	validCases = []string{
-		testConfig,
-		"key:\n  spaceIndented: \"value\"",
-	}
-	invalidCases = []string{
-		"key:\n\ttabIndented: \"value\"",
-		"key:\n  twoSpaces: true\n   threeSpaces: true",
-		"\tstartsWithTab: true",
-	}
-)
+var testCases = []struct {
+	confStr     string
+	shouldParse bool
+	isValid     bool
+}{
+	// Invalid YAML
+	{"key:\n\ttabIndented: \"value\"", false, false},
+	{"key:\n  twoSpaces: true\n   threeSpaces: true", false, false},
+	{"\tstartsWithTab: true", false, false},
+	// Invalid Configs
+	{"", true, false},
+	{"token: some:token\nmissing: URL", true, false},
+	{"missing: token\nobserve_url: https://collect.observeinc.com", true, false},
+	{"token: bad token\nobserve_url: https://collect.observeinc.com", true, false},
+	{"token: some:token\nobserve_url: bad url", true, false},
+	// Valid configs
+	{testConfig, true, true},
+	{"key:\n  twoSpaces: true\ntoken: some:token\nobserve_url: https://collect.observeinc.com", true, true},
+}
 
-func Test_validateYaml(t *testing.T) {
-	for _, tc := range validCases {
-		err := validateYaml([]byte(tc))
+func Test_checkConfig(t *testing.T) {
+	for _, tc := range testCases {
+		f, err := os.CreateTemp("", "test-config-*.yaml")
 		assert.NoError(t, err)
-	}
-	for _, tc := range invalidCases {
-		err := validateYaml([]byte(tc))
-		assert.Error(t, err)
+		defer os.Remove(f.Name())
+		f.Write([]byte(tc.confStr))
+
+		v := viper.New()
+		v.SetConfigFile(f.Name())
+		resultAny, err := checkConfig(v)
+		assert.NoError(t, err)
+		result, ok := resultAny.(ConfigTestResult)
+		assert.True(t, ok)
+		if tc.isValid {
+			assert.Empty(t, result.Error)
+		} else {
+			assert.NotEmpty(t, result.Error)
+		}
+		assert.Equal(t, tc.shouldParse, result.ParseSucceeded)
+		assert.Equal(t, tc.isValid, result.IsValid)
+		assert.Equal(t, f.Name(), result.ConfigFile)
 	}
 }

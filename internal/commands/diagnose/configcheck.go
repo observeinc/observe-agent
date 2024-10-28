@@ -5,23 +5,20 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
 type ConfigTestResult struct {
-	ConfigFile string
-	Passed     bool
-	Error      string
+	ConfigFile     string
+	ParseSucceeded bool
+	IsValid        bool
+	Error          string
 }
 
-func validateYaml(yamlContent []byte) error {
-	m := make(map[string]any)
-	return yaml.Unmarshal(yamlContent, &m)
-}
-
-func checkConfig() (any, error) {
-	configFile := viper.ConfigFileUsed()
+func checkConfig(v *viper.Viper) (any, error) {
+	configFile := v.ConfigFileUsed()
 	if configFile == "" {
 		return nil, fmt.Errorf("no config file defined")
 	}
@@ -29,16 +26,27 @@ func checkConfig() (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = validateYaml(contents); err != nil {
+	var conf config.AgentConfig
+	if err = yaml.Unmarshal(contents, &conf); err != nil {
 		return ConfigTestResult{
-			configFile,
-			false,
-			err.Error(),
+			ConfigFile:     configFile,
+			ParseSucceeded: false,
+			IsValid:        false,
+			Error:          err.Error(),
+		}, nil
+	}
+	if err = conf.Validate(); err != nil {
+		return ConfigTestResult{
+			ConfigFile:     configFile,
+			ParseSucceeded: true,
+			IsValid:        false,
+			Error:          err.Error(),
 		}, nil
 	}
 	return ConfigTestResult{
-		ConfigFile: configFile,
-		Passed:     true,
+		ConfigFile:     configFile,
+		ParseSucceeded: true,
+		IsValid:        true,
 	}, nil
 }
 
