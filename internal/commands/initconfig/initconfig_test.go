@@ -19,7 +19,7 @@ func Test_InitConfigCommand(t *testing.T) {
 		expectErr      string
 	}{
 		{
-			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url"},
+			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--host_monitoring::logs::include=/test/path,/test/path2"},
 			expectedConfig: config.AgentConfig{
 				Token:      "test-token",
 				ObserveURL: "test-url",
@@ -30,6 +30,7 @@ func Test_InitConfigCommand(t *testing.T) {
 					Enabled: true,
 					Logs: config.HostMonitoringLogsConfig{
 						Enabled: true,
+						Include: []string{"/test/path", "/test/path2"},
 					},
 					Metrics: config.HostMonitoringMetricsConfig{
 						Host: config.HostMonitoringHostMetricsConfig{

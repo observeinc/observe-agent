@@ -8,7 +8,8 @@ import (
 )
 
 type HostMonitoringLogsConfig struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled bool     `yaml:"enabled"`
+	Include []string `yaml:"include,omitempty"`
 }
 
 type HostMonitoringHostMetricsConfig struct {

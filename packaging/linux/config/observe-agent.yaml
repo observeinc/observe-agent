@@ -15,8 +15,11 @@ self_monitoring:
 host_monitoring:
   enabled: true
   # collect logs of all running processes from the host system
-  logs: 
+  logs:
     enabled: true
+    include:
+      - /var/log/**/*.log
+      - /var/log/syslog
   metrics:
     # collect metrics about the host system
     host:
@@ -24,7 +27,7 @@ host_monitoring:
     # collect metrics about the processes running on the host system
     process:
       enabled: false
-    
+
 # otel_config_overrides:
 #   exporters:
 #     # This is a net new exporter
