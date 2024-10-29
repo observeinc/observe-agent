@@ -1,6 +1,11 @@
 receivers:
   filelog/host_monitoring:
-    include: [/hostfs/var/log/**/*.log, /hostfs/var/log/syslog]
+    include:
+      - /hostfs/var/log/**/*.log
+      - /hostfs/var/log/syslog]
+      {{- range .Logs.Include }}
+      - {{ . }}
+      {{- end }}
     include_file_path: true
     storage: file_storage
     retry_on_failure:
