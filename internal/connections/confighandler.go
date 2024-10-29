@@ -1,4 +1,4 @@
-package config
+package connections
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/observeinc/observe-agent/internal/connections"
+	logger "github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/spf13/viper"
 )
 
@@ -17,7 +17,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, st
 	configFilePaths := []string{filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")}
 	var err error
 	// Get additional config paths based on connection configs
-	for _, conn := range connections.AllConnectionTypes {
+	for _, conn := range AllConnectionTypes {
 		if viper.IsSet(conn.Name) {
 			connectionPaths, err := conn.GetConfigFilePaths(ctx, tmpDir)
 			if err != nil {
@@ -39,7 +39,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, st
 		}
 		configFilePaths = append(configFilePaths, overridePath)
 	}
-	fmt.Println("Config file paths:", configFilePaths)
+	logger.FromCtx(ctx).Info(fmt.Sprint("Config file paths:", configFilePaths))
 	return configFilePaths, overridePath, nil
 }
 

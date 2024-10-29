@@ -8,7 +8,6 @@ import (
 	"os"
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
-	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
@@ -17,10 +16,9 @@ import (
 	collector "go.opentelemetry.io/collector/otelcol"
 )
 
-func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), error) {
-	ctx := logger.WithCtx(context.Background(), logger.Get())
+func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
 	// Set Env Vars from config
-	err := config.SetEnvVars()
+	err := connections.SetEnvVars()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -29,7 +27,7 @@ func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), 
 	if err != nil {
 		return nil, nil, err
 	}
-	configFilePaths, overridePath, err := config.GetAllOtelConfigFilePaths(ctx, tmpDir)
+	configFilePaths, overridePath, err := connections.GetAllOtelConfigFilePaths(ctx, tmpDir)
 	cleanup := func() {
 		if overridePath != "" {
 			os.Remove(overridePath)
@@ -39,6 +37,15 @@ func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), 
 	if err != nil {
 		cleanup()
 		return nil, nil, err
+	}
+	return configFilePaths, cleanup, nil
+}
+
+func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), error) {
+	ctx := logger.WithCtx(context.Background(), logger.Get())
+	configFilePaths, cleanup, err := SetupAndGetConfigFiles(ctx)
+	if err != nil {
+		return nil, cleanup, err
 	}
 	// Generate collector settings with all config files
 	colSettings := observecol.GenerateCollectorSettings(configFilePaths)

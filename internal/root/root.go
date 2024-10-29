@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,7 +47,7 @@ func InitConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
 	} else {
-		viper.AddConfigPath(config.GetDefaultAgentPath())
+		viper.AddConfigPath(connections.GetDefaultAgentPath())
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("observe-agent")
 	}
