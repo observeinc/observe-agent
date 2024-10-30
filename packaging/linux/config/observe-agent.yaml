@@ -1,8 +1,8 @@
 # Observe data token
-token: "${OBSERVE_TOKEN}"
+token: "<OBSERVE TOKEN>"
 
 # Target Observe collection url
-observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
+observe_url: "<OBSERVE COLLECTION ENDPOINT>"
 
 # Debug mode - Sets agent log level to debug
 debug: false

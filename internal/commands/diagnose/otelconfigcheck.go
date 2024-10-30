@@ -5,6 +5,7 @@ import (
 	"embed"
 
 	"github.com/observeinc/observe-agent/internal/commands/start"
+	logger "github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/otelcol"
 )
@@ -14,10 +15,10 @@ type OtelConfigTestResult struct {
 	Error  string
 }
 
-func checkOtelConfig(_ *viper.Viper) (any, error) {
-	colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings()
+func checkOtelConfig(_ *viper.Viper) (bool, any, error) {
+	colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings(logger.WithCtx(context.Background(), logger.GetNop()))
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
 	if cleanup != nil {
 		defer cleanup()
@@ -26,16 +27,16 @@ func checkOtelConfig(_ *viper.Viper) (any, error) {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/command_validate.go
 	col, err := otelcol.NewCollector(*colSettings)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
 	err = col.DryRun(context.Background())
 	if err != nil {
-		return OtelConfigTestResult{
+		return false, OtelConfigTestResult{
 			Passed: false,
 			Error:  err.Error(),
 		}, nil
 	}
-	return OtelConfigTestResult{
+	return true, OtelConfigTestResult{
 		Passed: true,
 	}, nil
 }

@@ -15,7 +15,6 @@ run "setup_observe_variables" {
 }
 
 
-
 run "test_ec2_connection" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
@@ -39,8 +38,6 @@ run "test_ec2_connection" {
     error_message = "Error in EC2 Connection Test"
   }
 }
-
-
 
 
 run "test_install" {
@@ -68,8 +65,6 @@ run "test_install" {
 }
 
 
-
-
 run "test_version" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
@@ -93,8 +88,6 @@ run "test_version" {
     error_message = "Error in Version Test"
   }
 }
-
-
 
 
 run "test_configure" {
@@ -123,6 +116,7 @@ run "test_configure" {
   }
 }
 
+
 run "test_start" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"
@@ -147,3 +141,27 @@ run "test_start" {
   }
 }
 
+
+run "test_diagnose" {
+  module {
+    source  = "observeinc/collection/aws//modules/testing/exec"
+    version = "2.9.0"
+  }
+
+  variables {
+    command = "python3 ./scripts/test_diagnose.py"
+    env_vars = {
+      HOST           = run.setup_ec2.public_ip
+      USER           = run.setup_ec2.user_name
+      KEY_FILENAME   = run.setup_ec2.private_key_path
+      PASSWORD       = run.setup_ec2.password
+      MACHINE_NAME   = run.setup_ec2.machine_name
+      MACHINE_CONFIG = run.setup_ec2.machine_config
+    }
+  }
+
+  assert {
+    condition     = output.error == ""
+    error_message = "Error in Diagnose Test"
+  }
+}

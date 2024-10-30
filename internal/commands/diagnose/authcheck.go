@@ -9,11 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	ChallengeURL = "https://175914298205.collect.observeinc.com/.well-known/fastly/logging/challenge"
-	AuthCheckURL = "https://175914298205.collect.observeinc.com/status"
-)
-
 type NetworkTestResult struct {
 	URL          string
 	ResponseCode int
@@ -69,11 +64,11 @@ func makeTestRequest(URL string, headers map[string]string) NetworkTestResult {
 	}
 }
 
-func makeAuthTestRequest(v *viper.Viper) (any, error) {
+func makeAuthTestRequest(v *viper.Viper) (bool, any, error) {
 	collector_url := v.GetString("observe_url")
 	authToken := fmt.Sprintf("Bearer %s", v.GetString("token"))
 	authTestResponse := makeTestRequest(collector_url, map[string]string{"Authorization": authToken})
-	return authTestResponse, nil
+	return authTestResponse.Passed, authTestResponse, nil
 }
 
 // const networkcheckTemplate = "networkcheck.tmpl"

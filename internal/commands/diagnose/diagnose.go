@@ -15,7 +15,7 @@ import (
 )
 
 type Diagnostic struct {
-	check        func(*viper.Viper) (any, error)
+	check        func(*viper.Viper) (bool, any, error)
 	checkName    string
 	templateName string
 	templateFS   embed.FS
@@ -24,6 +24,7 @@ type Diagnostic struct {
 var diagnostics = []Diagnostic{
 	configDiagnostic(),
 	otelconfigDiagnostic(),
+	agentstatusDiagnostic(),
 	authDiagnostic(),
 }
 
@@ -36,9 +37,13 @@ to attempt to identify issues that could cause the agent to function improperly.
 	Run: func(cmd *cobra.Command, args []string) {
 		v := viper.GetViper()
 		fmt.Print("Running diagnosis checks...\n")
+		var failedChecks []string
 		for _, diagnostic := range diagnostics {
 			fmt.Printf("\n%s\n================\n\n", diagnostic.checkName)
-			data, err := diagnostic.check(v)
+			success, data, err := diagnostic.check(v)
+			if !success {
+				failedChecks = append(failedChecks, diagnostic.checkName)
+			}
 			if err != nil {
 				fmt.Printf("⚠️ Failed to run check: %s\n", err.Error())
 				continue
@@ -50,6 +55,15 @@ to attempt to identify issues that could cause the agent to function improperly.
 				fmt.Printf("⚠️ Failed to print output for check: %s\n", err.Error())
 				continue
 			}
+		}
+		if len(failedChecks) > 0 {
+			fmt.Printf("\n❌ %d out of %d checks failed:\n", len(failedChecks), len(diagnostics))
+			for _, check := range failedChecks {
+				fmt.Printf("  - %s\n", check)
+			}
+			os.Exit(1)
+		} else {
+			fmt.Printf("\n✅ All %d checks passed!\n", len(diagnostics))
 		}
 	},
 }

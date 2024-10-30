@@ -66,7 +66,7 @@ func Test_checkConfig(t *testing.T) {
 
 		v := viper.New()
 		v.SetConfigFile(f.Name())
-		resultAny, err := checkConfig(v)
+		success, resultAny, err := checkConfig(v)
 		assert.NoError(t, err)
 		result, ok := resultAny.(ConfigTestResult)
 		assert.True(t, ok)
@@ -77,6 +77,7 @@ func Test_checkConfig(t *testing.T) {
 		}
 		assert.Equal(t, tc.shouldParse, result.ParseSucceeded)
 		assert.Equal(t, tc.isValid, result.IsValid)
+		assert.Equal(t, tc.isValid && tc.shouldParse, success)
 		assert.Equal(t, f.Name(), result.ConfigFile)
 	}
 }
