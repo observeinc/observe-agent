@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
+	_ "github.com/observeinc/observe-agent/internal/commands/config"
 	_ "github.com/observeinc/observe-agent/internal/commands/diagnose"
 	_ "github.com/observeinc/observe-agent/internal/commands/initconfig"
 	_ "github.com/observeinc/observe-agent/internal/commands/start"

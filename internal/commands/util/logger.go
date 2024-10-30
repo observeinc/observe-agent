@@ -18,6 +18,10 @@ func GetDev() *zap.Logger {
 	return logger
 }
 
+func GetNop() *zap.Logger {
+	return zap.NewNop()
+}
+
 func FromCtx(ctx context.Context) *zap.Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
 		return l

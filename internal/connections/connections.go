@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -97,7 +98,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 	}
 	switch c.Type {
 	case SelfMonitoringConnectionTypeName:
-		conf := &SelfMonitoringConfig{}
+		conf := &config.SelfMonitoringConfig{}
 		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
@@ -108,7 +109,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 			return nil, err
 		}
 	case HostMonitoringConnectionTypeName:
-		conf := &HostMonitoringConfig{}
+		conf := &config.HostMonitoringConfig{}
 		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))

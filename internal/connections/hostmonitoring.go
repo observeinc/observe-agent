@@ -2,16 +2,6 @@ package connections
 
 var HostMonitoringConnectionTypeName = "host_monitoring"
 
-type HostMonitoringConfig struct {
-	enabled bool
-	metrics struct {
-		enabled bool
-	}
-	logs struct {
-		enabled bool
-	}
-}
-
 var HostMonitoringConnectionType = MakeConnectionType(
 	"host_monitoring",
 	[]CollectorConfigFragment{
