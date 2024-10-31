@@ -11,17 +11,17 @@ func TestCronJobActions(t *testing.T) {
 			name:   "Active CronJob jobs",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/cronJobEvent.json"),
 			expectedResults: []queryWithResult{
-				{fmt.Sprintf("observe_transform.facets.%s", CronJobActiveKey), int64(1)},
+				{path: fmt.Sprintf("observe_transform.facets.%s", CronJobActiveKey), expResult: int64(1)},
 			},
 		},
 		{
 			name:   "Idle CronJob jobs",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/cronJobEventNotActive.json"),
 			expectedResults: []queryWithResult{
-				{fmt.Sprintf("observe_transform.facets.%s", CronJobActiveKey), int64(0)},
+				{path: fmt.Sprintf("observe_transform.facets.%s", CronJobActiveKey), expResult: int64(0)},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }

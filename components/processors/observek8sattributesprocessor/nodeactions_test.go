@@ -12,7 +12,10 @@ func TestNodeActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Ready"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "Ready",
+				},
 			},
 		},
 		{
@@ -23,7 +26,10 @@ func TestNodeActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "NotReady"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "NotReady",
+				},
 			},
 		},
 		{
@@ -34,8 +40,13 @@ func TestNodeActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.roles | length(@)", float64(1)},
-				{"observe_transform.facets.roles[0]", "control-plane"},
+				{
+					path:      "observe_transform.facets.roles | length(@)",
+					expResult: float64(1)},
+				{
+					path:      "observe_transform.facets.roles[0]",
+					expResult: "control-plane",
+				},
 			},
 		},
 		{
@@ -46,8 +57,13 @@ func TestNodeActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.roles | length(@)", float64(2)},
-				{"observe_transform.facets.roles", []any{"anotherRole!", "control-plane"}},
+				{
+					path:      "observe_transform.facets.roles | length(@)",
+					expResult: float64(2)},
+				{
+					path:      "observe_transform.facets.roles",
+					expResult: []any{"anotherRole!", "control-plane"},
+				},
 			},
 		},
 		{
@@ -58,11 +74,14 @@ func TestNodeActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.nodePool", "test-node-group"},
+				{
+					path:      "observe_transform.facets.nodePool",
+					expResult: "test-node-group",
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 
 }

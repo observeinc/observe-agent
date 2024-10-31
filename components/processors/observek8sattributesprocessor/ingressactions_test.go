@@ -9,7 +9,8 @@ func TestIngressActions(t *testing.T) {
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/ingressEvent.json"),
 			expectedResults: []queryWithResult{
 				{
-					"observe_transform.facets.rules", []any{
+					path: "observe_transform.facets.rules",
+					expResult: []any{
 						map[string]any{
 							"host": "prometheus.observe-eng.com",
 							"httpRules": []any{
@@ -21,14 +22,17 @@ func TestIngressActions(t *testing.T) {
 										},
 									},
 									"path": "/",
-								}}}}}},
+								}}}},
+				},
+			},
 		},
 		{
 			name:   "Ingress rules without host",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/ingressEvent2.json"),
 			expectedResults: []queryWithResult{
 				{
-					"observe_transform.facets.rules", []any{
+					path: "observe_transform.facets.rules",
+					expResult: []any{
 						map[string]any{
 							"host": "*",
 							"httpRules": []any{
@@ -53,16 +57,20 @@ func TestIngressActions(t *testing.T) {
 									"path": "/testpath2",
 								}},
 						},
-					}}},
+					}},
+			},
 		},
 		{
 			name:   "Load Balancer",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/ingressEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.loadBalancer", "someUniqueElbIdentifier.elb.us-west-2.amazonaws.com"},
+				{
+					path:      "observe_transform.facets.loadBalancer",
+					expResult: "someUniqueElbIdentifier.elb.us-west-2.amazonaws.com",
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }

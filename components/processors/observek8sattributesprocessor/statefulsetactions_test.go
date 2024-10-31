@@ -8,10 +8,13 @@ func TestStatefulSetActions(t *testing.T) {
 			name:   "Pretty print of a StatefulSet's selector",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/statefulSetEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.selector", "app=redis-ephemeral"},
+				{
+					path:      "observe_transform.facets.selector",
+					expResult: "app=redis-ephemeral",
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }

@@ -25,46 +25,44 @@ type logWithResource struct {
 	severityNumber   plog.SeverityNumber
 }
 
-// models a jmespath query against the processed results
+// LogLocation is the part of the log where to check for matches. At the moment,
+// it can only be body or attributes, we might add resource_attributes in the
+// future.  Looking for matches in attributes is the default,
+// since it's the most common check we have to perform
+type LogLocation int
+
+const (
+	LogLocationAttributes LogLocation = iota
+	LogLocationBody
+)
+
+func (l LogLocation) String() string {
+	switch l {
+	case LogLocationBody:
+		return "body"
+	case LogLocationAttributes:
+		return "attributes"
+	default:
+		return "unknown"
+	}
+}
+
+// models a jmespath query against a processed log
 type queryWithResult struct {
+	// Which part of the log to query. Defaults to querying the attributes
+	// object
+	location  LogLocation
 	path      string
 	expResult any
 }
-
-// Functions that check the body of a logRecord post processor actions
-// These "custom" check functions are a powerful way to introspect the body
-// of a log record (as a raw JSON string).
-// Implementations of these functions most likely start with unmarshalling
-// the body string to an API object of choice
-type checkBodyFunc func(t *testing.T, body string)
-
-// Functions that check the attributes of a logRecord post processor actions
-// These custom actions take as input the key-value attributes as a
-// map[string]any
-type checkAttributesFunc func(t *testing.T, attributes map[string]any) //nolint:unused
 
 type k8sEventProcessorTest struct {
 	name            string
 	inLogs          plog.Logs
 	expectedResults []queryWithResult
-	// Actions that are only ran when testing the body of a resulting logRecord
-	checkBodyFunctions []checkBodyFunc
-	// Actions that are only ran when testing the attributes a resulting
-	// logRecord
-	checkAttributesFunctions []checkAttributesFunc //nolint:unused
 }
 
-// LogLocation is the part of the log where to check for matches. At the moment,
-// it can only be body or attributes, we might add resource_attributes in the
-// future.
-type LogLocation string
-
-const (
-	LogLocationBody       LogLocation = "body"
-	LogLocationAttributes LogLocation = "attributes"
-)
-
-func runTest(t *testing.T, test k8sEventProcessorTest, location LogLocation) {
+func runTest(t *testing.T, test k8sEventProcessorTest) {
 	t.Run(test.name, func(t *testing.T) {
 		kep := newK8sEventsProcessor(zap.NewNop(), &Config{})
 		logs, err := kep.processLogs(context.Background(), test.inLogs)
@@ -73,22 +71,17 @@ func runTest(t *testing.T, test k8sEventProcessorTest, location LogLocation) {
 		// "Logs" contains only one ResourceLog with one ScopeLog and a single LogRecord
 		var out map[string]any
 		logRecord := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-		switch location {
-		case LogLocationBody:
-			// The body is JSON string and therefore must be unmarshalled into
-			// map[string]any to be able to query it with jmespath.
-			body := logRecord.Body().AsString()
-			json.Unmarshal([]byte(body), &out)
-			for _, fn := range test.checkBodyFunctions {
-				fn(t, body)
-			}
-		case LogLocationAttributes:
-			out = logRecord.Attributes().AsRaw()
-			for _, fn := range test.checkAttributesFunctions {
-				fn(t, out)
-			}
-		}
 		for _, query := range test.expectedResults {
+			// Pick the right part of the log to query
+			switch query.location {
+			case LogLocationBody:
+				// The body is JSON string and therefore must be unmarshalled into
+				// map[string]any to be able to query it with jmespath.
+				body := logRecord.Body().AsString()
+				json.Unmarshal([]byte(body), &out)
+			case LogLocationAttributes:
+				out = logRecord.Attributes().AsRaw()
+			}
 			queryJmes, err := jmespath.Compile(query.path)
 			require.NoErrorf(t, err, "path %v is not a valid jmespath", query.path)
 			res, err := queryJmes.Search(out)
