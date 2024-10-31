@@ -8,10 +8,13 @@ func TestDaemonSetActions(t *testing.T) {
 			name:   "Pretty print of a DaemonSet's selector",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/daemonSetEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.selector", "app.kubernetes.io/instance=observe-agent,app.kubernetes.io/name=daemonset-logs-metrics,component=agent-collector"},
+				{
+					path:      "observe_transform.facets.selector",
+					expResult: "app.kubernetes.io/instance=observe-agent,app.kubernetes.io/name=daemonset-logs-metrics,component=agent-collector",
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }

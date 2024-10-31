@@ -8,24 +8,33 @@ func TestServiceAccountActions(t *testing.T) {
 			name:   "Service account secrets' names",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceAccountEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.secretsNames", []any{"example-another-secret", "example-serviceaccount-token-abcdef"}},
+				{
+					path:      "observe_transform.facets.secretsNames",
+					expResult: []any{"example-another-secret", "example-serviceaccount-token-abcdef"},
+				},
 			},
 		},
 		{
 			name:   "Service account secrets",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceAccountEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.secrets", int64(2)},
+				{
+					path:      "observe_transform.facets.secrets",
+					expResult: int64(2),
+				},
 			},
 		},
 		{
 			name:   "Service account imagePull secrets",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/serviceAccountEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.imagePullSecrets", int64(0)},
+				{
+					path:      "observe_transform.facets.imagePullSecrets",
+					expResult: int64(0),
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }

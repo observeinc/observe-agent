@@ -13,7 +13,10 @@ func TestPodActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Terminating"},
+				{
+					path: "observe_transform.facets.status",
+					expResult: "Terminating",
+				},
 			},
 		},
 		{ // Tests that we don't override/drop other facets computed in OTTL
@@ -32,8 +35,14 @@ func TestPodActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Terminating"},
-				{"observe_transform.facets.other_key", "test"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "Terminating",
+				},
+				{
+					path:      "observe_transform.facets.other_key",
+					expResult: "test",
+				},
 			},
 		},
 		{
@@ -44,9 +53,18 @@ func TestPodActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.restarts", int64(5)},
-				{"observe_transform.facets.total_containers", int64(4)},
-				{"observe_transform.facets.ready_containers", int64(3)},
+				{
+					path:      "observe_transform.facets.restarts",
+					expResult: int64(5),
+				},
+				{
+					path:      "observe_transform.facets.total_containers",
+					expResult: int64(4),
+				},
+				{
+					path:      "observe_transform.facets.ready_containers",
+					expResult: int64(3),
+				},
 			},
 		},
 		{
@@ -57,8 +75,14 @@ func TestPodActions(t *testing.T) {
 				},
 			),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.readinessGatesReady", int64(1)},
-				{"observe_transform.facets.readinessGatesTotal", int64(2)},
+				{
+					path:      "observe_transform.facets.readinessGatesReady",
+					expResult: int64(1),
+				},
+				{
+					path:      "observe_transform.facets.readinessGatesTotal",
+					expResult: int64(2),
+				},
 			},
 		},
 		{
@@ -70,13 +94,34 @@ func TestPodActions(t *testing.T) {
 			),
 			expectedResults: []queryWithResult{
 				// Conditions must be a map with 5 elements
-				{"observe_transform.facets.conditions | length(@)", float64(6)},
-				{"observe_transform.facets.conditions.PodReadyToStartContainers", "False"},
-				{"observe_transform.facets.conditions.Initialized", "True"},
-				{"observe_transform.facets.conditions.Ready", "False"},
-				{"observe_transform.facets.conditions.ContainersReady", "False"},
-				{"observe_transform.facets.conditions.PodScheduled", "True"},
-				{"observe_transform.facets.conditions.TestCondition", "Unknown"},
+				{
+					path:      "observe_transform.facets.conditions | length(@)",
+					expResult: float64(6),
+				},
+				{
+					path:      "observe_transform.facets.conditions.PodReadyToStartContainers",
+					expResult: "False",
+				},
+				{
+					path:      "observe_transform.facets.conditions.Initialized",
+					expResult: "True",
+				},
+				{
+					path:      "observe_transform.facets.conditions.Ready",
+					expResult: "False",
+				},
+				{
+					path:      "observe_transform.facets.conditions.ContainersReady",
+					expResult: "False",
+				},
+				{
+					path:      "observe_transform.facets.conditions.PodScheduled",
+					expResult: "True",
+				},
+				{
+					path:      "observe_transform.facets.conditions.TestCondition",
+					expResult: "Unknown",
+				},
 			},
 		},
 		{
@@ -88,11 +133,14 @@ func TestPodActions(t *testing.T) {
 			),
 			expectedResults: []queryWithResult{
 				// Conditions must be a map with 5 elements
-				{"observe_transform.facets.conditions | length(@)", float64(5)},
+				{
+					path:      "observe_transform.facets.conditions | length(@)",
+					expResult: float64(5),
+				},
 			},
 		},
 	} {
-		runTest(t, test, LogLocationAttributes)
+		runTest(t, test)
 	}
 
 }

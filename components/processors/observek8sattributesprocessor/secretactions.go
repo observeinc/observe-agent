@@ -16,7 +16,11 @@ func NewSecretRedactorBodyAction() SecretRedactorBodyAction {
 
 // ---------------------------------- Secret "data" values' redaction ----------------------------------
 
+// Obfuscates secrets' values in place
 func redactSecretKeys(secret *corev1.Secret) {
+	// These will be encoded in base64 when serialized.  While it would be nice,
+	// don't expect to see "REDACTED" in plaintext in the processed secrets'
+	// "data".
 	for key := range secret.Data {
 		secret.Data[key] = []byte(RedactedSecretValue)
 	}

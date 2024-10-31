@@ -8,31 +8,43 @@ func TestJobActions(t *testing.T) {
 			name:   "Running Job",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/jobRunningEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Running"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "Running",
+				},
 			},
 		},
 		{
 			name:   "Completed Job",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/jobCompletedEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Complete"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "Complete",
+				},
 			},
 		},
 		{
 			name:   "Failed Job",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/jobCompletedEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.status", "Complete"},
+				{
+					path:      "observe_transform.facets.status",
+					expResult: "Complete",
+				},
 			},
 		},
 		{
 			name:   "Duration of completed job",
 			inLogs: resourceLogsFromSingleJsonEvent("./testdata/jobCompletedEvent.json"),
 			expectedResults: []queryWithResult{
-				{"observe_transform.facets.duration", "3m23s"},
+				{
+					path:      "observe_transform.facets.duration",
+					expResult: "3m23s",
+				},
 			},
 		},
 	} {
-		runTest(t, testCase, LogLocationAttributes)
+		runTest(t, testCase)
 	}
 }
