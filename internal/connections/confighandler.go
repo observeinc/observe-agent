@@ -90,7 +90,7 @@ func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
 func GetDefaultConfigFolder() string {
 	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		return GetDefaultAgentPath()
+		return filepath.Join(GetDefaultAgentPath(), "config")
 	case "windows":
 		return filepath.Join(GetDefaultAgentPath(), "config")
 	case "linux":
@@ -100,14 +100,14 @@ func GetDefaultConfigFolder() string {
 	}
 }
 
+func GetConfigFragmentFolderPath() string {
+	return filepath.Join(GetDefaultAgentPath(), "connections")
+}
+
 func GetDefaultAgentPath() string {
 	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		return homedir
+		return "/usr/local/observe-agent"
 	case "windows":
 		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent")
 	case "linux":
@@ -120,7 +120,7 @@ func GetDefaultAgentPath() string {
 func GetDefaultFilestoragePath() string {
 	switch currOS := runtime.GOOS; currOS {
 	case "darwin":
-		return filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Observe", "observe-agent", "filestorage")
+		return "/var/lib/observe-agent/filestorage"
 	case "windows":
 		return os.ExpandEnv("$ProgramData\\Observe\\observe-agent\\filestorage")
 	case "linux":
