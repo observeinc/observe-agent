@@ -13,6 +13,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 var configCmd = &cobra.Command{
@@ -29,6 +30,16 @@ OTEL configuration.`,
 		if cleanup != nil {
 			defer cleanup()
 		}
+		var viperConfig map[string]any
+		if err := viper.Unmarshal(&viperConfig); err != nil {
+			return err
+		}
+		viperConfigYaml, err := yaml.Marshal(viperConfig)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("# ======== computed agent config\n")
+		fmt.Println(string(viperConfigYaml) + "\n")
 		agentConfig := viper.ConfigFileUsed()
 		configFilePaths = append([]string{agentConfig}, configFilePaths...)
 		for _, filePath := range configFilePaths {
