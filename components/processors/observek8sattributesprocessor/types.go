@@ -116,15 +116,14 @@ type secretBodyAction interface {
 // This is useful, for instance, when we want to redact secrets' values, to
 // prevent generating attributes that contain secret's values before redacting
 // them.
-// TODO [eg] check if there's actually no copying going on here
-func (proc *K8sEventsProcessor) RunBodyActions(obj metav1.Object) error {
+// Returns true if the object was modified by any action, false otherwise
+func (proc *K8sEventsProcessor) RunBodyActions(obj metav1.Object) (bool, error) {
 	switch typed := obj.(type) {
 	case *corev1.Secret:
-		err := proc.runSecretBodyActions(typed)
-		return err
+		return true, proc.runSecretBodyActions(typed)
 	}
 
-	return nil
+	return false, nil
 }
 
 func (m *K8sEventsProcessor) runSecretBodyActions(secret *corev1.Secret) error {

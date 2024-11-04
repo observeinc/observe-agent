@@ -296,19 +296,24 @@ func (kep *K8sEventsProcessor) processLogs(_ context.Context, logs plog.Logs) (p
 
 				// ALWAYS RUN BODY ACTIONS FIRST
 				// The attributes should always be computed on the MODIFIED body.
-				err := kep.RunBodyActions(object)
+				modified, err := kep.RunBodyActions(object)
 				if err != nil {
 					kep.logger.Error("could not run body actions", zap.Error(err))
 					continue
 				}
-				// We now re-marshal the object
-				reMarshsalledBody, err := json.Marshal(object)
-				if err != nil {
-					kep.logger.Error("could not re-marshal body", zap.Error(err))
-					continue
+				// Once we have the modified k8s API object, we need to re-set
+				// the log body. Since this process is quite expensive, we make
+				// sure we do it only if the object has been modified at all.
+				if modified {
+					err := kep.setNewBody(lr, object)
+					if err != nil {
+						// We have already logged the error inside setNewBody
+						continue
+					}
 				}
-				// And update the body of the log record
-				lr.Body().SetStr(string(reMarshsalledBody))
+
+				// Now onto the facets (extra attributes that are computed from
+				// the object without changing the object itself).
 
 				// Add attributes["observe_transform"]["facets"] if it doesn't exist
 				transform, exists := lr.Attributes().Get("observe_transform")
@@ -423,4 +428,29 @@ func mapPut(theMap pcommon.Map, key string, value any) error {
 
 	return nil
 
+}
+
+// Sets the log body to the map[string]any representation of the object.
+// We cannot simply set the log body via SetStr() and use the marshalled object,
+// otherwise downstream processors won't be able to index into the object and
+// extract additional meaning!
+// The best approach is to convert it as such:
+// {k8s object} --marshal--> {json []bytes} --Unmarshal--> {map[string]any} -> set the body FromRaw()
+func (kep *K8sEventsProcessor) setNewBody(lr plog.LogRecord, object metav1.Object) error {
+	bodyJson, err := json.Marshal(object)
+	if err != nil {
+		kep.logger.Error("could not marshal body to JSON after modifying it", zap.Error(err))
+		return err
+	}
+	var bodyMap map[string]any
+	// This will never error out, since we just marshalled it ourselves
+	json.Unmarshal(bodyJson, &bodyMap)
+
+	err = lr.Body().SetEmptyMap().FromRaw(bodyMap)
+
+	if err != nil {
+		kep.logger.Error("could not set body from raw", zap.Error(err))
+		return err
+	}
+	return nil
 }

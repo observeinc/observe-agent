@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmespath/go-jmespath"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
@@ -75,10 +76,12 @@ func runTest(t *testing.T, test k8sEventProcessorTest) {
 			// Pick the right part of the log to query
 			switch query.location {
 			case LogLocationBody:
-				// The body is JSON string and therefore must be unmarshalled into
-				// map[string]any to be able to query it with jmespath.
-				body := logRecord.Body().AsString()
-				json.Unmarshal([]byte(body), &out)
+				body := logRecord.Body()
+				if body.Type() != pcommon.ValueTypeMap {
+					t.Error("the log body should be a structured map, rather than a flat string!")
+					return
+				}
+				out = body.Map().AsRaw()
 			case LogLocationAttributes:
 				out = logRecord.Attributes().AsRaw()
 			}
