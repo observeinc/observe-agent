@@ -539,6 +539,10 @@ github.com/jaegertracing/jaeger/model
 github.com/jaegertracing/jaeger/model/converter/thrift/zipkin
 github.com/jaegertracing/jaeger/thrift-gen/jaeger
 github.com/jaegertracing/jaeger/thrift-gen/zipkincore
+# github.com/jarcoal/httpmock v1.3.1
+## explicit; go 1.18
+github.com/jarcoal/httpmock
+github.com/jarcoal/httpmock/internal
 # github.com/jcmturner/aescts/v2 v2.0.0
 ## explicit; go 1.13
 github.com/jcmturner/aescts/v2

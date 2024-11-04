@@ -3,6 +3,7 @@ module github.com/observeinc/observe-agent
 go 1.22.7
 
 require (
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.59.1
