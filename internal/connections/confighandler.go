@@ -9,12 +9,25 @@ import (
 	"runtime"
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 )
 
 func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, string, error) {
-	// Initialize config file paths with base config
-	configFilePaths := []string{filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")}
+	configFilePaths := []string{}
+	// If the default otel-collector.yaml exists, add it to the list of config files
+	defaultOtelConfigPath := filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")
+	if _, err := os.Stat(defaultOtelConfigPath); err == nil {
+		agentConf, err := config.AgentConfigFromViper(viper.GetViper())
+		if err != nil {
+			return nil, "", err
+		}
+		otelConfigRendered, err := RenderConfigTemplate(ctx, tmpDir, defaultOtelConfigPath, agentConf)
+		if err != nil {
+			return nil, "", err
+		}
+		configFilePaths = append(configFilePaths, otelConfigRendered)
+	}
 	var err error
 	// Get additional config paths based on connection configs
 	for _, conn := range AllConnectionTypes {

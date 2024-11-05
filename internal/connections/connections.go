@@ -55,8 +55,8 @@ func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
 	return filepath.Join(c.configFolderPath, c.Name, tplFilename)
 }
 
-func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string, tplFilename string, confValues any) (string, error) {
-	tplPath := c.GetTemplateFilepath(tplFilename)
+func RenderConfigTemplate(ctx context.Context, tmpDir string, tplPath string, confValues any) (string, error) {
+	_, tplFilename := filepath.Split(tplPath)
 	tmpl, err := template.New("").Funcs(GetTemplateFuncMap()).ParseFiles(tplPath)
 	if err != nil {
 		logger.FromCtx(ctx).Error("failed to parse config fragment template", zap.String("file", tplPath), zap.Error(err))
@@ -73,6 +73,11 @@ func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string
 		return "", err
 	}
 	return f.Name(), nil
+}
+
+func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string, tplFilename string, confValues any) (string, error) {
+	tplPath := c.GetTemplateFilepath(tplFilename)
+	return RenderConfigTemplate(ctx, tmpDir, tplPath, confValues)
 }
 
 func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) ([]string, error) {
@@ -99,7 +104,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 	switch c.Type {
 	case SelfMonitoringConnectionTypeName:
 		conf := &config.SelfMonitoringConfig{}
-		err := rawConnConfig.Unmarshal(conf)
+		err := config.UnmarshalViperThroughYaml(rawConnConfig, conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 			return nil, err
@@ -110,7 +115,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 		}
 	case HostMonitoringConnectionTypeName:
 		conf := &config.HostMonitoringConfig{}
-		err := rawConnConfig.Unmarshal(conf)
+		err := config.UnmarshalViperThroughYaml(rawConnConfig, conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 			return nil, err
