@@ -27,13 +27,10 @@ func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	configFilePaths, overridePath, err := connections.GetAllOtelConfigFilePaths(ctx, tmpDir)
 	cleanup := func() {
-		if overridePath != "" {
-			os.Remove(overridePath)
-		}
 		os.RemoveAll(tmpDir)
 	}
+	configFilePaths, err := connections.GetAllOtelConfigFilePaths(ctx, tmpDir)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
