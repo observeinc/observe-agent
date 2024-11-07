@@ -67,7 +67,11 @@ processors:
           enabled: true
   
   resourcedetection/cloud:
-    detectors: ["gcp", "ecs", "ec2", "azure"]
+    detectors:
+    {{- if .CloudResourceDetectors }}
+    {{- inlineArrayStr .CloudResourceDetectors }}
+    {{- else }} ["gcp", "ecs", "ec2", "azure"]
+    {{- end }}
     timeout: 2s
     override: false
     
