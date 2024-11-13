@@ -102,7 +102,7 @@ locals {
 
     WINDOWS_SERVER_2019_BASE = {
       ami_instance_type = "t3.small"
-      ami_id            = "ami-006bce2026b3f63b8"
+      ami_id            = "ami-08f810c9fec974bb3"
       ami_description   = "Microsoft Windows Server 2019 with Desktop Experience Locale English AMI provided by Amazon"
       default_user      = "Administrator"
       sleep             = 120
@@ -115,7 +115,7 @@ locals {
   
      WINDOWS_SERVER_2022_BASE = {
       ami_instance_type = "t3.small"
-      ami_id            = "ami-0fdf7c7a70369b831"
+      ami_id            = "ami-00bedb8509ebcc120"
       ami_description   = "Microsoft Windows Server 2022 Full Locale English AMI provided by Amazon"
       default_user      = "Administrator"
       sleep             = 120
