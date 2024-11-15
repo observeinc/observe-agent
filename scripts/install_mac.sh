@@ -70,5 +70,6 @@ sudo launchctl kickstart "system/$service_name"
 echo
 echo "---"
 echo "Installation complete! You can view the agent status with observe-agent status"
+echo "Agent logs will be written to /var/log/observe-agent.log"
 echo "Use launchctl to stop and start the agent."
 exit 0
