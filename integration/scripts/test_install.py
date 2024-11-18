@@ -45,7 +45,7 @@ def _get_installation_package(env_vars: dict) -> tuple:
             full_path = os.path.join(dist_directory, filename)
             print(f"Found matching file {filename} at: {full_path}")
             return filename, full_path
-    u.die(f"❌ No matching file found for {distribution},{architecture},{package_type} in {dist_directory}: {files.join(',')}")
+    u.die(f"❌ No matching file found for {distribution},{architecture},{package_type} in {dist_directory}: {', '.join(files)}")
 
 
 @u.print_test_decorator
