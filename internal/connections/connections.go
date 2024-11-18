@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"text/template"
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
@@ -32,23 +31,6 @@ type ConnectionType struct {
 
 	configFolderPath string
 	getConfig        func() *viper.Viper
-}
-
-func GetConfigFolderPath() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		return filepath.Join(homedir, ".observe-agent/connections")
-	case "windows":
-		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent\\connections")
-	case "linux":
-		return "/etc/observe-agent/connections"
-	default:
-		return "/etc/observe-agent/connections"
-	}
 }
 
 func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
@@ -138,7 +120,7 @@ func MakeConnectionType(Name string, ConfigFields []CollectorConfigFragment, Typ
 	c.getConfig = func() *viper.Viper {
 		return viper.Sub(c.Name)
 	}
-	c.configFolderPath = GetConfigFolderPath()
+	c.configFolderPath = GetConfigFragmentFolderPath()
 
 	// Apply provided options
 	for _, opt := range opts {

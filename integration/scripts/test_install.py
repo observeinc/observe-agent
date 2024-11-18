@@ -32,15 +32,21 @@ def _get_installation_package(env_vars: dict) -> tuple:
     # Search criteria
     package_type = env_vars["machine_config"]["package_type"]
     architecture = env_vars["machine_config"]["architecture"]
+    distribution = env_vars["machine_config"]["distribution"]
 
     print(f"Looking for installation package '{package_type}' and architecture '{architecture}'")
 
     # Iterate through files and find matches
     for filename in files:
-        if package_type in filename and architecture in filename:            
+        if package_type in filename and architecture in filename:
+            # We can make this more general if need be.
+            if "windows" in distribution and "windows" not in filename.lower():
+                continue
             full_path = os.path.join(dist_directory, filename)
             print(f"Found matching file {filename} at: {full_path}")
             return filename, full_path
+    u.die(f"❌ No matching file found for {distribution},{architecture},{package_type} in {dist_directory}: {', '.join(files)}")
+
 
 @u.print_test_decorator
 def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:  
