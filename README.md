@@ -64,6 +64,7 @@ This section lists the components that are included in the Observe Distribution 
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                      |                             |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                      |                             |
+| [udplog][udplogreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [windowseventlog][windowseventlogreceiver]               |                                                       |                                                        |                                      |                             |
 |                                                          |                                                       |                                                        |                                      |                             |
 |                                                          |                                                       |                                                        |                                      |                             |
@@ -87,6 +88,7 @@ This section lists the components that are included in the Observe Distribution 
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.102.0/receiver/redisreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/statsdreceiver
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/tcplogreceiver
+[udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/udplogreceiver
 [windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/receiver/windowseventlogreceiver
 [attributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.110.0/processor/attributesprocessor
 [batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.110.0/processor/batchprocessor
