@@ -4,9 +4,7 @@ set -e
 
 service_name="com.observeinc.agent"
 observeagent_install_dir="/usr/local/observe-agent"
-# TODO download the file instead of using the local built zip
-script_dir=$(dirname -- "$(readlink -f -- "$0")")
-zip_dir="$(dirname $script_dir)/dist/darwin_arm64_v8.0/observe-agent_Darwin_arm64.zip"
+tmp_dir="/tmp/observe-agent"
 
 # If the observe-agent.yaml file already exists, leave it alone.
 # Otherwise we need to know what the collection endpoint and token are.
@@ -22,11 +20,19 @@ if [ ! -f "$observeagent_install_dir/observe-agent.yaml" ]; then
     fi
 fi
 
-# TODO download the zip file from the latest release
+# If the zip file is not provided, download the latest release from GitHub.
+if [ -z "$ZIP_DIR" ]; then
+    echo "Downloading latest release from GitHub..."
+    curl -s -L -o /tmp/observe-agent.zip https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Darwin_$(arch).zip
+    ZIP_DIR="/tmp/observe-agent.zip"
+else
+    echo "Installing from provided zip file: $ZIP_DIR"
+fi
 
-unzip_dir="/tmp/observe-agent"
-rm -rf $unzip_dir
-unzip $zip_dir -d $unzip_dir >/dev/null
+# Set up the temp dir and extract files.
+rm -rf $tmp_dir
+mkdir -p $tmp_dir
+unzip $ZIP_DIR -d $tmp_dir >/dev/null
 
 if [ -f "/Library/LaunchDaemons/$service_name.plist" ]; then
     echo "Stopping $service_name. This may ask for your password..."
@@ -40,9 +46,9 @@ sudo mkdir -p $observeagent_install_dir /usr/local/libexec /usr/local/bin /var/l
 sudo chmod +rw /var/lib/observe-agent/filestorage
 
 # Copy all files to the install dir.
-sudo cp -f $unzip_dir/observe-agent $observeagent_install_dir/observe-agent
-sudo cp -fR $unzip_dir/config $observeagent_install_dir/config
-sudo cp -fR $unzip_dir/connections $observeagent_install_dir/connections
+sudo cp -f $tmp_dir/observe-agent $observeagent_install_dir/observe-agent
+sudo cp -fR $tmp_dir/config $observeagent_install_dir/config
+sudo cp -fR $tmp_dir/connections $observeagent_install_dir/connections
 sudo chown -R root:wheel $observeagent_install_dir
 
 # Initialize the agent config file if it doesn't exist
@@ -50,7 +56,22 @@ if [ -f "$observeagent_install_dir/observe-agent.yaml" ]; then
     echo "Leaving existing observe-agent.yaml in place."
 else
     echo "Initializing observe-agent.yaml"
-    sudo $observeagent_install_dir/observe-agent init-config --token $TOKEN --observe_url $OBSERVE_URL --config_path $observeagent_install_dir/observe-agent.yaml
+    INIT_FLAGS="--config_path $observeagent_install_dir/observe-agent.yaml --token $TOKEN --observe_url $OBSERVE_URL --host_monitoring::enabled=true"
+    if [ -n "$LOGS_ENABLED" ]; then
+        if [[ "${LOGS_ENABLED,,}" == "true" ]]; then
+            INIT_FLAGS="$INIT_FLAGS --host_monitoring::logs::enabled=true"
+        else
+            INIT_FLAGS="$INIT_FLAGS --host_monitoring::logs::enabled=false"
+        fi
+    fi
+    if [ -n "$METRICS_ENABLED" ]; then
+        if [[ "${METRICS_ENABLED,,}" == "true" ]]; then
+            INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=true"
+        else
+            INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=false"
+        fi
+    fi
+    sudo $observeagent_install_dir/observe-agent init-config $INIT_FLAGS
     sudo chown root:wheel $observeagent_install_dir/observe-agent.yaml
 fi
 
@@ -62,7 +83,7 @@ echo "Observe agent successfully installed to $observeagent_install_dir"
 
 # Install the launchd agent
 echo "Installing $service_name as a LaunchDaemon. This may ask for your password..."
-sudo cp -f $unzip_dir/observe-agent.plist /Library/LaunchDaemons/$service_name.plist
+sudo cp -f $tmp_dir/observe-agent.plist /Library/LaunchDaemons/$service_name.plist
 sudo chown root:wheel /Library/LaunchDaemons/$service_name.plist
 sudo launchctl load -w /Library/LaunchDaemons/$service_name.plist
 sudo launchctl kickstart "system/$service_name"
