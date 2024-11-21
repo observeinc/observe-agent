@@ -27,7 +27,7 @@ func run() error {
 		}
 		root.CfgFile = os.Args[1]
 		root.InitConfig()
-		colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings()
+		colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings(start.DefaultLoggerCtx())
 		if err != nil {
 			return err
 		}

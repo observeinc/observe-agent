@@ -52,7 +52,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, st
 		}
 		configFilePaths = append(configFilePaths, overridePath)
 	}
-	logger.FromCtx(ctx).Info(fmt.Sprint("Config file paths:", configFilePaths))
+	logger.FromCtx(ctx).Debug(fmt.Sprint("Config file paths:", configFilePaths))
 	return configFilePaths, overridePath, nil
 }
 

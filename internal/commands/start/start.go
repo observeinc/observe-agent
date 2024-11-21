@@ -41,8 +41,11 @@ func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
 	return configFilePaths, cleanup, nil
 }
 
-func SetupAndGenerateCollectorSettings() (*collector.CollectorSettings, func(), error) {
-	ctx := logger.WithCtx(context.Background(), logger.Get())
+func DefaultLoggerCtx() context.Context {
+	return logger.WithCtx(context.Background(), logger.Get())
+}
+
+func SetupAndGenerateCollectorSettings(ctx context.Context) (*collector.CollectorSettings, func(), error) {
 	configFilePaths, cleanup, err := SetupAndGetConfigFiles(ctx)
 	if err != nil {
 		return nil, cleanup, err
@@ -59,7 +62,7 @@ var startCmd = &cobra.Command{
 This command reads in the local config and env vars and starts the 
 collector on the current host.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		colSettings, cleanup, err := SetupAndGenerateCollectorSettings()
+		colSettings, cleanup, err := SetupAndGenerateCollectorSettings(DefaultLoggerCtx())
 		if err != nil {
 			return err
 		}

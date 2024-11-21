@@ -1,0 +1,7 @@
+{{- if .Passed -}}
+Observe agent is running and metrics are available.
+{{- else if not .AgentRunning -}}
+⚠️ Observe agent is not running. {{- if .Error }} Error: {{ .Error }}{{ end }}
+{{- else -}}
+⚠️ Observe agent status check failed with error: {{ .Error }}
+{{- end -}}
