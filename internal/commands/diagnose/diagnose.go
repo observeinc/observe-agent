@@ -36,10 +36,10 @@ var diagnoseCmd = &cobra.Command{
 to attempt to identify issues that could cause the agent to function improperly.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		v := viper.GetViper()
-		fmt.Print("Running diagnosis checks...\n")
+		fmt.Print("Running diagnosis checks...")
 		var failedChecks []string
 		for _, diagnostic := range diagnostics {
-			fmt.Printf("\n%s\n================\n\n", diagnostic.checkName)
+			fmt.Printf("\n\n\n%s\n==================\n", diagnostic.checkName)
 			success, data, err := diagnostic.check(v)
 			if !success {
 				failedChecks = append(failedChecks, diagnostic.checkName)
@@ -57,7 +57,7 @@ to attempt to identify issues that could cause the agent to function improperly.
 			}
 		}
 		if len(failedChecks) > 0 {
-			fmt.Printf("\n❌ %d out of %d checks failed:\n", len(failedChecks), len(diagnostics))
+			fmt.Printf("\n\n\n❌ %d out of %d checks failed:\n", len(failedChecks), len(diagnostics))
 			for _, check := range failedChecks {
 				fmt.Printf("  - %s\n", check)
 			}

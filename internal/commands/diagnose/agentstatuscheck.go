@@ -42,7 +42,6 @@ func checkStatus(_ *viper.Viper) (bool, any, error) {
 	}, nil
 }
 
-// const networkcheckTemplate = "networkcheck.tmpl"
 const agentStatusCheckTemplate = "agentstatuscheck.tmpl"
 
 var (
