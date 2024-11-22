@@ -40,6 +40,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.110.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.110.0
 	github.com/spf13/cobra v1.8.1
 	go.opentelemetry.io/collector/component v0.110.0
