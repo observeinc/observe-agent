@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
@@ -67,8 +68,9 @@ func Test_InitConfigCommand(t *testing.T) {
 			expectErr: "",
 		},
 	}
-	initConfigCmd := NewConfigureCmd()
-	RegisterConfigFlags(initConfigCmd)
+	v := viper.New()
+	initConfigCmd := NewConfigureCmd(v)
+	RegisterConfigFlags(initConfigCmd, v)
 	for _, tc := range testcases {
 		initConfigCmd.SetArgs(tc.args)
 		err := initConfigCmd.Execute()
