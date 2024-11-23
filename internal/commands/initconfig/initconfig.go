@@ -18,6 +18,7 @@ var (
 	config_path                             string
 	token                                   string
 	observe_url                             string
+	cloud_resource_detectors                []string
 	self_monitoring_enabled                 bool
 	host_monitoring_enabled                 bool
 	host_monitoring_logs_enabled            bool
@@ -33,6 +34,7 @@ const configTemplate = "observe-agent.tmpl"
 type FlatAgentConfig struct {
 	Token                                 string
 	ObserveURL                            string
+	CloudResourceDetectors                []string
 	SelfMonitoring_Enabled                bool
 	HostMonitoring_Enabled                bool
 	HostMonitoring_LogsEnabled            bool
@@ -50,6 +52,7 @@ func NewConfigureCmd() *cobra.Command {
 			configValues := FlatAgentConfig{
 				Token:                                 viper.GetString("token"),
 				ObserveURL:                            viper.GetString("observe_url"),
+				CloudResourceDetectors:                viper.GetStringSlice("cloud_resource_detectors"),
 				SelfMonitoring_Enabled:                viper.GetBool("self_monitoring::enabled"),
 				HostMonitoring_Enabled:                viper.GetBool("host_monitoring::enabled"),
 				HostMonitoring_LogsEnabled:            viper.GetBool("host_monitoring::logs::enabled"),
@@ -90,6 +93,7 @@ func RegisterConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&config_path, "config_path", "", "", "Path to write config output file to")
 	cmd.PersistentFlags().StringVar(&token, "token", "", "Observe token")
 	cmd.PersistentFlags().StringVar(&observe_url, "observe_url", "", "Observe data collection url")
+	cmd.PersistentFlags().StringSliceVar(&cloud_resource_detectors, "cloud_resource_detectors", []string{}, "Cloud resource detectors")
 	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring::enabled", true, "Enable host monitoring")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_enabled, "host_monitoring::logs::enabled", true, "Enable host monitoring logs")
@@ -98,6 +102,7 @@ func RegisterConfigFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_process_enabled, "host_monitoring::metrics::process::enabled", false, "Enable host monitoring process metrics")
 	viper.BindPFlag("token", cmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("observe_url", cmd.PersistentFlags().Lookup("observe_url"))
+	viper.BindPFlag("cloud_resource_detectors", cmd.PersistentFlags().Lookup("cloud_resource_detectors"))
 	viper.BindPFlag("self_monitoring::enabled", cmd.PersistentFlags().Lookup("self_monitoring::enabled"))
 	viper.BindPFlag("host_monitoring::enabled", cmd.PersistentFlags().Lookup("host_monitoring::enabled"))
 	viper.BindPFlag("host_monitoring::logs::enabled", cmd.PersistentFlags().Lookup("host_monitoring::logs::enabled"))

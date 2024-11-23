@@ -4,7 +4,7 @@ import utils as u
 
 @u.print_test_decorator
 def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
-    init_command = r'Set-Location "C:\Program Files\Observe\observe-agent"; ./observe-agent init-config --token {} --observe_url {}'.format(
+    init_command = r'Set-Location "C:\Program Files\Observe\observe-agent"; ./observe-agent init-config --token {} --observe_url {} --cloud_resource_detectors ec2'.format(
         env_vars["observe_token"], env_vars["observe_url"]
     )
 
@@ -18,7 +18,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     docker_prefix = u.get_docker_prefix(remote_host, False)
-    init_command = "{} init-config --token {} --observe_url {}".format(
+    init_command = "{} init-config --token {} --observe_url {} --cloud_resource_detectors ec2".format(
         docker_prefix, env_vars["observe_token"], env_vars["observe_url"]
     )
 
@@ -31,7 +31,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
 
 @u.print_test_decorator
 def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
-    init_command = "sudo observe-agent init-config --token {} --observe_url {}".format(
+    init_command = "sudo observe-agent init-config --token {} --observe_url {} --cloud_resource_detectors ec2".format(
         env_vars["observe_token"], env_vars["observe_url"]
     )
 
