@@ -62,22 +62,28 @@ func NewConfigureCmd(v *viper.Viper) *cobra.Command {
 			if configValues.HostMonitoring_LogsEnabled {
 				configValues.HostMonitoring_LogsInclude = v.GetStringSlice("host_monitoring::logs::include")
 			}
-			var outputPath string
-			if config_path != "" {
-				outputPath = config_path
+			var f *os.File
+			if v.GetBool("print") {
+				f = os.Stdout
 			} else {
-				outputPath = v.ConfigFileUsed()
+				var outputPath string
+				if config_path != "" {
+					outputPath = config_path
+				} else {
+					outputPath = v.ConfigFileUsed()
+				}
+				var err error
+				f, err = os.Create(outputPath)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				fmt.Printf("Writing configuration values to %s...\n\n", outputPath)
 			}
-			f, err := os.Create(outputPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
 			t := template.Must(template.New(configTemplate).ParseFS(configTemplateFS, configTemplate))
 			if err := t.ExecuteTemplate(f, configTemplate, configValues); err != nil {
 				return err
 			}
-			fmt.Printf("Writing configuration values to %s...\n\n", outputPath)
 			return nil
 		},
 	}
@@ -92,15 +98,17 @@ func init() {
 
 func RegisterConfigFlags(cmd *cobra.Command, v *viper.Viper) {
 	cmd.Flags().StringVarP(&config_path, "config_path", "", "", "Path to write config output file to")
+	cmd.PersistentFlags().Bool("print", false, "Print the configuration to stdout instead of writing to a file")
 	cmd.PersistentFlags().StringVar(&token, "token", "", "Observe token")
 	cmd.PersistentFlags().StringVar(&observe_url, "observe_url", "", "Observe data collection url")
-	cmd.PersistentFlags().StringSliceVar(&cloud_resource_detectors, "cloud_resource_detectors", []string{}, "Cloud resource detectors")
+	cmd.PersistentFlags().StringSliceVar(&cloud_resource_detectors, "cloud_resource_detectors", []string{}, "The cloud environments from which to detect resources")
 	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring::enabled", true, "Enable host monitoring")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_enabled, "host_monitoring::logs::enabled", true, "Enable host monitoring logs")
 	cmd.PersistentFlags().StringSliceVar(&host_monitoring_logs_include, "host_monitoring::logs::include", nil, "Set host monitoring log include paths")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_host_enabled, "host_monitoring::metrics::host::enabled", true, "Enable host monitoring host metrics")
 	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_process_enabled, "host_monitoring::metrics::process::enabled", false, "Enable host monitoring process metrics")
+	v.BindPFlag("print", cmd.PersistentFlags().Lookup("print"))
 	v.BindPFlag("token", cmd.PersistentFlags().Lookup("token"))
 	v.BindPFlag("observe_url", cmd.PersistentFlags().Lookup("observe_url"))
 	v.BindPFlag("cloud_resource_detectors", cmd.PersistentFlags().Lookup("cloud_resource_detectors"))
