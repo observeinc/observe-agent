@@ -22,7 +22,7 @@ func TplInlineArray[T any](arr []T) string {
 	for i := range arr {
 		strs[i] = TmplValueToYaml(arr[i])
 	}
-	return "[" + strings.Join(strs, ",") + "]"
+	return "[" + strings.Join(strs, ", ") + "]"
 }
 
 func TmplValueToYaml(value any) string {
