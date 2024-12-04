@@ -13,6 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.110.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.110.0
@@ -205,6 +206,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.110.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.110.0 // indirect
