@@ -13,39 +13,40 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
+		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
+		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
+		exporterprofiles.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 30 * time.Second
+	// Default to gzip compression
+	clientConfig.Compression = configcompression.TypeGzip
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.WriteBufferSize = 512 * 1024
+
 	return &Config{
-		RetryConfig: configretry.NewDefaultBackOffConfig(),
-		QueueConfig: exporterhelper.NewDefaultQueueConfig(),
-		Encoding:    EncodingProto,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]configopaque.String{},
-			// Default to gzip compression
-			Compression: configcompression.TypeGzip,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
+		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		QueueConfig:  exporterhelper.NewDefaultQueueConfig(),
+		Encoding:     EncodingProto,
+		ClientConfig: clientConfig,
 	}
 }
 
@@ -72,7 +73,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string,
 	}
 }
 
-func createTracesExporter(
+func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -88,7 +89,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -98,7 +99,7 @@ func createTracesExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
-func createMetricsExporter(
+func createMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -114,7 +115,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
+	return exporterhelper.NewMetrics(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -124,7 +125,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
-func createLogsExporter(
+func createLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -134,14 +135,39 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-
 	oce.logsURL, err = composeSignalURL(oCfg, oCfg.LogsEndpoint, "logs", "v1")
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set, cfg,
 		oce.pushLogs,
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
+}
+
+func createProfiles(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporterprofiles.Profiles, error) {
+	oce, err := newExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+
+	oce.profilesURL, err = composeSignalURL(oCfg, "", "profiles", "v1development")
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+		oce.pushProfiles,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.

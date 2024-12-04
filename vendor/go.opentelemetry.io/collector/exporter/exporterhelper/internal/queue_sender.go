@@ -22,9 +22,6 @@ import (
 
 const defaultQueueSize = 1000
 
-// Deprecated: [v0.110.0] Use QueueConfig instead.
-type QueueSettings = QueueConfig
-
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
 type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
@@ -38,11 +35,6 @@ type QueueConfig struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
-}
-
-// Deprecated: [v0.110.0] Use NewDefaultQueueConfig instead.
-func NewDefaultQueueSettings() QueueSettings {
-	return NewDefaultQueueConfig()
 }
 
 // NewDefaultQueueConfig returns the default config for QueueConfig.
@@ -108,6 +100,9 @@ func NewQueueSender(q exporterqueue.Queue[internal.Request], set exporter.Settin
 
 // Start is invoked during service startup.
 func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
+	if err := qs.queue.Start(ctx, host); err != nil {
+		return err
+	}
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
@@ -125,6 +120,9 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
+	if err := qs.queue.Shutdown(ctx); err != nil {
+		return err
+	}
 	return qs.consumers.Shutdown(ctx)
 }
 
