@@ -22,8 +22,8 @@ fi
 
 # If the zip file is not provided, download the latest release from GitHub.
 if [ -z "$ZIP_DIR" ]; then
-    echo "Downloading latest release from GitHub"
-    curl -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Linux_$(arch).tar.gz
+    echo "Downloading latest release from GitHub..."
+    curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Linux_$(arch).tar.gz
     ZIP_DIR="/tmp/observe-agent.tar.gz"
 else
     echo "Installing from provided zip file: $ZIP_DIR"
@@ -47,6 +47,19 @@ sudo cp -f $tmp_dir/otel-collector.yaml $observeagent_config_dir/otel-collector.
 sudo rm -rf $observeagent_config_dir/connections
 sudo cp -fR $tmp_dir/connections $observeagent_config_dir/connections
 sudo chown -R root:root $observeagent_config_dir
+
+# Set up the systemd service if it doesn't exist already.
+if ! systemctl list-unit-files observe-agent.service | grep observe-agent >/dev/null; then
+    echo "Installing observe-agent.service as a systemd service. This may ask for your password..."
+    sudo cp -f $tmp_dir/observe-agent.service /etc/systemd/system/observe-agent.service
+    sudo chown root:root /etc/systemd/system/observe-agent.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable observe-agent.service
+    sudo systemctl start observe-agent
+elif systemctl is-active --quiet observe-agent; then
+    echo "Restarting observe-agent.service. This may ask for your password..."
+    sudo systemctl restart observe-agent
+fi
 
 # Initialize the agent config file if it doesn't exist.
 if [ -f "$observeagent_config_dir/observe-agent.yaml" ]; then
