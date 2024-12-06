@@ -3,6 +3,7 @@ dist:
   module: github.com/observeinc/observe-agent/observecol
   description: Observe Distribution of OTEL Collector
   output_path: ./ocb-build
+  version: 0.114.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
