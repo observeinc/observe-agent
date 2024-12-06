@@ -2,6 +2,10 @@ services:
   agent:
     image: "observeinc/observe-agent:latest"
     pid: host
+    # Optionally use environment variables to configure the agent.
+    # environment:
+    #   - TOKEN=${TOKEN}
+    #   - OBSERVE_URL=${OBSERVE_URL}
     volumes:
       # Used for hostmetrics
       - type: bind
@@ -29,7 +33,7 @@ services:
       - type: bind
         source: /var/lib/docker/containers
         target: /var/lib/docker/containers
-      # Load agent from current directory
+      # Optionally load agent config from current directory.
       - type: bind
         source: ${PWD}/observe-agent.yaml
         target: /etc/observe-agent/observe-agent.yaml
