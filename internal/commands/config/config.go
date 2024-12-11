@@ -10,6 +10,7 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/commands/start"
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,19 +31,19 @@ OTEL configuration.`,
 		if cleanup != nil {
 			defer cleanup()
 		}
-		var viperConfig map[string]any
-		if err := viper.Unmarshal(&viperConfig); err != nil {
+		agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
+		if err != nil {
 			return err
 		}
-		viperConfigYaml, err := yaml.Marshal(viperConfig)
+		agentConfigYaml, err := yaml.Marshal(agentConfig)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("# ======== computed agent config\n")
-		fmt.Println(string(viperConfigYaml) + "\n")
-		agentConfig := viper.ConfigFileUsed()
-		if agentConfig != "" {
-			configFilePaths = append([]string{agentConfig}, configFilePaths...)
+		fmt.Println(string(agentConfigYaml) + "\n")
+		agentConfigFile := viper.ConfigFileUsed()
+		if agentConfigFile != "" {
+			configFilePaths = append([]string{agentConfigFile}, configFilePaths...)
 		}
 		for _, filePath := range configFilePaths {
 			file, err := os.ReadFile(filePath)
