@@ -6,6 +6,38 @@ service_name="com.observeinc.agent"
 observeagent_install_dir="/usr/local/observe-agent"
 tmp_dir="/tmp/observe-agent"
 
+# Parse args
+while [ $# -gt 0 ]; do
+    opt=$1
+    shift
+    arg=""
+    if [[ "$opt" == *"="* ]]; then
+        arg=$(echo $opt | cut -d'=' -f2)
+        opt=$(echo $opt | cut -d'=' -f1)
+    elif [ $# -gt 0 ]; then
+        arg="$1"
+        shift
+    fi
+    case "$opt" in
+        --token)
+            TOKEN="$arg"
+            ;;
+        --observe_url)
+            OBSERVE_URL="$arg"
+            ;;
+        --logs_enabled)
+            LOGS_ENABLED="$arg"
+            ;;
+        --metrics_enabled)
+            METRICS_ENABLED="$arg"
+            ;;
+        *)
+            echo "Unknown option: $opt"
+            exit 1
+            ;;
+    esac
+done
+
 # If the observe-agent.yaml file already exists, leave it alone.
 # Otherwise we need to know what the collection endpoint and token are.
 if [ ! -f "$observeagent_install_dir/observe-agent.yaml" ]; then
