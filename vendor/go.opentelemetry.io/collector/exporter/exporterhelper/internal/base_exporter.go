@@ -5,7 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,17 +29,11 @@ type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
 
-// BatcherOption apply changes to batcher sender.
-type BatcherOption func(*BatchSender) error
-
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
 	Signal pipeline.Signal
-
-	BatchMergeFunc      exporterbatcher.BatchMergeFunc[internal.Request]
-	BatchMergeSplitfunc exporterbatcher.BatchMergeSplitFunc[internal.Request]
 
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
@@ -61,10 +55,9 @@ type BaseExporter struct {
 
 	ConsumerOptions []consumer.Option
 
-	QueueCfg     exporterqueue.Config
-	QueueFactory exporterqueue.Factory[internal.Request]
+	queueCfg     exporterqueue.Config
+	queueFactory exporterqueue.Factory[internal.Request]
 	BatcherCfg   exporterbatcher.Config
-	BatcherOpts  []BatcherOption
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
@@ -93,26 +86,23 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		return nil, err
 	}
 
-	if be.BatcherCfg.Enabled {
-		bs := NewBatchSender(be.BatcherCfg, be.Set, be.BatchMergeFunc, be.BatchMergeSplitfunc)
-		for _, opt := range be.BatcherOpts {
-			err = multierr.Append(err, opt(bs))
-		}
-		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
-			err = multierr.Append(err, fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters"))
-		}
-		be.BatchSender = bs
-	}
-
-	if be.QueueCfg.Enabled {
-		set := exporterqueue.Settings{
-			Signal:           be.Signal,
-			ExporterSettings: be.Set,
-		}
-		be.QueueSender = NewQueueSender(be.QueueFactory(context.Background(), set, be.QueueCfg), be.Set, be.QueueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
+	if be.queueCfg.Enabled {
+		q := be.queueFactory(
+			context.Background(),
+			exporterqueue.Settings{
+				Signal:           be.Signal,
+				ExporterSettings: be.Set,
+			},
+			be.queueCfg)
+		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep)
 		for _, op := range options {
 			err = multierr.Append(err, op(be))
 		}
+	}
+
+	if be.BatcherCfg.Enabled {
+		bs := NewBatchSender(be.BatcherCfg, be.Set)
+		be.BatchSender = bs
 	}
 
 	if err != nil {
@@ -224,25 +214,21 @@ func WithRetry(config configretry.BackOffConfig) Option {
 func WithQueue(config QueueConfig) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler == nil || o.Unmarshaler == nil {
-			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
+			return errors.New("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		qf := exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
-			Marshaler:   o.Marshaler,
-			Unmarshaler: o.Unmarshaler,
-		})
-		q := qf(context.Background(), exporterqueue.Settings{
-			Signal:           o.Signal,
-			ExporterSettings: o.Set,
-		}, exporterqueue.Config{
+		o.queueCfg = exporterqueue.Config{
 			Enabled:      config.Enabled,
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
+		}
+		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+			Marshaler:   o.Marshaler,
+			Unmarshaler: o.Unmarshaler,
 		})
-		o.QueueSender = NewQueueSender(q, o.Set, config.NumConsumers, o.ExportFailureMessage, o.Obsrep)
 		return nil
 	}
 }
@@ -254,14 +240,14 @@ func WithQueue(config QueueConfig) Option {
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[internal.Request]) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler != nil || o.Unmarshaler != nil {
-			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		o.QueueCfg = cfg
-		o.QueueFactory = queueFactory
+		o.queueCfg = cfg
+		o.queueFactory = queueFactory
 		return nil
 	}
 }
@@ -276,30 +262,14 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
-// WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
-func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) BatcherOption {
-	return func(bs *BatchSender) error {
-		if mf == nil || msf == nil {
-			return fmt.Errorf("WithRequestBatchFuncs must be provided with non-nil functions")
-		}
-		if bs.mergeFunc != nil || bs.mergeSplitFunc != nil {
-			return fmt.Errorf("WithRequestBatchFuncs can only be used once with request-based exporters")
-		}
-		bs.mergeFunc = mf
-		bs.mergeSplitFunc = msf
-		return nil
-	}
-}
-
 // WithBatcher enables batching for an exporter based on custom request types.
 // For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
+func WithBatcher(cfg exporterbatcher.Config) Option {
 	return func(o *BaseExporter) error {
 		o.BatcherCfg = cfg
-		o.BatcherOpts = opts
 		return nil
 	}
 }
@@ -322,20 +292,10 @@ func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Op
 	}
 }
 
-// withBatchFuncs is used to set the functions for merging and splitting batches for OLTP-based exporters.
-// It must be provided as the first option when creating a new exporter helper.
-func WithBatchFuncs(mf exporterbatcher.BatchMergeFunc[internal.Request], msf exporterbatcher.BatchMergeSplitFunc[internal.Request]) Option {
-	return func(o *BaseExporter) error {
-		o.BatchMergeFunc = mf
-		o.BatchMergeSplitfunc = msf
-		return nil
-	}
-}
-
 func CheckStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 	if err != nil {
 		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
-		require.Equal(t, err.Error(), sd.Status().Description, "SpanData %v", sd)
+		require.EqualError(t, err, sd.Status().Description, "SpanData %v", sd)
 	} else {
 		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}

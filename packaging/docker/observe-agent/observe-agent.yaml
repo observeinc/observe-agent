@@ -1,0 +1,13 @@
+# A minimal default agent config which should be overwritten via a docker volume or environment variables.
+debug: false
+self_monitoring:
+  enabled: true
+host_monitoring:
+  enabled: true
+  logs:
+    enabled: true
+  metrics:
+    host:
+      enabled: true
+    process:
+      enabled: false

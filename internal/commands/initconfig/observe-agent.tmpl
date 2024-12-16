@@ -7,6 +7,13 @@ observe_url: {{ .ObserveURL }}
 # Debug mode - Sets agent log level to debug
 debug: false
 
+{{ if .CloudResourceDetectors -}}
+cloud_resource_detectors:
+{{- range .CloudResourceDetectors }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+
 self_monitoring:
   enabled: {{ .SelfMonitoring_Enabled }}
 

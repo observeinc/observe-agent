@@ -9,6 +9,7 @@ import (
 	"github.com/observeinc/observe-agent/build"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // versionCmd represents the version command
@@ -18,8 +19,8 @@ var versionCmd = &cobra.Command{
 	Long: `Display the currently installed version of the observe-agent. This version
 is based on the package release.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		version := getVersion()
-		fmt.Printf("observe-agent version: %s\n", version)
+		fmt.Printf("observe-agent version: %s\n", getVersion())
+		fmt.Printf("observe-agent config file: %s\n", getConfigFile())
 	},
 }
 
@@ -42,4 +43,12 @@ func getVersion() string {
 		return "dev"
 	}
 	return build.Version
+}
+
+func getConfigFile() string {
+	configFile := viper.ConfigFileUsed()
+	if configFile == "" {
+		configFile = "[none]"
+	}
+	return configFile
 }

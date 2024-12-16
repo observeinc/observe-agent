@@ -41,7 +41,9 @@ OTEL configuration.`,
 		fmt.Printf("# ======== computed agent config\n")
 		fmt.Println(string(viperConfigYaml) + "\n")
 		agentConfig := viper.ConfigFileUsed()
-		configFilePaths = append([]string{agentConfig}, configFilePaths...)
+		if agentConfig != "" {
+			configFilePaths = append([]string{agentConfig}, configFilePaths...)
+		}
 		for _, filePath := range configFilePaths {
 			file, err := os.ReadFile(filePath)
 			if err != nil {

@@ -17,18 +17,18 @@ type ConfigTestResult struct {
 	Error          string
 }
 
-func checkConfig(v *viper.Viper) (any, error) {
+func checkConfig(v *viper.Viper) (bool, any, error) {
 	configFile := v.ConfigFileUsed()
 	if configFile == "" {
-		return nil, fmt.Errorf("no config file defined")
+		return false, nil, fmt.Errorf("no config file defined")
 	}
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
 	var conf config.AgentConfig
 	if err = yaml.Unmarshal(contents, &conf); err != nil {
-		return ConfigTestResult{
+		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: false,
 			IsValid:        false,
@@ -36,14 +36,14 @@ func checkConfig(v *viper.Viper) (any, error) {
 		}, nil
 	}
 	if err = conf.Validate(); err != nil {
-		return ConfigTestResult{
+		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: true,
 			IsValid:        false,
 			Error:          err.Error(),
 		}, nil
 	}
-	return ConfigTestResult{
+	return true, ConfigTestResult{
 		ConfigFile:     configFile,
 		ParseSucceeded: true,
 		IsValid:        true,

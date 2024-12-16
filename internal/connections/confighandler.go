@@ -11,30 +11,34 @@ import (
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
-func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, string, error) {
+const (
+	OTEL_OVERRIDE_YAML_KEY = "otel_config_overrides"
+)
+
+func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
 	configFilePaths := []string{}
 	// If the default otel-collector.yaml exists, add it to the list of config files
 	defaultOtelConfigPath := filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")
 	if _, err := os.Stat(defaultOtelConfigPath); err == nil {
 		agentConf, err := config.AgentConfigFromViper(viper.GetViper())
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		otelConfigRendered, err := RenderConfigTemplate(ctx, tmpDir, defaultOtelConfigPath, agentConf)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		configFilePaths = append(configFilePaths, otelConfigRendered)
 	}
-	var err error
 	// Get additional config paths based on connection configs
 	for _, conn := range AllConnectionTypes {
 		if viper.IsSet(conn.Name) {
 			connectionPaths, err := conn.GetConfigFilePaths(ctx, tmpDir)
 			if err != nil {
-				return nil, "", err
+				return nil, err
 			}
 			configFilePaths = append(configFilePaths, connectionPaths...)
 		}
@@ -44,16 +48,32 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, st
 		configFilePaths = append(configFilePaths, viper.GetString("otelConfigFile"))
 	}
 	// Generate override file and include path if overrides provided
-	var overridePath string
-	if viper.IsSet("otel_config_overrides") {
-		overridePath, err = GetOverrideConfigFile(viper.Sub("otel_config_overrides"))
-		if err != nil {
-			return configFilePaths, overridePath, err
+	if viper.IsSet(OTEL_OVERRIDE_YAML_KEY) {
+		// GetStringMap is more lenient with respect to conversions than Sub, which only handles maps.
+		overrides := viper.GetStringMap(OTEL_OVERRIDE_YAML_KEY)
+		if len(overrides) == 0 {
+			stringData := viper.GetString(OTEL_OVERRIDE_YAML_KEY)
+			// If this was truly set to empty, then ignore it.
+			if stringData != "" {
+				// Viper can handle overrides set in the agent config, or passed in as an env var as a JSON string.
+				// For consistency, we also want to accept an env var as a YAML string.
+				err := yaml.Unmarshal([]byte(stringData), &overrides)
+				if err != nil {
+					return nil, fmt.Errorf("%s was provided but could not be parsed", OTEL_OVERRIDE_YAML_KEY)
+				}
+			}
 		}
-		configFilePaths = append(configFilePaths, overridePath)
+		// Only create the config file if there are overrides present (ie ignore empty maps)
+		if len(overrides) != 0 {
+			overridePath, err := GetOverrideConfigFile(tmpDir, overrides)
+			if err != nil {
+				return nil, err
+			}
+			configFilePaths = append(configFilePaths, overridePath)
+		}
 	}
-	logger.FromCtx(ctx).Info(fmt.Sprint("Config file paths:", configFilePaths))
-	return configFilePaths, overridePath, nil
+	logger.FromCtx(ctx).Debug(fmt.Sprint("Config file paths:", configFilePaths))
+	return configFilePaths, nil
 }
 
 func SetEnvVars() error {
@@ -75,14 +95,18 @@ func SetEnvVars() error {
 	return nil
 }
 
-func GetOverrideConfigFile(sub *viper.Viper) (string, error) {
-	f, err := os.CreateTemp("", "otel-config-overrides-*.yaml")
+func GetOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
+	f, err := os.CreateTemp(tmpDir, "otel-config-overrides-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("failed to create config file to write to: %w", err)
 	}
-	err = sub.WriteConfigAs(f.Name())
+	contents, err := yaml.Marshal(data)
 	if err != nil {
-		return f.Name(), fmt.Errorf("failed to write otel config overrides to file: %w", err)
+		return "", fmt.Errorf("failed to marshal otel config overrides: %w", err)
+	}
+	_, err = f.Write([]byte(contents))
+	if err != nil {
+		return "", fmt.Errorf("failed to write otel config overrides to file: %w", err)
 	}
 	return f.Name(), nil
 }

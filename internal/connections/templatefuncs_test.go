@@ -16,13 +16,13 @@ func TestTmplValueToYaml(t *testing.T) {
 
 func TestTplInlineArray(t *testing.T) {
 	strSlice := []string{"a", "b", "c", "y"}
-	assert.Equal(t, "[a,b,c,\"y\"]", TplInlineArray(strSlice))
+	assert.Equal(t, "[a, b, c, \"y\"]", TplInlineArray(strSlice))
 
 	intSlice := []int{1, 2, 3}
-	assert.Equal(t, "[1,2,3]", TplInlineArray(intSlice))
+	assert.Equal(t, "[1, 2, 3]", TplInlineArray(intSlice))
 
 	strIntSlice := []any{"a", 1, "b", 2}
-	assert.Equal(t, "[a,1,b,2]", TplInlineArray(strIntSlice))
+	assert.Equal(t, "[a, 1, b, 2]", TplInlineArray(strIntSlice))
 }
 
 func TestTplToYaml(t *testing.T) {

@@ -2,7 +2,7 @@
 OCB=$(HOME)/bin/ocb
 
 # Uncomment to use OTEL Collector Builder installed by
-# `go install go.opentelemetry.io/collector/cmd/builder@v0.110.0`
+# `go install go.opentelemetry.io/collector/cmd/builder@v0.114.0`
 #OCB=builder
 
 all: go-test

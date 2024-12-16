@@ -1,9 +1,10 @@
 Running check on observe-agent config file {{ .ConfigFile }}
-{{- if .IsValid }}
+
+{{- if .IsValid -}}
 Config file is valid.
-{{- else if .ParseSucceeded}}
+{{- else if .ParseSucceeded -}}
 ⚠️ Config file validation failed with error {{ .Error }}
-{{- else }}
+{{- else -}}
 ⚠️ Config file could not be parsed as YAML
 {{ .Error }}
-{{- end }}
+{{- end -}}
