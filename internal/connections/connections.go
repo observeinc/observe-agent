@@ -86,7 +86,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 	switch c.Type {
 	case SelfMonitoringConnectionTypeName:
 		conf := &config.SelfMonitoringConfig{}
-		err := config.UnmarshalViperThroughYaml(rawConnConfig, conf)
+		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 			return nil, err
@@ -97,7 +97,7 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) 
 		}
 	case HostMonitoringConnectionTypeName:
 		conf := &config.HostMonitoringConfig{}
-		err := config.UnmarshalViperThroughYaml(rawConnConfig, conf)
+		err := rawConnConfig.Unmarshal(conf)
 		if err != nil {
 			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
 			return nil, err
