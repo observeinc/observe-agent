@@ -78,13 +78,19 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 
 func SetEnvVars() error {
 	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
-	endpoint, err := url.JoinPath(collector_url, "/v2/otel")
+	otelEndpoint, err := url.JoinPath(collector_url, "/v2/otel")
+	if err != nil {
+		return err
+	}
+	promEndpoint, err := url.JoinPath(collector_url, "/v1/prometheus")
 	if err != nil {
 		return err
 	}
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
-	os.Setenv("OBSERVE_ENDPOINT", endpoint)
-	os.Setenv("OBSERVE_TOKEN", "Bearer "+token)
+	os.Setenv("OBSERVE_COLLECTOR_URL", collector_url)
+	os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint)
+	os.Setenv("OBSERVE_PROMETHEUS_ENDPOINT", promEndpoint)
+	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
 	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
 
 	if debug {
