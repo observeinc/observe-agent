@@ -83,9 +83,9 @@ processors:
 
 exporters:
   otlphttp/observe:
-    endpoint: ${env:OBSERVE_ENDPOINT}
+    endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
     headers:
-      authorization: ${env:OBSERVE_TOKEN}
+      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
     sending_queue:
       num_consumers: 4
       queue_size: 100
