@@ -34,7 +34,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(InitConfig)
 
-	RootCmd.PersistentFlags().StringVar(&CfgFile, "config", "", "config file path")
+	RootCmd.PersistentFlags().StringVar(&CfgFile, "observe-config", "", "observe-agent config file path")
 }
 
 // InitConfig reads in config file and ENV variables if set.

@@ -43,10 +43,6 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 			configFilePaths = append(configFilePaths, connectionPaths...)
 		}
 	}
-	// Read in otel-config flag and add to paths if set
-	if viper.IsSet("otelConfigFile") {
-		configFilePaths = append(configFilePaths, viper.GetString("otelConfigFile"))
-	}
 	// Generate override file and include path if overrides provided
 	if viper.IsSet(OTEL_OVERRIDE_YAML_KEY) {
 		// GetStringMap is more lenient with respect to conversions than Sub, which only handles maps.
