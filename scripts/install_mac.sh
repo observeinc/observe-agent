@@ -90,14 +90,14 @@ else
     echo "Initializing observe-agent.yaml"
     INIT_FLAGS="--config_path $observeagent_install_dir/observe-agent.yaml --token $TOKEN --observe_url $OBSERVE_URL --host_monitoring::enabled=true"
     if [ -n "$LOGS_ENABLED" ]; then
-        if [[ "${LOGS_ENABLED,,}" == "true" ]]; then
+        if [[ "$(echo "$LOGS_ENABLED" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::logs::enabled=true"
         else
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::logs::enabled=false"
         fi
     fi
     if [ -n "$METRICS_ENABLED" ]; then
-        if [[ "${METRICS_ENABLED,,}" == "true" ]]; then
+        if [[ "$(echo "$METRICS_ENABLED" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=true"
         else
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=false"
