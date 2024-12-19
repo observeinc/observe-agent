@@ -72,7 +72,7 @@ sudo mkdir -p $observeagent_config_dir /var/lib/observe-agent/filestorage
 sudo chmod +rw /var/lib/observe-agent/filestorage
 
 # Move the binary to the proper path.
-cp -f $tmp_dir/observe-agent $agent_binary_path
+sudo cp -f $tmp_dir/observe-agent $agent_binary_path
 
 # Copy all config files to the proper dir.
 sudo cp -f $tmp_dir/otel-collector.yaml $observeagent_config_dir/otel-collector.yaml
@@ -109,6 +109,14 @@ if [[ -d /run/systemd/system ]]; then
     # Set up the systemd service if it doesn't exist already.
     if ! systemctl list-unit-files observe-agent.service | grep observe-agent >/dev/null; then
         echo "Installing observe-agent.service as a systemd service. This may ask for your password..."
+
+        # Set up user and permissions (copied from preinstall.sh)
+        sudo getent passwd observe-agent >/dev/null || sudo useradd --system --user-group --no-create-home --shell /sbin/nologin observe-agent
+        sudo usermod -a -G systemd-journal observe-agent
+        sudo mkdir -p /var/lib/observe-agent/filestorage
+        sudo chown -R observe-agent:observe-agent /var/lib/observe-agent/filestorage
+
+        # Copy the service file and start the service.
         sudo cp -f $tmp_dir/observe-agent.service /etc/systemd/system/observe-agent.service
         sudo chown root:root /etc/systemd/system/observe-agent.service
         sudo systemctl daemon-reload
