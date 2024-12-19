@@ -18,12 +18,15 @@ receivers:
               regex: '.*grpc_io.*'
               action: drop
 
+processors:
+  deltatocumulative:
+
 service:
   pipelines:
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      exporters: [prometheusremotewrite/observe]
 
     logs/agent-config:
        receivers: [filelog/agent-config]
