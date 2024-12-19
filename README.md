@@ -1,39 +1,62 @@
 # Observe Agent
 
-Code for the Observe agent and CLI. The agent code is based on the OpenTelemetry Collector. 
+Code for the Observe agent and CLI. The agent code is based on the OpenTelemetry Collector.
 
 # Build
 
 To run the code you need to have `golang v1.22.7` installed. Then you can run the following command to compile the binary.
 
-```
+```sh
 go build -o observe-agent
+```
+
+## Installing local builds on Mac or Linux
+
+To install a local build of the agent as a Mac Launch Daemon or Linux Systemd service, run the following commands. First, build the release snapshot:
+
+```sh
+goreleaser release --snapshot --clean --verbose --single-target
+```
+
+Then, run the agent install script, pointing it to the snapshot build:
+
+```sh
+# For Mac
+ZIP_DIR=./dist/darwin_arm64_v8.0/observe-agent_Darwin_arm64.zip ./scripts/install_mac.sh --token <token> --observe_url <observe_url>
+```
+
+or
+
+```sh
+# For Linux
+ZIP_DIR=./dist/linux_amd64_v1/observe-agent_Linux_x86_64.tar.gz ./scripts/install_linux.sh --token <token> --observe_url <observe_url>
 ```
 
 ## Adding new components
 
 Before adding new components, you'll need to install the [Otel Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) tool. If you're running on mac and arm64 (M chips) you can run the following command
 
-```
+```sh
 make install-ocb
 ```
 
-Otherwise, see instructions to install at https://opentelemetry.io/docs/collector/custom-collector/#step-1---install-the-builder
+Otherwise, see instructions to install at [https://opentelemetry.io/docs/collector/custom-collector/#step-1---install-the-builder]
 
 To add new components, you can modify the `builder-config.yaml` file. Add the component to the correct section and then run the following command.
-```
+
+```sh
 make build-ocb
 ```
 
-This command should add the new dependencies and code in the correct places. You can build the agent afterwards with `go build` to confirm. 
+This command should add the new dependencies and code in the correct places. You can build the agent afterwards with `go build` to confirm.
 
-Afterwards, you should add the new component to the `Components` section below. 
+Afterwards, you should add the new component to the `Components` section below.
 
 ## Running
 
-To start the observe agent after building the binary run the following command. 
+To start the observe agent after building the binary run the following command.
 
-```
+```sh
 ./observe-agent start
 ```
 
