@@ -1,5 +1,17 @@
 # Uncomment to use OTEL Collector Builder installed by `install-ocb`
-OCB=$(HOME)/bin/ocb
+OCB = $(HOME)/bin/ocb
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	OS = linux
+endif
+ifeq ($(UNAME_S),Darwin)
+	OS = darwin
+endif
+OCB_VERSION = 0.114.0
+ARCH := $(shell arch)
+ifeq ($(ARCH),x86_64)
+	ARCH = amd64
+endif
 
 # Uncomment to use OTEL Collector Builder installed by
 # `go install go.opentelemetry.io/collector/cmd/builder@v0.114.0`
@@ -29,8 +41,8 @@ release:
 ## install-ocb: Installs correct version of ocb binary
 install-ocb:
 	@mkdir -p "$(HOME)/bin"
-	curl --proto '=https' --tlsv1.2 -L -o "$(HOME)/bin/ocb" https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.110.0/ocb_0.110.0_darwin_arm64
-	@chmod +x "$(HOME)/bin/ocb"
+	curl --proto "=https" --tlsv1.2 -L -o "$(OCB)" "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv$(OCB_VERSION)/ocb_$(OCB_VERSION)_$(OS)_$(ARCH)"
+	@chmod +x "$(OCB)"
 
 ## build-ocb: Builds project using ocb
 build-ocb:
