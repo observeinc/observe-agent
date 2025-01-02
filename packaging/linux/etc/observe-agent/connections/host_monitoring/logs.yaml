@@ -9,6 +9,12 @@ receivers:
       - /var/log/**/*.log
       - /var/log/syslog
       {{- end }}
+    {{- if .Logs.Exclude }}
+    exclude:
+      {{- range .Logs.Exclude }}
+      - {{ . }}
+      {{- end }}
+    {{- end }}
     include_file_path: true
     storage: file_storage
     retry_on_failure:

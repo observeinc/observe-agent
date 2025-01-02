@@ -1,6 +1,19 @@
 receivers:
   filelog/host_monitoring:
-    include: [/var/log/**/*.log]
+    include:
+      {{- if .Logs.Include }}
+      {{- range .Logs.Include }}
+      - {{ . }}
+      {{- end }}
+      {{- else }}
+      - /var/log/**/*.log
+      {{- end }}
+    {{- if .Logs.Exclude }}
+    exclude:
+      {{- range .Logs.Exclude }}
+      - {{ . }}
+      {{- end }}
+    {{- end }}
     include_file_path: true
     storage: file_storage
     retry_on_failure:
