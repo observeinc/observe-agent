@@ -31,6 +31,9 @@ while [ $# -gt 0 ]; do
         --metrics_enabled)
             METRICS_ENABLED="$arg"
             ;;
+        --setup_launch_daemon)
+            SETUP_LAUNCH_DAEMON="$arg"
+            ;;
         *)
             echo "Unknown option: $opt"
             exit 1
@@ -114,12 +117,14 @@ sudo ln -sf $observeagent_install_dir/observe-agent /usr/local/bin
 
 echo "Observe agent successfully installed to $observeagent_install_dir"
 
-# Install the launchd agent
-echo "Installing $service_name as a LaunchDaemon. This may ask for your password..."
-sudo cp -f $tmp_dir/observe-agent.plist /Library/LaunchDaemons/$service_name.plist
-sudo chown root:wheel /Library/LaunchDaemons/$service_name.plist
-sudo launchctl load -w /Library/LaunchDaemons/$service_name.plist
-sudo launchctl kickstart "system/$service_name"
+# Install the launchd agent unless the variable is specified to false
+if [ -z "$SETUP_LAUNCH_DAEMON" ] || [[ "$(echo "$SETUP_LAUNCH_DAEMON" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+    echo "Installing $service_name as a LaunchDaemon. This may ask for your password..."
+    sudo cp -f $tmp_dir/observe-agent.plist /Library/LaunchDaemons/$service_name.plist
+    sudo chown root:wheel /Library/LaunchDaemons/$service_name.plist
+    sudo launchctl load -w /Library/LaunchDaemons/$service_name.plist
+    sudo launchctl kickstart "system/$service_name"
+fi
 
 echo
 echo "---"

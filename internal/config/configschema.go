@@ -12,6 +12,7 @@ import (
 type HostMonitoringLogsConfig struct {
 	Enabled bool     `yaml:"enabled" mapstructure:"enabled"`
 	Include []string `yaml:"include,omitempty" mapstructure:"include"`
+	Exclude []string `yaml:"exclude,omitempty" mapstructure:"exclude"`
 }
 
 type HostMonitoringHostMetricsConfig struct {
