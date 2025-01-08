@@ -14,15 +14,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
-}
-
-func GenerateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
+func GenerateCollectorSettings() *otelcol.CollectorSettings {
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
 		Description: "Observe Distribution of Opentelemetry Collector",
@@ -33,7 +25,6 @@ func GenerateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 		Factories: components,
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs: URIs,
 				ProviderFactories: []confmap.ProviderFactory{
 					fileprovider.NewFactory(),
 					envprovider.NewFactory(),
@@ -44,6 +35,12 @@ func GenerateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 			},
 		},
 	}
+	return set
+}
+
+func GenerateCollectorSettingsWithConfigFiles(configFiles []string) *otelcol.CollectorSettings {
+	set := GenerateCollectorSettings()
+	set.ConfigProviderSettings.ResolverSettings.URIs = configFiles
 	return set
 }
 
