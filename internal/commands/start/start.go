@@ -12,8 +12,6 @@ import (
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	collector "go.opentelemetry.io/collector/otelcol"
 )
 
 func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
@@ -42,46 +40,38 @@ func DefaultLoggerCtx() context.Context {
 	return logger.WithCtx(context.Background(), logger.Get())
 }
 
-func SetupAndGenerateCollectorSettings(ctx context.Context) (*collector.CollectorSettings, func(), error) {
-	configFilePaths, cleanup, err := SetupAndGetConfigFiles(ctx)
-	if err != nil {
-		return nil, cleanup, err
-	}
-	// Generate collector settings with all config files
-	colSettings := observecol.GenerateCollectorSettings(configFilePaths)
-	return colSettings, cleanup, nil
-}
+func MakeStartCommand() *cobra.Command {
+	// Create the start command from the otel collector command
+	settings := observecol.GenerateCollectorSettings()
+	otleCmd := observecol.GetOtelCollectorCommand(settings)
+	otleCmd.Use = "start"
+	otleCmd.Short = "Start the Observe agent process."
+	otleCmd.Long = `The Observe agent is based on the OpenTelemetry Collector.
+This command reads in the local config and env vars and starts the
+collector on the current host.`
+	// Drop the sub commands
+	otleCmd.ResetCommands()
 
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start the Observe agent process.",
-	Long: `The Observe agent is based on the OpenTelemetry Collector. 
-This command reads in the local config and env vars and starts the 
-collector on the current host.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		colSettings, cleanup, err := SetupAndGenerateCollectorSettings(DefaultLoggerCtx())
-		if err != nil {
-			return err
-		}
+	// Modify the run function so we can pass in our packaged config files.
+	originalRunE := otleCmd.RunE
+	otleCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		configFilePaths, cleanup, err := SetupAndGetConfigFiles(DefaultLoggerCtx())
 		if cleanup != nil {
 			defer cleanup()
 		}
-		otelCmd := observecol.GetOtelCollectorCommand(colSettings)
-		return otelCmd.RunE(cmd, args)
-	},
+		if err != nil {
+			return err
+		}
+		configFlag := otleCmd.Flags().Lookup("config")
+		for _, path := range configFilePaths {
+			configFlag.Value.Set(path)
+		}
+		return originalRunE(cmd, args)
+	}
+	return otleCmd
 }
 
 func init() {
-	startCmd.PersistentFlags().String("otel-config", "", "Path to additional otel configuration file")
-	viper.BindPFlag("otelConfigFile", startCmd.PersistentFlags().Lookup("otel-config"))
+	startCmd := MakeStartCommand()
 	root.RootCmd.AddCommand(startCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
