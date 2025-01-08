@@ -29,11 +29,16 @@ RUN tar czhf journalctl.tar.gz /bin/journalctl $(ldd /bin/journalctl | grep -oP 
 RUN mkdir /output && tar xf /journalctl.tar.gz --directory /output
 
 FROM alpine:3.20.3
+RUN apk --no-cache add libcap
 ADD packaging/docker/observe-agent /etc/observe-agent
 COPY --from=systemd /output/ /
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=agent /output/ /
 COPY --from=directories /var/lib/observe-agent/filestorage /var/lib/observe-agent/filestorage
+
+RUN setcap "cap_dac_read_search+ep" /observe-agent \
+    && addgroup --gid 9000 observe-agent \
+    && adduser --disabled-password --ingroup observe-agent --uid 9000 observe-agent
 
 EXPOSE 4317 55680 55679 13133
 ENTRYPOINT ["/observe-agent"]
