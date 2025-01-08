@@ -6,6 +6,7 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/commands/start"
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/otelcol"
 )
@@ -16,13 +17,14 @@ type OtelConfigTestResult struct {
 }
 
 func checkOtelConfig(_ *viper.Viper) (bool, any, error) {
-	colSettings, cleanup, err := start.SetupAndGenerateCollectorSettings(logger.WithCtx(context.Background(), logger.GetNop()))
-	if err != nil {
-		return false, nil, err
-	}
+	configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(logger.WithCtx(context.Background(), logger.GetNop()))
 	if cleanup != nil {
 		defer cleanup()
 	}
+	if err != nil {
+		return false, nil, err
+	}
+	colSettings := observecol.GenerateCollectorSettingsWithConfigFiles(configFilePaths)
 	// These are the same checks as the `otelcol validate` command:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/command_validate.go
 	col, err := otelcol.NewCollector(*colSettings)
