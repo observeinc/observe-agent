@@ -392,6 +392,7 @@ require (
 )
 
 replace (
+	// TODO remove these overrides when we upgrade to otelcol v0.117.0
 	github.com/docker/docker => github.com/docker/docker v27.4.1+incompatible
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/observecol => ./observecol
