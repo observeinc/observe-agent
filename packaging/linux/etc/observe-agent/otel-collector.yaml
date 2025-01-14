@@ -38,6 +38,8 @@ processors:
 
   batch:
 
+  deltatocumulative:
+
   resourcedetection:
     detectors: [env, system]
     system:
@@ -107,8 +109,8 @@ service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud]
-      exporters: [otlphttp/observe]
+      processors: [resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      exporters: [prometheusremotewrite/observe]
 
     logs/forward:
       receivers: [otlp]

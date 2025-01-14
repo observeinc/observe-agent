@@ -23,9 +23,6 @@ receivers:
       - observe-agent
     priority: info
 
-processors:
-  deltatocumulative:
-
 service:
   pipelines:
     metrics/agent-internal:

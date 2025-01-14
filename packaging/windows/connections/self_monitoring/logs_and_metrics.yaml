@@ -18,9 +18,6 @@ receivers:
               regex: '.*grpc_io.*'
               action: drop
 
-processors:
-  deltatocumulative:
-
 service:
   pipelines:
     metrics/agent-internal:

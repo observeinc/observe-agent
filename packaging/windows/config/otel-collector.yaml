@@ -22,7 +22,7 @@ processors:
   transform/truncate:
     log_statements:
       - context: log
-        statements: 
+        statements:
           - truncate_all(attributes, 4095)
           - truncate_all(resource.attributes, 4095)
     trace_statements:
@@ -35,9 +35,11 @@ processors:
     check_interval: 1s
     limit_percentage: 20
     spike_limit_percentage: 5
-  
+
   batch:
-  
+
+  deltatocumulative:
+
   resourcedetection:
     detectors: [env, system]
     system:
@@ -45,7 +47,7 @@ processors:
       resource_attributes:
         host.id:
           enabled: true
-  
+
   resourcedetection/cloud:
     detectors:
     {{- if .CloudResourceDetectors }}
@@ -87,10 +89,10 @@ service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      exporters: [prometheusremotewrite/observe]
 
-    logs/forward: 
+    logs/forward:
       receivers: [otlp]
       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe, count]
@@ -99,7 +101,7 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
       exporters: [otlphttp/observe]
-    
+
     metrics/count-nooop:
       receivers: [count]
       processors: [filter/count]

@@ -9,15 +9,15 @@ receivers:
           process.cpu.utilization:
             enabled: true
           process.disk.operations:
-            enabled: true      
+            enabled: true
           process.memory.utilization:
-            enabled: true      
+            enabled: true
           process.open_file_descriptors:
-            enabled: true      
+            enabled: true
           process.paging.faults:
-            enabled: true      
+            enabled: true
           process.signals_pending:
-            enabled: true      
+            enabled: true
           process.threads:
             enabled: true
         mute_process_name_error: true
