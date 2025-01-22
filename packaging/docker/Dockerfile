@@ -4,8 +4,8 @@ COPY observe-agent /
 # This shouldn't be necessary but sometimes we end up with execution bit not set.
 # ref: https://github.com/open-telemetry/opentelemetry-collector/issues/1317
 RUN chmod 755 /observe-agent
-# The base executable includes symlinks to libraries. In order to break those, 
-# we tar with the h flag to dereference symlinks. 
+# The base executable includes symlinks to libraries. In order to break those,
+# we tar with the h flag to dereference symlinks.
 RUN tar czhf observe-agent.tar.gz /observe-agent $(ldd /observe-agent | grep -oP "\/.*? ")
 # extract package to /output so it can be taken as base for scratch image
 # we do not copy archive into scratch image, as it doesn't have tar executable

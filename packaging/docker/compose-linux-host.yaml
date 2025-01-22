@@ -25,7 +25,7 @@ services:
         source: /var/log
         target: /hostfs/var/log
         read_only: true
-      # Symlinks dont work by default on docker containers so we need to add each of the 
+      # Symlinks dont work by default on docker containers so we need to add each of the
       # directories containing symlink targets individually for docker to be able to follow them
       - type: bind
         source: /var/log/pods

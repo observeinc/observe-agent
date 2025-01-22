@@ -37,4 +37,4 @@ service:
     metrics/host_monitoring_host:
       receivers: [hostmetrics/host-monitoring-host]
       processors: [memory_limiter, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe]
+      exporters: [prometheusremotewrite/observe]

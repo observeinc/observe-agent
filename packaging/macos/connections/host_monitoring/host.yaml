@@ -9,4 +9,4 @@ service:
     metrics/agent-filestats:
        receivers: [filestats/agent]
        processors: [resourcedetection, resourcedetection/cloud]
-       exporters: [otlphttp/observe]
+       exporters: [prometheusremotewrite/observe]
