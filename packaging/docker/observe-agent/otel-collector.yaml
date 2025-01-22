@@ -22,7 +22,7 @@ processors:
   transform/truncate:
     log_statements:
       - context: log
-        statements: 
+        statements:
           - truncate_all(attributes, 4095)
           - truncate_all(resource.attributes, 4095)
     trace_statements:
@@ -35,9 +35,11 @@ processors:
     check_interval: 1s
     limit_percentage: 20
     spike_limit_percentage: 5
-  
+
   batch:
-  
+
+  deltatocumulative:
+
   resourcedetection:
     detectors: [env, system]
     system:
@@ -65,7 +67,7 @@ processors:
           enabled: true
         os.description:
           enabled: true
-  
+
   resourcedetection/cloud:
     detectors:
     {{- if .CloudResourceDetectors }}
@@ -74,7 +76,7 @@ processors:
     {{- end }}
     timeout: 2s
     override: false
-    
+
   filter/count:
     error_mode: ignore
     metrics:
@@ -93,16 +95,24 @@ exporters:
       enabled: true
     compression: zstd
 
+  prometheusremotewrite/observe:
+    endpoint: ${env:OBSERVE_PROMETHEUS_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+    resource_to_telemetry_conversion:
+      enabled: true  # Convert resource attributes to metric labels
+    send_metadata: true
+
   debug:
 
 service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud]
-      exporters: [otlphttp/observe]
+      processors: [resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
+      exporters: [prometheusremotewrite/observe]
 
-    logs/forward: 
+    logs/forward:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
       exporters: [otlphttp/observe, count]
