@@ -31,6 +31,12 @@ while [ $# -gt 0 ]; do
         --metrics_enabled)
             METRICS_ENABLED="$arg"
             ;;
+        --version)
+            AGENT_VERSION="$arg"
+            ;;
+        --zip_dir)
+            ZIP_DIR="$arg"
+            ;;
         *)
             echo "Unknown option: $opt"
             exit 1
@@ -54,10 +60,19 @@ fi
 
 # If the zip file is not provided, download the latest release from GitHub.
 if [ -z "$ZIP_DIR" ]; then
-    echo "Downloading latest release from GitHub..."
-    curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Linux_$(arch).tar.gz
+    if [ -n "$AGENT_VERSION" ]; then
+        echo "Downloading version $AGENT_VERSION from GitHub..."
+        curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/download/v$AGENT_VERSION/observe-agent_Linux_$(arch).tar.gz
+    else
+        echo "Downloading latest release from GitHub..."
+        curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Linux_$(arch).tar.gz
+    fi
     ZIP_DIR="/tmp/observe-agent.tar.gz"
 else
+    if [ -n "$AGENT_VERSION" ]; then
+        echo "Cannot specify both ZIP_DIR ($ZIP_DIR) and AGENT_VERSION ($AGENT_VERSION)"
+        exit 1
+    fi
     echo "Installing from provided zip file: $ZIP_DIR"
 fi
 
