@@ -1,11 +1,16 @@
 param (
     [Parameter()]
-    $observe_collection_endpoint, 
+    [String]$version,
     [Parameter()]
-    $observe_token
+    [String]$observe_collection_endpoint,
+    [Parameter()]
+    [String]$observe_token
 )
 
 $installer_url="https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Windows_x86_64.zip"
+if ($PSBoundParameters.ContainsKey('version')){
+    $installer_url="https://github.com/observeinc/observe-agent/releases/download/v$version/observe-agent_Windows_x86_64.zip"
+}
 $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
@@ -59,7 +64,7 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
         StartupType = "Automatic"
         Description = "Observe Agent based on OpenTelemetry collector"
       }
-      
+
     New-Service @params
     Start-Service ObserveAgent
     }
