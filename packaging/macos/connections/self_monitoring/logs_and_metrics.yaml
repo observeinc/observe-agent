@@ -1,6 +1,7 @@
 receivers:
   filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
     include: [/usr/local/observe-agent/config/otel-collector.yaml]
+    include_file_path: true
     start_at: beginning
     poll_interval: 5m
     multiline:
