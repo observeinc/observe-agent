@@ -1,0 +1,49 @@
+# Observe data token
+token: "<OBSERVE TOKEN>"
+
+# Target Observe collection url
+observe_url: "<OBSERVE COLLECTION ENDPOINT>"
+
+# Debug mode - Sets agent log level to debug
+debug: false
+
+# collect metrics and logs pertaining to the agent itself
+self_monitoring:
+  enabled: true
+
+# collect metrics and logs about the host system
+host_monitoring:
+  enabled: true
+  # collect logs of all running processes from the host system
+  logs:
+    enabled: true
+    include:
+      - /var/log/**/*.log
+      - /var/log/syslog
+  metrics:
+    # collect metrics about the host system
+    host:
+      enabled: true
+    # collect metrics about the processes running on the host system
+    process:
+      enabled: false
+
+# otel_config_overrides:
+#   exporters:
+#     # This is a net new exporter
+#     debug:
+#       verbosity: detailed
+#       sampling_initial: 5
+#       sampling_thereafter: 200
+#   service:
+#     pipelines:
+#       # This will override the existing metrics/host_monitoring pipeline and output to stdout debug instead
+#       metrics/host_monitoring_host:
+#         receivers: [hostmetrics/host-monitoring-host]
+#         processors: [memory_limiter]
+#         exporters: [debug]
+#       # This is a net new pipeline
+#       logs/new-pipeline:
+#         receivers: [filelog/host_monitoring]
+#         processors: [memory_limiter]
+#         exporters: [debug]

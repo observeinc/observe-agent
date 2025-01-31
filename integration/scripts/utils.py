@@ -281,6 +281,13 @@ def upload_default_docker_config(env_vars: dict, remote_host: Host) -> None:
     print(f"Path to 'observe-agent.yaml' file: {observe_agent_file_path }")
     remote_host.put_file(local_path=observe_agent_file_path, remote_path=home_dir)
 
+def upload_custom_docker_config(env_vars: dict, remote_host: Host, observe_agent_file_path: str) -> None:
+    home_dir = "/home/{}".format(env_vars["user"])
+    # Upload default observe-agent.yaml to remote host home dir
+    # mount via $(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml
+    print(f"Path to 'observe-agent.yaml' file: {observe_agent_file_path }")
+    remote_host.put_file(local_path=observe_agent_file_path, remote_path=home_dir)
+
 
 def get_docker_container(remote_host: Host) -> str:
     get_container_command = 'sudo docker ps --filter "status=running" --format "{{.ID}} {{.Image}} {{.CreatedAt}}"'
