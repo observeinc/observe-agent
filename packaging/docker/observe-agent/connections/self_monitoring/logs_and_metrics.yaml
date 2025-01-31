@@ -27,7 +27,7 @@ service:
   pipelines:
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
       exporters: [prometheusremotewrite/observe]
 
     logs/agent-journald:

@@ -89,7 +89,7 @@ service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
       exporters: [prometheusremotewrite/observe]
 
     logs/forward:

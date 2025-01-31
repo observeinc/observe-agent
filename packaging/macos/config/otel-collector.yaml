@@ -109,7 +109,7 @@ service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
-      processors: [resourcedetection, resourcedetection/cloud, batch, deltatocumulative]
+      processors: [resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
       exporters: [prometheusremotewrite/observe]
 
     logs/forward:
