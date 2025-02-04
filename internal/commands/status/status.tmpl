@@ -2,8 +2,6 @@
 Agent 
 ================
 
-  Status: {{ .Status }}
- 
   Host Info 
   ================ 
   HostID: {{ .HostID }}
@@ -17,7 +15,9 @@ Agent
   KernelArch: {{ .KernelArch }}
   KernelVersion: {{ .KernelVersion }}
 
-  {{if eq .Status "Running"}}
+  {{- if eq .Status "Running"}}
+
+
   Agent Metrics 
   ================
   ExporterQueueSize: {{ .AgentMetrics.ExporterQueueSize }}
@@ -48,4 +48,6 @@ Agent
     ReceiverRefusedCount: {{ .AgentMetrics.TracesStats.ReceiverRefusedCount }}
     ExporterSentCount: {{ .AgentMetrics.TracesStats.ExporterSentCount }}
     ExporterSendFailedCount: {{ .AgentMetrics.TracesStats.ExporterSendFailedCount }}
-{{end -}}
+{{end}}
+
+  Status: {{ .Status }}
