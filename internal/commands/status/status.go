@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
 )
@@ -31,16 +32,6 @@ var statusCmd = &cobra.Command{
 
 func init() {
 	root.RootCmd.AddCommand(statusCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func getStatusFromTemplate() error {
@@ -48,7 +39,9 @@ func getStatusFromTemplate() error {
 	if err != nil {
 		return err
 	}
-	t := template.Must(template.New(statusTemplate).ParseFS(statusTemplateFS, statusTemplate))
+	t := template.Must(template.New(statusTemplate).
+		Funcs(connections.GetTemplateFuncMap()).
+		ParseFS(statusTemplateFS, statusTemplate))
 	if err := t.ExecuteTemplate(os.Stdout, statusTemplate, data); err != nil {
 		return err
 	}

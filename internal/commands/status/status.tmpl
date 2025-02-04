@@ -1,24 +1,22 @@
 ================
-Agent 
+Agent
 ================
 
-  Status: {{ .Status }}
- 
-  Host Info 
-  ================ 
+  Host Info
+  ================
   HostID: {{ .HostID }}
   Hostname: {{ .Hostname }}
   BootTime: {{ .BootTime }}
-  Uptime: {{ .UpTime }} 
+  Uptime: {{ .UpTime }}
   OS: {{ .OS }}
   Platform: {{ .Platform }}
   PlatformFamily: {{ .PlatformFamily }}
   PlatformVersion: {{ .PlatformVersion }}
   KernelArch: {{ .KernelArch }}
   KernelVersion: {{ .KernelVersion }}
+{{- if eq .Status "Running" }}
 
-  {{if eq .Status "Running"}}
-  Agent Metrics 
+  Agent Metrics
   ================
   ExporterQueueSize: {{ .AgentMetrics.ExporterQueueSize }}
   CPUSeconds: {{ .AgentMetrics.CPUSeconds }}s
@@ -27,25 +25,33 @@ Agent
   Uptime: {{ .AgentMetrics.Uptime }}s
   AvgServerResponseTime: {{ .AgentMetrics.AvgServerResponseTime }}ms
   AvgClientResponseTime: {{ .AgentMetrics.AvgClientResponseTime }}ms
-      
+
     Logs Stats
-    ===============
+    ================
     ReceiverAcceptedCount: {{ .AgentMetrics.LogsStats.ReceiverAcceptedCount }}
     ReceiverRefusedCount: {{ .AgentMetrics.LogsStats.ReceiverRefusedCount }}
     ExporterSentCount: {{ .AgentMetrics.LogsStats.ExporterSentCount }}
     ExporterSendFailedCount: {{ .AgentMetrics.LogsStats.ExporterSendFailedCount }}
-    
+
     Metrics Stats
-    ===============
+    ================
     ReceiverAcceptedCount: {{ .AgentMetrics.MetricsStats.ReceiverAcceptedCount }}
     ReceiverRefusedCount: {{ .AgentMetrics.MetricsStats.ReceiverRefusedCount }}
     ExporterSentCount: {{ .AgentMetrics.MetricsStats.ExporterSentCount }}
     ExporterSendFailedCount: {{ .AgentMetrics.MetricsStats.ExporterSendFailedCount }}
-  
+
     Traces Stats
-    ===============
+    ================
     ReceiverAcceptedCount: {{ .AgentMetrics.TracesStats.ReceiverAcceptedCount }}
     ReceiverRefusedCount: {{ .AgentMetrics.TracesStats.ReceiverRefusedCount }}
     ExporterSentCount: {{ .AgentMetrics.TracesStats.ExporterSentCount }}
     ExporterSendFailedCount: {{ .AgentMetrics.TracesStats.ExporterSendFailedCount }}
-{{end -}}
+{{- end }}
+
+  Agent Health
+  ================
+  Status: {{ .Status }}
+  {{- if eq .Status "Running" }}
+  TotalRefusedCount: {{ add .AgentMetrics.LogsStats.ReceiverRefusedCount .AgentMetrics.MetricsStats.ReceiverRefusedCount .AgentMetrics.TracesStats.ReceiverRefusedCount }}
+  TotalSendFailedCount: {{ add .AgentMetrics.LogsStats.ExporterSendFailedCount .AgentMetrics.MetricsStats.ExporterSendFailedCount .AgentMetrics.TracesStats.ExporterSendFailedCount }}
+  {{- end }}
