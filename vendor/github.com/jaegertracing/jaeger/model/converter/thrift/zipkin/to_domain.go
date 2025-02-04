@@ -21,7 +21,6 @@ import (
 const (
 	// UnknownServiceName is serviceName we give to model.Process if we cannot find it anywhere in a Zipkin span
 	UnknownServiceName = "unknown-service-name"
-	keySpanKind        = "span.kind"
 	component          = "component"
 	peerservice        = "peer.service"
 	peerHostIPv4       = "peer.ipv4"
@@ -81,7 +80,7 @@ type toDomain struct{}
 func (td toDomain) ToDomain(zSpans []*zipkincore.Span) (*model.Trace, error) {
 	var errs []error
 	processes := newProcessHashtable()
-	trace := &model.Trace{}
+	trc := &model.Trace{}
 	for _, zSpan := range zSpans {
 		jSpans, err := td.ToDomainSpans(zSpan)
 		if err != nil {
@@ -90,10 +89,10 @@ func (td toDomain) ToDomain(zSpans []*zipkincore.Span) (*model.Trace, error) {
 		for _, jSpan := range jSpans {
 			// remove duplicate Process instances
 			jSpan.Process = processes.add(jSpan.Process)
-			trace.Spans = append(trace.Spans, jSpan)
+			trc.Spans = append(trc.Spans, jSpan)
 		}
 	}
-	return trace, errors.Join(errs...)
+	return trc, errors.Join(errs...)
 }
 
 func (td toDomain) ToDomainSpans(zSpan *zipkincore.Span) ([]*model.Span, error) {
@@ -166,7 +165,7 @@ func (td toDomain) transformSpan(zSpan *zipkincore.Span) []*model.Span {
 		}
 		// if the first span is a client span we create server span and vice-versa.
 		if result[0].IsRPCClient() {
-			s.Tags = []model.KeyValue{model.String(keySpanKind, trace.SpanKindServer.String())}
+			s.Tags = []model.KeyValue{model.SpanKindTag(model.SpanKindServer)}
 			//nolint: gosec // G115
 			s.StartTime = model.EpochMicrosecondsAsTime(uint64(sr.Timestamp))
 			if ss := td.findAnnotation(zSpan, zipkincore.SERVER_SEND); ss != nil {
@@ -174,7 +173,7 @@ func (td toDomain) transformSpan(zSpan *zipkincore.Span) []*model.Span {
 				s.Duration = model.MicrosecondsAsDuration(uint64(ss.Timestamp - sr.Timestamp))
 			}
 		} else {
-			s.Tags = []model.KeyValue{model.String(keySpanKind, trace.SpanKindClient.String())}
+			s.Tags = []model.KeyValue{model.SpanKindTag(model.SpanKindClient)}
 			//nolint: gosec // G115
 			s.StartTime = model.EpochMicrosecondsAsTime(uint64(cs.Timestamp))
 			if cr := td.findAnnotation(zSpan, zipkincore.CLIENT_RECV); cr != nil {
@@ -393,7 +392,7 @@ func (toDomain) getLogFields(annotation *zipkincore.Annotation) []model.KeyValue
 func (toDomain) getSpanKindTag(annotations []*zipkincore.Annotation) (model.KeyValue, bool) {
 	for _, a := range annotations {
 		if spanKind, ok := coreAnnotations[a.Value]; ok {
-			return model.String(keySpanKind, spanKind), true
+			return model.SpanKindTag(model.SpanKind(spanKind)), true
 		}
 	}
 	return model.KeyValue{}, false

@@ -7,14 +7,14 @@ endif
 ifeq ($(UNAME_S),Darwin)
 	OS = darwin
 endif
-OCB_VERSION = 0.114.0
+OCB_VERSION = 0.118.0
 ARCH := $(shell arch)
 ifeq ($(ARCH),x86_64)
 	ARCH = amd64
 endif
 
 # Uncomment to use OTEL Collector Builder installed by
-# `go install go.opentelemetry.io/collector/cmd/builder@v0.114.0`
+# `go install go.opentelemetry.io/collector/cmd/builder@v0.118.0`
 #OCB=builder
 
 all: go-test
