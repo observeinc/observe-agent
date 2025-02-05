@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.22.7
+go 1.22.8
 
 require (
 	github.com/jarcoal/httpmock v1.3.1
@@ -409,10 +409,6 @@ require (
 )
 
 replace (
-	// TODO remove these overrides when we upgrade to otelcol v0.117.0
-	github.com/docker/docker => github.com/docker/docker v27.4.1+incompatible
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/observecol => ./observecol
-	golang.org/x/crypto => golang.org/x/crypto v0.32.0
-	golang.org/x/net => golang.org/x/net v0.34.0
 )
