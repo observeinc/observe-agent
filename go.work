@@ -1,7 +1,7 @@
-go 1.22.7
+go 1.22.8
 
 use (
 	.
-	./observecol
 	./components/processors/observek8sattributesprocessor
+	./observecol
 )
