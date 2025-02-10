@@ -29,4 +29,4 @@ service:
     logs/agent-config:
        receivers: [filelog/agent-config]
        processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-       exporters: [prometheusremotewrite/observe]
+       exporters: [otlphttp/observe]
