@@ -74,6 +74,7 @@ This section lists the components that are included in the Observe Distribution 
 | [filelog][filelogreceiver]                               | [filter][filterprocessor]                             | [prometheusremotewrite][prometheusremotewriteexporter] |                                      |                             |
 | [filestats][filestatsreceiver]                           | [k8sattributes][k8sattributesprocessor]               |                                                        |                                      |                             |
 | [hostmetrics][hostmetricsreceiver]                       | [memory_limiter][memorylimiterprocessor]              |                                                        |                                      |                             |
+| [httpcheck][httpcheckreceiver]                           |                                                       |                                                        |                                      |                             |
 | [iis][iisreceiver]                                       | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                      |                             |
 | [journald][journaldreceiver]                             | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                      |                             |
 | [k8s_cluster][k8sclusterreceiver]                        | [redaction][redactionprocessor]                       |                                                        |                                      |                             |
@@ -86,6 +87,7 @@ This section lists the components that are included in the Observe Distribution 
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                      |                             |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                      |                             |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                      |                             |
+| [sqlquery][sqlqueryreceiver]                             |                                                       |                                                        |                                      |                             |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                      |                             |
@@ -97,6 +99,7 @@ This section lists the components that are included in the Observe Distribution 
 [filelogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/filelogreceiver
 [filestatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/filestatsreceiver
 [hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/hostmetricsreceiver
+[httpcheckreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/httpcheckreceiver
 [iisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/iisreceiver
 [journaldreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/journaldreceiver
 [k8sclusterreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/k8sclusterreceiver
@@ -109,6 +112,7 @@ This section lists the components that are included in the Observe Distribution 
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/prometheusreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/redisreceiver
 [snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/snmpreceiver
+[sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/sqlqueryreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/statsdreceiver
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/tcplogreceiver
 [udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/udplogreceiver
