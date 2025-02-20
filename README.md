@@ -87,7 +87,6 @@ This section lists the components that are included in the Observe Distribution 
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                      |                             |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                      |                             |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                      |                             |
-| [sqlquery][sqlqueryreceiver]                             |                                                       |                                                        |                                      |                             |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                      |                             |
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                      |                             |
@@ -112,7 +111,6 @@ This section lists the components that are included in the Observe Distribution 
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/prometheusreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/redisreceiver
 [snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/snmpreceiver
-[sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/sqlqueryreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/statsdreceiver
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/tcplogreceiver
 [udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/receiver/udplogreceiver
