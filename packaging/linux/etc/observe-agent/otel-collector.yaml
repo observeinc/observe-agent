@@ -89,6 +89,7 @@ exporters:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+      x-observe-target-package: "Host Explorer"
     sending_queue:
       num_consumers: 4
       queue_size: 100
@@ -100,9 +101,22 @@ exporters:
     endpoint: ${env:OBSERVE_PROMETHEUS_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+      x-observe-target-package: "Host Explorer"
     resource_to_telemetry_conversion:
       enabled: true  # Convert resource attributes to metric labels
     send_metadata: true
+
+  otlphttp/observetracing:
+    endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+      x-observe-target-package: "Tracing"
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+    compression: zstd
 
   debug:
 
@@ -121,7 +135,7 @@ service:
     traces/forward:
       receivers: [otlp]
       processors: [resourcedetection, resourcedetection/cloud]
-      exporters: [otlphttp/observe]
+      exporters: [otlphttp/observetracing]
 
     metrics/count-nooop:
       receivers: [count]
