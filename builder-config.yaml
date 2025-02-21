@@ -63,6 +63,7 @@ extensions:
 
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.118.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.118.0
 
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.118.0

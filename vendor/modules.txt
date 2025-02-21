@@ -864,6 +864,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusrem
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.118.0
+## explicit; go 1.22.0
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.118.0
 ## explicit; go 1.22.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
