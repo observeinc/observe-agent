@@ -70,8 +70,8 @@ This section lists the components that are included in the Observe Distribution 
 |----------------------------------------------------------|-------------------------------------------------------|--------------------------------------------------------|--------------------------------------|-----------------------------|
 | [awsecscontainermetrics][awsecscontainermetricsreceiver] | [attributes][attributesprocessor]                     | [debug][debugexporter]                                 | [file_storage][filestorage]          | [count][countconnector]     |
 | [docker_stats][dockerstatsreceiver]                      | [batch][batchprocessor]                               | [file][fileexporter]                                   | [health_check][healthcheckextension] | [forward][forwardconnector] |
-| [elasticsearch][elasticsearchreceiver]                   | [cumulativetodelta][cumulativetodeltaprocessor]       | [otlphttp][otlphttpexporter]                           | [zpages][zpagesextension]            |                             |
-| [filelog][filelogreceiver]                               | [deltatocumulative][deltatocumulativeprocessor]       | [prometheusremotewrite][prometheusremotewriteexporter] |                                      |                             |
+| [elasticsearch][elasticsearchreceiver]                   | [cumulativetodelta][cumulativetodeltaprocessor]       | [otlphttp][otlphttpexporter]                           | [pprof][pprofextension]              |                             |
+| [filelog][filelogreceiver]                               | [deltatocumulative][deltatocumulativeprocessor]       | [prometheusremotewrite][prometheusremotewriteexporter] | [zpages][zpagesextension]            |                             |
 | [filestats][filestatsreceiver]                           | [filter][filterprocessor]                             |                                                        |                                      |                             |
 | [hostmetrics][hostmetricsreceiver]                       | [k8sattributes][k8sattributesprocessor]               |                                                        |                                      |                             |
 | [httpcheck][httpcheckreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                                                        |                                      |                             |
@@ -138,4 +138,5 @@ This section lists the components that are included in the Observe Distribution 
 [forwardconnector]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.118.0/connector/forwardconnector
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/extension/storage/filestorage
 [healthcheckextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/extension/healthcheckextension
+[pprofextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.118.0/extension/pprofextension
 [zpagesextension]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.118.0/extension/zpagesextension
