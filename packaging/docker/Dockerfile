@@ -12,10 +12,10 @@ RUN tar czhf observe-agent.tar.gz /observe-agent $(ldd /observe-agent | grep -oP
 # however, we can copy full directory as root (/) to be base file structure for scratch image
 RUN mkdir /output && tar xf /observe-agent.tar.gz --directory /output
 
-FROM alpine:3.20.3 AS directories
+FROM alpine:3.21.3 AS directories
 RUN mkdir -p /var/lib/observe-agent/filestorage
 
-FROM alpine:3.20.3 AS certs
+FROM alpine:3.21.3 AS certs
 RUN apk --update add ca-certificates
 
 FROM debian:12.5 AS systemd
@@ -28,7 +28,7 @@ RUN tar czhf journalctl.tar.gz /bin/journalctl $(ldd /bin/journalctl | grep -oP 
 # however, we can copy full directory as root (/) to be base file structure for scratch image
 RUN mkdir /output && tar xf /journalctl.tar.gz --directory /output
 
-FROM alpine:3.20.3
+FROM alpine:3.21.3
 ADD packaging/docker/observe-agent /etc/observe-agent
 COPY --from=systemd /output/ /
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
