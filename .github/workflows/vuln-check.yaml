@@ -37,9 +37,19 @@ jobs:
           distribution: goreleaser-pro
           # 'latest', 'nightly', or a semver
           version: 2.4.4
-          args: build
+          args: build --snapshot --id=default
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+
+      - name: Copy Binary
+        run: |
+          cp dist/default_linux_386/observe-agent .
+
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          tags: ${{ env.TEST_TAG }}
+          outputs: type=docker,dest=${{ runner.temp }}/myimage.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
