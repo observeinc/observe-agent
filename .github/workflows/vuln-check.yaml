@@ -50,6 +50,9 @@ jobs:
       - name: Copy Binary
         run: |
           cp dist/default_linux_386_sse2/observe-agent .
+      
+      - name: Print files
+        run: ls
 
       - name: Build and export
         uses: docker/build-push-action@v6
