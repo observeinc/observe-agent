@@ -54,6 +54,7 @@ jobs:
       - name: Build and export
         uses: docker/build-push-action@v6
         with:
+          file: packaging/docker/Dockerfile
           tags: ${{ env.TEST_TAG }}
           outputs: type=docker,dest=${{ runner.temp }}/myimage.tar
 
