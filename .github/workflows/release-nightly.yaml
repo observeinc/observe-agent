@@ -23,6 +23,18 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.inputs.branch }}
 
+      - name: Update the dev-nightly tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.updateRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'tags/dev-nightly',
+              sha: context.sha,
+              force: true
+            })
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
