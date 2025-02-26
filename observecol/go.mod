@@ -2,7 +2,7 @@
 
 module github.com/observeinc/observe-agent/observecol
 
-go 1.22.8
+go 1.22.12
 
 require (
 	github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000

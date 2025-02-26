@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.22.8
+go 1.22.12
 
 require (
 	github.com/jarcoal/httpmock v1.3.1
