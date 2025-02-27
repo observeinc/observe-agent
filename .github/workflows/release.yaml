@@ -5,6 +5,9 @@ on:
     # run only against tags
     tags:
       - "*"
+      # Ignore nightly/dev tags
+      - "!nightly*"
+      - "!dev*"
 
 permissions:
   id-token: write
