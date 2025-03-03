@@ -54,13 +54,8 @@ jobs:
       - name: Print files
         run: ls
 
-      - name: Build and export
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: packaging/docker/Dockerfile
-          tags: ${{ env.TEST_TAG }}
-          outputs: type=docker,dest=${{ runner.temp }}/myimage.tar
+      - name: Build an image from Dockerfile
+        run: docker build -t docker.io/observeinc/observe-agent:${{ env.TEST_TAG}} .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -71,7 +66,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.29.0
         with:
-          image-ref: 'observe-agent/${{ env.TEST_TAG }}'
+          image-ref: 'docker.io/observeinc/observe-agent:${{ env.TEST_TAG }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: false
