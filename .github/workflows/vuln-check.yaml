@@ -68,6 +68,16 @@ jobs:
           name: myimage
           path: ${{ runner.temp }}/myimage.tar
   
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: 'observe-agent/${{ env.TEST_TAG }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: false
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
       - name: Docker Scout
         id: docker-scout
         uses: docker/scout-action@v1
