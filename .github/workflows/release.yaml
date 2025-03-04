@@ -14,7 +14,13 @@ permissions:
   contents: write
 
 jobs:
+  vuln-check:
+    name: Docker Image Vulnerability Check
+    uses: ./.github/workflows/vuln-check.yaml
+    secrets: inherit
+
   goreleaser:
+    needs: vuln-check
     runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout

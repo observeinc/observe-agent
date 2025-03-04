@@ -13,13 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  vuln-check:
-    name: Docker Image Vulnerability Check
-    uses: ./.github/workflows/vuln-check.yaml
-    secrets: inherit
-
   goreleaser:
-    needs: vuln-check
     if: contains('["obs-gh-alexlew", "obs-gh-mattcotter", "obs-gh-enricogiorio"]', github.actor)
     runs-on: ubuntu-observe-agent-8cpu
     steps:
@@ -63,13 +57,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v6
-      #   with:
-      #     distribution: goreleaser-pro
-      #     version: 2.4.4
-      #     args: release --clean --skip=validate --verbose --nightly
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-      #     FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: 2.4.4
+          args: release --clean --skip=validate --verbose --nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
