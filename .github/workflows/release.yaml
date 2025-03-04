@@ -38,6 +38,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Docker Image Vulnerability Check
+        uses: ./.github/actions/vuln-check.yaml
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -50,15 +53,15 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
-          distribution: goreleaser-pro
-          # 'latest', 'nightly', or a semver
-          version: 2.4.4
-          args: release --clean --skip=validate --verbose
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@v6
+      #   with:
+      #     # either 'goreleaser' (default) or 'goreleaser-pro'
+      #     distribution: goreleaser-pro
+      #     # 'latest', 'nightly', or a semver
+      #     version: 2.4.4
+      #     args: release --clean --skip=validate --verbose
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+      #     FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
