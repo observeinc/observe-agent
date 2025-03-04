@@ -14,7 +14,8 @@ permissions:
 
 jobs:
   vuln-check:
-    uses: ./github/workflows/vuln-check.yaml
+    name: Docker Image Vulnerability Check
+    uses: ./.github/workflows/vuln-check.yaml
     secrets: inherit
 
   goreleaser:
