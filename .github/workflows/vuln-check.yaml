@@ -55,7 +55,7 @@ jobs:
       #   run: ls
 
       - name: Build an image from Dockerfile
-        run: docker build -t docker.io/${{ env.TEST_TAG}} .
+        run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
