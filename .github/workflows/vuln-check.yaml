@@ -36,32 +36,32 @@ jobs:
         with:
           go-version: 1.22.12
 
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v6
-      #   with:
-      #     # either 'goreleaser' (default) or 'goreleaser-pro'
-      #     distribution: goreleaser-pro
-      #     # 'latest', 'nightly', or a semver
-      #     version: 2.4.4
-      #     args: build --snapshot --id=default
-      #   env:
-      #     GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          # either 'goreleaser' (default) or 'goreleaser-pro'
+          distribution: goreleaser-pro
+          # 'latest', 'nightly', or a semver
+          version: 2.4.4
+          args: build --snapshot --id=default
+        env:
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
 
-      # - name: Copy Binary
-      #   run: |
-      #     cp dist/default_linux_386_sse2/observe-agent .
+      - name: Copy Binary
+        run: |
+          cp dist/default_linux_386_sse2/observe-agent .
       
-      # - name: Print files
-      #   run: ls
+      - name: Print files
+        run: ls
 
       - name: Build an image from Dockerfile
         run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myimage
-          path: ${{ runner.temp }}/myimage.tar
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: myimage
+      #     path: ${{ runner.temp }}/myimage.tar
   
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.29.0
