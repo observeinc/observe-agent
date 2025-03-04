@@ -12,7 +12,7 @@ env:
 
 jobs:
   vuln-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
