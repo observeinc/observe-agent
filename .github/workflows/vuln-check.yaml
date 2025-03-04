@@ -25,8 +25,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install qemu
-        uses: docker/setup-qemu-action@v3
+      # - name: Install qemu
+      #   uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -39,9 +39,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser-pro
-          # 'latest', 'nightly', or a semver
           version: 2.4.4
           args: build --snapshot --id=default
         env:
@@ -56,22 +54,6 @@ jobs:
 
       - name: Build an image from Dockerfile
         run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
-
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: myimage
-      #     path: ${{ runner.temp }}/myimage.tar
-  
-      # - name: Run Trivy vulnerability scanner
-      #   uses: aquasecurity/trivy-action@0.29.0
-      #   with:
-      #     image-ref: 'docker.io/${{ env.TEST_TAG}}'
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: false
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Docker Scout
         id: docker-scout
