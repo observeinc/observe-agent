@@ -10,7 +10,7 @@ env:
   TEST_TAG: observeinc/observe-agent:test
 
 jobs:
-  build:
+  vuln-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

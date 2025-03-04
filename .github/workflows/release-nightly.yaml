@@ -13,7 +13,12 @@ permissions:
   contents: write
 
 jobs:
+  vuln-check:
+    uses: ./github/workflows/vuln-check.yaml
+    secrets: inherit
+
   goreleaser:
+    needs: vuln-check
     if: contains('["obs-gh-alexlew", "obs-gh-mattcotter", "obs-gh-enricogiorio"]', github.actor)
     runs-on: ubuntu-observe-agent-8cpu
     steps:
