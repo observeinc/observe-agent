@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Docker Image Vulnerability Check
-        uses: ./.github/actions/vuln-check.yaml
+        uses: ./.github/workflows/vuln-check.yaml
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
