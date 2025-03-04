@@ -40,6 +40,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Print files
+        run: ls -a
+
       - name: Docker Image Vulnerability Check
         uses: ./.github/workflows/vuln-check.yaml
 
