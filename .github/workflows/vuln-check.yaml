@@ -43,6 +43,9 @@ jobs:
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
 
+      - name: Run ls
+        run: ls
+
       - name: Copy Binary
         run: |
           cp dist/default_linux_386_sse2/observe-agent .
