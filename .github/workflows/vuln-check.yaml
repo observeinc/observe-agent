@@ -48,7 +48,7 @@ jobs:
 
       - name: Copy Binary
         run: |
-          cp dist/default_linux_386_sse2/observe-agent .
+          cp dist/linux_amd64_v1/observe-agent .
       
       - name: Build an image from Dockerfile
         run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
