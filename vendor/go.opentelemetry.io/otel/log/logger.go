@@ -28,9 +28,6 @@ type Logger interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	//
-	// Notice: Emit is intended to be used by log bridges.
-	// Is should not be used for writing instrumentation.
 	Emit(ctx context.Context, record Record)
 
 	// Enabled returns whether the Logger emits for the given context and
@@ -53,9 +50,6 @@ type Logger interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	//
-	// Notice: Enabled is intended to be used by log bridges.
-	// Is should not be used for writing instrumentation.
 	Enabled(ctx context.Context, param EnabledParameters) bool
 }
 
@@ -138,18 +132,5 @@ func WithSchemaURL(schemaURL string) LoggerOption {
 
 // EnabledParameters represents payload for [Logger]'s Enabled method.
 type EnabledParameters struct {
-	severity    Severity
-	severitySet bool
-}
-
-// Severity returns the [Severity] level value, or [SeverityUndefined] if no value was set.
-// The ok result indicates whether the value was set.
-func (r *EnabledParameters) Severity() (value Severity, ok bool) {
-	return r.severity, r.severitySet
-}
-
-// SetSeverity sets the [Severity] level.
-func (r *EnabledParameters) SetSeverity(level Severity) {
-	r.severity = level
-	r.severitySet = true
+	Severity Severity
 }
