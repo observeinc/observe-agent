@@ -47,9 +47,6 @@ jobs:
         run: |
           cp dist/default_linux_386_sse2/observe-agent .
       
-      - name: Print files
-        run: ls
-
       - name: Build an image from Dockerfile
         run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
 
