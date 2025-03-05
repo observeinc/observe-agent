@@ -44,7 +44,7 @@ jobs:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
 
       - name: Run ls
-        run: ls dist
+        run: ls dist/linux_amd64_v1
 
       - name: Copy Binary
         run: |
