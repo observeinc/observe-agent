@@ -61,8 +61,11 @@ fi
 # If the zip file is not provided, download the latest release from GitHub.
 if [ -z "$ZIP_DIR" ]; then
     if [ -n "$AGENT_VERSION" ]; then
+        if [[ $AGENT_VERSION =~ ^[[:digit:]] ]]; then
+            AGENT_VERSION="v$AGENT_VERSION"
+        fi
         echo "Downloading version $AGENT_VERSION from GitHub..."
-        curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/download/v$AGENT_VERSION/observe-agent_Linux_$(arch).tar.gz
+        curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/download/$AGENT_VERSION/observe-agent_Linux_$(arch).tar.gz
     else
         echo "Downloading latest release from GitHub..."
         curl -s -L -o /tmp/observe-agent.tar.gz https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Linux_$(arch).tar.gz

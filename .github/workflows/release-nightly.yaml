@@ -23,13 +23,22 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.inputs.branch }}
 
+      - name: Update the dev-nightly tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.updateRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'tags/dev-nightly',
+              sha: context.sha,
+              force: true
+            })
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.22.12
-
-      - name: Install msitools
-        run: sudo apt-get install -y wixl
 
       - name: Install qemu
         uses: docker/setup-qemu-action@v3
@@ -55,7 +64,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.4.4
+          version: 2.7.0
           args: release --clean --skip=validate --verbose --nightly
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

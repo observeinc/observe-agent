@@ -9,7 +9,10 @@ param (
 
 $installer_url="https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent_Windows_x86_64.zip"
 if ($PSBoundParameters.ContainsKey('version')){
-    $installer_url="https://github.com/observeinc/observe-agent/releases/download/v$version/observe-agent_Windows_x86_64.zip"
+    if ($version -match '^\d') {
+        $version="v$version"
+    }
+    $installer_url="https://github.com/observeinc/observe-agent/releases/download/$version/observe-agent_Windows_x86_64.zip"
 }
 $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"

@@ -26,17 +26,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.22.12
-      - name: Install msitools
-        run: sudo apt-get install -y wixl
-      # More assembly might be required: Docker logins, GPG, etc.
-      # It all depends on your needs.
       - name: Install qemu
         uses: docker/setup-qemu-action@v3
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: '2.4.4'
+          version: 2.7.0
           args: release --prepare --clean --snapshot --verbose
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
