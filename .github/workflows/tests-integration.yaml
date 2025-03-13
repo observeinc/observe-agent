@@ -8,20 +8,19 @@ on:
       - main
   schedule:
     - cron: "0 7 * * *" #Runs at 07:00 UTC Daily
-  
 
 #Special permissions required for OIDC authentication
 permissions:
-    id-token: write
-    contents: write
-    pull-requests: write
+  id-token: write
+  contents: write
+  pull-requests: write
 
 env:
-    TF_VAR_name_format: "tf-observe-agent-test-%s"   
-    TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
-    TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem" 
-    TF_VAR_OBSERVE_URL: ${{secrets.OBSERVE_URL}}
-    TF_VAR_OBSERVE_TOKEN: ${{secrets.OBSERVE_TOKEN}}
+  TF_VAR_name_format: "tf-observe-agent-test-%s"
+  TF_VAR_PUBLIC_KEY_PATH: "./test_key.pub"
+  TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem"
+  TF_VAR_OBSERVE_URL: ${{secrets.OBSERVE_URL}}
+  TF_VAR_OBSERVE_TOKEN: ${{secrets.OBSERVE_TOKEN}}
 
 jobs:
   build:
@@ -38,12 +37,13 @@ jobs:
       - name: Install qemu
         uses: docker/setup-qemu-action@v3
       - name: Run GoReleaser
+        timeout-minutes: 15
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
           version: 2.7.0
           args: release --prepare --clean --snapshot --verbose --parallelism 8
-        env:         
+        env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - name: Save docker as .tar #Save docker images to tar
         run: |
@@ -53,9 +53,9 @@ jobs:
           echo "arm64v8_image: ${arm64v8_image}"
           docker save -o dist/observe-agent_docker_arm64v8.tar ${arm64v8_image}
           docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
-      - run: ls -l && ls -l dist/         
-      - name: Upload build artifacts 
-        uses: actions/upload-artifact@v4        
+      - run: ls -l && ls -l dist/
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
@@ -66,63 +66,68 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     strategy:
-        fail-fast: false 
-        matrix:
-            AWS_MACHINE: ["AMAZON_LINUX_2023", "UBUNTU_22_04_LTS", "WINDOWS_SERVER_2016_BASE", "WINDOWS_SERVER_2019_BASE", "WINDOWS_SERVER_2022_BASE", "DOCKER_AMD64_UBUNTU_22_04_LTS"]
+      fail-fast: false
+      matrix:
+        AWS_MACHINE:
+          [
+            "AMAZON_LINUX_2023",
+            "UBUNTU_22_04_LTS",
+            "WINDOWS_SERVER_2016_BASE",
+            "WINDOWS_SERVER_2019_BASE",
+            "WINDOWS_SERVER_2022_BASE",
+            "DOCKER_AMD64_UBUNTU_22_04_LTS",
+          ]
     defaults:
-        run:
-            working-directory: integration #Terrafrom commands and tests are ran from integration directory
+      run:
+        working-directory: integration #Terrafrom commands and tests are ran from integration directory
     steps:
-        - name: Checkout code
-          uses: actions/checkout@v4        
-        - run: git branch && df -h
-        - name: Configure AWS Credentials ## Terraform provider automatically uses these creds 
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-            role-session-name: ${{ github.sha }}
-            aws-region: ${{ secrets.AWS_REGION }}
-        
-        - name: Setup Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: '3.10' 
-        - run: pip install -r scripts/requirements.txt           
-        
-        - name: Setup SSH Keys
-          run: |
-            echo "${{ secrets.SSH_PRIVATE_KEY }}" > ${{env.TF_VAR_PRIVATE_KEY_PATH}}
-            chmod 600 ${{env.TF_VAR_PRIVATE_KEY_PATH}}
-            echo "${{ secrets.SSH_PUBLIC_KEY }}" >${{env.TF_VAR_PUBLIC_KEY_PATH}}
-            chmod 644 ${{env.TF_VAR_PUBLIC_KEY_PATH}}
-                        
-        - name: Setup additional terraform variable
-          run:  echo "TF_VAR_AWS_MACHINE=$(echo ${{matrix.AWS_MACHINE}})" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - run: git branch && df -h
+      - name: Configure AWS Credentials ## Terraform provider automatically uses these creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: ${{ github.sha }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-        - name: Download build artifacts 
-          uses: actions/download-artifact@v4        
-          id: artifact-download-step
-          with:
-            name: dist         
-            path: dist
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r scripts/requirements.txt
 
-        - name: Setup Terraform
-          uses: hashicorp/setup-terraform@v3
-          with:
-            terraform_version: 1.8.5
-            
-        - name: Terraform Init
-          id: init
-          run: terraform init
+      - name: Setup SSH Keys
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ${{env.TF_VAR_PRIVATE_KEY_PATH}}
+          chmod 600 ${{env.TF_VAR_PRIVATE_KEY_PATH}}
+          echo "${{ secrets.SSH_PUBLIC_KEY }}" >${{env.TF_VAR_PUBLIC_KEY_PATH}}
+          chmod 644 ${{env.TF_VAR_PUBLIC_KEY_PATH}}
 
-        - name: Terraform Validate
-          id: validate
-          run: terraform validate -no-color
+      - name: Setup additional terraform variable
+        run: echo "TF_VAR_AWS_MACHINE=$(echo ${{matrix.AWS_MACHINE}})" >> $GITHUB_ENV
 
-        - name: Terraform Test
-          id: test
-          run: |               
-            terraform test -verbose 
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        id: artifact-download-step
+        with:
+          name: dist
+          path: dist
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
 
-        
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Test
+        id: test
+        run: |
+          terraform test -verbose
