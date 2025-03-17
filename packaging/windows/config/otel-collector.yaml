@@ -37,6 +37,7 @@ processors:
     spike_limit_percentage: 20
 
   batch:
+    timeout: 5s
 
   deltatocumulative:
 
