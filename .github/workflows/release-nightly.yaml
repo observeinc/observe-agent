@@ -61,11 +61,12 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Run GoReleaser
+        timeout-minutes: 15
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
           version: 2.7.0
-          args: release --clean --skip=validate --verbose --nightly
+          args: release --clean --skip=validate --verbose --nightly --parallelism 6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
