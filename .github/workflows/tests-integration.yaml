@@ -33,7 +33,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.12
+          go-version: 1.23.7
       - name: Install qemu
         uses: docker/setup-qemu-action@v3
       - name: Run GoReleaser
