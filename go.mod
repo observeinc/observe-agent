@@ -426,7 +426,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-// TODO remove the expr-lang/expr and x/oauth2 replacements once our dependencies are updated beyond the vulnerable versions.
+// TODO remove the expr-lang/expr, x/net, and x/oauth2 replacements once our dependencies are updated beyond the vulnerable versions.
 replace (
 	github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
