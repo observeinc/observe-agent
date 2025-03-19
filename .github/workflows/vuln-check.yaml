@@ -2,7 +2,16 @@ name: Docker Image Vulnerability Check
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch on which to run the vulnerability check"
+        required: true
+        default: "main"
   workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
 
 permissions:
   contents: read

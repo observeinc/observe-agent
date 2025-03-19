@@ -18,6 +18,8 @@ jobs:
     name: Docker Image Vulnerability Check
     uses: ./.github/workflows/vuln-check.yaml
     secrets: inherit
+    with:
+      branch: ${{ github.ref }}
 
   goreleaser:
     needs: vuln-check
