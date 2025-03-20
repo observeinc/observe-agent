@@ -1,0 +1,67 @@
+name: Pre-release Docker Image Vulnerability Check
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  TEST_TAG: observeinc/observe-agent:test
+
+jobs:
+  vuln-check:
+    runs-on: ubuntu-observe-agent-8cpu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.7
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: 2.7.0
+          args: build --snapshot --id=default --skip=validate --single-target
+        env:
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+
+      - name: Copy Binary
+        run: |
+          cp dist/linux_amd64/default_linux_amd64_v1/observe-agent .
+      
+      - name: Build an image from Dockerfile
+        run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG }} .
+
+      - name: Docker Scout
+        id: docker-scout
+        uses: docker/scout-action@v1
+        with:
+          image: ${{ env.TEST_TAG }}
+          command: cves,recommendations
+          to-latest: true
+          ignore-base: true
+          ignore-unchanged: true
+          only-fixed: true
+          only-severities: medium,critical,high
+          exit-code: true
