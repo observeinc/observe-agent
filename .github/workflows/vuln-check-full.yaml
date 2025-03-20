@@ -7,11 +7,6 @@ on:
         description: "The branch on which to run the vulnerability check"
         required: true
         default: "main"
-  workflow_call:
-    inputs:
-      branch:
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -57,7 +52,7 @@ jobs:
           cp dist/linux_amd64/default_linux_amd64_v1/observe-agent .
       
       - name: Build an image from Dockerfile
-        run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG}} .
+        run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG }} .
 
       - name: Docker Scout
         id: docker-scout

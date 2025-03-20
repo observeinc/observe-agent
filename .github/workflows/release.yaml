@@ -15,8 +15,8 @@ permissions:
 
 jobs:
   vuln-check:
-    name: Docker Image Vulnerability Check
-    uses: ./.github/workflows/vuln-check.yaml
+    name: Pre-release Docker Image Vulnerability Check
+    uses: ./.github/workflows/vuln-check-release.yaml
     secrets: inherit
     with:
       branch: ${{ github.ref }}
