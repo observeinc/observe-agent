@@ -66,7 +66,7 @@ func SetEnvVars() error {
 	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:
 	// "${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity"
 	// without worrying about a double slash.
-	if collector_url[len(collector_url)-1] == '/' {
+	if len(collector_url) != 0 && collector_url[len(collector_url)-1] == '/' {
 		collector_url = collector_url[:len(collector_url)-1]
 	}
 	otelEndpoint, err := url.JoinPath(collector_url, "/v2/otel")
