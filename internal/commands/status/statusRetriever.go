@@ -1,8 +1,10 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -68,16 +70,26 @@ func bToMb(b float32) float32 {
 	return b / 1024 / 1024
 }
 
-func GetAgentStatusFromHealthcheck(baseURL string) (AgentStatus, error) {
-	URL := fmt.Sprintf("%s/status", baseURL)
+func GetAgentStatusFromHealthcheck(baseURL string, path string) (AgentStatus, error) {
+	if len(path) == 0 || len(baseURL) == 0 {
+		return NotRunning, errors.New("health_check endpoint and path must be provided")
+	}
+	if baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+	URL, err := url.JoinPath(baseURL, path)
+	if err != nil {
+		return NotRunning, err
+	}
+
 	c := &http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
-		return NotRunning, nil
+		return NotRunning, err
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return NotRunning, nil
+		return NotRunning, err
 	}
 	if resp.StatusCode == 200 {
 		return Running, nil
@@ -95,7 +107,16 @@ func getMetricsSum(metrics []*io_prometheus_client.Metric) float64 {
 }
 
 func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
-	URL := fmt.Sprintf("%s/metrics", baseURL)
+	if len(baseURL) == 0 {
+		return nil, errors.New("metrics endpoint must be provided")
+	}
+	if baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+	URL, err := url.JoinPath(baseURL, "/metrics")
+	if err != nil {
+		return nil, err
+	}
 	c := &http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
@@ -176,10 +197,10 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 	return &agentMets, nil
 }
 
-func GetStatusData() (*StatusData, error) {
-	agentMets, err := GetAgentMetricsFromEndpoint("http://localhost:8888")
+func GetStatusData(telemetryEndpoint string, healthcheckEndpoint string, healthcheckPath string) (*StatusData, error) {
+	agentMets, err := GetAgentMetricsFromEndpoint(telemetryEndpoint)
 	if err != nil {
-		fmt.Println("Error getting agent metrics: ", err)
+		fmt.Fprintln(os.Stderr, "Error getting agent metrics: ", err)
 		agentMets = &AgentMetrics{}
 	}
 	hostInfo, err := host.Info()
@@ -195,8 +216,9 @@ func GetStatusData() (*StatusData, error) {
 	if err != nil {
 		uptime = time.Duration(0)
 	}
-	status, err := GetAgentStatusFromHealthcheck("http://localhost:13133")
+	status, err := GetAgentStatusFromHealthcheck(healthcheckEndpoint, healthcheckPath)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error receiving data from agent health check: ", err)
 		status = NotRunning
 	}
 
