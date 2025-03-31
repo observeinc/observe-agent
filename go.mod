@@ -464,9 +464,8 @@ require (
 
 // TODO remove the expr-lang/expr, x/net, and x/oauth2 replacements once our dependencies are updated beyond the vulnerable versions.
 replace (
+	github.com/Microsoft/go-winio => github.com/observeinc/go-winio v0.6.2
 	github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
-	github.com/microsoft/go-mssqldb => github.com/Microsoft/go-mssqldb v1.8.0
-	github.com/microsoft/go-mssqldb/integratedauth/krb5 => github.com/Microsoft/go-mssqldb/integratedauth/krb5 v1.8.0
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/observecol => ./observecol
 	golang.org/x/net => golang.org/x/net v0.36.0

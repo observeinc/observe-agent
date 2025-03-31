@@ -133,7 +133,7 @@ github.com/IBM/sarama
 # github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c
 ## explicit
 github.com/JohnCGriffin/overflow
-# github.com/Microsoft/go-winio v0.6.2
+# github.com/Microsoft/go-winio v0.6.2 => github.com/observeinc/go-winio v0.6.2
 ## explicit; go 1.21
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/internal/fs
@@ -961,7 +961,7 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.20
 ## explicit; go 1.15
 github.com/mattn/go-isatty
-# github.com/microsoft/go-mssqldb v1.8.0 => github.com/Microsoft/go-mssqldb v1.8.0
+# github.com/microsoft/go-mssqldb v1.8.0
 ## explicit; go 1.18
 github.com/microsoft/go-mssqldb
 github.com/microsoft/go-mssqldb/aecmk
@@ -3193,8 +3193,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
+# github.com/Microsoft/go-winio => github.com/observeinc/go-winio v0.6.2
 # github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
-# github.com/microsoft/go-mssqldb => github.com/Microsoft/go-mssqldb v1.8.0
-# github.com/microsoft/go-mssqldb/integratedauth/krb5 => github.com/Microsoft/go-mssqldb/integratedauth/krb5 v1.8.0
 # golang.org/x/net => golang.org/x/net v0.36.0
 # golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
