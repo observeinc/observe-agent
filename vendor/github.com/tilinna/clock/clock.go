@@ -1,6 +1,6 @@
 // Package clock implements a library for mocking time.
 //
-// Usage
+// # Usage
 //
 // Include a Clock variable on your application and initialize it with
 // a Realtime() by default. Then use the Clock for all time-related API

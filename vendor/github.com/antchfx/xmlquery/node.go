@@ -155,7 +155,7 @@ type indentation struct {
 	level    int
 	hasChild bool
 	indent   string
-	w io.Writer
+	w        io.Writer
 }
 
 func newIndentation(indent string, w io.Writer) *indentation {
@@ -222,11 +222,11 @@ func outputXML(w io.Writer, n *Node, preserveSpaces bool, config *outputConfigur
 		fmt.Fprintf(w, "<!%s>", n.Data)
 		return
 	case DeclarationNode:
-		io.WriteString(w, "<?" + n.Data)
+		io.WriteString(w, "<?"+n.Data)
 	default:
 		indent.Open()
 		if n.Prefix == "" {
-			io.WriteString(w, "<" + n.Data)
+			io.WriteString(w, "<"+n.Data)
 		} else {
 			fmt.Fprintf(w, "<%s:%s", n.Prefix, n.Data)
 		}

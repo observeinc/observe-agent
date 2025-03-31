@@ -19,12 +19,13 @@ endif
 
 all: go-test
 
-## vendor: Vendors Go modules
+## vendor: Vendors Go modules and also modifies vendored files to use fork of go-winio
 vendor:
 	go mod tidy && go work vendor
 	cd observecol && go mod tidy && go work vendor
 	cd components/processors/observek8sattributesprocessor && go mod tidy && go work vendor
 	go mod tidy && go work vendor
+	gofmt -w -r '"github.com/Microsoft/go-winio" -> "github.com/observeinc/go-winio"' ./ 
 
 ## build: Build all Go packages
 build:

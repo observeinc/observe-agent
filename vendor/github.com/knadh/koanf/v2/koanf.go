@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/maps"
 	"github.com/mitchellh/copystructure"
-	"github.com/go-viper/mapstructure/v2"
 )
 
 // Koanf is the configuration apparatus.

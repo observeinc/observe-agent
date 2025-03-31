@@ -3,20 +3,22 @@
 // DO NOT EDIT!
 
 /*
-	Package v1 is a generated protocol buffer package.
+Package v1 is a generated protocol buffer package.
 
-	It is generated from these files:
-		github.com/openshift/api/quota/v1/generated.proto
+It is generated from these files:
 
-	It has these top-level messages:
-		AppliedClusterResourceQuota
-		AppliedClusterResourceQuotaList
-		ClusterResourceQuota
-		ClusterResourceQuotaList
-		ClusterResourceQuotaSelector
-		ClusterResourceQuotaSpec
-		ClusterResourceQuotaStatus
-		ResourceQuotaStatusByNamespace
+	github.com/openshift/api/quota/v1/generated.proto
+
+It has these top-level messages:
+
+	AppliedClusterResourceQuota
+	AppliedClusterResourceQuotaList
+	ClusterResourceQuota
+	ClusterResourceQuotaList
+	ClusterResourceQuotaSelector
+	ClusterResourceQuotaSpec
+	ClusterResourceQuotaStatus
+	ResourceQuotaStatusByNamespace
 */
 package v1
 

@@ -41,7 +41,7 @@ var FacilityKeywords = map[uint8]string{
 	6:  "lpr",
 	7:  "news",
 	8:  "uucp",
-	9: "cron",
+	9:  "cron",
 	10: "authpriv",
 	11: "ftp",
 	12: "ntp",

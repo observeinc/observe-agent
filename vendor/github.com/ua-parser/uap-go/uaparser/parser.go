@@ -139,9 +139,9 @@ type Parser struct {
 	cache *cache
 
 	RegexesDefinitions
-	Mode            int
-	UseSort         bool
-	debugMode       bool
+	Mode      int
+	UseSort   bool
+	debugMode bool
 }
 
 const (

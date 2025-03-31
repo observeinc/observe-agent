@@ -8,7 +8,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/Microsoft/go-winio"
+	"github.com/observeinc/go-winio"
 	"github.com/stretchr/testify/require"
 )
 
