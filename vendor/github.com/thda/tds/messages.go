@@ -198,9 +198,7 @@ func (e emptyMsg) Read(*bin.Encoder) error {
 	return nil
 }
 
-//
 // capabilities
-//
 const defaultcapabilitiesLength = 14
 
 // capabilities request bit

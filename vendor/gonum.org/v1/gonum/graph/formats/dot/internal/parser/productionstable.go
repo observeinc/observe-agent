@@ -33,7 +33,7 @@ type (
 
 var productionsTable = ProdTab{
 	ProdTabEntry{
-		String: `S' : File	<<  >>`,
+		String:     `S' : File	<<  >>`,
 		Id:         "S'",
 		NTType:     0,
 		Index:      0,
@@ -43,7 +43,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `File : Graph	<< astx.NewFile(X[0]) >>`,
+		String:     `File : Graph	<< astx.NewFile(X[0]) >>`,
 		Id:         "File",
 		NTType:     1,
 		Index:      1,
@@ -53,7 +53,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `File : File Graph	<< astx.AppendGraph(X[0], X[1]) >>`,
+		String:     `File : File Graph	<< astx.AppendGraph(X[0], X[1]) >>`,
 		Id:         "File",
 		NTType:     1,
 		Index:      2,
@@ -63,7 +63,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Graph : OptStrict DirectedGraph OptID "{" OptStmtList "}"	<< astx.NewGraph(X[0], X[1], X[2], X[4]) >>`,
+		String:     `Graph : OptStrict DirectedGraph OptID "{" OptStmtList "}"	<< astx.NewGraph(X[0], X[1], X[2], X[4]) >>`,
 		Id:         "Graph",
 		NTType:     2,
 		Index:      3,
@@ -73,7 +73,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptStrict : empty	<< false, nil >>`,
+		String:     `OptStrict : empty	<< false, nil >>`,
 		Id:         "OptStrict",
 		NTType:     3,
 		Index:      4,
@@ -83,7 +83,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptStrict : strict	<< true, nil >>`,
+		String:     `OptStrict : strict	<< true, nil >>`,
 		Id:         "OptStrict",
 		NTType:     3,
 		Index:      5,
@@ -93,7 +93,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `DirectedGraph : graphx	<< false, nil >>`,
+		String:     `DirectedGraph : graphx	<< false, nil >>`,
 		Id:         "DirectedGraph",
 		NTType:     4,
 		Index:      6,
@@ -103,7 +103,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `DirectedGraph : digraph	<< true, nil >>`,
+		String:     `DirectedGraph : digraph	<< true, nil >>`,
 		Id:         "DirectedGraph",
 		NTType:     4,
 		Index:      7,
@@ -113,7 +113,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `StmtList : Stmt OptSemi	<< astx.NewStmtList(X[0]) >>`,
+		String:     `StmtList : Stmt OptSemi	<< astx.NewStmtList(X[0]) >>`,
 		Id:         "StmtList",
 		NTType:     5,
 		Index:      8,
@@ -123,7 +123,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `StmtList : StmtList Stmt OptSemi	<< astx.AppendStmt(X[0], X[1]) >>`,
+		String:     `StmtList : StmtList Stmt OptSemi	<< astx.AppendStmt(X[0], X[1]) >>`,
 		Id:         "StmtList",
 		NTType:     5,
 		Index:      9,
@@ -133,7 +133,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptStmtList : empty	<<  >>`,
+		String:     `OptStmtList : empty	<<  >>`,
 		Id:         "OptStmtList",
 		NTType:     6,
 		Index:      10,
@@ -143,7 +143,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptStmtList : StmtList	<<  >>`,
+		String:     `OptStmtList : StmtList	<<  >>`,
 		Id:         "OptStmtList",
 		NTType:     6,
 		Index:      11,
@@ -153,7 +153,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Stmt : NodeStmt	<<  >>`,
+		String:     `Stmt : NodeStmt	<<  >>`,
 		Id:         "Stmt",
 		NTType:     7,
 		Index:      12,
@@ -163,7 +163,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Stmt : EdgeStmt	<<  >>`,
+		String:     `Stmt : EdgeStmt	<<  >>`,
 		Id:         "Stmt",
 		NTType:     7,
 		Index:      13,
@@ -173,7 +173,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Stmt : AttrStmt	<<  >>`,
+		String:     `Stmt : AttrStmt	<<  >>`,
 		Id:         "Stmt",
 		NTType:     7,
 		Index:      14,
@@ -183,7 +183,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Stmt : Attr	<<  >>`,
+		String:     `Stmt : Attr	<<  >>`,
 		Id:         "Stmt",
 		NTType:     7,
 		Index:      15,
@@ -193,7 +193,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Stmt : Subgraph	<<  >>`,
+		String:     `Stmt : Subgraph	<<  >>`,
 		Id:         "Stmt",
 		NTType:     7,
 		Index:      16,
@@ -203,7 +203,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSemi : empty	<<  >>`,
+		String:     `OptSemi : empty	<<  >>`,
 		Id:         "OptSemi",
 		NTType:     8,
 		Index:      17,
@@ -213,7 +213,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSemi : ";"	<<  >>`,
+		String:     `OptSemi : ";"	<<  >>`,
 		Id:         "OptSemi",
 		NTType:     8,
 		Index:      18,
@@ -223,7 +223,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `NodeStmt : Node OptAttrList	<< astx.NewNodeStmt(X[0], X[1]) >>`,
+		String:     `NodeStmt : Node OptAttrList	<< astx.NewNodeStmt(X[0], X[1]) >>`,
 		Id:         "NodeStmt",
 		NTType:     9,
 		Index:      19,
@@ -233,7 +233,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `EdgeStmt : Vertex Edge OptAttrList	<< astx.NewEdgeStmt(X[0], X[1], X[2]) >>`,
+		String:     `EdgeStmt : Vertex Edge OptAttrList	<< astx.NewEdgeStmt(X[0], X[1], X[2]) >>`,
 		Id:         "EdgeStmt",
 		NTType:     10,
 		Index:      20,
@@ -243,7 +243,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Edge : DirectedEdge Vertex OptEdge	<< astx.NewEdge(X[0], X[1], X[2]) >>`,
+		String:     `Edge : DirectedEdge Vertex OptEdge	<< astx.NewEdge(X[0], X[1], X[2]) >>`,
 		Id:         "Edge",
 		NTType:     11,
 		Index:      21,
@@ -253,7 +253,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `DirectedEdge : "--"	<< false, nil >>`,
+		String:     `DirectedEdge : "--"	<< false, nil >>`,
 		Id:         "DirectedEdge",
 		NTType:     12,
 		Index:      22,
@@ -263,7 +263,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `DirectedEdge : "->"	<< true, nil >>`,
+		String:     `DirectedEdge : "->"	<< true, nil >>`,
 		Id:         "DirectedEdge",
 		NTType:     12,
 		Index:      23,
@@ -273,7 +273,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptEdge : empty	<<  >>`,
+		String:     `OptEdge : empty	<<  >>`,
 		Id:         "OptEdge",
 		NTType:     13,
 		Index:      24,
@@ -283,7 +283,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptEdge : Edge	<<  >>`,
+		String:     `OptEdge : Edge	<<  >>`,
 		Id:         "OptEdge",
 		NTType:     13,
 		Index:      25,
@@ -293,7 +293,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AttrStmt : Component AttrList	<< astx.NewAttrStmt(X[0], X[1]) >>`,
+		String:     `AttrStmt : Component AttrList	<< astx.NewAttrStmt(X[0], X[1]) >>`,
 		Id:         "AttrStmt",
 		NTType:     14,
 		Index:      26,
@@ -303,7 +303,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Component : graphx	<< ast.GraphKind, nil >>`,
+		String:     `Component : graphx	<< ast.GraphKind, nil >>`,
 		Id:         "Component",
 		NTType:     15,
 		Index:      27,
@@ -313,7 +313,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Component : node	<< ast.NodeKind, nil >>`,
+		String:     `Component : node	<< ast.NodeKind, nil >>`,
 		Id:         "Component",
 		NTType:     15,
 		Index:      28,
@@ -323,7 +323,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Component : edge	<< ast.EdgeKind, nil >>`,
+		String:     `Component : edge	<< ast.EdgeKind, nil >>`,
 		Id:         "Component",
 		NTType:     15,
 		Index:      29,
@@ -333,7 +333,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AttrList : "[" OptAList "]"	<< X[1], nil >>`,
+		String:     `AttrList : "[" OptAList "]"	<< X[1], nil >>`,
 		Id:         "AttrList",
 		NTType:     16,
 		Index:      30,
@@ -343,7 +343,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AttrList : AttrList "[" OptAList "]"	<< astx.AppendAttrList(X[0], X[2]) >>`,
+		String:     `AttrList : AttrList "[" OptAList "]"	<< astx.AppendAttrList(X[0], X[2]) >>`,
 		Id:         "AttrList",
 		NTType:     16,
 		Index:      31,
@@ -353,7 +353,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptAttrList : empty	<<  >>`,
+		String:     `OptAttrList : empty	<<  >>`,
 		Id:         "OptAttrList",
 		NTType:     17,
 		Index:      32,
@@ -363,7 +363,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptAttrList : AttrList	<<  >>`,
+		String:     `OptAttrList : AttrList	<<  >>`,
 		Id:         "OptAttrList",
 		NTType:     17,
 		Index:      33,
@@ -373,7 +373,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AList : Attr OptSep	<< astx.NewAttrList(X[0]) >>`,
+		String:     `AList : Attr OptSep	<< astx.NewAttrList(X[0]) >>`,
 		Id:         "AList",
 		NTType:     18,
 		Index:      34,
@@ -383,7 +383,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AList : AList Attr OptSep	<< astx.AppendAttr(X[0], X[1]) >>`,
+		String:     `AList : AList Attr OptSep	<< astx.AppendAttr(X[0], X[1]) >>`,
 		Id:         "AList",
 		NTType:     18,
 		Index:      35,
@@ -393,7 +393,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptAList : empty	<<  >>`,
+		String:     `OptAList : empty	<<  >>`,
 		Id:         "OptAList",
 		NTType:     19,
 		Index:      36,
@@ -403,7 +403,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptAList : AList	<<  >>`,
+		String:     `OptAList : AList	<<  >>`,
 		Id:         "OptAList",
 		NTType:     19,
 		Index:      37,
@@ -413,7 +413,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSep : empty	<<  >>`,
+		String:     `OptSep : empty	<<  >>`,
 		Id:         "OptSep",
 		NTType:     20,
 		Index:      38,
@@ -423,7 +423,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSep : ";"	<<  >>`,
+		String:     `OptSep : ";"	<<  >>`,
 		Id:         "OptSep",
 		NTType:     20,
 		Index:      39,
@@ -433,7 +433,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSep : ","	<<  >>`,
+		String:     `OptSep : ","	<<  >>`,
 		Id:         "OptSep",
 		NTType:     20,
 		Index:      40,
@@ -443,7 +443,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Attr : ID "=" ID	<< astx.NewAttr(X[0], X[2]) >>`,
+		String:     `Attr : ID "=" ID	<< astx.NewAttr(X[0], X[2]) >>`,
 		Id:         "Attr",
 		NTType:     21,
 		Index:      41,
@@ -453,7 +453,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Subgraph : OptSubgraphID "{" OptStmtList "}"	<< astx.NewSubgraph(X[0], X[2]) >>`,
+		String:     `Subgraph : OptSubgraphID "{" OptStmtList "}"	<< astx.NewSubgraph(X[0], X[2]) >>`,
 		Id:         "Subgraph",
 		NTType:     22,
 		Index:      42,
@@ -463,7 +463,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSubgraphID : empty	<<  >>`,
+		String:     `OptSubgraphID : empty	<<  >>`,
 		Id:         "OptSubgraphID",
 		NTType:     23,
 		Index:      43,
@@ -473,7 +473,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptSubgraphID : subgraph OptID	<< X[1], nil >>`,
+		String:     `OptSubgraphID : subgraph OptID	<< X[1], nil >>`,
 		Id:         "OptSubgraphID",
 		NTType:     23,
 		Index:      44,
@@ -483,7 +483,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Vertex : Node	<<  >>`,
+		String:     `Vertex : Node	<<  >>`,
 		Id:         "Vertex",
 		NTType:     24,
 		Index:      45,
@@ -493,7 +493,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Vertex : Subgraph	<<  >>`,
+		String:     `Vertex : Subgraph	<<  >>`,
 		Id:         "Vertex",
 		NTType:     24,
 		Index:      46,
@@ -503,7 +503,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Node : ID OptPort	<< astx.NewNode(X[0], X[1]) >>`,
+		String:     `Node : ID OptPort	<< astx.NewNode(X[0], X[1]) >>`,
 		Id:         "Node",
 		NTType:     25,
 		Index:      47,
@@ -513,7 +513,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Port : ":" ID	<< astx.NewPort(X[1], nil) >>`,
+		String:     `Port : ":" ID	<< astx.NewPort(X[1], nil) >>`,
 		Id:         "Port",
 		NTType:     26,
 		Index:      48,
@@ -523,7 +523,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Port : ":" ID ":" ID	<< astx.NewPort(X[1], X[3]) >>`,
+		String:     `Port : ":" ID ":" ID	<< astx.NewPort(X[1], X[3]) >>`,
 		Id:         "Port",
 		NTType:     26,
 		Index:      49,
@@ -533,7 +533,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptPort : empty	<<  >>`,
+		String:     `OptPort : empty	<<  >>`,
 		Id:         "OptPort",
 		NTType:     27,
 		Index:      50,
@@ -543,7 +543,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptPort : Port	<<  >>`,
+		String:     `OptPort : Port	<<  >>`,
 		Id:         "OptPort",
 		NTType:     27,
 		Index:      51,
@@ -553,7 +553,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `ID : id	<< astx.NewID(X[0]) >>`,
+		String:     `ID : id	<< astx.NewID(X[0]) >>`,
 		Id:         "ID",
 		NTType:     28,
 		Index:      52,
@@ -563,7 +563,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptID : empty	<< "", nil >>`,
+		String:     `OptID : empty	<< "", nil >>`,
 		Id:         "OptID",
 		NTType:     29,
 		Index:      53,
@@ -573,7 +573,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `OptID : ID	<<  >>`,
+		String:     `OptID : ID	<<  >>`,
 		Id:         "OptID",
 		NTType:     29,
 		Index:      54,

@@ -151,9 +151,9 @@ func NewConn(dsn string) (*Conn, error) {
 
 // GetEnv return a map of environments variables.
 // The following keys are garanteed to be present:
-//  - server
-//  - database
-//  - charset
+//   - server
+//   - database
+//   - charset
 func (c Conn) GetEnv() map[string]string {
 	return map[string]string{
 		"server":     c.session.serverType,

@@ -227,12 +227,12 @@ out:
 //
 // It checks few sources in this order:
 //
-// 1. hosts file
-//	It parses hosts file if present and readable and returns first canonical
-//	hostname that also references your hostname. See hosts(5) for more
-//	details.
-// 2. dns lookup
-//	If lookup in hosts file fails, it tries to ask dns.
+//  1. hosts file
+//     It parses hosts file if present and readable and returns first canonical
+//     hostname that also references your hostname. See hosts(5) for more
+//     details.
+//  2. dns lookup
+//     If lookup in hosts file fails, it tries to ask dns.
 //
 // If none of steps above succeeds, ErrFqdnNotFound is returned as error. You
 // will probably want to just use output from os.Hostname() at that point.

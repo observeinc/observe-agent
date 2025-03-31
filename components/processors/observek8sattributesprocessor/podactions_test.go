@@ -14,7 +14,7 @@ func TestPodActions(t *testing.T) {
 			),
 			expectedResults: []queryWithResult{
 				{
-					path: "observe_transform.facets.status",
+					path:      "observe_transform.facets.status",
 					expResult: "Terminating",
 				},
 			},

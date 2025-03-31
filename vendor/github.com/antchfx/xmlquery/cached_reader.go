@@ -5,11 +5,11 @@ import (
 )
 
 type cachedReader struct {
-	buffer *bufio.Reader
-	cache []byte
+	buffer   *bufio.Reader
+	cache    []byte
 	cacheCap int
 	cacheLen int
-	caching bool
+	caching  bool
 }
 
 func newCachedReader(r *bufio.Reader) *cachedReader {
@@ -66,4 +66,3 @@ func (c *cachedReader) Read(p []byte) (int, error) {
 	}
 	return n, err
 }
-

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Microsoft/go-winio"
+	"github.com/observeinc/go-winio"
 )
 
 func configureUnixTransport(tr *http.Transport, proto, addr string) error {

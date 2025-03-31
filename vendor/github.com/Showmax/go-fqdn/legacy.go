@@ -10,9 +10,10 @@ import (
 // returns "unknown" or hostname in case of error
 //
 // Deprecated:
-//             This function has bad API, works poorly and is replace by
-//             FqdnHostname. Please please do not use it. It *will* be removed
-//             in the next version.
+//
+//	This function has bad API, works poorly and is replace by
+//	FqdnHostname. Please please do not use it. It *will* be removed
+//	in the next version.
 func Get() string {
 	hostname, err := os.Hostname()
 	if err != nil {

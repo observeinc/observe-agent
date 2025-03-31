@@ -50,7 +50,6 @@ type GlobWalkFunc func(path string, d fs.DirEntry) error
 //
 // Note: users should _not_ count on the returned error,
 // doublestar.ErrBadPattern, being equal to path.ErrBadPattern.
-//
 func GlobWalk(fsys fs.FS, pattern string, fn GlobWalkFunc, opts ...GlobOption) error {
 	if !ValidatePattern(pattern) {
 		return ErrBadPattern

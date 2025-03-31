@@ -159,8 +159,7 @@ func (SeverityNumber) EnumDescriptor() ([]byte, []int) {
 // a bit-mask.  To extract the bit-field, for example, use an
 // expression like:
 //
-//   (logRecord.flags & LOG_RECORD_FLAGS_TRACE_FLAGS_MASK)
-//
+//	(logRecord.flags & LOG_RECORD_FLAGS_TRACE_FLAGS_MASK)
 type LogRecordFlags int32
 
 const (
