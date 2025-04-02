@@ -19,6 +19,7 @@ import (
 	loadbalancingexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
+	cgroupruntimeextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 	healthcheckextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
@@ -68,6 +69,7 @@ func components() (otelcol.Factories, error) {
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		zpagesextension.NewFactory(),
+		cgroupruntimeextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		filestorage.NewFactory(),
 		pprofextension.NewFactory(),
@@ -77,6 +79,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
 	factories.ExtensionModules[zpagesextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/zpagesextension v0.121.0"
+	factories.ExtensionModules[cgroupruntimeextension.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.121.0"
 	factories.ExtensionModules[healthcheckextension.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.121.0"
 	factories.ExtensionModules[filestorage.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.121.0"
 	factories.ExtensionModules[pprofextension.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.121.0"
