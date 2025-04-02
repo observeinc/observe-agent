@@ -14,6 +14,21 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
+func ConfigProviderSettings(URIs []string) otelcol.ConfigProviderSettings {
+	return otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: URIs,
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
+				httpsprovider.NewFactory(),
+			},
+		},
+	}
+}
+
 func GenerateCollectorSettings() *otelcol.CollectorSettings {
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
@@ -21,19 +36,9 @@ func GenerateCollectorSettings() *otelcol.CollectorSettings {
 		Version:     build.Version,
 	}
 	set := &otelcol.CollectorSettings{
-		BuildInfo: buildInfo,
-		Factories: components,
-		ConfigProviderSettings: otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				ProviderFactories: []confmap.ProviderFactory{
-					fileprovider.NewFactory(),
-					envprovider.NewFactory(),
-					yamlprovider.NewFactory(),
-					httpprovider.NewFactory(),
-					httpsprovider.NewFactory(),
-				},
-			},
-		},
+		BuildInfo:              buildInfo,
+		Factories:              components,
+		ConfigProviderSettings: ConfigProviderSettings([]string{}),
 	}
 	return set
 }
