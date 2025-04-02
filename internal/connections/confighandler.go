@@ -20,28 +20,17 @@ const (
 
 func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
 	configFilePaths := []string{}
-	// If the default otel-collector.yaml exists, add it to the list of config files
-	defaultOtelConfigPath := filepath.Join(GetDefaultConfigFolder(), "otel-collector.yaml")
-	if _, err := os.Stat(defaultOtelConfigPath); err == nil {
-		agentConf, err := config.AgentConfigFromViper(viper.GetViper())
-		if err != nil {
-			return nil, err
-		}
-		otelConfigRendered, err := RenderConfigTemplate(ctx, tmpDir, defaultOtelConfigPath, agentConf)
-		if err != nil {
-			return nil, err
-		}
-		configFilePaths = append(configFilePaths, otelConfigRendered)
-	}
 	// Get additional config paths based on connection configs
+	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
+	if err != nil {
+		return nil, err
+	}
 	for _, conn := range AllConnectionTypes {
-		if viper.IsSet(conn.Name) {
-			connectionPaths, err := conn.GetConfigFilePaths(ctx, tmpDir)
-			if err != nil {
-				return nil, err
-			}
-			configFilePaths = append(configFilePaths, connectionPaths...)
+		connectionPaths, err := conn.GetConfigFilePaths(ctx, tmpDir, agentConfig)
+		if err != nil {
+			return nil, err
 		}
+		configFilePaths = append(configFilePaths, connectionPaths...)
 	}
 	// Generate override file and include path if overrides provided
 	if viper.IsSet(OTEL_OVERRIDE_YAML_KEY) {
@@ -117,19 +106,6 @@ func GetOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
 		return "", fmt.Errorf("failed to write otel config overrides to file: %w", err)
 	}
 	return f.Name(), nil
-}
-
-func GetDefaultConfigFolder() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		return filepath.Join(GetDefaultAgentPath(), "config")
-	case "windows":
-		return filepath.Join(GetDefaultAgentPath(), "config")
-	case "linux":
-		return GetDefaultAgentPath()
-	default:
-		return GetDefaultAgentPath()
-	}
 }
 
 func GetConfigFragmentFolderPath() string {

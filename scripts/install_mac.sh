@@ -101,7 +101,6 @@ sudo chmod +rw /var/lib/observe-agent/filestorage
 # Copy all files to the install dir.
 sudo rm -rf $observeagent_install_dir/config $observeagent_install_dir/connections $observeagent_install_dir/observe-agent
 sudo cp $tmp_dir/observe-agent $observeagent_install_dir/observe-agent
-sudo cp -R $tmp_dir/config $observeagent_install_dir/config
 sudo cp -R $tmp_dir/connections $observeagent_install_dir/connections
 sudo chown -R root:wheel $observeagent_install_dir
 

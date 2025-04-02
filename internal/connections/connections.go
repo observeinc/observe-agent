@@ -9,28 +9,28 @@ import (
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/observeinc/observe-agent/internal/config"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
 var TempFilesFolder = "observe-agent"
+
+type EnabledCheckFn func(*config.AgentConfig) bool
 
 type ConfigFieldHandler interface {
 	GenerateCollectorConfigFragment() interface{}
 }
 
 type CollectorConfigFragment struct {
-	configYAMLPath    string
+	enabledCheck      EnabledCheckFn
 	colConfigFilePath string
 }
 
 type ConnectionType struct {
 	Name         string
 	ConfigFields []CollectorConfigFragment
-	Type         string
+	EnabledCheck EnabledCheckFn
 
 	configFolderPath string
-	getConfig        func() *viper.Viper
 }
 
 func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
@@ -62,64 +62,37 @@ func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string
 	return RenderConfigTemplate(ctx, tmpDir, tplPath, confValues)
 }
 
-func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, rawConnConfig *viper.Viper, confValues any) ([]string, error) {
+func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
 	paths := make([]string, 0)
 	for _, field := range c.ConfigFields {
-		val := rawConnConfig.GetBool(field.configYAMLPath)
-		if val && field.colConfigFilePath != "" {
-			configPath, err := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, confValues)
-			if err != nil {
-				return nil, err
-			}
-			paths = append(paths, configPath)
+		if !field.enabledCheck(agentConfig) || field.colConfigFilePath == "" {
+			continue
 		}
+		configPath, err := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, agentConfig)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, configPath)
 	}
 	return paths, nil
 }
 
-func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
-	var rawConnConfig = c.getConfig()
-	var configPaths []string
-	if rawConnConfig == nil || !rawConnConfig.GetBool("enabled") {
-		return configPaths, nil
+func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
+	if !c.EnabledCheck(agentConfig) {
+		return []string{}, nil
 	}
-	switch c.Type {
-	case SelfMonitoringConnectionTypeName:
-		conf := &config.SelfMonitoringConfig{}
-		err := rawConnConfig.Unmarshal(conf)
-		if err != nil {
-			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
-			return nil, err
-		}
-		configPaths, err = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
-		if err != nil {
-			return nil, err
-		}
-	case HostMonitoringConnectionTypeName:
-		conf := &config.HostMonitoringConfig{}
-		err := rawConnConfig.Unmarshal(conf)
-		if err != nil {
-			logger.FromCtx(ctx).Error("failed to unmarshal config", zap.String("connection", c.Name))
-			return nil, err
-		}
-		configPaths, err = c.ProcessConfigFields(ctx, tmpDir, rawConnConfig, conf)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		logger.FromCtx(ctx).Error("unknown connection type", zap.String("type", c.Type))
-		return nil, fmt.Errorf("unknown connection type %s", c.Type)
+
+	configPaths, err := c.ProcessConfigFields(ctx, tmpDir, agentConfig)
+	if err != nil {
+		return nil, err
 	}
 	return configPaths, nil
 }
 
 type ConnectionTypeOption func(*ConnectionType)
 
-func MakeConnectionType(Name string, ConfigFields []CollectorConfigFragment, Type string, opts ...ConnectionTypeOption) *ConnectionType {
-	var c = &ConnectionType{Name: Name, ConfigFields: ConfigFields, Type: Type}
-	c.getConfig = func() *viper.Viper {
-		return viper.Sub(c.Name)
-	}
+func MakeConnectionType(name string, enabledCheck EnabledCheckFn, configFields []CollectorConfigFragment, opts ...ConnectionTypeOption) *ConnectionType {
+	var c = &ConnectionType{Name: name, EnabledCheck: enabledCheck, ConfigFields: configFields}
 	c.configFolderPath = GetConfigFragmentFolderPath()
 
 	// Apply provided options
@@ -134,15 +107,4 @@ func WithConfigFolderPath(configFolderPath string) ConnectionTypeOption {
 	return func(c *ConnectionType) {
 		c.configFolderPath = configFolderPath
 	}
-}
-
-func WithGetConfig(getConfig func() *viper.Viper) ConnectionTypeOption {
-	return func(c *ConnectionType) {
-		c.getConfig = getConfig
-	}
-}
-
-var AllConnectionTypes = []*ConnectionType{
-	HostMonitoringConnectionType,
-	SelfMonitoringConnectionType,
 }

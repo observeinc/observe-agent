@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTmplValueToYaml(t *testing.T) {
-	assert.Equal(t, "\"y\"", TmplValueToYaml("y"))
-	assert.Equal(t, "a", TmplValueToYaml("a"))
-	assert.Equal(t, "5", TmplValueToYaml(5))
-	assert.Equal(t, "2.22", TmplValueToYaml(2.22))
-	assert.Equal(t, "true", TmplValueToYaml(true))
+func TestTplValueToYaml(t *testing.T) {
+	assert.Equal(t, "\"y\"", TplValueToYaml("y"))
+	assert.Equal(t, "a", TplValueToYaml("a"))
+	assert.Equal(t, "5", TplValueToYaml(5))
+	assert.Equal(t, "2.22", TplValueToYaml(2.22))
+	assert.Equal(t, "true", TplValueToYaml(true))
 }
 
 func TestTplInlineArray(t *testing.T) {

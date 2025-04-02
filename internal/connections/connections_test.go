@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	logger "github.com/observeinc/observe-agent/internal/commands/util"
-	"github.com/spf13/viper"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -37,8 +37,14 @@ func (suite *ConnectionsTestSuite) TearDownSuite() {
 	os.RemoveAll(suite.tempDir)
 }
 
-func (suite *ConnectionsTestSuite) MakeConnectionType(configFields []CollectorConfigFragment, v *viper.Viper) *ConnectionType {
-	return MakeConnectionType("test", configFields, SelfMonitoringConnectionTypeName, WithConfigFolderPath(suite.configFilesPath), WithGetConfig(func() *viper.Viper { return v }))
+var alwaysEnabled EnabledCheckFn = func(_ *config.AgentConfig) bool { return true }
+
+func (suite *ConnectionsTestSuite) MakeConnectionType(configFields []CollectorConfigFragment, enableCheck EnabledCheckFn) *ConnectionType {
+	return MakeConnectionType(
+		"test",
+		enableCheck,
+		configFields,
+		WithConfigFolderPath(suite.configFilesPath))
 }
 
 func TestConnectionsTestSuite(t *testing.T) {
@@ -47,8 +53,8 @@ func TestConnectionsTestSuite(t *testing.T) {
 
 func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
 	ct := suite.MakeConnectionType([]CollectorConfigFragment{
-		{configYAMLPath: "field1", colConfigFilePath: "config1.tpl"},
-	}, nil)
+		{enabledCheck: alwaysEnabled, colConfigFilePath: "config1.tpl"},
+	}, alwaysEnabled)
 
 	// Test the RenderConfigTemplate function
 	confValues := struct {
@@ -84,20 +90,18 @@ func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
 }
 
 func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
-	// Mock viper configuration
-	v := viper.New()
-	v.Set("field1", true)
-	v.Set("field2", false)
-	v.Set("field3", true)
+	var agentConfig config.AgentConfig
+	agentConfig.HostMonitoring.Enabled = true
+	agentConfig.SelfMonitoring.Enabled = false
+	agentConfig.Forwarding.Enabled = true
 
 	ct := suite.MakeConnectionType([]CollectorConfigFragment{
-		{configYAMLPath: "field1", colConfigFilePath: "testConfig1.tpl"},
-		{configYAMLPath: "field2", colConfigFilePath: "testConfig2.tpl"},
-		{configYAMLPath: "field3", colConfigFilePath: ""},
-	}, v)
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.HostMonitoring.Enabled }, colConfigFilePath: "testConfig1.tpl"},
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.SelfMonitoring.Enabled }, colConfigFilePath: "testConfig2.tpl"},
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.Forwarding.Enabled }, colConfigFilePath: ""},
+	}, alwaysEnabled)
 
-	confValues := struct{}{}
-	paths, err := ct.ProcessConfigFields(suite.ctx, suite.tempDir, v, confValues)
+	paths, err := ct.ProcessConfigFields(suite.ctx, suite.tempDir, &agentConfig)
 	suite.NoError(err)
 
 	suite.Len(paths, 1)
@@ -107,20 +111,19 @@ func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
 }
 
 func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
-	// Mock viper configuration
-	v := viper.New()
-	v.Set("enabled", true)
-	v.Set("field1", true)
-	v.Set("field2", false)
-	v.Set("field3", false)
+	var agentConfig config.AgentConfig
+	agentConfig.Debug = true
+	agentConfig.HostMonitoring.Enabled = true
+	agentConfig.SelfMonitoring.Enabled = false
+	agentConfig.Forwarding.Enabled = true
 
 	ct := suite.MakeConnectionType([]CollectorConfigFragment{
-		{configYAMLPath: "field1", colConfigFilePath: "testConfig1.tpl"},
-		{configYAMLPath: "field2", colConfigFilePath: "testConfig2.tpl"},
-		{configYAMLPath: "field3", colConfigFilePath: ""},
-	}, v)
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.HostMonitoring.Enabled }, colConfigFilePath: "testConfig1.tpl"},
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.SelfMonitoring.Enabled }, colConfigFilePath: "testConfig2.tpl"},
+		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.Forwarding.Enabled }, colConfigFilePath: ""},
+	}, func(ac *config.AgentConfig) bool { return ac.Debug })
 
-	paths, err := ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	paths, err := ct.GetConfigFilePaths(suite.ctx, suite.tempDir, &agentConfig)
 	suite.NoError(err)
 	suite.Len(paths, 1)
 	tmpFile := paths[0]
@@ -128,8 +131,8 @@ func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
 	suite.Equal(ct.ConfigFields[0].colConfigFilePath, tmpConfName)
 
 	// Does nothing if not enabled
-	v.Set("enabled", false)
-	paths, err = ct.GetConfigFilePaths(suite.ctx, suite.tempDir)
+	agentConfig.Debug = false
+	paths, err = ct.GetConfigFilePaths(suite.ctx, suite.tempDir, &agentConfig)
 	suite.NoError(err)
 	suite.Len(paths, 0)
 }

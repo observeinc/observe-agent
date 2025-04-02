@@ -5,6 +5,7 @@ go 1.23.7
 require (
 	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/jarcoal/httpmock v1.3.1
+	github.com/mcuadros/go-defaults v1.2.0
 	github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.62.0

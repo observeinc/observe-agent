@@ -41,7 +41,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.7.0
+          version: 2.8.2
           args: build --snapshot --id=default --skip=validate --single-target
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}

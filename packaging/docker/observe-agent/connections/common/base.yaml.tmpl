@@ -1,20 +1,9 @@
 extensions:
-  health_check:
-    endpoint: 'localhost:13133'
-    path: '/status'
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
 
 connectors:
   count:
-
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: localhost:4317
-      http:
-        endpoint: localhost:4318
 
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
@@ -44,9 +33,29 @@ processors:
   resourcedetection:
     detectors: [env, system]
     system:
-      hostname_sources: ["os"]
+      hostname_sources: ["dns", "os"]
       resource_attributes:
         host.id:
+          enabled: false
+        os.type:
+           enabled: true
+        host.arch:
+          enabled: true
+        host.name:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        os.description:
           enabled: true
 
   resourcedetection/cloud:
@@ -86,37 +95,10 @@ exporters:
       enabled: true  # Convert resource attributes to metric labels
     send_metadata: true
 
-  otlphttp/observetracing:
-    endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
-    headers:
-      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
-      x-observe-target-package: "Tracing"
-    sending_queue:
-      num_consumers: 4
-      queue_size: 100
-    retry_on_failure:
-      enabled: true
-    compression: zstd
-
   debug:
 
 service:
   pipelines:
-    metrics/forward:
-      receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
-      exporters: [prometheusremotewrite/observe]
-
-    logs/forward:
-      receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observe, count]
-
-    traces/forward:
-      receivers: [otlp]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-      exporters: [otlphttp/observetracing]
-
     metrics/count-nooop:
       receivers: [count]
       processors: [filter/count]

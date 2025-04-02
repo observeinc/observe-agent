@@ -10,12 +10,19 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
         DisplayName = "Observe Agent"
         StartupType = "Automatic"
         Description = "Observe Agent based on OpenTelemetry collector"
-      }
-      
+    }
+    $params | Select-Object *
     New-Service @params
     Write-Output "Starting ObserveAgent Service..."
-    Start-Service ObserveAgent
+    try {
+        Start-Service ObserveAgent -ErrorAction Stop
+    } catch {
+        Write-Output "Error starting ObserveAgent service!"
+        $_ | Select-Object *
+        # Print the agent config to help debug
+        &"${observeagent_install_dir}\observe-agent.exe" --observe-config "${observeagent_install_dir}\observe-agent.yaml" config
     }
+}
 else{
     Write-Output "ObserveAgent Service already exists, restarting service..."
     Stop-Service ObserveAgent

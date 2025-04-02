@@ -89,6 +89,9 @@ func printAllConfigsIndividually(configFilePaths []string) error {
 }
 
 func printShortOtelConfig(ctx context.Context, configFilePaths []string) error {
+	if len(configFilePaths) == 0 {
+		return nil
+	}
 	settings := observecol.ConfigProviderSettings(configFilePaths)
 	resolver, err := confmap.NewResolver(settings.ResolverSettings)
 	if err != nil {
@@ -107,6 +110,9 @@ func printShortOtelConfig(ctx context.Context, configFilePaths []string) error {
 }
 
 func printFullOtelConfig(configFilePaths []string) error {
+	if len(configFilePaths) == 0 {
+		return nil
+	}
 	colSettings := observecol.GenerateCollectorSettingsWithConfigFiles(configFilePaths)
 	factories, err := colSettings.Factories()
 	if err != nil {

@@ -12,7 +12,7 @@ func GetTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"inlineArrayInt": TplInlineArray[int],
 		"inlineArrayStr": TplInlineArray[string],
-		"valToYaml":      TmplValueToYaml,
+		"valToYaml":      TplValueToYaml,
 		"objToYaml":      TplToYaml,
 		"add": func(values ...int) int {
 			sum := 0
@@ -27,12 +27,12 @@ func GetTemplateFuncMap() template.FuncMap {
 func TplInlineArray[T any](arr []T) string {
 	strs := make([]string, len(arr))
 	for i := range arr {
-		strs[i] = TmplValueToYaml(arr[i])
+		strs[i] = TplValueToYaml(arr[i])
 	}
 	return "[" + strings.Join(strs, ", ") + "]"
 }
 
-func TmplValueToYaml(value any) string {
+func TplValueToYaml(value any) string {
 	b, err := yaml.Marshal(value)
 	if err != nil {
 		panic(err)

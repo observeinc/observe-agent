@@ -1,0 +1,37 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+
+exporters:
+  otlphttp/observetracing:
+    endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+      x-observe-target-package: "Tracing"
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+    compression: zstd
+
+service:
+  pipelines:
+    metrics/forward:
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
+      exporters: [prometheusremotewrite/observe]
+
+    logs/forward:
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud]
+      exporters: [otlphttp/observe, count]
+
+    traces/forward:
+      receivers: [otlp]
+      processors: [resourcedetection, resourcedetection/cloud]
+      exporters: [otlphttp/observetracing]
