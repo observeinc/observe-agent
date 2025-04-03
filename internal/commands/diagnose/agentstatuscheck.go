@@ -13,8 +13,8 @@ type StatusTestResult struct {
 	Error        string
 }
 
-func checkStatus(_ *viper.Viper) (bool, any, error) {
-	data, err := status.GetStatusData()
+func checkStatus(v *viper.Viper) (bool, any, error) {
+	data, err := status.GetStatusData(v.GetString(status.TelemetryEndpointFlag), v.GetString(status.HealthcheckEndpointFlag), v.GetString(status.HealthcheckPathFlag))
 	if err != nil {
 		return false, StatusTestResult{
 			Passed:       false,
