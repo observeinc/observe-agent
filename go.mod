@@ -3,6 +3,7 @@ module github.com/observeinc/observe-agent
 go 1.23.7
 
 require (
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_model v0.6.1
@@ -11,6 +12,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0-alpha.6
 	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/otelcol v0.121.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.30.0
@@ -94,7 +96,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.4 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
@@ -314,7 +315,6 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.27.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.121.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.27.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.27.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.27.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.27.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.27.0 // indirect
