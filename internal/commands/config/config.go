@@ -110,7 +110,7 @@ func printFullOtelConfig(configFilePaths []string) error {
 	colSettings := observecol.GenerateCollectorSettingsWithConfigFiles(configFilePaths)
 	factories, err := colSettings.Factories()
 	if err != nil {
-		return fmt.Errorf("failed to initialize factories: %w", err)
+		return fmt.Errorf("failed to create component factory maps: %w", err)
 	}
 	provider, err := otelcol.NewConfigProvider(colSettings.ConfigProviderSettings)
 	if err != nil {
