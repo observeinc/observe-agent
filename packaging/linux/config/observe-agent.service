@@ -5,7 +5,8 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/observe-agent start --observe-config /etc/observe-agent/observe-agent.yaml
 KillMode=mixed
-Restart=on-failure
+Restart=always
+RestartSec=1
 Type=simple
 User=observe-agent
 Group=observe-agent
