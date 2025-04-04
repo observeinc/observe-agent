@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/observeinc/observe-agent/internal/commands/start"
@@ -25,65 +26,66 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Prints the full configuration for this agent.",
 	Long: `This command prints all configuration for this agent including any additional
-OTEL configuration.`,
+bundled OTel configuration.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := logger.WithCtx(context.Background(), logger.GetNop())
-		configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(ctx)
+		detailedOtel, err := cmd.Flags().GetBool("render-otel-details")
 		if err != nil {
 			return err
 		}
+		singleOtel, err := cmd.Flags().GetBool("render-otel")
+		if err != nil {
+			return err
+		}
+		if singleOtel && detailedOtel {
+			return fmt.Errorf("cannot specify both --render-otel and --render-otel-details")
+		}
+
+		ctx := logger.WithCtx(context.Background(), logger.GetNop())
+		configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(ctx)
 		if cleanup != nil {
 			defer cleanup()
 		}
-		agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
 		if err != nil {
 			return err
 		}
-		agentConfigYaml, err := yaml.Marshal(agentConfig)
-		if err != nil {
-			return err
+		if singleOtel {
+			return printShortOtelConfig(ctx, configFilePaths)
+		} else if detailedOtel {
+			return printFullOtelConfig(configFilePaths)
 		}
-		fmt.Printf("# ======== computed agent config\n")
-		fmt.Println(string(agentConfigYaml) + "\n")
-		agentConfigFile := viper.ConfigFileUsed()
-		if agentConfigFile != "" {
-			configFilePaths = append([]string{agentConfigFile}, configFilePaths...)
-		}
-		for _, filePath := range configFilePaths {
-			file, err := os.ReadFile(filePath)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error reading config file %s: %s", filePath, err.Error())
-			} else {
-				fmt.Printf("# ======== config file %s\n", filePath)
-				fmt.Println(string(file))
-			}
-		}
-		return nil
+		return printAllConfigsIndividually(configFilePaths)
 	},
 }
 
-var otelConfigSubCmd = &cobra.Command{
-	Use:   "export-otel",
-	Short: "Prints a single otel config file containing the full configuration that would run.",
-	Long: `This command prints a single otel config file containing all bundled configuration.
-Features that are enabled or disabled in the observe-agent config will be reflected in the output accordingly.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(logger.WithCtx(context.Background(), logger.GetNop()))
-		if cleanup != nil {
-			defer cleanup()
-		}
+func printAllConfigsIndividually(configFilePaths []string) error {
+	printConfig := func(comment string, data []byte) {
+		fmt.Printf("# ======== %s\n", comment)
+		fmt.Println(strings.Trim(string(data), "\n\t "))
+		fmt.Println("---")
+	}
+
+	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
+	if err != nil {
+		return err
+	}
+	agentConfigYaml, err := yaml.Marshal(agentConfig)
+	if err != nil {
+		return err
+	}
+	printConfig("computed agent config", agentConfigYaml)
+	agentConfigFile := viper.ConfigFileUsed()
+	if agentConfigFile != "" {
+		configFilePaths = append([]string{agentConfigFile}, configFilePaths...)
+	}
+	for _, filePath := range configFilePaths {
+		file, err := os.ReadFile(filePath)
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "error reading config file %s: %s", filePath, err.Error())
+		} else {
+			printConfig("config file "+filePath, file)
 		}
-		fullVersion, err := cmd.Flags().GetBool("full")
-		if err != nil {
-			return err
-		}
-		if fullVersion {
-			return printFullOtelConfig(configFilePaths)
-		}
-		return printShortOtelConfig(cmd.Context(), configFilePaths)
-	},
+	}
+	return nil
 }
 
 func printShortOtelConfig(ctx context.Context, configFilePaths []string) error {
@@ -132,7 +134,7 @@ func printFullOtelConfig(configFilePaths []string) error {
 }
 
 func init() {
-	otelConfigSubCmd.Flags().Bool("full", false, "Print the full resolved configuration including default values instead of the pre-processed configuration.")
-	configCmd.AddCommand(otelConfigSubCmd)
+	configCmd.Flags().Bool("render-otel-details", false, "Print the full resolved otel configuration including default values after the otel components perform their semantic processing.")
+	configCmd.Flags().Bool("render-otel", false, "Print a single rendered otel configuration file. This file is equivalent to the bundled configuration enabled in the observe-agent config.")
 	root.RootCmd.AddCommand(configCmd)
 }
