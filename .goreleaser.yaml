@@ -16,7 +16,7 @@ before:
     - go generate ./...
 
 builds:
-  - id: default
+  - id: linux_build
     binary: observe-agent
     env:
       - CGO_ENABLED=0
@@ -44,10 +44,9 @@ builds:
     ldflags: -s -w -X github.com/observeinc/observe-agent/build.Version={{.Version}}
 
 archives:
-  - id: default
+  - id: linux
     formats: ["tar.gz"]
-    builds:
-      - default
+    ids: [linux_build]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
@@ -57,15 +56,15 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
-      - src: "packaging/linux/etc/observe-agent/*"
-        dst: "."
+      # The default agent config file and the service file live in config.
       - src: "packaging/linux/config/*"
         dst: "."
+      - src: "packaging/linux/connections/*"
+        dst: "connections"
 
   - id: windows
     formats: ["zip"]
-    builds:
-      - windows_build
+    ids: [windows_build]
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -74,19 +73,14 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
-      - src: "packaging/windows/config/otel-collector.yaml"
-        dst: "otel-collector.yaml"
       - src: "packaging/windows/observe-agent.yaml"
         dst: "observe-agent.yaml"
-      - src: "packaging/windows/connections/host_monitoring/*"
-        dst: "connections/host_monitoring"
-      - src: "packaging/windows/connections/self_monitoring/*"
-        dst: "connections/self_monitoring"
+      - src: "packaging/windows/connections/*"
+        dst: "connections"
 
   - id: macos
     formats: ["zip"]
-    builds:
-      - mac_build
+    ids: [mac_build]
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -124,7 +118,7 @@ changelog:
       order: 999
 
 nfpms:
-  - id: default
+  - id: linux
 
     package_name: observe-agent
 
@@ -168,8 +162,8 @@ nfpms:
     # Contents to add to the package.
     # GoReleaser will automatically add the binaries.
     contents:
-      - src: packaging/linux/etc/
-        dst: /etc
+      - src: packaging/linux/connections
+        dst: /etc/observe-agent/connections
         type: tree
 
       - src: packaging/linux/config/observe-agent.yaml

@@ -809,6 +809,9 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.20
 ## explicit; go 1.15
 github.com/mattn/go-isatty
+# github.com/mcuadros/go-defaults v1.2.0
+## explicit; go 1.14
+github.com/mcuadros/go-defaults
 # github.com/miekg/dns v1.1.62
 ## explicit; go 1.19
 github.com/miekg/dns

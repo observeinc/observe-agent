@@ -4,10 +4,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func Test_InitConfigCommand(t *testing.T) {
@@ -77,17 +78,31 @@ func Test_InitConfigCommand(t *testing.T) {
 		if err != nil {
 			if tc.expectErr == "" {
 				t.Errorf("Expected no error, got %v", err)
+			} else {
+				assert.ErrorContains(t, err, tc.expectErr)
 			}
 		}
-		var config config.AgentConfig
-		configFile, err := os.ReadFile("./test-config.yaml")
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		err = yaml.Unmarshal(configFile, &config)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		assert.Equal(t, tc.expectedConfig, config)
+
+		var configYaml, configMapstructure config.AgentConfig
+
+		// Decode via mapstructure (which is how viper does it)
+		configFileContents, err := os.ReadFile("./test-config.yaml")
+		assert.NoError(t, err)
+		var yamlMap map[string]any
+		err = yaml.Unmarshal(configFileContents, &yamlMap)
+		assert.NoError(t, err)
+		err = mapstructure.Decode(yamlMap, &configMapstructure)
+		assert.NoError(t, err)
+		assert.Equal(t, tc.expectedConfig, configMapstructure)
+
+		// Decode via yaml in order to do strict field checks
+		configFile, err := os.Open("./test-config.yaml")
+		assert.NoError(t, err)
+		decoder := yaml.NewDecoder(configFile)
+		// Ensure that all fields in the output yaml are present in our struct
+		decoder.KnownFields(true)
+		err = decoder.Decode(&configYaml)
+		assert.NoError(t, err)
+		assert.Equal(t, tc.expectedConfig, configYaml)
 	}
 }

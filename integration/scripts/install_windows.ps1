@@ -18,7 +18,7 @@ $temp_dir="C:\temp"
 #Create directories for temp & observe-agent installation ls
 New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
-New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
+New-Item -ItemType Directory -Force -Path $observeagent_install_dir\connections
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
 
 # Stop the observe agent if its running so that we can copy the new .exe
@@ -36,7 +36,5 @@ Expand-Archive -Force -LiteralPath $local_installer  -DestinationPath "$temp_dir
 Write-Output "Copying files from $temp_dir\observe-agent_extract to $observeagent_install_dir"
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.exe -Destination $observeagent_install_dir
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.yaml -Destination $observeagent_install_dir
-Copy-Item -Force -Path $temp_dir\observe-agent_extract\otel-collector.yaml -Destination $observeagent_install_dir\config\otel-collector.yaml
-Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\ -Destination $observeagent_install_dir\connections -Recurse
-
-
+Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\* -Destination $observeagent_install_dir\connections -Recurse
+Get-ChildItem -Path $observeagent_install_dir -Recurse

@@ -1,17 +1,17 @@
 receivers:
   filelog/host_monitoring:
     include:
-      {{- if .Logs.Include }}
-      {{- range .Logs.Include }}
+      {{- if .HostMonitoring.Logs.Include }}
+      {{- range .HostMonitoring.Logs.Include }}
       - {{ . }}
       {{- end }}
       {{- else }}
-      - /hostfs/var/log/**/*.log
-      - /hostfs/var/log/syslog
+      - /var/log/**/*.log
+      - /var/log/syslog
       {{- end }}
-    {{- if .Logs.Exclude }}
+    {{- if .HostMonitoring.Logs.Exclude }}
     exclude:
-      {{- range .Logs.Exclude }}
+      {{- range .HostMonitoring.Logs.Exclude }}
       - {{ . }}
       {{- end }}
     {{- end }}
