@@ -40,23 +40,32 @@ type SelfMonitoringConfig struct {
 }
 
 type HealthCheckConfig struct {
-	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Enabled  bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Endpoint string `yaml:"endpoint" mapstructure:"endpoint" default:"localhost:13133"`
+	Path     string `yaml:"path" mapstructure:"path" default:"/status"`
 }
 
 type ForwardingConfig struct {
 	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
 }
 
+type InternalTelemetryConfig struct {
+	Enabled bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Host    string `yaml:"host" mapstructure:"host" default:"localhost"`
+	Port    int    `yaml:"port" mapstructure:"port" default:"8888"`
+}
+
 type AgentConfig struct {
-	Token                  string               `yaml:"token" mapstructure:"token"`
-	ObserveURL             string               `yaml:"observe_url" mapstructure:"observe_url"`
-	CloudResourceDetectors []string             `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
-	Debug                  bool                 `yaml:"debug,omitempty" mapstructure:"debug"`
-	HealthCheck            HealthCheckConfig    `yaml:"health_check" mapstructure:"health_check"`
-	Forwarding             ForwardingConfig     `yaml:"forwarding" mapstructure:"forwarding"`
-	SelfMonitoring         SelfMonitoringConfig `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
-	HostMonitoring         HostMonitoringConfig `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
-	OtelConfigOverrides    map[string]any       `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`
+	Token                  string                  `yaml:"token" mapstructure:"token"`
+	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url"`
+	CloudResourceDetectors []string                `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
+	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
+	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
+	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
+	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry,omitempty" mapstructure:"internal_telemetry"`
+	SelfMonitoring         SelfMonitoringConfig    `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
+	HostMonitoring         HostMonitoringConfig    `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
+	OtelConfigOverrides    map[string]any          `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`
 }
 
 func AgentConfigFromViper(v *viper.Viper) (*AgentConfig, error) {

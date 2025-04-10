@@ -1,0 +1,12 @@
+service:
+  telemetry:
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: {{ .InternalTelemetry.Host }}
+                port: {{ .InternalTelemetry.Port }}
+    logs:
+      level: ${env:OTEL_LOG_LEVEL}

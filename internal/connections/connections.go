@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"go.uber.org/zap"
 )

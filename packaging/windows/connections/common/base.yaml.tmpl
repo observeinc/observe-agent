@@ -78,16 +78,4 @@ exporters:
   debug:
 
 service:
-  pipelines:
-    metrics/count-nooop:
-      receivers: [count]
-      processors: [filter/count]
-      exporters: [debug]
-
   extensions: [health_check, file_storage]
-  telemetry:
-    metrics:
-      level: detailed
-      address: ":8888"
-    logs:
-      level: ${env:OTEL_LOG_LEVEL}

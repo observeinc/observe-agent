@@ -9,7 +9,6 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/observeinc/observe-agent/internal/commands/status"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -72,6 +71,5 @@ to attempt to identify issues that could cause the agent to function improperly.
 func init() {
 	v := viper.GetViper()
 	diagnoseCmd := NewDiagnoseCmd(v)
-	status.RegisterStatusFlags(diagnoseCmd, v)
 	root.RootCmd.AddCommand(diagnoseCmd)
 }

@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
@@ -35,12 +36,15 @@ func NewStatusCmd(v *viper.Viper) *cobra.Command {
 func init() {
 	v := viper.GetViper()
 	statusCmd := NewStatusCmd(v)
-	RegisterStatusFlags(statusCmd, v)
 	root.RootCmd.AddCommand(statusCmd)
 }
 
 func getStatusFromTemplate(v *viper.Viper) error {
-	data, err := GetStatusData(v.GetString(TelemetryEndpointFlag), v.GetString(HealthcheckEndpointFlag), v.GetString(HealthcheckPathFlag))
+	conf, err := config.AgentConfigFromViper(v)
+	if err != nil {
+		return err
+	}
+	data, err := GetStatusData(conf)
 	if err != nil {
 		return err
 	}

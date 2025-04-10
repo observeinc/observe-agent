@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
