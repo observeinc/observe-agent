@@ -5,7 +5,7 @@ import (
 	"embed"
 
 	"github.com/observeinc/observe-agent/internal/commands/start"
-	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/otelcol"
