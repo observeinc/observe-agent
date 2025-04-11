@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/stretchr/testify/suite"
 )

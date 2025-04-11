@@ -34,7 +34,7 @@ func TestGetAgentStatusFromHealthcheck(t *testing.T) {
 			}))
 			defer server.Close()
 
-			status, err := GetAgentStatusFromHealthcheck(server.URL)
+			status, err := GetAgentStatusFromHealthcheck(server.URL, "/status")
 			if err != nil {
 				t.Error(err)
 			}

@@ -1,4 +1,4 @@
 extensions:
   health_check:
-    endpoint: 'localhost:13133'
-    path: '/status'
+    endpoint: {{ .HealthCheck.Endpoint }}
+    path: {{ .HealthCheck.Path }}

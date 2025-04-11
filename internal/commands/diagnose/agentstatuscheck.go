@@ -4,6 +4,7 @@ import (
 	"embed"
 
 	"github.com/observeinc/observe-agent/internal/commands/status"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 )
 
@@ -13,8 +14,12 @@ type StatusTestResult struct {
 	Error        string
 }
 
-func checkStatus(_ *viper.Viper) (bool, any, error) {
-	data, err := status.GetStatusData()
+func checkStatus(v *viper.Viper) (bool, any, error) {
+	conf, err := config.AgentConfigFromViper(v)
+	if err != nil {
+		return false, StatusTestResult{Error: err.Error()}, err
+	}
+	data, err := status.GetStatusData(conf)
 	if err != nil {
 		return false, StatusTestResult{
 			Passed:       false,
