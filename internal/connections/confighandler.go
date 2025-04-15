@@ -3,12 +3,13 @@ package connections
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
-	logger "github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -66,17 +67,9 @@ func SetEnvVars() error {
 	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:
 	// "${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity"
 	// without worrying about a double slash.
-	if collector_url[len(collector_url)-1] == '/' {
-		collector_url = collector_url[:len(collector_url)-1]
-	}
-	otelEndpoint, err := url.JoinPath(collector_url, "/v2/otel")
-	if err != nil {
-		return err
-	}
-	promEndpoint, err := url.JoinPath(collector_url, "/v1/prometheus")
-	if err != nil {
-		return err
-	}
+	collector_url = strings.TrimRight(collector_url, "/")
+	otelEndpoint := util.JoinUrl(collector_url, "/v2/otel")
+	promEndpoint := util.JoinUrl(collector_url, "/v1/prometheus")
 	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
 	os.Setenv("OBSERVE_COLLECTOR_URL", collector_url)
 	os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint)

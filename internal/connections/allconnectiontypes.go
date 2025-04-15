@@ -1,6 +1,8 @@
 package connections
 
-import "github.com/observeinc/observe-agent/internal/config"
+import (
+	"github.com/observeinc/observe-agent/internal/config"
+)
 
 var AllConnectionTypes = []*ConnectionType{
 	CommonConnectionType,
@@ -32,6 +34,12 @@ var CommonConnectionType = MakeConnectionType(
 				return agentConfig.HealthCheck.Enabled
 			},
 			colConfigFilePath: "health_check.yaml.tmpl",
+		},
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.InternalTelemetry.Enabled
+			},
+			colConfigFilePath: "internal_telemetry.yaml.tmpl",
 		},
 	},
 )

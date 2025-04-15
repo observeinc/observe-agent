@@ -34,7 +34,7 @@ func TestGetAgentStatusFromHealthcheck(t *testing.T) {
 			}))
 			defer server.Close()
 
-			status, err := GetAgentStatusFromHealthcheck(server.URL)
+			status, err := GetAgentStatusFromHealthcheck(server.URL, "/status")
 			if err != nil {
 				t.Error(err)
 			}
@@ -68,12 +68,12 @@ func TestGetAgentMetricsFromEndpoint(t *testing.T) {
 				MemoryUsed:            82.53125,
 				TotalSysMemory:        39.034195,
 				Uptime:                464.06854,
-				AvgServerResponseTime: 52.620693,
-				AvgClientResponseTime: 0.108959,
+				AvgClientResponseTime: 134.806,
+				AvgServerResponseTime: 0.12955001,
 				MetricsStats: DataTypeStats{
-					ReceiverAcceptedCount:   109812,
+					ReceiverAcceptedCount:   7066,
 					ReceiverRefusedCount:    0,
-					ExporterSentCount:       109905,
+					ExporterSentCount:       7210,
 					ExporterSendFailedCount: 0,
 				},
 				TracesStats: DataTypeStats{

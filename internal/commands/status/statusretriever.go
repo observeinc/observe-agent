@@ -1,12 +1,16 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/observeinc/observe-agent/internal/commands/util"
+	"github.com/observeinc/observe-agent/internal/config"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/shirou/gopsutil/v3/host"
@@ -68,16 +72,26 @@ func bToMb(b float32) float32 {
 	return b / 1024 / 1024
 }
 
-func GetAgentStatusFromHealthcheck(baseURL string) (AgentStatus, error) {
-	URL := fmt.Sprintf("%s/status", baseURL)
+func GetAgentStatusFromHealthcheck(baseURL string, path string) (AgentStatus, error) {
+	baseURL = util.ReplaceEnvString(baseURL)
+	path = util.ReplaceEnvString(path)
+	if len(path) == 0 || len(baseURL) == 0 {
+		return NotRunning, errors.New("health_check endpoint and path must be provided")
+	}
+	URL := util.JoinUrl(baseURL, path)
+	// The healthcheck extension is always http
+	if !strings.Contains(URL, "://") {
+		URL = "http://" + URL
+	}
+
 	c := &http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
-		return NotRunning, nil
+		return NotRunning, err
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return NotRunning, nil
+		return NotRunning, err
 	}
 	if resp.StatusCode == 200 {
 		return Running, nil
@@ -94,8 +108,22 @@ func getMetricsSum(metrics []*io_prometheus_client.Metric) float64 {
 	return sum
 }
 
+func GetAgentMetrics(conf *config.AgentConfig) (*AgentMetrics, error) {
+	host := util.ReplaceEnvString(conf.InternalTelemetry.Host)
+	if !strings.Contains(host, "://") {
+		host = "http://" + host
+	}
+	host = strings.TrimRight(host, ":/")
+	port := conf.InternalTelemetry.Port
+	baseURL := fmt.Sprintf("%s:%d", host, port)
+	return GetAgentMetricsFromEndpoint(baseURL)
+}
+
 func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
-	URL := fmt.Sprintf("%s/metrics", baseURL)
+	if len(baseURL) == 0 {
+		return nil, errors.New("metrics endpoint must be provided")
+	}
+	URL := util.JoinUrl(baseURL, "/metrics")
 	c := &http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
@@ -119,53 +147,53 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 		if v.Type.String() == io_prometheus_client.MetricType_HISTOGRAM.String() {
 			met := v.Metric[0]
 			switch name := *v.Name; name {
-			case "otelcol_http_client_duration":
-				agentMets.AvgServerResponseTime = float32(met.Histogram.GetSampleSum()) / float32(met.Histogram.GetSampleCount())
-			case "otelcol_http_server_duration":
+			case "http_client_duration_milliseconds":
 				agentMets.AvgClientResponseTime = float32(met.Histogram.GetSampleSum()) / float32(met.Histogram.GetSampleCount())
+			case "http_server_duration_milliseconds":
+				agentMets.AvgServerResponseTime = float32(met.Histogram.GetSampleSum()) / float32(met.Histogram.GetSampleCount())
 			default:
 			}
 		} else {
 			met := v.Metric[0]
 			switch name := *v.Name; name {
 			// Log-related metrics
-			case "otelcol_receiver_accepted_log_records":
+			case "otelcol_receiver_accepted_log_records_total":
 				agentMets.LogsStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_receiver_refused_log_records":
+			case "otelcol_receiver_refused_log_records_total":
 				agentMets.LogsStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_sent_log_records":
+			case "otelcol_exporter_sent_log_records_total":
 				agentMets.LogsStats.ExporterSentCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_send_failed_log_records":
+			case "otelcol_exporter_send_failed_log_records_total":
 				agentMets.LogsStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// Metric-related metrics
-			case "otelcol_receiver_accepted_metric_points":
+			case "otelcol_receiver_accepted_metric_points_total":
 				agentMets.MetricsStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_receiver_refused_metric_points":
+			case "otelcol_receiver_refused_metric_points_total":
 				agentMets.MetricsStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_sent_metric_points":
+			case "otelcol_exporter_sent_metric_points_total":
 				agentMets.MetricsStats.ExporterSentCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_send_failed_metric_points":
+			case "otelcol_exporter_send_failed_metric_points_total":
 				agentMets.MetricsStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// Trace-related metrics
-			case "otelcol_receiver_accepted_spans":
+			case "otelcol_receiver_accepted_spans_total":
 				agentMets.TracesStats.ReceiverAcceptedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_receiver_refused_spans":
+			case "otelcol_receiver_refused_spans_total":
 				agentMets.TracesStats.ReceiverRefusedCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_sent_spans":
+			case "otelcol_exporter_sent_spans_total":
 				agentMets.TracesStats.ExporterSentCount = int(getMetricsSum(v.Metric))
-			case "otelcol_exporter_send_failed_spans":
+			case "otelcol_exporter_send_failed_spans_total":
 				agentMets.TracesStats.ExporterSendFailedCount = int(getMetricsSum(v.Metric))
 
 			// General metrics
 			case "otelcol_exporter_queue_size":
 				agentMets.ExporterQueueSize = float32(met.Gauge.GetValue())
-			case "otelcol_process_cpu_seconds":
+			case "otelcol_process_cpu_seconds_total":
 				agentMets.CPUSeconds = float32(getMetricsSum(v.Metric))
-			case "otelcol_process_uptime":
+			case "otelcol_process_uptime_seconds_total":
 				agentMets.Uptime = float32(getMetricsSum(v.Metric))
-			case "otelcol_process_memory_rss":
+			case "otelcol_process_memory_rss_bytes":
 				agentMets.MemoryUsed = bToMb(float32(met.Gauge.GetValue()))
 			case "otelcol_process_runtime_total_sys_memory_bytes":
 				agentMets.TotalSysMemory = bToMb(float32(met.Gauge.GetValue()))
@@ -176,10 +204,10 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 	return &agentMets, nil
 }
 
-func GetStatusData() (*StatusData, error) {
-	agentMets, err := GetAgentMetricsFromEndpoint("http://localhost:8888")
+func GetStatusData(conf *config.AgentConfig) (*StatusData, error) {
+	agentMets, err := GetAgentMetrics(conf)
 	if err != nil {
-		fmt.Println("Error getting agent metrics: ", err)
+		fmt.Fprintln(os.Stderr, "Error getting agent metrics: ", err)
 		agentMets = &AgentMetrics{}
 	}
 	hostInfo, err := host.Info()
@@ -195,8 +223,9 @@ func GetStatusData() (*StatusData, error) {
 	if err != nil {
 		uptime = time.Duration(0)
 	}
-	status, err := GetAgentStatusFromHealthcheck("http://localhost:13133")
+	status, err := GetAgentStatusFromHealthcheck(conf.HealthCheck.Endpoint, conf.HealthCheck.Path)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error receiving data from agent health check: ", err)
 		status = NotRunning
 	}
 

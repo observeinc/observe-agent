@@ -8,9 +8,11 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const statusTemplate = "status.tmpl"
@@ -20,22 +22,29 @@ var (
 	statusTemplateFS embed.FS
 )
 
-// statusCmd represents the status command
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Display status of agent",
-	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		getStatusFromTemplate()
-	},
+func NewStatusCmd(v *viper.Viper) *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Display status of agent",
+		Long:  ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			getStatusFromTemplate(v)
+		},
+	}
 }
 
 func init() {
+	v := viper.GetViper()
+	statusCmd := NewStatusCmd(v)
 	root.RootCmd.AddCommand(statusCmd)
 }
 
-func getStatusFromTemplate() error {
-	data, err := GetStatusData()
+func getStatusFromTemplate(v *viper.Viper) error {
+	conf, err := config.AgentConfigFromViper(v)
+	if err != nil {
+		return err
+	}
+	data, err := GetStatusData(conf)
 	if err != nil {
 		return err
 	}
