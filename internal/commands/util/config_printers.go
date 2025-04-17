@@ -26,7 +26,13 @@ func PrintAllConfigsIndividually(configFilePaths []string) error {
 	if err != nil {
 		return err
 	}
-	agentConfigYaml, err := yaml.Marshal(agentConfig)
+	// Use mapstructure as an intermediary so all values are printed.
+	var agentConfigMap map[string]any
+	err = mapstructure.Decode(agentConfig, &agentConfigMap)
+	if err != nil {
+		return err
+	}
+	agentConfigYaml, err := yaml.Marshal(&agentConfigMap)
 	if err != nil {
 		return err
 	}
