@@ -21,15 +21,16 @@ def _check_status_loop(
     Returns:
         bool: agent_status
     """
-
+    sleep_seconds = 1.5
     agent_status = False
+    time.sleep(sleep_seconds)
     for _ in range(start_timeout):
         metrics_dict = defaultdict(list)
         try:
             result = remote_host.run_command(status_command)
         except Exception as e:
             print("Ignoring exception: ", e)
-            time.sleep(1)
+            time.sleep(sleep_seconds)
             continue
         for line in result.stdout.splitlines():
             if ":" in line:
@@ -47,7 +48,7 @@ def _check_status_loop(
                 _ + 1, start_timeout
             )
         )
-        time.sleep(1)
+        time.sleep(sleep_seconds)
     return agent_status
 
 
@@ -65,7 +66,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     # status
     start_command = r".\start_agent_windows.ps1"
     status_command = r'Get-Service ObserveAgent;Set-Location "${Env:Programfiles}\Observe\observe-agent"; ./observe-agent status'
-    start_timeout = 30  # how long to wait for observe-agent to start
+    start_timeout = 10  # how many times to check for the running agent
 
     # Get windows home dir paths for consistency
     home_dir = r"/C:/Users/{}".format(env_vars["user"])  # for user in sftp
@@ -82,7 +83,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     )  # Eg: sftp to /C:/Users/Adminstrator/install_windows.ps1
     # Run start_agent script
     result = remote_host.run_command(start_command)
-    print(result)
+    u.print_remote_result(result)
 
     if (
         result.stderr
@@ -99,11 +100,12 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     docker_prefix = u.get_docker_prefix(remote_host, True)
     start_command = "start"
-    start_timeout = 30  # how long to wait for observe-agent to start
+    start_timeout = 10  # how many times to check for the running agent
 
     # Start Observe Agent
     result = remote_host.run_command(docker_prefix + " " + start_command)
     if result.stderr:
+        u.print_remote_result(result)
         u.die("❌ Error starting observe-agent container")
     else:
         print("✅ Observe Agent started successfully: " + result.stdout)
@@ -131,14 +133,19 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
 
     start_command = "sudo systemctl enable --now observe-agent"
     status_command = "observe-agent status"
-    start_timeout = 30  # how long to wait for observe-agent to start
+    start_timeout = 10  # how many times to check for the running agent
 
     # Start Observe Agent
-    remote_host.run_command(start_command)
+    result = remote_host.run_command(start_command)
+    u.print_remote_result(result)
 
     # Check Agent Status
     agent_status = _check_status_loop(remote_host, start_timeout, status_command)
     if not agent_status:
+        # If the agent never started up, try running start to see what the error is. Use unsafe because we expect a non-zero exit code.
+        u.print_remote_result(
+            remote_host.run_command_unsafe("timeout 10s sudo observe-agent start")
+        )
         u.die("❌ Error in Observe Agent Status Test ")
 
 
