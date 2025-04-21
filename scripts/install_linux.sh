@@ -94,6 +94,9 @@ sudo cp -f $tmp_dir/observe-agent $agent_binary_path
 
 # Copy all config files to the proper dir.
 sudo rm -rf $observeagent_config_dir/otel-collector.yaml $observeagent_config_dir/connections
+if [ -f $tmp_dir/otel-collector.yaml ]; then
+    sudo cp -f $tmp_dir/otel-collector.yaml $observeagent_config_dir/otel-collector.yaml
+fi
 sudo cp -fR $tmp_dir/connections $observeagent_config_dir/connections
 sudo chown -R root:root $observeagent_config_dir
 
