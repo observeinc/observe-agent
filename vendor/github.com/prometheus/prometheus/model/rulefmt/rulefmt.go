@@ -92,7 +92,7 @@ type RuleGroups struct {
 }
 
 type ruleGroups struct {
-	Groups []ruleGroupNode `yaml:"groups"`
+	Groups []yaml.Node `yaml:"groups"`
 }
 
 // Validate validates all rules in the rule groups.
@@ -128,9 +128,9 @@ func (g *RuleGroups) Validate(node ruleGroups) (errs []error) {
 		set[g.Name] = struct{}{}
 
 		for i, r := range g.Rules {
-			for _, node := range r.Validate(node.Groups[j].Rules[i]) {
-				var ruleName string
-				if r.Alert != "" {
+			for _, node := range g.Rules[i].Validate() {
+				var ruleName yaml.Node
+				if r.Alert.Value != "" {
 					ruleName = r.Alert
 				} else {
 					ruleName = r.Record
@@ -138,7 +138,7 @@ func (g *RuleGroups) Validate(node ruleGroups) (errs []error) {
 				errs = append(errs, &Error{
 					Group:    g.Name,
 					Rule:     i + 1,
-					RuleName: ruleName,
+					RuleName: ruleName.Value,
 					Err:      node,
 				})
 			}
@@ -154,18 +154,7 @@ type RuleGroup struct {
 	Interval    model.Duration    `yaml:"interval,omitempty"`
 	QueryOffset *model.Duration   `yaml:"query_offset,omitempty"`
 	Limit       int               `yaml:"limit,omitempty"`
-	Rules       []Rule            `yaml:"rules"`
-	Labels      map[string]string `yaml:"labels,omitempty"`
-}
-
-// ruleGroupNode adds yaml.v3 layer to support line and columns outputs for invalid rule groups.
-type ruleGroupNode struct {
-	yaml.Node
-	Name        string            `yaml:"name"`
-	Interval    model.Duration    `yaml:"interval,omitempty"`
-	QueryOffset *model.Duration   `yaml:"query_offset,omitempty"`
-	Limit       int               `yaml:"limit,omitempty"`
-	Rules       []ruleNode        `yaml:"rules"`
+	Rules       []RuleNode        `yaml:"rules"`
 	Labels      map[string]string `yaml:"labels,omitempty"`
 }
 
@@ -180,8 +169,8 @@ type Rule struct {
 	Annotations   map[string]string `yaml:"annotations,omitempty"`
 }
 
-// ruleNode adds yaml.v3 layer to support line and column outputs for invalid rules.
-type ruleNode struct {
+// RuleNode adds yaml.v3 layer to support line and column outputs for invalid rules.
+type RuleNode struct {
 	Record        yaml.Node         `yaml:"record,omitempty"`
 	Alert         yaml.Node         `yaml:"alert,omitempty"`
 	Expr          yaml.Node         `yaml:"expr"`
@@ -192,64 +181,56 @@ type ruleNode struct {
 }
 
 // Validate the rule and return a list of encountered errors.
-func (r *Rule) Validate(node ruleNode) (nodes []WrappedError) {
-	if r.Record != "" && r.Alert != "" {
+func (r *RuleNode) Validate() (nodes []WrappedError) {
+	if r.Record.Value != "" && r.Alert.Value != "" {
 		nodes = append(nodes, WrappedError{
-			err:     errors.New("only one of 'record' and 'alert' must be set"),
-			node:    &node.Record,
-			nodeAlt: &node.Alert,
+			err:     fmt.Errorf("only one of 'record' and 'alert' must be set"),
+			node:    &r.Record,
+			nodeAlt: &r.Alert,
 		})
 	}
-	if r.Record == "" && r.Alert == "" {
+	if r.Record.Value == "" && r.Alert.Value == "" {
 		nodes = append(nodes, WrappedError{
-			err:     errors.New("one of 'record' or 'alert' must be set"),
-			node:    &node.Record,
-			nodeAlt: &node.Alert,
+			err:     fmt.Errorf("one of 'record' or 'alert' must be set"),
+			node:    &r.Record,
+			nodeAlt: &r.Alert,
 		})
 	}
 
-	if r.Expr == "" {
+	if r.Expr.Value == "" {
 		nodes = append(nodes, WrappedError{
-			err:  errors.New("field 'expr' must be set in rule"),
-			node: &node.Expr,
+			err:  fmt.Errorf("field 'expr' must be set in rule"),
+			node: &r.Expr,
 		})
-	} else if _, err := parser.ParseExpr(r.Expr); err != nil {
+	} else if _, err := parser.ParseExpr(r.Expr.Value); err != nil {
 		nodes = append(nodes, WrappedError{
 			err:  fmt.Errorf("could not parse expression: %w", err),
-			node: &node.Expr,
+			node: &r.Expr,
 		})
 	}
-	if r.Record != "" {
+	if r.Record.Value != "" {
 		if len(r.Annotations) > 0 {
 			nodes = append(nodes, WrappedError{
-				err:  errors.New("invalid field 'annotations' in recording rule"),
-				node: &node.Record,
+				err:  fmt.Errorf("invalid field 'annotations' in recording rule"),
+				node: &r.Record,
 			})
 		}
 		if r.For != 0 {
 			nodes = append(nodes, WrappedError{
-				err:  errors.New("invalid field 'for' in recording rule"),
-				node: &node.Record,
+				err:  fmt.Errorf("invalid field 'for' in recording rule"),
+				node: &r.Record,
 			})
 		}
 		if r.KeepFiringFor != 0 {
 			nodes = append(nodes, WrappedError{
-				err:  errors.New("invalid field 'keep_firing_for' in recording rule"),
-				node: &node.Record,
+				err:  fmt.Errorf("invalid field 'keep_firing_for' in recording rule"),
+				node: &r.Record,
 			})
 		}
-		if !model.IsValidMetricName(model.LabelValue(r.Record)) {
+		if !model.IsValidMetricName(model.LabelValue(r.Record.Value)) {
 			nodes = append(nodes, WrappedError{
-				err:  fmt.Errorf("invalid recording rule name: %s", r.Record),
-				node: &node.Record,
-			})
-		}
-		// While record is a valid UTF-8 it's common mistake to put PromQL expression in the record name.
-		// Disallow "{}" chars.
-		if strings.Contains(r.Record, "{") || strings.Contains(r.Record, "}") {
-			nodes = append(nodes, WrappedError{
-				err:  fmt.Errorf("braces present in the recording rule name; should it be in expr?: %s", r.Record),
-				node: &node.Record,
+				err:  fmt.Errorf("invalid recording rule name: %s", r.Record.Value),
+				node: &r.Record,
 			})
 		}
 	}
@@ -285,8 +266,8 @@ func (r *Rule) Validate(node ruleNode) (nodes []WrappedError) {
 
 // testTemplateParsing checks if the templates used in labels and annotations
 // of the alerting rules are parsed correctly.
-func testTemplateParsing(rl *Rule) (errs []error) {
-	if rl.Alert == "" {
+func testTemplateParsing(rl *RuleNode) (errs []error) {
+	if rl.Alert.Value == "" {
 		// Not an alerting rule.
 		return errs
 	}
@@ -303,7 +284,7 @@ func testTemplateParsing(rl *Rule) (errs []error) {
 		tmpl := template.NewTemplateExpander(
 			context.TODO(),
 			strings.Join(append(defs, text), ""),
-			"__alert_"+rl.Alert,
+			"__alert_"+rl.Alert.Value,
 			tmplData,
 			model.Time(timestamp.FromTime(time.Now())),
 			nil,
@@ -333,7 +314,7 @@ func testTemplateParsing(rl *Rule) (errs []error) {
 }
 
 // Parse parses and validates a set of rules.
-func Parse(content []byte, ignoreUnknownFields bool) (*RuleGroups, []error) {
+func Parse(content []byte) (*RuleGroups, []error) {
 	var (
 		groups RuleGroups
 		node   ruleGroups
@@ -341,9 +322,7 @@ func Parse(content []byte, ignoreUnknownFields bool) (*RuleGroups, []error) {
 	)
 
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
-	if !ignoreUnknownFields {
-		decoder.KnownFields(true)
-	}
+	decoder.KnownFields(true)
 	err := decoder.Decode(&groups)
 	// Ignore io.EOF which happens with empty input.
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -362,12 +341,12 @@ func Parse(content []byte, ignoreUnknownFields bool) (*RuleGroups, []error) {
 }
 
 // ParseFile reads and parses rules from a file.
-func ParseFile(file string, ignoreUnknownFields bool) (*RuleGroups, []error) {
+func ParseFile(file string) (*RuleGroups, []error) {
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return nil, []error{fmt.Errorf("%s: %w", file, err)}
 	}
-	rgs, errs := Parse(b, ignoreUnknownFields)
+	rgs, errs := Parse(b)
 	for i := range errs {
 		errs[i] = fmt.Errorf("%s: %w", file, errs[i])
 	}

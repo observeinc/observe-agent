@@ -94,6 +94,8 @@ type Options struct {
 	skipOffsetting bool
 }
 
+const DefaultNameEscapingScheme = model.ValueEncodingEscaping
+
 // Manager maintains a set of scrape pools and manages start/stop cycles
 // when receiving new target groups from the discovery manager.
 type Manager struct {
@@ -107,7 +109,7 @@ type Manager struct {
 	scrapeConfigs          map[string]*config.ScrapeConfig
 	scrapePools            map[string]*scrapePool
 	newScrapeFailureLogger func(string) (*logging.JSONFileLogger, error)
-	scrapeFailureLoggers   map[string]FailureLogger
+	scrapeFailureLoggers   map[string]*logging.JSONFileLogger
 	targetSets             map[string][]*targetgroup.Group
 	buffers                *pool.Pool
 
@@ -249,7 +251,7 @@ func (m *Manager) ApplyConfig(cfg *config.Config) error {
 	}
 
 	c := make(map[string]*config.ScrapeConfig)
-	scrapeFailureLoggers := map[string]FailureLogger{
+	scrapeFailureLoggers := map[string]*logging.JSONFileLogger{
 		"": nil, // Emptying the file name sets the scrape logger to nil.
 	}
 	for _, scfg := range scfgs {
@@ -257,7 +259,7 @@ func (m *Manager) ApplyConfig(cfg *config.Config) error {
 		if _, ok := scrapeFailureLoggers[scfg.ScrapeFailureLogFile]; !ok {
 			// We promise to reopen the file on each reload.
 			var (
-				logger FailureLogger
+				logger *logging.JSONFileLogger
 				err    error
 			)
 			if m.newScrapeFailureLogger != nil {

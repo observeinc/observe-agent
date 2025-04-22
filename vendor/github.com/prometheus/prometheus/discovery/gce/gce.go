@@ -83,7 +83,7 @@ type SDConfig struct {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &gceMetrics{
 		refreshMetrics: rmi,
 	}
@@ -132,7 +132,7 @@ type Discovery struct {
 func NewDiscovery(conf SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*gceMetrics)
 	if !ok {
-		return nil, errors.New("invalid discovery metrics type")
+		return nil, fmt.Errorf("invalid discovery metrics type")
 	}
 
 	d := &Discovery{

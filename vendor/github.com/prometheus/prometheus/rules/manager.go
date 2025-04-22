@@ -82,7 +82,6 @@ func DefaultEvalIterationFunc(ctx context.Context, g *Group, evalTimestamp time.
 	timeSinceStart := time.Since(start)
 
 	g.metrics.IterationDuration.Observe(timeSinceStart.Seconds())
-	g.updateRuleEvaluationTimeSum()
 	g.setEvaluationTime(timeSinceStart)
 	g.setLastEvaluation(start)
 	g.setLastEvalTimestamp(evalTimestamp)
@@ -90,13 +89,12 @@ func DefaultEvalIterationFunc(ctx context.Context, g *Group, evalTimestamp time.
 
 // The Manager manages recording and alerting rules.
 type Manager struct {
-	opts                 *ManagerOptions
-	groups               map[string]*Group
-	mtx                  sync.RWMutex
-	block                chan struct{}
-	done                 chan struct{}
-	restored             bool
-	restoreNewRuleGroups bool
+	opts     *ManagerOptions
+	groups   map[string]*Group
+	mtx      sync.RWMutex
+	block    chan struct{}
+	done     chan struct{}
+	restored bool
 
 	logger *slog.Logger
 }
@@ -123,10 +121,6 @@ type ManagerOptions struct {
 	ConcurrentEvalsEnabled    bool
 	RuleConcurrencyController RuleConcurrencyController
 	RuleDependencyController  RuleDependencyController
-	// At present, manager only restores `for` state when manager is newly created which happens
-	// during restarts. This flag provides an option to restore the `for` state when new rule groups are
-	// added to an existing manager
-	RestoreNewRuleGroups bool
 
 	Metrics *Metrics
 }
@@ -159,12 +153,11 @@ func NewManager(o *ManagerOptions) *Manager {
 	}
 
 	m := &Manager{
-		groups:               map[string]*Group{},
-		opts:                 o,
-		block:                make(chan struct{}),
-		done:                 make(chan struct{}),
-		logger:               o.Logger,
-		restoreNewRuleGroups: o.RestoreNewRuleGroups,
+		groups: map[string]*Group{},
+		opts:   o,
+		block:  make(chan struct{}),
+		done:   make(chan struct{}),
+		logger: o.Logger,
 	}
 
 	return m
@@ -188,14 +181,8 @@ func (m *Manager) Stop() {
 
 	m.logger.Info("Stopping rule manager...")
 
-	// Stop all groups asynchronously, then wait for them to finish.
-	// This is faster than stopping and waiting for each group in sequence.
 	for _, eg := range m.groups {
-		eg.stopAsync()
-	}
-
-	for _, eg := range m.groups {
-		eg.waitStopped()
+		eg.stop()
 	}
 
 	// Shut down the groups waiting multiple evaluation intervals to write
@@ -219,7 +206,7 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 	default:
 	}
 
-	groups, errs := m.LoadGroups(interval, externalLabels, externalURL, groupEvalIterationFunc, false, files...)
+	groups, errs := m.LoadGroups(interval, externalLabels, externalURL, groupEvalIterationFunc, files...)
 
 	if errs != nil {
 		for _, e := range errs {
@@ -288,7 +275,7 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 
 // GroupLoader is responsible for loading rule groups from arbitrary sources and parsing them.
 type GroupLoader interface {
-	Load(identifier string, ignoreUnknownFields bool) (*rulefmt.RuleGroups, []error)
+	Load(identifier string) (*rulefmt.RuleGroups, []error)
 	Parse(query string) (parser.Expr, error)
 }
 
@@ -296,22 +283,22 @@ type GroupLoader interface {
 // and parser.ParseExpr.
 type FileLoader struct{}
 
-func (FileLoader) Load(identifier string, ignoreUnknownFields bool) (*rulefmt.RuleGroups, []error) {
-	return rulefmt.ParseFile(identifier, ignoreUnknownFields)
+func (FileLoader) Load(identifier string) (*rulefmt.RuleGroups, []error) {
+	return rulefmt.ParseFile(identifier)
 }
 
 func (FileLoader) Parse(query string) (parser.Expr, error) { return parser.ParseExpr(query) }
 
 // LoadGroups reads groups from a list of files.
 func (m *Manager) LoadGroups(
-	interval time.Duration, externalLabels labels.Labels, externalURL string, groupEvalIterationFunc GroupEvalIterationFunc, ignoreUnknownFields bool, filenames ...string,
+	interval time.Duration, externalLabels labels.Labels, externalURL string, groupEvalIterationFunc GroupEvalIterationFunc, filenames ...string,
 ) (map[string]*Group, []error) {
 	groups := make(map[string]*Group)
 
-	shouldRestore := !m.restored || m.restoreNewRuleGroups
+	shouldRestore := !m.restored
 
 	for _, fn := range filenames {
-		rgs, errs := m.opts.GroupLoader.Load(fn, ignoreUnknownFields)
+		rgs, errs := m.opts.GroupLoader.Load(fn)
 		if errs != nil {
 			return nil, errs
 		}
@@ -324,16 +311,16 @@ func (m *Manager) LoadGroups(
 
 			rules := make([]Rule, 0, len(rg.Rules))
 			for _, r := range rg.Rules {
-				expr, err := m.opts.GroupLoader.Parse(r.Expr)
+				expr, err := m.opts.GroupLoader.Parse(r.Expr.Value)
 				if err != nil {
 					return nil, []error{fmt.Errorf("%s: %w", fn, err)}
 				}
 
 				mLabels := FromMaps(rg.Labels, r.Labels)
 
-				if r.Alert != "" {
+				if r.Alert.Value != "" {
 					rules = append(rules, NewAlertingRule(
-						r.Alert,
+						r.Alert.Value,
 						expr,
 						time.Duration(r.For),
 						time.Duration(r.KeepFiringFor),
@@ -341,13 +328,13 @@ func (m *Manager) LoadGroups(
 						labels.FromMap(r.Annotations),
 						externalLabels,
 						externalURL,
-						!shouldRestore,
+						m.restored,
 						m.logger.With("alert", r.Alert),
 					))
 					continue
 				}
 				rules = append(rules, NewRecordingRule(
-					r.Record,
+					r.Record.Value,
 					expr,
 					mLabels,
 				))
@@ -429,7 +416,7 @@ type Sender interface {
 
 // SendAlerts implements the rules.NotifyFunc for a Notifier.
 func SendAlerts(s Sender, externalURL string) NotifyFunc {
-	return func(_ context.Context, expr string, alerts ...*Alert) {
+	return func(ctx context.Context, expr string, alerts ...*Alert) {
 		var res []*notifier.Alert
 
 		for _, alert := range alerts {
@@ -456,8 +443,8 @@ func SendAlerts(s Sender, externalURL string) NotifyFunc {
 // RuleDependencyController controls whether a set of rules have dependencies between each other.
 type RuleDependencyController interface {
 	// AnalyseRules analyses dependencies between the input rules. For each rule that it's guaranteed
-	// not having any dependants and/or dependency, this function should call Rule.SetDependentRules(...)
-	// and/or Rule.SetDependencyRules(...).
+	// not having any dependants and/or dependency, this function should call Rule.SetNoDependentRules(true)
+	// and/or Rule.SetNoDependencyRules(true).
 	AnalyseRules(rules []Rule)
 }
 
@@ -466,28 +453,16 @@ type ruleDependencyController struct{}
 // AnalyseRules implements RuleDependencyController.
 func (c ruleDependencyController) AnalyseRules(rules []Rule) {
 	depMap := buildDependencyMap(rules)
-
-	if depMap == nil {
-		return
-	}
-
 	for _, r := range rules {
-		r.SetDependentRules(depMap.dependents(r))
-		r.SetDependencyRules(depMap.dependencies(r))
+		r.SetNoDependentRules(depMap.dependents(r) == 0)
+		r.SetNoDependencyRules(depMap.dependencies(r) == 0)
 	}
 }
-
-// ConcurrentRules represents a slice of indexes of rules that can be evaluated concurrently.
-type ConcurrentRules []int
 
 // RuleConcurrencyController controls concurrency for rules that are safe to be evaluated concurrently.
 // Its purpose is to bound the amount of concurrency in rule evaluations to avoid overwhelming the Prometheus
 // server with additional query load. Concurrency is controlled globally, not on a per-group basis.
 type RuleConcurrencyController interface {
-	// SplitGroupIntoBatches returns an ordered slice of of ConcurrentRules, which are batches of rules that can be evaluated concurrently.
-	// The rules are represented by their index from the input rule group.
-	SplitGroupIntoBatches(ctx context.Context, group *Group) []ConcurrentRules
-
 	// Allow determines if the given rule is allowed to be evaluated concurrently.
 	// If Allow() returns true, then Done() must be called to release the acquired slot and corresponding cleanup is done.
 	// It is important that both *Group and Rule are not retained and only be used for the duration of the call.
@@ -508,61 +483,27 @@ func newRuleConcurrencyController(maxConcurrency int64) RuleConcurrencyControlle
 	}
 }
 
-func (c *concurrentRuleEvalController) Allow(_ context.Context, _ *Group, _ Rule) bool {
-	return c.sema.TryAcquire(1)
-}
-
-func (c *concurrentRuleEvalController) SplitGroupIntoBatches(_ context.Context, g *Group) []ConcurrentRules {
-	// Using the rule dependency controller information (rules being identified as having no dependencies or no dependants),
-	// we can safely run the following concurrent groups:
-	// 1. Concurrently, all rules that have no dependencies
-	// 2. Sequentially, all rules that have both dependencies and dependants
-	// 3. Concurrently, all rules that have no dependants
-
-	var noDependencies []int
-	var dependenciesAndDependants []int
-	var noDependants []int
-
-	for i, r := range g.rules {
-		switch {
-		case r.NoDependencyRules():
-			noDependencies = append(noDependencies, i)
-		case !r.NoDependentRules() && !r.NoDependencyRules():
-			dependenciesAndDependants = append(dependenciesAndDependants, i)
-		case r.NoDependentRules():
-			noDependants = append(noDependants, i)
-		}
+func (c *concurrentRuleEvalController) Allow(_ context.Context, _ *Group, rule Rule) bool {
+	// To allow a rule to be executed concurrently, we need 3 conditions:
+	// 1. The rule must not have any rules that depend on it.
+	// 2. The rule itself must not depend on any other rules.
+	// 3. If 1 & 2 are true, then and only then we should try to acquire the concurrency slot.
+	if rule.NoDependentRules() && rule.NoDependencyRules() {
+		return c.sema.TryAcquire(1)
 	}
 
-	var order []ConcurrentRules
-	if len(noDependencies) > 0 {
-		order = append(order, noDependencies)
-	}
-	for _, r := range dependenciesAndDependants {
-		order = append(order, []int{r})
-	}
-	if len(noDependants) > 0 {
-		order = append(order, noDependants)
-	}
-
-	return order
+	return false
 }
 
 func (c *concurrentRuleEvalController) Done(_ context.Context) {
 	c.sema.Release(1)
 }
 
-var _ RuleConcurrencyController = &sequentialRuleEvalController{}
-
 // sequentialRuleEvalController is a RuleConcurrencyController that runs every rule sequentially.
 type sequentialRuleEvalController struct{}
 
 func (c sequentialRuleEvalController) Allow(_ context.Context, _ *Group, _ Rule) bool {
 	return false
-}
-
-func (c sequentialRuleEvalController) SplitGroupIntoBatches(_ context.Context, _ *Group) []ConcurrentRules {
-	return nil
 }
 
 func (c sequentialRuleEvalController) Done(_ context.Context) {}

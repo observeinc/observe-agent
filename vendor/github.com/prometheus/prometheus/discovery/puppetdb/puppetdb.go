@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -64,7 +63,7 @@ var (
 		HTTPClientConfig: config.DefaultHTTPClientConfig,
 	}
 	matchContentType = regexp.MustCompile(`^(?i:application\/json(;\s*charset=("utf-8"|utf-8))?)$`)
-	userAgent        = version.PrometheusUserAgent()
+	userAgent        = fmt.Sprintf("Prometheus/%s", version.Version)
 )
 
 func init() {
@@ -82,7 +81,7 @@ type SDConfig struct {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &puppetdbMetrics{
 		refreshMetrics: rmi,
 	}
@@ -110,20 +109,20 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 	if c.URL == "" {
-		return errors.New("URL is missing")
+		return fmt.Errorf("URL is missing")
 	}
 	parsedURL, err := url.Parse(c.URL)
 	if err != nil {
 		return err
 	}
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return errors.New("URL scheme must be 'http' or 'https'")
+		return fmt.Errorf("URL scheme must be 'http' or 'https'")
 	}
 	if parsedURL.Host == "" {
-		return errors.New("host is missing in URL")
+		return fmt.Errorf("host is missing in URL")
 	}
 	if c.Query == "" {
-		return errors.New("query missing")
+		return fmt.Errorf("query missing")
 	}
 	return c.HTTPClientConfig.Validate()
 }
@@ -143,7 +142,7 @@ type Discovery struct {
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*puppetdbMetrics)
 	if !ok {
-		return nil, errors.New("invalid discovery metrics type")
+		return nil, fmt.Errorf("invalid discovery metrics type")
 	}
 
 	if logger == nil {

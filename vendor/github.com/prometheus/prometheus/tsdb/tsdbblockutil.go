@@ -15,7 +15,6 @@ package tsdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -24,7 +23,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
-var ErrInvalidTimes = errors.New("max time is lesser than min time")
+var ErrInvalidTimes = fmt.Errorf("max time is lesser than min time")
 
 // CreateBlock creates a chunkrange block from the samples passed to it, and writes it to disk.
 func CreateBlock(series []storage.Series, dir string, chunkRange int64, logger *slog.Logger) (string, error) {

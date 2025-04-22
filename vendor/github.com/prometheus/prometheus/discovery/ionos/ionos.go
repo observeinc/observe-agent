@@ -15,6 +15,7 @@ package ionos
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -45,7 +46,7 @@ type Discovery struct{}
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*refresh.Discovery, error) {
 	m, ok := metrics.(*ionosMetrics)
 	if !ok {
-		return nil, errors.New("invalid discovery metrics type")
+		return nil, fmt.Errorf("invalid discovery metrics type")
 	}
 
 	if conf.ionosEndpoint == "" {
@@ -89,7 +90,7 @@ type SDConfig struct {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &ionosMetrics{
 		refreshMetrics: rmi,
 	}

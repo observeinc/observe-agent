@@ -197,9 +197,11 @@ func (p *OpenMetricsParser) Comment() []byte {
 	return p.text
 }
 
-// Labels writes the labels of the current sample into the passed labels.
-func (p *OpenMetricsParser) Labels(l *labels.Labels) {
-	s := yoloString(p.series)
+// Metric writes the labels of the current sample into the passed labels.
+// It returns the string from which the metric was parsed.
+func (p *OpenMetricsParser) Metric(l *labels.Labels) string {
+	// Copy the buffer to a string: this is only necessary for the return value.
+	s := string(p.series)
 
 	p.builder.Reset()
 	metricName := unreplace(s[p.offsets[0]-p.start : p.offsets[1]-p.start])
@@ -218,6 +220,8 @@ func (p *OpenMetricsParser) Labels(l *labels.Labels) {
 
 	p.builder.Sort()
 	*l = p.builder.Labels()
+
+	return s
 }
 
 // Exemplar writes the exemplar of the current sample into the passed exemplar.
@@ -259,11 +263,11 @@ func (p *OpenMetricsParser) Exemplar(e *exemplar.Exemplar) bool {
 
 // CreatedTimestamp returns the created timestamp for a current Metric if exists or nil.
 // NOTE(Maniktherana): Might use additional CPU/mem resources due to deep copy of parser required for peeking given 1.0 OM specification on _created series.
-func (p *OpenMetricsParser) CreatedTimestamp() int64 {
+func (p *OpenMetricsParser) CreatedTimestamp() *int64 {
 	if !typeRequiresCT(p.mtype) {
 		// Not a CT supported metric type, fast path.
 		p.ctHashSet = 0 // Use ctHashSet as a single way of telling "empty cache"
-		return 0
+		return nil
 	}
 
 	var (
@@ -280,7 +284,7 @@ func (p *OpenMetricsParser) CreatedTimestamp() int64 {
 	currHash := p.seriesHash(&buf, currName)
 	// Check cache, perhaps we fetched something already.
 	if currHash == p.ctHashSet && p.ct > 0 {
-		return p.ct
+		return &p.ct
 	}
 
 	// Create a new lexer to reset the parser once this function is done executing.
@@ -310,12 +314,12 @@ func (p *OpenMetricsParser) CreatedTimestamp() int64 {
 			// spec improvement would help.
 			// TODO: Make sure OM 1.1/2.0 pass CT via metadata or exemplar-like to avoid this.
 			p.resetCTParseValues()
-			return 0
+			return nil
 		}
 		if eType != EntrySeries {
 			// Assume we hit different family, no CT line found.
 			p.resetCTParseValues()
-			return 0
+			return nil
 		}
 
 		peekedName := p.series[p.offsets[0]-p.start : p.offsets[1]-p.start]
@@ -329,14 +333,14 @@ func (p *OpenMetricsParser) CreatedTimestamp() int64 {
 		if peekedHash != currHash {
 			// Found CT line for a different series, for our series no CT.
 			p.resetCTParseValues()
-			return 0
+			return nil
 		}
 
 		// All timestamps in OpenMetrics are Unix Epoch in seconds. Convert to milliseconds.
-		// https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#timestamps
+		// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#timestamps
 		ct := int64(p.val * 1000.0)
 		p.setCTParseValues(ct, currHash, currName, true)
-		return ct
+		return &ct
 	}
 }
 
@@ -384,7 +388,7 @@ func (p *OpenMetricsParser) setCTParseValues(ct int64, ctHashSet uint64, mfName 
 	p.skipCTSeries = skipCTSeries // Do we need to set it?
 }
 
-// resetCTParseValues resets the parser to the state before CreatedTimestamp method was called.
+// resetCtParseValues resets the parser to the state before CreatedTimestamp method was called.
 func (p *OpenMetricsParser) resetCTParseValues() {
 	p.ctHashSet = 0
 	p.skipCTSeries = true

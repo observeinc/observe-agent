@@ -45,12 +45,12 @@ const (
 
 // Target refers to a singular HTTP or HTTPS endpoint.
 type Target struct {
+	// Labels before any processing.
+	discoveredLabels labels.Labels
 	// Any labels that are added to this target and its metrics.
 	labels labels.Labels
-	// ScrapeConfig used to create this target.
-	scrapeConfig *config.ScrapeConfig
-	// Target and TargetGroup labels used to create this target.
-	tLabels, tgLabels model.LabelSet
+	// Additional URL parameters that are part of the target URL.
+	params url.Values
 
 	mtx                sync.RWMutex
 	lastError          error
@@ -61,13 +61,12 @@ type Target struct {
 }
 
 // NewTarget creates a reasonably configured target for querying.
-func NewTarget(labels labels.Labels, scrapeConfig *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) *Target {
+func NewTarget(labels, discoveredLabels labels.Labels, params url.Values) *Target {
 	return &Target{
-		labels:       labels,
-		tLabels:      tLabels,
-		tgLabels:     tgLabels,
-		scrapeConfig: scrapeConfig,
-		health:       HealthUnknown,
+		labels:           labels,
+		discoveredLabels: discoveredLabels,
+		params:           params,
+		health:           HealthUnknown,
 	}
 }
 
@@ -78,17 +77,17 @@ func (t *Target) String() string {
 // MetricMetadataStore represents a storage for metadata.
 type MetricMetadataStore interface {
 	ListMetadata() []MetricMetadata
-	GetMetadata(mfName string) (MetricMetadata, bool)
+	GetMetadata(metric string) (MetricMetadata, bool)
 	SizeMetadata() int
 	LengthMetadata() int
 }
 
-// MetricMetadata is a piece of metadata for a metric family.
+// MetricMetadata is a piece of metadata for a metric.
 type MetricMetadata struct {
-	MetricFamily string
-	Type         model.MetricType
-	Help         string
-	Unit         string
+	Metric string
+	Type   model.MetricType
+	Help   string
+	Unit   string
 }
 
 func (t *Target) ListMetadata() []MetricMetadata {
@@ -124,14 +123,14 @@ func (t *Target) LengthMetadata() int {
 }
 
 // GetMetadata returns type and help metadata for the given metric.
-func (t *Target) GetMetadata(mfName string) (MetricMetadata, bool) {
+func (t *Target) GetMetadata(metric string) (MetricMetadata, bool) {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
 
 	if t.metadata == nil {
 		return MetricMetadata{}, false
 	}
-	return t.metadata.GetMetadata(mfName)
+	return t.metadata.GetMetadata(metric)
 }
 
 func (t *Target) SetMetadataStore(s MetricMetadataStore) {
@@ -169,11 +168,11 @@ func (t *Target) offset(interval time.Duration, offsetSeed uint64) time.Duration
 }
 
 // Labels returns a copy of the set of all public labels of the target.
-func (t *Target) Labels(b *labels.Builder) labels.Labels {
-	b.Reset(labels.EmptyLabels())
+func (t *Target) Labels(b *labels.ScratchBuilder) labels.Labels {
+	b.Reset()
 	t.labels.Range(func(l labels.Label) {
 		if !strings.HasPrefix(l.Name, model.ReservedLabelPrefix) {
-			b.Set(l.Name, l.Value)
+			b.Add(l.Name, l.Value)
 		}
 	})
 	return b.Labels()
@@ -189,31 +188,24 @@ func (t *Target) LabelsRange(f func(l labels.Label)) {
 }
 
 // DiscoveredLabels returns a copy of the target's labels before any processing.
-func (t *Target) DiscoveredLabels(lb *labels.Builder) labels.Labels {
-	t.mtx.Lock()
-	cfg, tLabels, tgLabels := t.scrapeConfig, t.tLabels, t.tgLabels
-	t.mtx.Unlock()
-	PopulateDiscoveredLabels(lb, cfg, tLabels, tgLabels)
-	return lb.Labels()
-}
-
-// SetScrapeConfig sets new ScrapeConfig.
-func (t *Target) SetScrapeConfig(scrapeConfig *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) {
+func (t *Target) DiscoveredLabels() labels.Labels {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
-	t.scrapeConfig = scrapeConfig
-	t.tLabels = tLabels
-	t.tgLabels = tgLabels
+	return t.discoveredLabels.Copy()
+}
+
+// SetDiscoveredLabels sets new DiscoveredLabels.
+func (t *Target) SetDiscoveredLabels(l labels.Labels) {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+	t.discoveredLabels = l
 }
 
 // URL returns a copy of the target's URL.
 func (t *Target) URL() *url.URL {
-	t.mtx.Lock()
-	configParams := t.scrapeConfig.Params
-	t.mtx.Unlock()
 	params := url.Values{}
 
-	for k, v := range configParams {
+	for k, v := range t.params {
 		params[k] = make([]string, len(v))
 		copy(params[k], v)
 	}
@@ -295,12 +287,12 @@ func (t *Target) intervalAndTimeout(defaultInterval, defaultDuration time.Durati
 	intervalLabel := t.labels.Get(model.ScrapeIntervalLabel)
 	interval, err := model.ParseDuration(intervalLabel)
 	if err != nil {
-		return defaultInterval, defaultDuration, fmt.Errorf("error parsing interval label %q: %w", intervalLabel, err)
+		return defaultInterval, defaultDuration, fmt.Errorf("Error parsing interval label %q: %w", intervalLabel, err)
 	}
 	timeoutLabel := t.labels.Get(model.ScrapeTimeoutLabel)
 	timeout, err := model.ParseDuration(timeoutLabel)
 	if err != nil {
-		return defaultInterval, defaultDuration, fmt.Errorf("error parsing timeout label %q: %w", timeoutLabel, err)
+		return defaultInterval, defaultDuration, fmt.Errorf("Error parsing timeout label %q: %w", timeoutLabel, err)
 	}
 
 	return time.Duration(interval), time.Duration(timeout), nil
@@ -428,19 +420,10 @@ func (app *maxSchemaAppender) AppendHistogram(ref storage.SeriesRef, lset labels
 	return ref, nil
 }
 
-// PopulateDiscoveredLabels sets base labels on lb from target and group labels and scrape configuration, before relabeling.
-func PopulateDiscoveredLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) {
-	lb.Reset(labels.EmptyLabels())
-
-	for ln, lv := range tLabels {
-		lb.Set(string(ln), string(lv))
-	}
-	for ln, lv := range tgLabels {
-		if _, ok := tLabels[ln]; !ok {
-			lb.Set(string(ln), string(lv))
-		}
-	}
-
+// PopulateLabels builds a label set from the given label set and scrape configuration.
+// It returns a label set before relabeling was applied as the second return value.
+// Returns the original discovered label set found before relabelling was applied if the target is dropped during relabeling.
+func PopulateLabels(lb *labels.Builder, cfg *config.ScrapeConfig) (res, orig labels.Labels, err error) {
 	// Copy labels into the labelset for the target if they are not set already.
 	scrapeLabels := []labels.Label{
 		{Name: model.JobLabel, Value: cfg.JobName},
@@ -461,49 +444,44 @@ func PopulateDiscoveredLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLab
 			lb.Set(name, v[0])
 		}
 	}
-}
 
-// PopulateLabels builds labels from target and group labels and scrape configuration,
-// performs defined relabeling, checks validity, and adds Prometheus standard labels such as 'instance'.
-// A return of empty labels and nil error means the target was dropped by relabeling.
-func PopulateLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) (res labels.Labels, err error) {
-	PopulateDiscoveredLabels(lb, cfg, tLabels, tgLabels)
+	preRelabelLabels := lb.Labels()
 	keep := relabel.ProcessBuilder(lb, cfg.RelabelConfigs...)
 
 	// Check if the target was dropped.
 	if !keep {
-		return labels.EmptyLabels(), nil
+		return labels.EmptyLabels(), preRelabelLabels, nil
 	}
 	if v := lb.Get(model.AddressLabel); v == "" {
-		return labels.EmptyLabels(), errors.New("no address")
+		return labels.EmptyLabels(), labels.EmptyLabels(), errors.New("no address")
 	}
 
 	addr := lb.Get(model.AddressLabel)
 
 	if err := config.CheckTargetAddress(model.LabelValue(addr)); err != nil {
-		return labels.EmptyLabels(), err
+		return labels.EmptyLabels(), labels.EmptyLabels(), err
 	}
 
 	interval := lb.Get(model.ScrapeIntervalLabel)
 	intervalDuration, err := model.ParseDuration(interval)
 	if err != nil {
-		return labels.EmptyLabels(), fmt.Errorf("error parsing scrape interval: %w", err)
+		return labels.EmptyLabels(), labels.EmptyLabels(), fmt.Errorf("error parsing scrape interval: %w", err)
 	}
 	if time.Duration(intervalDuration) == 0 {
-		return labels.EmptyLabels(), errors.New("scrape interval cannot be 0")
+		return labels.EmptyLabels(), labels.EmptyLabels(), errors.New("scrape interval cannot be 0")
 	}
 
 	timeout := lb.Get(model.ScrapeTimeoutLabel)
 	timeoutDuration, err := model.ParseDuration(timeout)
 	if err != nil {
-		return labels.EmptyLabels(), fmt.Errorf("error parsing scrape timeout: %w", err)
+		return labels.EmptyLabels(), labels.EmptyLabels(), fmt.Errorf("error parsing scrape timeout: %w", err)
 	}
 	if time.Duration(timeoutDuration) == 0 {
-		return labels.EmptyLabels(), errors.New("scrape timeout cannot be 0")
+		return labels.EmptyLabels(), labels.EmptyLabels(), errors.New("scrape timeout cannot be 0")
 	}
 
 	if timeoutDuration > intervalDuration {
-		return labels.EmptyLabels(), fmt.Errorf("scrape timeout cannot be greater than scrape interval (%q > %q)", timeout, interval)
+		return labels.EmptyLabels(), labels.EmptyLabels(), fmt.Errorf("scrape timeout cannot be greater than scrape interval (%q > %q)", timeout, interval)
 	}
 
 	// Meta labels are deleted after relabelling. Other internal labels propagate to
@@ -528,9 +506,9 @@ func PopulateLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLab
 		return nil
 	})
 	if err != nil {
-		return labels.EmptyLabels(), err
+		return labels.EmptyLabels(), labels.EmptyLabels(), err
 	}
-	return res, nil
+	return res, preRelabelLabels, nil
 }
 
 // TargetsFromGroup builds targets based on the given TargetGroup and config.
@@ -538,12 +516,24 @@ func TargetsFromGroup(tg *targetgroup.Group, cfg *config.ScrapeConfig, targets [
 	targets = targets[:0]
 	failures := []error{}
 
-	for i, tLabels := range tg.Targets {
-		lset, err := PopulateLabels(lb, cfg, tLabels, tg.Labels)
+	for i, tlset := range tg.Targets {
+		lb.Reset(labels.EmptyLabels())
+
+		for ln, lv := range tlset {
+			lb.Set(string(ln), string(lv))
+		}
+		for ln, lv := range tg.Labels {
+			if _, ok := tlset[ln]; !ok {
+				lb.Set(string(ln), string(lv))
+			}
+		}
+
+		lset, origLabels, err := PopulateLabels(lb, cfg)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("instance %d in group %s: %w", i, tg, err))
-		} else {
-			targets = append(targets, NewTarget(lset, cfg, tLabels, tg.Labels))
+		}
+		if !lset.IsEmpty() || !origLabels.IsEmpty() {
+			targets = append(targets, NewTarget(lset, origLabels, cfg.Params))
 		}
 	}
 	return targets, failures

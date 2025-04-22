@@ -16,22 +16,16 @@ package logging
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 
 	"github.com/prometheus/common/promslog"
 )
 
-var _ slog.Handler = (*JSONFileLogger)(nil)
-
-var _ io.Closer = (*JSONFileLogger)(nil)
-
-// JSONFileLogger represents a logger that writes JSON to a file. It implements
-// the slog.Handler interface, as well as the io.Closer interface.
+// JSONFileLogger represents a logger that writes JSON to a file. It implements the promql.QueryLogger interface.
 type JSONFileLogger struct {
-	handler slog.Handler
-	file    *os.File
+	logger *slog.Logger
+	file   *os.File
 }
 
 // NewJSONFileLogger returns a new JSONFileLogger.
@@ -48,47 +42,24 @@ func NewJSONFileLogger(s string) (*JSONFileLogger, error) {
 	jsonFmt := &promslog.AllowedFormat{}
 	_ = jsonFmt.Set("json")
 	return &JSONFileLogger{
-		handler: promslog.New(&promslog.Config{Format: jsonFmt, Writer: f}).Handler(),
-		file:    f,
+		logger: promslog.New(&promslog.Config{Format: jsonFmt, Writer: f}),
+		file:   f,
 	}, nil
 }
 
-// Close closes the underlying file. It implements the io.Closer interface.
+// Close closes the underlying file. It implements the promql.QueryLogger interface.
 func (l *JSONFileLogger) Close() error {
 	return l.file.Close()
 }
 
-// Enabled returns true if and only if the internal slog.Handler is enabled. It
-// implements the slog.Handler interface.
-func (l *JSONFileLogger) Enabled(ctx context.Context, level slog.Level) bool {
-	return l.handler.Enabled(ctx, level)
+// With calls the `With()` method on the underlying `log/slog.Logger` with the
+// provided msg and args. It implements the promql.QueryLogger interface.
+func (l *JSONFileLogger) With(args ...any) {
+	l.logger = l.logger.With(args...)
 }
 
-// Handle takes record created by an slog.Logger and forwards it to the
-// internal slog.Handler for dispatching the log call to the backing file. It
-// implements the slog.Handler interface.
-func (l *JSONFileLogger) Handle(ctx context.Context, r slog.Record) error {
-	return l.handler.Handle(ctx, r.Clone())
-}
-
-// WithAttrs returns a new *JSONFileLogger with a new internal handler that has
-// the provided attrs attached as attributes on all further log calls. It
-// implements the slog.Handler interface.
-func (l *JSONFileLogger) WithAttrs(attrs []slog.Attr) slog.Handler {
-	if len(attrs) == 0 {
-		return l
-	}
-
-	return &JSONFileLogger{file: l.file, handler: l.handler.WithAttrs(attrs)}
-}
-
-// WithGroup returns a new *JSONFileLogger with a new internal handler that has
-// the provided group name attached, to group all other attributes added to the
-// logger. It implements the slog.Handler interface.
-func (l *JSONFileLogger) WithGroup(name string) slog.Handler {
-	if name == "" {
-		return l
-	}
-
-	return &JSONFileLogger{file: l.file, handler: l.handler.WithGroup(name)}
+// Log calls the `Log()` method on the underlying `log/slog.Logger` with the
+// provided msg and args. It implements the promql.QueryLogger interface.
+func (l *JSONFileLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	l.logger.Log(ctx, level, msg, args...)
 }

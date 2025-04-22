@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 	"github.com/prometheus/prometheus/tsdb/tombstones"
 	"github.com/prometheus/prometheus/tsdb/wlog"
+	"github.com/prometheus/prometheus/util/zeropool"
 )
 
 // histogramRecord combines both RefHistogramSample and RefFloatHistogramSample
@@ -50,7 +51,7 @@ type histogramRecord struct {
 	fh  *histogram.FloatHistogram
 }
 
-func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[chunks.HeadSeriesRef]chunks.HeadSeriesRef, mmappedChunks, oooMmappedChunks map[chunks.HeadSeriesRef][]*mmappedChunk, lastSegment int) (err error) {
+func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[chunks.HeadSeriesRef]chunks.HeadSeriesRef, mmappedChunks, oooMmappedChunks map[chunks.HeadSeriesRef][]*mmappedChunk) (err error) {
 	// Track number of samples that referenced a series we don't know about
 	// for error reporting.
 	var unknownRefs atomic.Uint64
@@ -72,6 +73,14 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 
 		decoded                      = make(chan interface{}, 10)
 		decodeErr, seriesCreationErr error
+
+		seriesPool          zeropool.Pool[[]record.RefSeries]
+		samplesPool         zeropool.Pool[[]record.RefSample]
+		tstonesPool         zeropool.Pool[[]tombstones.Stone]
+		exemplarsPool       zeropool.Pool[[]record.RefExemplar]
+		histogramsPool      zeropool.Pool[[]record.RefHistogramSample]
+		floatHistogramsPool zeropool.Pool[[]record.RefFloatHistogramSample]
+		metadataPool        zeropool.Pool[[]record.RefMetadata]
 	)
 
 	defer func() {
@@ -131,7 +140,7 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 			rec := r.Record()
 			switch dec.Type(rec) {
 			case record.Series:
-				series := h.wlReplaySeriesPool.Get()[:0]
+				series := seriesPool.Get()[:0]
 				series, err = dec.Series(rec, series)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -143,7 +152,7 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				decoded <- series
 			case record.Samples:
-				samples := h.wlReplaySamplesPool.Get()[:0]
+				samples := samplesPool.Get()[:0]
 				samples, err = dec.Samples(rec, samples)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -155,7 +164,7 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				decoded <- samples
 			case record.Tombstones:
-				tstones := h.wlReplaytStonesPool.Get()[:0]
+				tstones := tstonesPool.Get()[:0]
 				tstones, err = dec.Tombstones(rec, tstones)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -167,7 +176,7 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				decoded <- tstones
 			case record.Exemplars:
-				exemplars := h.wlReplayExemplarsPool.Get()[:0]
+				exemplars := exemplarsPool.Get()[:0]
 				exemplars, err = dec.Exemplars(rec, exemplars)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -178,8 +187,8 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 					return
 				}
 				decoded <- exemplars
-			case record.HistogramSamples, record.CustomBucketsHistogramSamples:
-				hists := h.wlReplayHistogramsPool.Get()[:0]
+			case record.HistogramSamples:
+				hists := histogramsPool.Get()[:0]
 				hists, err = dec.HistogramSamples(rec, hists)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -190,8 +199,8 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 					return
 				}
 				decoded <- hists
-			case record.FloatHistogramSamples, record.CustomBucketsFloatHistogramSamples:
-				hists := h.wlReplayFloatHistogramsPool.Get()[:0]
+			case record.FloatHistogramSamples:
+				hists := floatHistogramsPool.Get()[:0]
 				hists, err = dec.FloatHistogramSamples(rec, hists)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -203,7 +212,7 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				decoded <- hists
 			case record.Metadata:
-				meta := h.wlReplayMetadataPool.Get()[:0]
+				meta := metadataPool.Get()[:0]
 				meta, err := dec.Metadata(rec, meta)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -237,14 +246,12 @@ Outer:
 				}
 				if !created {
 					multiRef[walSeries.Ref] = mSeries.ref
-					// Set the WAL expiry for the duplicate series, so it is kept in subsequent WAL checkpoints.
-					h.setWALExpiry(walSeries.Ref, lastSegment)
 				}
 
 				idx := uint64(mSeries.ref) % uint64(concurrency)
 				processors[idx].input <- walSubsetProcessorInputItem{walSeriesRef: walSeries.Ref, existingSeries: mSeries}
 			}
-			h.wlReplaySeriesPool.Put(v)
+			seriesPool.Put(v)
 		case []record.RefSample:
 			samples := v
 			minValidTime := h.minValidTime.Load()
@@ -280,7 +287,7 @@ Outer:
 				}
 				samples = samples[m:]
 			}
-			h.wlReplaySamplesPool.Put(v)
+			samplesPool.Put(v)
 		case []tombstones.Stone:
 			for _, s := range v {
 				for _, itv := range s.Intervals {
@@ -294,12 +301,12 @@ Outer:
 					h.tombstones.AddInterval(s.Ref, itv)
 				}
 			}
-			h.wlReplaytStonesPool.Put(v)
+			tstonesPool.Put(v)
 		case []record.RefExemplar:
 			for _, e := range v {
 				exemplarsInput <- e
 			}
-			h.wlReplayExemplarsPool.Put(v)
+			exemplarsPool.Put(v)
 		case []record.RefHistogramSample:
 			samples := v
 			minValidTime := h.minValidTime.Load()
@@ -335,7 +342,7 @@ Outer:
 				}
 				samples = samples[m:]
 			}
-			h.wlReplayHistogramsPool.Put(v)
+			histogramsPool.Put(v)
 		case []record.RefFloatHistogramSample:
 			samples := v
 			minValidTime := h.minValidTime.Load()
@@ -371,7 +378,7 @@ Outer:
 				}
 				samples = samples[m:]
 			}
-			h.wlReplayFloatHistogramsPool.Put(v)
+			floatHistogramsPool.Put(v)
 		case []record.RefMetadata:
 			for _, m := range v {
 				s := h.series.getByID(m.Ref)
@@ -385,7 +392,7 @@ Outer:
 					Help: m.Help,
 				}
 			}
-			h.wlReplayMetadataPool.Put(v)
+			metadataPool.Put(v)
 		default:
 			panic(fmt.Errorf("unexpected decoded type: %T", d))
 		}
@@ -649,11 +656,32 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 		concurrency = h.opts.WALReplayConcurrency
 		processors  = make([]wblSubsetProcessor, concurrency)
 
+		dec             record.Decoder
 		shards          = make([][]record.RefSample, concurrency)
 		histogramShards = make([][]histogramRecord, concurrency)
 
-		decodedCh = make(chan interface{}, 10)
-		decodeErr error
+		decodedCh   = make(chan interface{}, 10)
+		decodeErr   error
+		samplesPool = sync.Pool{
+			New: func() interface{} {
+				return []record.RefSample{}
+			},
+		}
+		markersPool = sync.Pool{
+			New: func() interface{} {
+				return []record.RefMmapMarker{}
+			},
+		}
+		histogramSamplesPool = sync.Pool{
+			New: func() interface{} {
+				return []record.RefHistogramSample{}
+			},
+		}
+		floatHistogramSamplesPool = sync.Pool{
+			New: func() interface{} {
+				return []record.RefFloatHistogramSample{}
+			},
+		}
 	)
 
 	defer func() {
@@ -683,13 +711,11 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 
 	go func() {
 		defer close(decodedCh)
-		dec := record.NewDecoder(syms)
 		for r.Next() {
-			var err error
 			rec := r.Record()
 			switch dec.Type(rec) {
 			case record.Samples:
-				samples := h.wlReplaySamplesPool.Get()[:0]
+				samples := samplesPool.Get().([]record.RefSample)[:0]
 				samples, err = dec.Samples(rec, samples)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -701,7 +727,7 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				decodedCh <- samples
 			case record.MmapMarkers:
-				markers := h.wlReplayMmapMarkersPool.Get()[:0]
+				markers := markersPool.Get().([]record.RefMmapMarker)[:0]
 				markers, err = dec.MmapMarkers(rec, markers)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -712,8 +738,8 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 					return
 				}
 				decodedCh <- markers
-			case record.HistogramSamples, record.CustomBucketsHistogramSamples:
-				hists := h.wlReplayHistogramsPool.Get()[:0]
+			case record.HistogramSamples:
+				hists := histogramSamplesPool.Get().([]record.RefHistogramSample)[:0]
 				hists, err = dec.HistogramSamples(rec, hists)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -724,8 +750,8 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 					return
 				}
 				decodedCh <- hists
-			case record.FloatHistogramSamples, record.CustomBucketsFloatHistogramSamples:
-				hists := h.wlReplayFloatHistogramsPool.Get()[:0]
+			case record.FloatHistogramSamples:
+				hists := floatHistogramSamplesPool.Get().([]record.RefFloatHistogramSample)[:0]
 				hists, err = dec.FloatHistogramSamples(rec, hists)
 				if err != nil {
 					decodeErr = &wlog.CorruptionErr{
@@ -776,7 +802,7 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				samples = samples[m:]
 			}
-			h.wlReplaySamplesPool.Put(v)
+			samplesPool.Put(d)
 		case []record.RefMmapMarker:
 			markers := v
 			for _, rm := range markers {
@@ -831,7 +857,7 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				samples = samples[m:]
 			}
-			h.wlReplayHistogramsPool.Put(v)
+			histogramSamplesPool.Put(v) //nolint:staticcheck
 		case []record.RefFloatHistogramSample:
 			samples := v
 			// We split up the samples into chunks of 5000 samples or less.
@@ -863,7 +889,7 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 				}
 				samples = samples[m:]
 			}
-			h.wlReplayFloatHistogramsPool.Put(v)
+			floatHistogramSamplesPool.Put(v) //nolint:staticcheck
 		default:
 			panic(fmt.Errorf("unexpected decodedCh type: %T", d))
 		}

@@ -14,7 +14,6 @@
 package xds
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -162,7 +161,7 @@ func kumaMadsV1ResourceParser(resources []*anypb.Any, typeURL string) ([]model.L
 func NewKumaHTTPDiscovery(conf *KumaSDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (discovery.Discoverer, error) {
 	m, ok := metrics.(*xdsMetrics)
 	if !ok {
-		return nil, errors.New("invalid discovery metrics type")
+		return nil, fmt.Errorf("invalid discovery metrics type")
 	}
 
 	// Default to "prometheus" if hostname is unavailable.

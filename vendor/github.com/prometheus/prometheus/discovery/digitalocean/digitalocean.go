@@ -15,7 +15,6 @@ package digitalocean
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -65,7 +64,7 @@ func init() {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &digitaloceanMetrics{
 		refreshMetrics: rmi,
 	}
@@ -115,7 +114,7 @@ type Discovery struct {
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*digitaloceanMetrics)
 	if !ok {
-		return nil, errors.New("invalid discovery metrics type")
+		return nil, fmt.Errorf("invalid discovery metrics type")
 	}
 
 	d := &Discovery{
@@ -132,7 +131,7 @@ func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.Discove
 			Transport: rt,
 			Timeout:   time.Duration(conf.RefreshInterval),
 		},
-		godo.SetUserAgent(version.PrometheusUserAgent()),
+		godo.SetUserAgent(fmt.Sprintf("Prometheus/%s", version.Version)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up digital ocean agent: %w", err)

@@ -47,25 +47,24 @@ const smallDeltaTolerance = 1e-12
 // excludedLabels are the labels to exclude from signature calculation for
 // quantiles.
 var excludedLabels = []string{
+	labels.MetricName,
 	labels.BucketLabel,
 }
 
-// Bucket represents a bucket of a classic histogram. It is used internally by the promql
-// package, but it is nevertheless exported for potential use in other PromQL engines.
-type Bucket struct {
-	UpperBound float64
-	Count      float64
+type bucket struct {
+	upperBound float64
+	count      float64
 }
 
-// Buckets implements sort.Interface.
-type Buckets []Bucket
+// buckets implements sort.Interface.
+type buckets []bucket
 
 type metricWithBuckets struct {
 	metric  labels.Labels
-	buckets Buckets
+	buckets buckets
 }
 
-// BucketQuantile calculates the quantile 'q' based on the given buckets. The
+// bucketQuantile calculates the quantile 'q' based on the given buckets. The
 // buckets will be sorted by upperBound by this function (i.e. no sorting
 // needed before calling this function). The quantile value is interpolated
 // assuming a linear distribution within a bucket. However, if the quantile
@@ -96,14 +95,7 @@ type metricWithBuckets struct {
 // and another bool to indicate if small differences between buckets (that
 // are likely artifacts of floating point precision issues) have been
 // ignored.
-//
-// Generically speaking, BucketQuantile is for calculating the
-// histogram_quantile() of classic histograms. See also: HistogramQuantile
-// for native histograms.
-//
-// BucketQuantile is exported as a useful quantile function over a set of
-// given buckets. It may be used by other PromQL engine implementations.
-func BucketQuantile(q float64, buckets Buckets) (float64, bool, bool) {
+func bucketQuantile(q float64, buckets buckets) (float64, bool, bool) {
 	if math.IsNaN(q) {
 		return math.NaN(), false, false
 	}
@@ -113,17 +105,17 @@ func BucketQuantile(q float64, buckets Buckets) (float64, bool, bool) {
 	if q > 1 {
 		return math.Inf(+1), false, false
 	}
-	slices.SortFunc(buckets, func(a, b Bucket) int {
+	slices.SortFunc(buckets, func(a, b bucket) int {
 		// We don't expect the bucket boundary to be a NaN.
-		if a.UpperBound < b.UpperBound {
+		if a.upperBound < b.upperBound {
 			return -1
 		}
-		if a.UpperBound > b.UpperBound {
+		if a.upperBound > b.upperBound {
 			return +1
 		}
 		return 0
 	})
-	if !math.IsInf(buckets[len(buckets)-1].UpperBound, +1) {
+	if !math.IsInf(buckets[len(buckets)-1].upperBound, +1) {
 		return math.NaN(), false, false
 	}
 
@@ -133,33 +125,33 @@ func BucketQuantile(q float64, buckets Buckets) (float64, bool, bool) {
 	if len(buckets) < 2 {
 		return math.NaN(), false, false
 	}
-	observations := buckets[len(buckets)-1].Count
+	observations := buckets[len(buckets)-1].count
 	if observations == 0 {
 		return math.NaN(), false, false
 	}
 	rank := q * observations
-	b := sort.Search(len(buckets)-1, func(i int) bool { return buckets[i].Count >= rank })
+	b := sort.Search(len(buckets)-1, func(i int) bool { return buckets[i].count >= rank })
 
 	if b == len(buckets)-1 {
-		return buckets[len(buckets)-2].UpperBound, forcedMonotonic, fixedPrecision
+		return buckets[len(buckets)-2].upperBound, forcedMonotonic, fixedPrecision
 	}
-	if b == 0 && buckets[0].UpperBound <= 0 {
-		return buckets[0].UpperBound, forcedMonotonic, fixedPrecision
+	if b == 0 && buckets[0].upperBound <= 0 {
+		return buckets[0].upperBound, forcedMonotonic, fixedPrecision
 	}
 	var (
 		bucketStart float64
-		bucketEnd   = buckets[b].UpperBound
-		count       = buckets[b].Count
+		bucketEnd   = buckets[b].upperBound
+		count       = buckets[b].count
 	)
 	if b > 0 {
-		bucketStart = buckets[b-1].UpperBound
-		count -= buckets[b-1].Count
-		rank -= buckets[b-1].Count
+		bucketStart = buckets[b-1].upperBound
+		count -= buckets[b-1].count
+		rank -= buckets[b-1].count
 	}
 	return bucketStart + (bucketEnd-bucketStart)*(rank/count), forcedMonotonic, fixedPrecision
 }
 
-// HistogramQuantile calculates the quantile 'q' based on the given histogram.
+// histogramQuantile calculates the quantile 'q' based on the given histogram.
 //
 // For custom buckets, the result is interpolated linearly, i.e. it is assumed
 // the observations are uniformly distributed within each bucket. (This is a
@@ -194,13 +186,7 @@ func BucketQuantile(q float64, buckets Buckets) (float64, bool, bool) {
 // If q>1, +Inf is returned.
 //
 // If q is NaN, NaN is returned.
-//
-// HistogramQuantile is for calculating the histogram_quantile() of native
-// histograms. See also: BucketQuantile for classic histograms.
-//
-// HistogramQuantile is exported as it may be used by other PromQL engine
-// implementations.
-func HistogramQuantile(q float64, h *histogram.FloatHistogram) float64 {
+func histogramQuantile(q float64, h *histogram.FloatHistogram) float64 {
 	if q < 0 {
 		return math.Inf(-1)
 	}
@@ -311,11 +297,11 @@ func HistogramQuantile(q float64, h *histogram.FloatHistogram) float64 {
 	return -math.Exp2(logUpper + (logLower-logUpper)*(1-fraction))
 }
 
-// HistogramFraction calculates the fraction of observations between the
+// histogramFraction calculates the fraction of observations between the
 // provided lower and upper bounds, based on the provided histogram.
 //
-// HistogramFraction is in a certain way the inverse of histogramQuantile.  If
-// HistogramQuantile(0.9, h) returns 123.4, then HistogramFraction(-Inf, 123.4, h)
+// histogramFraction is in a certain way the inverse of histogramQuantile.  If
+// histogramQuantile(0.9, h) returns 123.4, then histogramFraction(-Inf, 123.4, h)
 // returns 0.9.
 //
 // The same notes with regard to interpolation and assumptions about the zero
@@ -342,10 +328,7 @@ func HistogramQuantile(q float64, h *histogram.FloatHistogram) float64 {
 // If lower or upper is NaN, NaN is returned.
 //
 // If lower >= upper and the histogram has at least 1 observation, zero is returned.
-//
-// HistogramFraction is exported as it may be used by other PromQL engine
-// implementations.
-func HistogramFraction(lower, upper float64, h *histogram.FloatHistogram) float64 {
+func histogramFraction(lower, upper float64, h *histogram.FloatHistogram) float64 {
 	if h.Count == 0 || math.IsNaN(lower) || math.IsNaN(upper) {
 		return math.NaN()
 	}
@@ -451,12 +434,12 @@ func HistogramFraction(lower, upper float64, h *histogram.FloatHistogram) float6
 // coalesceBuckets merges buckets with the same upper bound.
 //
 // The input buckets must be sorted.
-func coalesceBuckets(buckets Buckets) Buckets {
+func coalesceBuckets(buckets buckets) buckets {
 	last := buckets[0]
 	i := 0
 	for _, b := range buckets[1:] {
-		if b.UpperBound == last.UpperBound {
-			last.Count += b.Count
+		if b.upperBound == last.upperBound {
+			last.count += b.count
 		} else {
 			buckets[i] = last
 			last = b
@@ -493,11 +476,11 @@ func coalesceBuckets(buckets Buckets) Buckets {
 //
 // We return a bool to indicate if this monotonicity was forced or not, and
 // another bool to indicate if small deltas were ignored or not.
-func ensureMonotonicAndIgnoreSmallDeltas(buckets Buckets, tolerance float64) (bool, bool) {
+func ensureMonotonicAndIgnoreSmallDeltas(buckets buckets, tolerance float64) (bool, bool) {
 	var forcedMonotonic, fixedPrecision bool
-	prev := buckets[0].Count
+	prev := buckets[0].count
 	for i := 1; i < len(buckets); i++ {
-		curr := buckets[i].Count // Assumed always positive.
+		curr := buckets[i].count // Assumed always positive.
 		if curr == prev {
 			// No correction needed if the counts are identical between buckets.
 			continue
@@ -506,14 +489,14 @@ func ensureMonotonicAndIgnoreSmallDeltas(buckets Buckets, tolerance float64) (bo
 			// Silently correct numerically insignificant differences from floating
 			// point precision errors, regardless of direction.
 			// Do not update the 'prev' value as we are ignoring the difference.
-			buckets[i].Count = prev
+			buckets[i].count = prev
 			fixedPrecision = true
 			continue
 		}
 		if curr < prev {
 			// Force monotonicity by removing any decreases regardless of magnitude.
 			// Do not update the 'prev' value as we are ignoring the decrease.
-			buckets[i].Count = prev
+			buckets[i].count = prev
 			forcedMonotonic = true
 			continue
 		}

@@ -15,6 +15,7 @@ package ionos
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -76,7 +77,7 @@ func newServerDiscovery(conf *SDConfig, _ *slog.Logger) (*serverDiscovery, error
 		Transport: rt,
 		Timeout:   time.Duration(conf.RefreshInterval),
 	}
-	cfg.UserAgent = version.PrometheusUserAgent()
+	cfg.UserAgent = fmt.Sprintf("Prometheus/%s", version.Version)
 
 	d.client = ionoscloud.NewAPIClient(cfg)
 

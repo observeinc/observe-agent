@@ -20,10 +20,8 @@ cloud.google.com/go/auth/oauth2adapt
 # cloud.google.com/go/compute/metadata v0.6.0
 ## explicit; go 1.21
 cloud.google.com/go/compute/metadata
-# github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
-## explicit; go 1.18
 # github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
-## go 1.18
+## explicit; go 1.18
 github.com/Azure/azure-sdk-for-go/sdk/azcore
 github.com/Azure/azure-sdk-for-go/sdk/azcore/arm
 github.com/Azure/azure-sdk-for-go/sdk/azcore/arm/internal/resource
@@ -45,10 +43,8 @@ github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime
 github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming
 github.com/Azure/azure-sdk-for-go/sdk/azcore/to
 github.com/Azure/azure-sdk-for-go/sdk/azcore/tracing
-# github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
-## explicit; go 1.18
 # github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2
-## go 1.18
+## explicit; go 1.18
 github.com/Azure/azure-sdk-for-go/sdk/azidentity
 github.com/Azure/azure-sdk-for-go/sdk/azidentity/internal
 # github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0
@@ -66,10 +62,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5
 # github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0
 ## explicit; go 1.18
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4
-# github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2
-## explicit; go 1.18
 # github.com/AzureAD/microsoft-authentication-library-for-go v1.3.3
-## go 1.18
+## explicit; go 1.18
 github.com/AzureAD/microsoft-authentication-library-for-go/apps/cache
 github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential
 github.com/AzureAD/microsoft-authentication-library-for-go/apps/errors
@@ -336,10 +330,8 @@ github.com/dennwc/varint
 # github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
 ## explicit
 github.com/dgryski/go-rendezvous
-# github.com/digitalocean/godo v1.126.0
-## explicit; go 1.22
 # github.com/digitalocean/godo v1.136.0
-## go 1.22
+## explicit; go 1.22
 github.com/digitalocean/godo
 github.com/digitalocean/godo/metrics
 # github.com/distribution/reference v0.6.0
@@ -394,10 +386,8 @@ github.com/ebitengine/purego
 github.com/ebitengine/purego/internal/cgo
 github.com/ebitengine/purego/internal/fakecgo
 github.com/ebitengine/purego/internal/strings
-# github.com/edsrzf/mmap-go v1.1.0
-## explicit; go 1.17
 # github.com/edsrzf/mmap-go v1.2.0
-## go 1.17
+## explicit; go 1.17
 github.com/edsrzf/mmap-go
 # github.com/elastic/go-grok v0.3.1
 ## explicit; go 1.21.0
@@ -478,10 +468,8 @@ github.com/go-logr/stdr
 ## explicit; go 1.12
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
-# github.com/go-openapi/analysis v0.22.2
-## explicit; go 1.20
 # github.com/go-openapi/analysis v0.23.0
-## go 1.20
+## explicit; go 1.20
 github.com/go-openapi/analysis
 github.com/go-openapi/analysis/internal/debug
 github.com/go-openapi/analysis/internal/flatten/normalize
@@ -495,21 +483,15 @@ github.com/go-openapi/errors
 # github.com/go-openapi/jsonpointer v0.21.0
 ## explicit; go 1.20
 github.com/go-openapi/jsonpointer
-# github.com/go-openapi/jsonreference v0.20.4
-## explicit; go 1.20
 # github.com/go-openapi/jsonreference v0.21.0
-## go 1.20
+## explicit; go 1.20
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/loads v0.21.5
-## explicit; go 1.20
 # github.com/go-openapi/loads v0.22.0
-## go 1.20
-github.com/go-openapi/loads
-# github.com/go-openapi/spec v0.20.14
 ## explicit; go 1.20
+github.com/go-openapi/loads
 # github.com/go-openapi/spec v0.21.0
-## go 1.20
+## explicit; go 1.20
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.23.0
 ## explicit; go 1.20
@@ -517,15 +499,11 @@ github.com/go-openapi/strfmt
 # github.com/go-openapi/swag v0.23.0
 ## explicit; go 1.20
 github.com/go-openapi/swag
-# github.com/go-openapi/validate v0.23.0
-## explicit; go 1.20
 # github.com/go-openapi/validate v0.24.0
-## go 1.20
-github.com/go-openapi/validate
-# github.com/go-resty/resty/v2 v2.15.3
 ## explicit; go 1.20
+github.com/go-openapi/validate
 # github.com/go-resty/resty/v2 v2.16.3
-## go 1.20
+## explicit; go 1.20
 github.com/go-resty/resty/v2
 github.com/go-resty/resty/v2/shellescape
 # github.com/go-viper/mapstructure/v2 v2.1.0
@@ -644,26 +622,20 @@ github.com/googleapis/gax-go/v2/internallog
 github.com/googleapis/gax-go/v2/internallog/internal
 # github.com/gophercloud/gophercloud v1.14.1
 ## explicit; go 1.14
+github.com/gophercloud/gophercloud
+github.com/gophercloud/gophercloud/openstack
+github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/floatingips
+github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/hypervisors
+github.com/gophercloud/gophercloud/openstack/compute/v2/servers
+github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
+github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/ec2tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/oauth1
+github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
+github.com/gophercloud/gophercloud/openstack/utils
+github.com/gophercloud/gophercloud/pagination
 # github.com/gophercloud/gophercloud/v2 v2.6.0
-## go 1.22
-github.com/gophercloud/gophercloud/v2
-github.com/gophercloud/gophercloud/v2/openstack
-github.com/gophercloud/gophercloud/v2/openstack/compute/v2/hypervisors
-github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers
-github.com/gophercloud/gophercloud/v2/openstack/identity/v2/tenants
-github.com/gophercloud/gophercloud/v2/openstack/identity/v2/tokens
-github.com/gophercloud/gophercloud/v2/openstack/identity/v3/ec2tokens
-github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
-github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
-github.com/gophercloud/gophercloud/v2/openstack/loadbalancer/v2/l7policies
-github.com/gophercloud/gophercloud/v2/openstack/loadbalancer/v2/listeners
-github.com/gophercloud/gophercloud/v2/openstack/loadbalancer/v2/loadbalancers
-github.com/gophercloud/gophercloud/v2/openstack/loadbalancer/v2/monitors
-github.com/gophercloud/gophercloud/v2/openstack/loadbalancer/v2/pools
-github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips
-github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports
-github.com/gophercloud/gophercloud/v2/openstack/utils
-github.com/gophercloud/gophercloud/v2/pagination
+## explicit; go 1.22
 # github.com/gorilla/websocket v1.5.0
 ## explicit; go 1.12
 github.com/gorilla/websocket
@@ -728,10 +700,8 @@ github.com/hashicorp/nomad/api/contexts
 # github.com/hashicorp/serf v0.10.1
 ## explicit; go 1.12
 github.com/hashicorp/serf/coordinate
-# github.com/hetznercloud/hcloud-go/v2 v2.13.1
-## explicit; go 1.21
 # github.com/hetznercloud/hcloud-go/v2 v2.19.1
-## go 1.21
+## explicit; go 1.21
 github.com/hetznercloud/hcloud-go/v2/hcloud
 github.com/hetznercloud/hcloud-go/v2/hcloud/internal/instrumentation
 github.com/hetznercloud/hcloud-go/v2/hcloud/schema
@@ -741,10 +711,8 @@ github.com/iancoleman/strcase
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
-# github.com/ionos-cloud/sdk-go/v6 v6.2.1
-## explicit; go 1.21
 # github.com/ionos-cloud/sdk-go/v6 v6.3.2
-## go 1.21
+## explicit; go 1.21
 github.com/ionos-cloud/sdk-go/v6
 # github.com/jaegertracing/jaeger-idl v0.5.0
 ## explicit; go 1.22.7
@@ -871,10 +839,8 @@ github.com/lightstep/go-expohisto/mapping/exponent
 github.com/lightstep/go-expohisto/mapping/internal
 github.com/lightstep/go-expohisto/mapping/logarithm
 github.com/lightstep/go-expohisto/structure
-# github.com/linode/linodego v1.41.0
-## explicit; go 1.22
 # github.com/linode/linodego v1.47.0
-## go 1.22
+## explicit; go 1.22
 github.com/linode/linodego
 github.com/linode/linodego/internal/duration
 github.com/linode/linodego/internal/parseabletime
@@ -905,10 +871,8 @@ github.com/mdlayher/socket
 # github.com/mdlayher/vsock v1.2.1
 ## explicit; go 1.20
 github.com/mdlayher/vsock
-# github.com/miekg/dns v1.1.62
-## explicit; go 1.19
 # github.com/miekg/dns v1.1.63
-## go 1.19
+## explicit; go 1.19
 github.com/miekg/dns
 # github.com/mitchellh/copystructure v1.2.0
 ## explicit; go 1.15
@@ -953,8 +917,7 @@ github.com/mwitkow/go-conntrack
 ## explicit
 github.com/oklog/ulid
 # github.com/oklog/ulid/v2 v2.1.0
-## go 1.15
-github.com/oklog/ulid/v2
+## explicit; go 1.15
 # github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.124.0
 ## explicit; go 1.23.0
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
@@ -1453,10 +1416,8 @@ github.com/openshift/client-go/quota/listers/quota/v1
 github.com/openzipkin/zipkin-go/model
 github.com/openzipkin/zipkin-go/proto/zipkin_proto3
 github.com/openzipkin/zipkin-go/reporter
-# github.com/ovh/go-ovh v1.6.0
-## explicit; go 1.18
 # github.com/ovh/go-ovh v1.7.0
-## go 1.18
+## explicit; go 1.18
 github.com/ovh/go-ovh/ovh
 # github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 ## explicit; go 1.16
@@ -1495,10 +1456,8 @@ github.com/pmezard/go-difflib/difflib
 # github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55
 ## explicit; go 1.14
 github.com/power-devops/perfstat
-# github.com/prometheus/alertmanager v0.27.0
-## explicit; go 1.22.0
 # github.com/prometheus/alertmanager v0.28.0
-## go 1.22.0
+## explicit; go 1.22.0
 github.com/prometheus/alertmanager/api/v2/models
 # github.com/prometheus/client_golang v1.22.0
 ## explicit; go 1.22
@@ -1530,6 +1489,7 @@ github.com/prometheus/common/version
 github.com/prometheus/common/assets
 # github.com/prometheus/common/sigv4 v0.1.0
 ## explicit; go 1.15
+github.com/prometheus/common/sigv4
 # github.com/prometheus/exporter-toolkit v0.14.0
 ## explicit; go 1.22
 github.com/prometheus/exporter-toolkit/web
@@ -1538,8 +1498,8 @@ github.com/prometheus/exporter-toolkit/web
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/prometheus/prometheus v0.300.1 => github.com/prometheus/prometheus v0.303.0
-## explicit; go 1.23.0
+# github.com/prometheus/prometheus v0.300.1
+## explicit; go 1.22.0
 github.com/prometheus/prometheus/config
 github.com/prometheus/prometheus/discovery
 github.com/prometheus/prometheus/discovery/aws
@@ -1627,8 +1587,7 @@ github.com/prometheus/prometheus/web
 github.com/prometheus/prometheus/web/api/v1
 github.com/prometheus/prometheus/web/ui
 # github.com/prometheus/sigv4 v0.1.2
-## go 1.21
-github.com/prometheus/sigv4
+## explicit; go 1.21
 # github.com/puzpuzpuz/xsync/v3 v3.5.1
 ## explicit; go 1.18
 github.com/puzpuzpuz/xsync/v3
@@ -1661,10 +1620,8 @@ github.com/rs/cors/internal
 # github.com/sagikazarmark/locafero v0.6.0
 ## explicit; go 1.20
 github.com/sagikazarmark/locafero
-# github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
-## explicit; go 1.17
 # github.com/scaleway/scaleway-sdk-go v1.0.0-beta.32
-## go 1.17
+## explicit; go 1.17
 github.com/scaleway/scaleway-sdk-go/api/baremetal/v1
 github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1
 github.com/scaleway/scaleway-sdk-go/api/instance/v1
@@ -2213,10 +2170,8 @@ go.opentelemetry.io/contrib/bridges/otelzap
 ## explicit; go 1.22.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal
-# go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.56.0
-## explicit; go 1.22.0
 # go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.60.0
-## go 1.22.0
+## explicit; go 1.22.0
 go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace
 go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace/internal/semconv
 go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace/internal/semconvutil
@@ -3166,4 +3121,3 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
 # golang.org/x/net => golang.org/x/net v0.36.0
 # golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
-# github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.303.0
