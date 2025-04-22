@@ -109,12 +109,12 @@ func getMetricsSum(metrics []*io_prometheus_client.Metric) float64 {
 }
 
 func GetAgentMetrics(conf *config.AgentConfig) (*AgentMetrics, error) {
-	host := util.ReplaceEnvString(conf.InternalTelemetry.Host)
+	host := util.ReplaceEnvString(conf.InternalTelemetry.Metrics.Host)
 	if !strings.Contains(host, "://") {
 		host = "http://" + host
 	}
 	host = strings.TrimRight(host, ":/")
-	port := conf.InternalTelemetry.Port
+	port := conf.InternalTelemetry.Metrics.Port
 	baseURL := fmt.Sprintf("%s:%d", host, port)
 	return GetAgentMetricsFromEndpoint(baseURL)
 }
