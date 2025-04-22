@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mcuadros/go-defaults"
 	"github.com/spf13/viper"
 )
@@ -66,6 +67,29 @@ type AgentConfig struct {
 	SelfMonitoring         SelfMonitoringConfig    `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
 	HostMonitoring         HostMonitoringConfig    `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
 	OtelConfigOverrides    map[string]any          `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`
+}
+
+func SetViperDefaults(v *viper.Viper, separator string) {
+	var config AgentConfig
+	defaults.SetDefaults(&config)
+	var confMap map[string]any
+	err := mapstructure.Decode(config, &confMap)
+	if err != nil {
+		panic(err)
+	}
+	var recursiveDfs func(prefix string, defaults map[string]any)
+	recursiveDfs = func(prefix string, defaults map[string]any) {
+		for key, val := range defaults {
+			if nestedMap, ok := val.(map[string]any); ok {
+				// Recurse on nested maps
+				recursiveDfs(prefix+key+separator, nestedMap)
+			} else {
+				// Set this value as default if it's not a map.
+				v.SetDefault(prefix+key, val)
+			}
+		}
+	}
+	recursiveDfs("", confMap)
 }
 
 func AgentConfigFromViper(v *viper.Viper) (*AgentConfig, error) {

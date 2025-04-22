@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,7 +53,11 @@ func InitConfig() {
 		viper.SetConfigName("observe-agent")
 	}
 
+	// TODO consider setting this in our next major release to scope all agent env vars:
+	// viper.SetEnvPrefix("OBSERVE")
 	viper.AutomaticEnv() // read in environment variables that match
+
+	config.SetViperDefaults(viper.GetViper(), "::")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
