@@ -1,6 +1,6 @@
 module observe-agent/internal/tools
 
-go 1.23.7
+go 1.23.8
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect

@@ -4,7 +4,7 @@ Code for the Observe agent and CLI. The agent code is based on the OpenTelemetry
 
 # Build
 
-To run the code you need to have `golang v1.23.7` installed. Then you can run the following command to compile the binary.
+To run the code you need to have `golang v1.23.8` installed. Then you can run the following command to compile the binary.
 
 ```sh
 go build -o observe-agent
