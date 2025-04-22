@@ -34,9 +34,8 @@ import (
 	config_util "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promslog"
-	"github.com/prometheus/common/sigv4"
 	"github.com/prometheus/common/version"
-	"go.uber.org/atomic"
+	"github.com/prometheus/sigv4"
 	"gopkg.in/yaml.v2"
 
 	"github.com/prometheus/prometheus/config"
@@ -56,7 +55,7 @@ const (
 	alertmanagerLabel = "alertmanager"
 )
 
-var userAgent = fmt.Sprintf("Prometheus/%s", version.Version)
+var userAgent = version.PrometheusUserAgent()
 
 // Alert is a generic representation of an alert in the Prometheus eco-system.
 type Alert struct {
@@ -160,7 +159,7 @@ func newAlertMetrics(r prometheus.Registerer, queueCap int, queueLen, alertmanag
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "errors_total",
-			Help:      "Total number of errors sending alert notifications.",
+			Help:      "Total number of sent alerts affected by errors.",
 		},
 			[]string{alertmanagerLabel},
 		),
@@ -552,10 +551,10 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 	n.mtx.RUnlock()
 
 	var (
-		wg         sync.WaitGroup
-		numSuccess atomic.Uint64
+		wg           sync.WaitGroup
+		amSetCovered sync.Map
 	)
-	for _, ams := range amSets {
+	for k, ams := range amSets {
 		var (
 			payload  []byte
 			err      error
@@ -611,24 +610,28 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 			cachedPayload = nil
 		}
 
+		// Being here means len(ams.ams) > 0
+		amSetCovered.Store(k, false)
 		for _, am := range ams.ams {
 			wg.Add(1)
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ams.cfg.Timeout))
 			defer cancel()
 
-			go func(ctx context.Context, client *http.Client, url string, payload []byte, count int) {
-				if err := n.sendOne(ctx, client, url, payload); err != nil {
-					n.logger.Error("Error sending alert", "alertmanager", url, "count", count, "err", err)
-					n.metrics.errors.WithLabelValues(url).Inc()
+			go func(ctx context.Context, k string, client *http.Client, url string, payload []byte, count int) {
+				err := n.sendOne(ctx, client, url, payload)
+				if err != nil {
+					n.logger.Error("Error sending alerts", "alertmanager", url, "count", count, "err", err)
+					n.metrics.errors.WithLabelValues(url).Add(float64(count))
 				} else {
-					numSuccess.Inc()
+					amSetCovered.CompareAndSwap(k, false, true)
 				}
+
 				n.metrics.latency.WithLabelValues(url).Observe(time.Since(begin).Seconds())
-				n.metrics.sent.WithLabelValues(url).Add(float64(len(amAlerts)))
+				n.metrics.sent.WithLabelValues(url).Add(float64(count))
 
 				wg.Done()
-			}(ctx, ams.client, am.url().String(), payload, len(amAlerts))
+			}(ctx, k, ams.client, am.url().String(), payload, len(amAlerts))
 		}
 
 		ams.mtx.RUnlock()
@@ -636,7 +639,18 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 
 	wg.Wait()
 
-	return numSuccess.Load() > 0
+	// Return false if there are any sets which were attempted (e.g. not filtered
+	// out) but have no successes.
+	allAmSetsCovered := true
+	amSetCovered.Range(func(_, value any) bool {
+		if !value.(bool) {
+			allAmSetsCovered = false
+			return false
+		}
+		return true
+	})
+
+	return allAmSetsCovered
 }
 
 func alertsToOpenAPIAlerts(alerts []*Alert) models.PostableAlerts {

@@ -30,7 +30,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oklog/ulid"
+	"github.com/oklog/ulid/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/promslog"
 	"go.uber.org/atomic"
@@ -91,6 +91,7 @@ func DefaultOptions() *Options {
 		EnableDelayedCompaction:     false,
 		CompactionDelayMaxPercent:   DefaultCompactionDelayMaxPercent,
 		CompactionDelay:             time.Duration(0),
+		PostingsDecoderFactory:      DefaultPostingsDecoderFactory,
 	}
 }
 
@@ -219,6 +220,10 @@ type Options struct {
 
 	// BlockChunkQuerierFunc is a function to return storage.ChunkQuerier from a BlockReader.
 	BlockChunkQuerierFunc BlockChunkQuerierFunc
+
+	// PostingsDecoderFactory allows users to customize postings decoders based on BlockMeta.
+	// By default, DefaultPostingsDecoderFactory will be used to create raw posting decoder.
+	PostingsDecoderFactory PostingsDecoderFactory
 }
 
 type NewCompactorFunc func(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, opts *Options) (Compactor, error)
@@ -633,7 +638,7 @@ func (db *DBReadOnly) Blocks() ([]BlockReader, error) {
 		return nil, ErrClosed
 	default:
 	}
-	loadable, corrupted, err := openBlocks(db.logger, db.dir, nil, nil)
+	loadable, corrupted, err := openBlocks(db.logger, db.dir, nil, nil, DefaultPostingsDecoderFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -731,7 +736,7 @@ func (db *DBReadOnly) LastBlockID() (string, error) {
 }
 
 // Block returns a block reader by given block id.
-func (db *DBReadOnly) Block(blockID string) (BlockReader, error) {
+func (db *DBReadOnly) Block(blockID string, postingsDecoderFactory PostingsDecoderFactory) (BlockReader, error) {
 	select {
 	case <-db.closed:
 		return nil, ErrClosed
@@ -743,7 +748,7 @@ func (db *DBReadOnly) Block(blockID string) (BlockReader, error) {
 		return nil, fmt.Errorf("invalid block ID %s", blockID)
 	}
 
-	block, err := OpenBlock(db.logger, filepath.Join(db.dir, blockID), nil)
+	block, err := OpenBlock(db.logger, filepath.Join(db.dir, blockID), nil, postingsDecoderFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -902,6 +907,7 @@ func open(dir string, l *slog.Logger, r prometheus.Registerer, opts *Options, rn
 		db.compactor, err = NewLeveledCompactorWithOptions(ctx, r, l, rngs, db.chunkPool, LeveledCompactorOptions{
 			MaxBlockChunkSegmentSize:    opts.MaxBlockChunkSegmentSize,
 			EnableOverlappingCompaction: opts.EnableOverlappingCompaction,
+			PD:                          opts.PostingsDecoderFactory,
 		})
 	}
 	if err != nil {
@@ -986,9 +992,14 @@ func open(dir string, l *slog.Logger, r prometheus.Registerer, opts *Options, rn
 	db.metrics.maxBytes.Set(float64(maxBytes))
 	db.metrics.retentionDuration.Set((time.Duration(opts.RetentionDuration) * time.Millisecond).Seconds())
 
+	// Calling db.reload() calls db.reloadBlocks() which requires cmtx to be locked.
+	db.cmtx.Lock()
 	if err := db.reload(); err != nil {
+		db.cmtx.Unlock()
 		return nil, err
 	}
+	db.cmtx.Unlock()
+
 	// Set the min valid time for the ingested samples
 	// to be no lower than the maxt of the last block.
 	minValidTime := int64(math.MinInt64)
@@ -1357,6 +1368,7 @@ func (db *DB) CompactOOOHead(ctx context.Context) error {
 // Callback for testing.
 var compactOOOHeadTestingCallback func()
 
+// The db.cmtx mutex should be held before calling this method.
 func (db *DB) compactOOOHead(ctx context.Context) error {
 	if !db.oooWasEnabled.Load() {
 		return nil
@@ -1411,6 +1423,7 @@ func (db *DB) compactOOOHead(ctx context.Context) error {
 
 // compactOOO creates a new block per possible block range in the compactor's directory from the OOO Head given.
 // Each ULID in the result corresponds to a block in a unique time range.
+// The db.cmtx mutex should be held before calling this method.
 func (db *DB) compactOOO(dest string, oooHead *OOOCompactionHead) (_ []ulid.ULID, err error) {
 	start := time.Now()
 
@@ -1455,7 +1468,7 @@ func (db *DB) compactOOO(dest string, oooHead *OOOCompactionHead) (_ []ulid.ULID
 }
 
 // compactHead compacts the given RangeHead.
-// The compaction mutex should be held before calling this method.
+// The db.cmtx should be held before calling this method.
 func (db *DB) compactHead(head *RangeHead) error {
 	uids, err := db.compactor.Write(db.dir, head, head.MinTime(), head.BlockMaxTime(), nil)
 	if err != nil {
@@ -1481,7 +1494,7 @@ func (db *DB) compactHead(head *RangeHead) error {
 }
 
 // compactBlocks compacts all the eligible on-disk blocks.
-// The compaction mutex should be held before calling this method.
+// The db.cmtx should be held before calling this method.
 func (db *DB) compactBlocks() (err error) {
 	// Check for compactions of multiple blocks.
 	for {
@@ -1538,6 +1551,7 @@ func getBlock(allBlocks []*Block, id ulid.ULID) (*Block, bool) {
 }
 
 // reload reloads blocks and truncates the head and its WAL.
+// The db.cmtx mutex should be held before calling this method.
 func (db *DB) reload() error {
 	if err := db.reloadBlocks(); err != nil {
 		return fmt.Errorf("reloadBlocks: %w", err)
@@ -1554,6 +1568,7 @@ func (db *DB) reload() error {
 
 // reloadBlocks reloads blocks without touching head.
 // Blocks that are obsolete due to replacement or retention will be deleted.
+// The db.cmtx mutex should be held before calling this method.
 func (db *DB) reloadBlocks() (err error) {
 	defer func() {
 		if err != nil {
@@ -1562,13 +1577,9 @@ func (db *DB) reloadBlocks() (err error) {
 		db.metrics.reloads.Inc()
 	}()
 
-	// Now that we reload TSDB every minute, there is a high chance for a race condition with a reload
-	// triggered by CleanTombstones(). We need to lock the reload to avoid the situation where
-	// a normal reload and CleanTombstones try to delete the same block.
-	db.mtx.Lock()
-	defer db.mtx.Unlock()
-
-	loadable, corrupted, err := openBlocks(db.logger, db.dir, db.blocks, db.chunkPool)
+	db.mtx.RLock()
+	loadable, corrupted, err := openBlocks(db.logger, db.dir, db.blocks, db.chunkPool, db.opts.PostingsDecoderFactory)
+	db.mtx.RUnlock()
 	if err != nil {
 		return err
 	}
@@ -1594,11 +1605,13 @@ func (db *DB) reloadBlocks() (err error) {
 	if len(corrupted) > 0 {
 		// Corrupted but no child loaded for it.
 		// Close all new blocks to release the lock for windows.
+		db.mtx.RLock()
 		for _, block := range loadable {
 			if _, open := getBlock(db.blocks, block.Meta().ULID); !open {
 				block.Close()
 			}
 		}
+		db.mtx.RUnlock()
 		errs := tsdb_errors.NewMulti()
 		for ulid, err := range corrupted {
 			if err != nil {
@@ -1637,8 +1650,10 @@ func (db *DB) reloadBlocks() (err error) {
 	})
 
 	// Swap new blocks first for subsequently created readers to be seen.
+	db.mtx.Lock()
 	oldBlocks := db.blocks
 	db.blocks = toLoad
+	db.mtx.Unlock()
 
 	// Only check overlapping blocks when overlapping compaction is enabled.
 	if db.opts.EnableOverlappingCompaction {
@@ -1663,7 +1678,7 @@ func (db *DB) reloadBlocks() (err error) {
 	return nil
 }
 
-func openBlocks(l *slog.Logger, dir string, loaded []*Block, chunkPool chunkenc.Pool) (blocks []*Block, corrupted map[ulid.ULID]error, err error) {
+func openBlocks(l *slog.Logger, dir string, loaded []*Block, chunkPool chunkenc.Pool, postingsDecoderFactory PostingsDecoderFactory) (blocks []*Block, corrupted map[ulid.ULID]error, err error) {
 	bDirs, err := blockDirs(dir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("find blocks: %w", err)
@@ -1680,7 +1695,7 @@ func openBlocks(l *slog.Logger, dir string, loaded []*Block, chunkPool chunkenc.
 		// See if we already have the block in memory or open it otherwise.
 		block, open := getBlock(loaded, meta.ULID)
 		if !open {
-			block, err = OpenBlock(l, bDir, chunkPool)
+			block, err = OpenBlock(l, bDir, chunkPool, postingsDecoderFactory)
 			if err != nil {
 				corrupted[meta.ULID] = err
 				continue
@@ -2004,10 +2019,10 @@ func (db *DB) ForceHeadMMap() {
 // will create a new block containing all data that's currently in the memory buffer/WAL.
 func (db *DB) Snapshot(dir string, withHead bool) error {
 	if dir == db.dir {
-		return fmt.Errorf("cannot snapshot into base directory")
+		return errors.New("cannot snapshot into base directory")
 	}
 	if _, err := ulid.ParseStrict(dir); err == nil {
-		return fmt.Errorf("dir must not be a valid ULID")
+		return errors.New("dir must not be a valid ULID")
 	}
 
 	db.cmtx.Lock()
@@ -2314,7 +2329,7 @@ func isTmpDir(fi fs.DirEntry) bool {
 	fn := fi.Name()
 	ext := filepath.Ext(fn)
 	if ext == tmpForDeletionBlockDirSuffix || ext == tmpForCreationBlockDirSuffix || ext == tmpLegacy {
-		if strings.HasPrefix(fn, "checkpoint.") {
+		if strings.HasPrefix(fn, wlog.CheckpointPrefix) {
 			return true
 		}
 		if strings.HasPrefix(fn, chunkSnapshotPrefix) {

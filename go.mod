@@ -460,4 +460,5 @@ replace (
 	github.com/observeinc/observe-agent/observecol => ./observecol
 	golang.org/x/net => golang.org/x/net v0.36.0
 	golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
+	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.303.0
 )
