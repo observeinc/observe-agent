@@ -188,6 +188,10 @@ release:
   make_latest: "{{ if .IsNightly }}false{{ else }}true{{ end }}"
   tag: "{{ if .IsNightly}}dev-nightly{{ else }}{{ .Tag }}{{ end }}"
 
+  # Add all install scripts to the release
+  extra_files:
+    - "./scripts/*install*"
+
 dockers:
   - image_templates:
       - &amd64_image_dockerhub "docker.io/observeinc/observe-agent:{{ .Version }}-amd64"
