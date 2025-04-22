@@ -5,11 +5,17 @@ import (
 	"testing"
 
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/mcuadros/go-defaults"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
+
+func setConfigDefaults(agentConfig config.AgentConfig) config.AgentConfig {
+	defaults.SetDefaults(&agentConfig)
+	return agentConfig
+}
 
 func Test_InitConfigCommand(t *testing.T) {
 	t.Cleanup(func() {
@@ -22,7 +28,7 @@ func Test_InitConfigCommand(t *testing.T) {
 	}{
 		{
 			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--host_monitoring::logs::include=/test/path,/test/path2"},
-			expectedConfig: config.AgentConfig{
+			expectedConfig: setConfigDefaults(config.AgentConfig{
 				Token:      "test-token",
 				ObserveURL: "test-url",
 				SelfMonitoring: config.SelfMonitoringConfig{
@@ -43,12 +49,12 @@ func Test_InitConfigCommand(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			expectErr: "",
 		},
 		{
 			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--self_monitoring::enabled=false", "--host_monitoring::enabled=false", "--host_monitoring::logs::enabled=false", "--host_monitoring::metrics::host::enabled=false", "--host_monitoring::metrics::process::enabled=false"},
-			expectedConfig: config.AgentConfig{
+			expectedConfig: setConfigDefaults(config.AgentConfig{
 				Token:      "test-token",
 				ObserveURL: "test-url",
 				HostMonitoring: config.HostMonitoringConfig{
@@ -65,14 +71,15 @@ func Test_InitConfigCommand(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			expectErr: "",
 		},
 	}
-	v := viper.New()
-	initConfigCmd := NewConfigureCmd(v)
-	RegisterConfigFlags(initConfigCmd, v)
 	for _, tc := range testcases {
+		v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+		config.SetViperDefaults(v, "::")
+		initConfigCmd := NewConfigureCmd(v)
+		RegisterConfigFlags(initConfigCmd, v)
 		initConfigCmd.SetArgs(tc.args)
 		err := initConfigCmd.Execute()
 		if err != nil {
