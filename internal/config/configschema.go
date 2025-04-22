@@ -50,10 +50,22 @@ type ForwardingConfig struct {
 	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
 }
 
-type InternalTelemetryConfig struct {
+type InternalTelemetryMetricsConfig struct {
 	Enabled bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
 	Host    string `yaml:"host" mapstructure:"host" default:"localhost"`
 	Port    int    `yaml:"port" mapstructure:"port" default:"8888"`
+	Level   string `yaml:"level" mapstructure:"level" default:"detailed"`
+}
+
+type InternalTelemetryLogsConfig struct {
+	Enabled bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Level   string `yaml:"level" mapstructure:"level" default:"${env:OTEL_LOG_LEVEL}"`
+}
+
+type InternalTelemetryConfig struct {
+	Enabled bool                           `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Metrics InternalTelemetryMetricsConfig `yaml:"metrics" mapstructure:"metrics"`
+	Logs    InternalTelemetryLogsConfig    `yaml:"logs" mapstructure:"logs"`
 }
 
 type AgentConfig struct {
@@ -63,7 +75,7 @@ type AgentConfig struct {
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
-	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry,omitempty" mapstructure:"internal_telemetry"`
+	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry" mapstructure:"internal_telemetry"`
 	SelfMonitoring         SelfMonitoringConfig    `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
 	HostMonitoring         HostMonitoringConfig    `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
 	OtelConfigOverrides    map[string]any          `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`

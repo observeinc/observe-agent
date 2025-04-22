@@ -77,10 +77,12 @@ func SetEnvVars() error {
 	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
 	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
 
-	if debug {
-		os.Setenv("OTEL_LOG_LEVEL", "DEBUG")
-	} else {
-		os.Setenv("OTEL_LOG_LEVEL", "INFO")
+	if os.Getenv("OTEL_LOG_LEVEL") == "" {
+		if debug {
+			os.Setenv("OTEL_LOG_LEVEL", "DEBUG")
+		} else {
+			os.Setenv("OTEL_LOG_LEVEL", "INFO")
+		}
 	}
 	return nil
 }
