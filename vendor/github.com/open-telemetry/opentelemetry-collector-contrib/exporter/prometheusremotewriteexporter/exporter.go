@@ -101,7 +101,7 @@ type prwExporter struct {
 	batchStatePool sync.Pool
 }
 
-func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
+func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -111,6 +111,7 @@ func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 		telemetryBuilder: telemetryBuilder,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String("exporter", set.ID.String()),
+			attribute.String("endpoint", endpointURL.String()),
 		},
 	}, nil
 }
@@ -127,7 +128,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, errors.New("invalid endpoint")
 	}
 
-	telemetry, err := newPRWTelemetry(set)
+	telemetry, err := newPRWTelemetry(set, endpointURL)
 	if err != nil {
 		return nil, err
 	}
@@ -157,19 +158,14 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:     cfg.BackOffConfig,
 		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
-			AddMetricSuffixes:   cfg.AddMetricSuffixes,
-			SendMetadata:        cfg.SendMetadata,
+			Namespace:         cfg.Namespace,
+			ExternalLabels:    sanitizedLabels,
+			DisableTargetInfo: !cfg.TargetInfo.Enabled,
+			AddMetricSuffixes: cfg.AddMetricSuffixes,
+			SendMetadata:      cfg.SendMetadata,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
-	}
-
-	if prwe.exporterSettings.ExportCreatedMetric {
-		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -239,7 +235,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
-			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}
