@@ -22,6 +22,10 @@ const (
 	// Load Balancer network types
 	LoadBalancerNetworkTypeExternal = "EXTERNAL"
 	LoadBalancerNetworkTypeInternal = "INTERNAL"
+
+	// Load Balancer network_stack types
+	LoadBalancerNetworkStackIPv4      = "IPV4"
+	LoadBalancerNetworkStackDualstack = "DUALSTACK"
 )
 
 // LoadBalancersService is an interface for managing load balancers with the DigitalOcean API.
@@ -45,6 +49,7 @@ type LoadBalancer struct {
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 	IP   string `json:"ip,omitempty"`
+	IPv6 string `json:"ipv6,omitempty"`
 	// SizeSlug is mutually exclusive with SizeUnit. Only one should be specified
 	SizeSlug string `json:"size,omitempty"`
 	// SizeUnit is mutually exclusive with SizeSlug. Only one should be specified
@@ -73,6 +78,7 @@ type LoadBalancer struct {
 	GLBSettings                  *GLBSettings     `json:"glb_settings,omitempty"`
 	TargetLoadBalancerIDs        []string         `json:"target_load_balancer_ids,omitempty"`
 	Network                      string           `json:"network,omitempty"`
+	NetworkStack                 string           `json:"network_stack,omitempty"`
 }
 
 // String creates a human-readable description of a LoadBalancer.
@@ -107,6 +113,7 @@ func (l LoadBalancer) AsRequest() *LoadBalancerRequest {
 		HTTPIdleTimeoutSeconds:       l.HTTPIdleTimeoutSeconds,
 		TargetLoadBalancerIDs:        append([]string(nil), l.TargetLoadBalancerIDs...),
 		Network:                      l.Network,
+		NetworkStack:                 l.NetworkStack,
 	}
 
 	if l.DisableLetsEncryptDNSRecords != nil {
@@ -246,6 +253,7 @@ type LoadBalancerRequest struct {
 	GLBSettings                  *GLBSettings     `json:"glb_settings,omitempty"`
 	TargetLoadBalancerIDs        []string         `json:"target_load_balancer_ids,omitempty"`
 	Network                      string           `json:"network,omitempty"`
+	NetworkStack                 string           `json:"network_stack,omitempty"`
 }
 
 // String creates a human-readable description of a LoadBalancerRequest.

@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
@@ -39,24 +38,32 @@ var (
 )
 
 type mongodbScraper struct {
-	logger            *zap.Logger
-	config            *Config
-	client            client
-	secondaryClients  []client
-	mongoVersion      *version.Version
-	mb                *metadata.MetricsBuilder
-	prevReplTimestamp pcommon.Timestamp
-	prevReplCounts    map[string]int64
+	logger             *zap.Logger
+	config             *Config
+	client             client
+	secondaryClients   []client
+	mongoVersion       *version.Version
+	mb                 *metadata.MetricsBuilder
+	prevReplTimestamp  pcommon.Timestamp
+	prevReplCounts     map[string]int64
+	prevTimestamp      pcommon.Timestamp
+	prevFlushTimestamp pcommon.Timestamp
+	prevCounts         map[string]int64
+	prevFlushCount     int64
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger:            settings.Logger,
-		config:            config,
-		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion:      unknownVersion(),
-		prevReplTimestamp: pcommon.Timestamp(0),
-		prevReplCounts:    make(map[string]int64),
+		logger:             settings.Logger,
+		config:             config,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion:       unknownVersion(),
+		prevReplTimestamp:  pcommon.Timestamp(0),
+		prevReplCounts:     make(map[string]int64),
+		prevTimestamp:      pcommon.Timestamp(0),
+		prevFlushTimestamp: pcommon.Timestamp(0),
+		prevCounts:         make(map[string]int64),
+		prevFlushCount:     0,
 	}
 }
 
@@ -255,6 +262,11 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordLatencyTime(now, document, errs)
 	s.recordUptime(now, document, errs)
 	s.recordHealth(now, document, errs)
+	s.recordActiveWrites(now, document, errs)
+	s.recordActiveReads(now, document, errs)
+	s.recordFlushesPerSecond(now, document, errs)
+	s.recordWTCacheBytes(now, document, errs)
+	s.recordPageFaults(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -288,7 +300,7 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
 	}
 
-	members, ok := result["members"].(primitive.A)
+	members, ok := result["members"].(bson.A)
 	if !ok {
 		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
 	}
