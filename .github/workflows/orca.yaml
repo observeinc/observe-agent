@@ -1,0 +1,77 @@
+name: SAST, SCA & Image Scan Workflow
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  orca-scan:
+    name: Orca Scan
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_KEY: observeinc-observe-agent
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Orca SAST Scan
+        uses: orcasecurity/shiftleft-sast-action@v1
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          path: "."
+
+      - name: Run Orca FS Scan
+        uses: orcasecurity/shiftleft-fs-action@v1
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          path: "."
+
+  orca-container-scan:
+    name: Orca Container Image Scan
+    runs-on: ubuntu-observe-agent-8cpu
+    permissions:
+        security-events: write
+    env:
+      PROJECT_KEY: observeinc-observe-agent
+      TEST_TAG: observeinc/observe-agent:test
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.8
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: 2.8.2
+          args: build --snapshot --id=linux_build --skip=validate --single-target
+        env:
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+
+      - name: Copy Binary
+        run: |
+          cp dist/linux_amd64/linux_build_linux_amd64_v1/observe-agent .
+
+      - name: Build Docker Image Locally
+        run: docker build -f packaging/docker/Dockerfile -t ${{ env.TEST_TAG }} .
+
+      - name: Run Orca Container Image Scan
+        uses: orcasecurity/shiftleft-container-image-action@v1
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          image: ${{ env.TEST_TAG }}
