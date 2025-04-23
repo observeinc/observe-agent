@@ -43,13 +43,13 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: 2.8.2
-          args: build --snapshot --id=default --skip=validate --single-target
+          args: build --snapshot --id=linux_build --skip=validate --single-target
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
 
       - name: Copy Binary
         run: |
-          cp dist/linux_amd64/default_linux_amd64_v1/observe-agent .
+          cp dist/linux_amd64/linux_build_linux_amd64_v1/observe-agent .
       
       - name: Build an image from Dockerfile
         run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG }} .
