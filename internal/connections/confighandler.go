@@ -77,6 +77,13 @@ func SetEnvVars() error {
 	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
 	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
 
+	// Default TRACE_TOKEN to be the value of the configured token if it's not set. This allows for users to upgrade to
+	// direct write tracing with ingest tokens in kubernetes without breaking backwards compatibility in our helm chart.
+	// TODO: remove this once our helm chart no longer supports TRACE_TOKEN
+	if os.Getenv("TRACE_TOKEN") == "" {
+		os.Setenv("TRACE_TOKEN", token)
+	}
+
 	if os.Getenv("OTEL_LOG_LEVEL") == "" {
 		if debug {
 			os.Setenv("OTEL_LOG_LEVEL", "DEBUG")
