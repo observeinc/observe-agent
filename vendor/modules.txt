@@ -2372,9 +2372,9 @@ golang.org/x/exp/slices
 # golang.org/x/mod v0.24.0
 ## explicit; go 1.23.0
 golang.org/x/mod/semver
-# golang.org/x/net v0.29.0 => golang.org/x/net v0.36.0
+# golang.org/x/net v0.29.0 => golang.org/x/net v0.38.0
 ## explicit; go 1.23.0
-# golang.org/x/net v0.39.0 => golang.org/x/net v0.36.0
+# golang.org/x/net v0.39.0 => golang.org/x/net v0.38.0
 ## explicit; go 1.23.0
 golang.org/x/net/bpf
 golang.org/x/net/context
@@ -3113,5 +3113,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
-# golang.org/x/net => golang.org/x/net v0.36.0
+# golang.org/x/net => golang.org/x/net v0.38.0
 # golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
