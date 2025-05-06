@@ -18,7 +18,7 @@ Another key reason to create a dedicated processor is to compute attributes that
 Beyond adding facets, the processor performs another critical function: automatic secret redaction. While preserving the raw event structure and secret names, the processor replaces any secret values with "REDACTED" before ingestion. This security feature protects customers from accidentally exposing sensitive information, even if their Kubernetes clusters inadvertently leak secrets in their events. By performing redaction at the processor level, we ensure that secret values never reach our storage system.
 
 ## Caveats
-> [!WARNING]
+> [!CAUTION]
 > This processor currently expects the `kind` field to be set at the base level of the event. In the case of `watch` events from the `k8sobjectsreceiver`, this field is instead present inside of the `object` field. This processor currently expects this field to be lifted from inside the `object` field to the base level by a transform processor earlier in the pipeline. If that isn't set up, this processor will only calculate status for `pull` events from the `k8sobjectsreceiver`.
 
 ## Description
