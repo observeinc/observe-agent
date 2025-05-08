@@ -1960,6 +1960,10 @@ go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper
 # go.opentelemetry.io/collector/exporter/exportertest v0.124.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/collector/exporter/exportertest
+# go.opentelemetry.io/collector/exporter/nopexporter v0.124.0
+## explicit; go 1.23.0
+go.opentelemetry.io/collector/exporter/nopexporter
+go.opentelemetry.io/collector/exporter/nopexporter/internal/metadata
 # go.opentelemetry.io/collector/exporter/otlpexporter v0.124.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/collector/exporter/otlpexporter
@@ -2096,6 +2100,10 @@ go.opentelemetry.io/collector/processor/xprocessor
 ## explicit; go 1.23.0
 go.opentelemetry.io/collector/receiver
 go.opentelemetry.io/collector/receiver/internal
+# go.opentelemetry.io/collector/receiver/nopreceiver v0.124.0
+## explicit; go 1.23.0
+go.opentelemetry.io/collector/receiver/nopreceiver
+go.opentelemetry.io/collector/receiver/nopreceiver/internal/metadata
 # go.opentelemetry.io/collector/receiver/otlpreceiver v0.124.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/collector/receiver/otlpreceiver

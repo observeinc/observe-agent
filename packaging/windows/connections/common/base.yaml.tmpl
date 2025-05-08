@@ -5,6 +5,9 @@ extensions:
 connectors:
   count:
 
+receivers:
+  nop:
+
 processors:
   # Snowflake limit for identifiers: Regardless of whether an identifier is unquoted or double-quoted, the maximum number of characters allowed is 255 (including blank spaces).
   # https://docs.snowflake.com/en/sql-reference/identifiers-syntax#identifier-requirements
@@ -76,6 +79,15 @@ exporters:
     send_metadata: true
 
   debug:
+  nop:
 
 service:
+  pipelines:
+    metrics/count-nop-in:
+       receivers: [nop]
+       exporters: [count]
+    metrics/count-nop-out:
+       receivers: [count]
+       exporters: [nop]
+
   extensions: [health_check, file_storage]

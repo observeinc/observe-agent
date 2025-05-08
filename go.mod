@@ -352,6 +352,7 @@ require (
 	go.opentelemetry.io/collector/exporter/debugexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.124.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.124.0 // indirect
+	go.opentelemetry.io/collector/exporter/nopexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.124.0 // indirect
@@ -380,6 +381,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.124.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.124.0 // indirect
 	go.opentelemetry.io/collector/receiver v1.30.0 // indirect
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.124.0 // indirect
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.124.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.124.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.124.0 // indirect
