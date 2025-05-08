@@ -1,0 +1,11 @@
+type: nop
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  codeowners:
+    active:
+      - evan-bradley
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib, k8s]
