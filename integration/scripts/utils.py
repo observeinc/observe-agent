@@ -263,7 +263,7 @@ def get_docker_image(remote_host: Host) -> str:
     return images[0]
 
 
-def get_docker_prefix(remote_host: Host, detach: bool) -> str:
+def get_docker_prefix(remote_host: Host, detach: bool, extra_args: str = "") -> str:
     image = get_docker_image(remote_host)
     return f'sudo docker run {"-d --restart on-failure" if detach else ""} \
         --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
@@ -273,6 +273,7 @@ def get_docker_prefix(remote_host: Host, detach: bool) -> str:
         --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly \
         --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
         --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
+        {extra_args} \
         --pid host {image}'
 
 

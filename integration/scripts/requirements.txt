@@ -1,1 +1,2 @@
 fabric==3.2.2
+pytest-snapshot==0.9.0

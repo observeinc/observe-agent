@@ -1,0 +1,48 @@
+cloud_resource_detectors:
+    - ec2
+    - test
+
+# Debug mode - Sets agent log level to debug
+debug: true
+
+forwarding:
+    enabled: true
+
+health_check:
+    enabled: true
+    endpoint: localhost:12345
+    path: /test-status
+
+host_monitoring:
+    enabled: true
+    logs:
+        enabled: true
+        exclude: [exclude1, exclude2]
+        include: [include1, include2]
+    metrics:
+        host:
+            enabled: true
+        process:
+            enabled: true
+
+internal_telemetry:
+    enabled: true
+    logs:
+        enabled: true
+        level: ERROR
+    metrics:
+        enabled: true
+        host: 0.0.0.0
+        level: normal
+        port: 12346
+
+# Target Observe collection url
+observe_url: https://123456789.collect.observe-eng.com/
+
+otel_config_overrides: {}
+
+self_monitoring:
+    enabled: true
+
+# Observe data token
+token: abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
