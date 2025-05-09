@@ -168,12 +168,7 @@ class Host(object):
         )
 
     def run_command(self, command) -> Result:
-        try:
-            with self._get_connection() as connection:
-                print("Running `{0}` on {1}".format(command, self.host_ip))
-                result = connection.run(command, warn=True, hide=True)
-        except (socket_error, AuthenticationException) as exc:
-            self._raise_authentication_err(exc)
+        result = self.run_command_unsafe(command)
 
         if result.failed:
             raise ExampleException(
@@ -185,6 +180,16 @@ class Host(object):
                     str(result.stdout) or "<empty>",
                 )
             )
+
+        return result
+
+    def run_command_unsafe(self, command) -> Result:
+        try:
+            with self._get_connection() as connection:
+                print("Running `{0}` on {1}".format(command, self.host_ip))
+                result = connection.run(command, warn=True, hide=True)
+        except (socket_error, AuthenticationException) as exc:
+            self._raise_authentication_err(exc)
 
         return result
 

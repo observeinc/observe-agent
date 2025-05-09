@@ -8,6 +8,16 @@ receivers:
 service:
   pipelines:
     metrics/agent-filestats:
-       receivers: [filestats/agent]
-       processors: [resourcedetection, resourcedetection/cloud]
-       exporters: [prometheusremotewrite/observe]
+      receivers: [filestats/agent]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
+      exporters: [prometheusremotewrite/observe]

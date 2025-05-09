@@ -29,15 +29,49 @@ service:
   pipelines:
     metrics/agent-internal:
       receivers: [prometheus/agent, count]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, deltatocumulative, batch]
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - deltatocumulative
+        - batch
       exporters: [prometheusremotewrite/observe]
 
     logs/agent-journald:
       receivers: [journald/agent]
-      processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
       exporters: [otlphttp/observe, count]
 
     logs/agent-config:
-       receivers: [filelog/agent-config]
-       processors: [memory_limiter, transform/truncate, resourcedetection, resourcedetection/cloud, batch]
-       exporters: [otlphttp/observe]
+      receivers: [filelog/agent-config]
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
+      exporters: [otlphttp/observe]

@@ -73,12 +73,22 @@ type AgentConfig struct {
 	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url"`
 	CloudResourceDetectors []string                `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
+	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
+	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
 	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry" mapstructure:"internal_telemetry"`
 	SelfMonitoring         SelfMonitoringConfig    `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
 	HostMonitoring         HostMonitoringConfig    `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
 	OtelConfigOverrides    map[string]any          `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`
+}
+
+func (config *AgentConfig) HasAttributes() bool {
+	return len(config.Attributes) > 0
+}
+
+func (config *AgentConfig) HasResourceAttributes() bool {
+	return len(config.ResourceAttributes) > 0
 }
 
 func SetViperDefaults(v *viper.Viper, separator string) {
