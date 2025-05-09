@@ -36,5 +36,15 @@ service:
   pipelines:
     metrics/host_monitoring_host:
       receivers: [hostmetrics/host-monitoring-host]
-      processors: [memory_limiter, resourcedetection, resourcedetection/cloud, batch]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
       exporters: [prometheusremotewrite/observe]

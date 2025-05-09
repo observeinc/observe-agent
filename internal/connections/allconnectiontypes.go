@@ -25,6 +25,12 @@ var CommonConnectionType = MakeConnectionType(
 		},
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.HasAttributes() || agentConfig.HasResourceAttributes()
+			},
+			colConfigFilePath: "attributes.yaml.tmpl",
+		},
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
 				return agentConfig.Forwarding.Enabled
 			},
 			colConfigFilePath: "forward.yaml.tmpl",
