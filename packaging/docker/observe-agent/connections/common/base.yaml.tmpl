@@ -1,6 +1,9 @@
 extensions:
   file_storage:
     directory: ${env:FILESTORAGE_PATH}
+  cgroupruntime:
+    gomaxprocs:
+      enabled: true
 
 connectors:
   count:
@@ -109,5 +112,4 @@ service:
     metrics/count-nop-out:
        receivers: [count]
        exporters: [nop]
-
-  extensions: [health_check, file_storage]
+  extensions: [health_check, file_storage, cgroupruntime]
