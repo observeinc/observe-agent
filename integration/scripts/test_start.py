@@ -9,22 +9,22 @@ from collections import defaultdict
 
 
 def _check_status_loop(
-    remote_host: u.Host, start_timeout: int, status_command: str
+    remote_host: u.Host,  status_command: str, num_retries: int = 10, sleep_seconds: float = 1.5
 ) -> bool:
     """Run Check Status Command in a loop to wait for observe-agent to start
 
     Args:
         remote_host (Host): instance to ssh into
-        start_timeout (int): timeout in seconds to wait for agent to start
         status_command (str): windows/linux status command to run
+        num_retries (int): number of times to check for the running agent before giving up
+        sleep_seconds (float): number of seconds to sleep between each retry
 
     Returns:
         bool: agent_status
     """
-    sleep_seconds = 1.5
     agent_status = False
     time.sleep(sleep_seconds)
-    for _ in range(start_timeout):
+    for _ in range(num_retries):
         metrics_dict = defaultdict(list)
         try:
             result = remote_host.run_command(status_command)
@@ -45,7 +45,7 @@ def _check_status_loop(
             break
         print(
             "❌ Observe Agent is not running. Retry Count is {}/{}...".format(
-                _ + 1, start_timeout
+                _ + 1, num_retries
             )
         )
         time.sleep(sleep_seconds)
@@ -66,7 +66,6 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     # status
     start_command = r".\start_agent_windows.ps1"
     status_command = r'Get-Service ObserveAgent;Set-Location "${Env:Programfiles}\Observe\observe-agent"; ./observe-agent status'
-    start_timeout = 10  # how many times to check for the running agent
 
     # Get windows home dir paths for consistency
     home_dir = r"/C:/Users/{}".format(env_vars["user"])  # for user in sftp
@@ -91,7 +90,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         raise RuntimeError("❌ Error in start_agent_windows.ps1 powershell script")
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, start_timeout, status_command)
+    agent_status = _check_status_loop(remote_host, status_command)
     if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
 
@@ -100,7 +99,6 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     docker_prefix = u.get_docker_prefix(remote_host, True)
     start_command = "start"
-    start_timeout = 10  # how many times to check for the running agent
 
     # Start Observe Agent
     result = remote_host.run_command(docker_prefix + " " + start_command)
@@ -115,7 +113,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     status_command = f"sudo docker exec {container_id} ./observe-agent status"
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, start_timeout, status_command)
+    agent_status = _check_status_loop(remote_host, status_command)
     if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
 
@@ -133,14 +131,13 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
 
     start_command = "sudo systemctl enable --now observe-agent"
     status_command = "observe-agent status"
-    start_timeout = 10  # how many times to check for the running agent
 
     # Start Observe Agent
     result = remote_host.run_command(start_command)
     u.print_remote_result(result)
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, start_timeout, status_command)
+    agent_status = _check_status_loop(remote_host, status_command)
     if not agent_status:
         # If the agent never started up, try running start to see what the error is. Use unsafe because we expect a non-zero exit code.
         u.print_remote_result(
