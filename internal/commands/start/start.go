@@ -87,8 +87,8 @@ collector on the current host.`
 			configFlag.Value.Set(path)
 		}
 		// Set PRWE enable multiple workers feature gate.
-		EnableMultipleWritersFlag := otleCmd.Flags().Lookup("feature-gates")
-		EnableMultipleWritersFlag.Value.Set("+exporter.prometheusremotewritexporter.EnableMultipleWorkers")
+		enableMultipleWritersFlag := otleCmd.Flags().Lookup("feature-gates")
+		enableMultipleWritersFlag.Value.Set("+exporter.prometheusremotewritexporter.EnableMultipleWorkers")
 		return originalRunE(cmd, args)
 	}
 	return otleCmd

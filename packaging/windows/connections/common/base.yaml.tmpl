@@ -75,8 +75,8 @@ exporters:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
       x-observe-target-package: "Host Explorer"
     remote_write_queue:
-      num_consumers: 10
-    max_batch_request_parallelism: 10
+      num_consumers: 5
+    max_batch_request_parallelism: 5
     resource_to_telemetry_conversion:
       enabled: true  # Convert resource attributes to metric labels
     send_metadata: true
