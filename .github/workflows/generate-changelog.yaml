@@ -22,7 +22,7 @@ jobs:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser-pro
           # 'latest', 'nightly', or a semver
-          version: 2.8.2
+          version: 2.9.0
           args: changelog
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
