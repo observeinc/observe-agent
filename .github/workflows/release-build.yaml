@@ -29,10 +29,11 @@ jobs:
       - name: Install qemu
         uses: docker/setup-qemu-action@v3
       - name: Run GoReleaser
+        timeout-minutes: 15
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.8.2
+          version: 2.9.0
           args: release --prepare --clean --snapshot --verbose
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
