@@ -43,6 +43,11 @@ extensions:
         endpoint: localhost:12345
         path: /test-status
 processors:
+    attributes/observe_global_attributes:
+        actions:
+            - action: insert
+              key: test-attr
+              value: test-value
     batch:
         timeout: 5s
     deltatocumulative: null
@@ -55,6 +60,14 @@ processors:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    resource/observe_global_resource_attributes:
+        attributes:
+            - action: insert
+              key: deployment.environment
+              value: test
+            - action: insert
+              key: service.name
+              value: test-service
     resourcedetection:
         detectors:
             - env
@@ -236,6 +249,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filelog/agent-config
@@ -248,6 +263,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - journald/agent
@@ -258,6 +275,8 @@ service:
             processors:
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
             receivers:
                 - otlp
         logs/host_monitoring-file:
@@ -269,6 +288,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filelog/host_monitoring
@@ -281,6 +302,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - journald/host_monitoring
@@ -291,6 +314,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filestats/agent
@@ -302,6 +327,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - deltatocumulative
                 - batch
             receivers:
@@ -323,6 +350,8 @@ service:
             processors:
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - deltatocumulative
                 - batch
             receivers:
@@ -334,6 +363,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
@@ -344,6 +375,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-process
@@ -353,6 +386,8 @@ service:
             processors:
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
             receivers:
                 - otlp
     telemetry:

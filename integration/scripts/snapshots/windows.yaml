@@ -43,6 +43,11 @@ extensions:
         endpoint: localhost:12345
         path: /test-status
 processors:
+    attributes/observe_global_attributes:
+        actions:
+            - action: insert
+              key: test-attr
+              value: test-value
     batch:
         timeout: 5s
     deltatocumulative: null
@@ -51,6 +56,14 @@ processors:
         metrics:
             metric:
                 - IsMatch(name, ".*")
+    resource/observe_global_resource_attributes:
+        attributes:
+            - action: insert
+              key: deployment.environment
+              value: test
+            - action: insert
+              key: service.name
+              value: test-service
     memory_limiter:
         check_interval: 1s
         limit_percentage: 80
@@ -187,6 +200,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filelog/agent-config
@@ -199,6 +214,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - otlp
@@ -211,6 +228,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - windowseventlog/host_monitoring-application
@@ -223,6 +242,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filestats/agent
@@ -234,6 +255,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - deltatocumulative
                 - batch
             receivers:
@@ -257,6 +280,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - deltatocumulative
                 - batch
             receivers:
@@ -268,6 +293,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
@@ -278,6 +305,8 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-process
@@ -289,6 +318,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - otlp
