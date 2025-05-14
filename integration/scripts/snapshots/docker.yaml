@@ -30,6 +30,9 @@ exporters:
         headers:
             authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
             x-observe-target-package: Host Explorer
+        max_batch_request_parallelism: 5
+        remote_write_queue:
+            num_consumers: 5
         resource_to_telemetry_conversion:
             enabled: true
         send_metadata: true
@@ -287,8 +290,10 @@ service:
             exporters:
                 - prometheusremotewrite/observe
             processors:
+                - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - batch
             receivers:
                 - filestats/agent
         metrics/agent-internal:
