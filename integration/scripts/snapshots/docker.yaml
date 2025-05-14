@@ -37,6 +37,9 @@ exporters:
             enabled: true
         send_metadata: true
 extensions:
+    cgroupruntime:
+        gomaxprocs:
+            enabled: true
     file_storage:
         directory: /var/lib/observe-agent/filestorage
     health_check:
@@ -56,6 +59,10 @@ processors:
         metrics:
             metric:
                 - IsMatch(name, ".*")
+    memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 20
     resource/observe_global_resource_attributes:
         attributes:
             - action: insert
@@ -64,10 +71,6 @@ processors:
             - action: insert
               key: service.name
               value: test-service
-    memory_limiter:
-        check_interval: 1s
-        limit_percentage: 80
-        spike_limit_percentage: 20
     resourcedetection:
         detectors:
             - env
@@ -242,6 +245,7 @@ service:
     extensions:
         - health_check
         - file_storage
+        - cgroupruntime
     pipelines:
         logs/agent-config:
             exporters:
