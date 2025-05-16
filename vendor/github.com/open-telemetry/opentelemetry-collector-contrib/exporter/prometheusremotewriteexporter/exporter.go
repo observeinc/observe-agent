@@ -205,6 +205,7 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
 func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	prwe.settings.Logger.Debug("PushMetrics function called")
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
