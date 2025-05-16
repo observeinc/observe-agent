@@ -205,7 +205,7 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
 func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	prwe.settings.Logger.Debug("function called", zap.String("method", "PushMetrics"))
+	prwe.settings.Logger.Debug("PushMetrics function called")
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
@@ -217,16 +217,13 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.String("method", "PushMetrics"), zap.Error(err), zap.Int("translated", len(tsMap)))
-		} else {
-			prwe.settings.Logger.Debug("successfully translate metrics", zap.String("method", "PushMetrics"), zap.Int("translated", len(tsMap)))
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
 		}
 
 		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {
-			prwe.settings.Logger.Debug("creating metadata", zap.String("method", "PushMetrics"), zap.Error(err), zap.Bool("addSuffixes", prwe.exporterSettings.AddMetricSuffixes))
 			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
 		}
 
@@ -248,7 +245,6 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 }
 
 func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
-	prwe.settings.Logger.Debug("function called", zap.String("method", "handleExport"))
 	// There are no metrics to export, so return.
 	if len(tsMap) == 0 {
 		return nil
@@ -259,18 +255,15 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
-		prwe.settings.Logger.Debug("failed batching", zap.String("method", "handleExport"), zap.Error(err))
 		return err
 	}
 	if !prwe.walEnabled() {
-		prwe.settings.Logger.Debug("exporting requests", zap.String("method", "handleExport"), zap.Int("numRequests", len(requests)))
 		// Perform a direct export otherwise.
 		return prwe.export(ctx, requests)
 	}
 
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
 	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
-	prwe.settings.Logger.Debug("persisting requests to WAL", zap.String("method", "handleExport"), zap.Int("numRequests", len(requests)))
 	if err = prwe.wal.persistToWAL(requests); err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -279,7 +272,6 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	prwe.settings.Logger.Debug("function called", zap.String("method", "export"))
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -301,12 +293,10 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 			for {
 				select {
 				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
-					prwe.settings.Logger.Debug("context cancelled during export goroutine", zap.String("method", "export"))
 					return
 
 				case request, ok := <-input:
 					if !ok {
-						prwe.settings.Logger.Debug("request channel empty", zap.String("method", "export"))
 						return
 					}
 					if errExecute := prwe.execute(ctx, request); errExecute != nil {
@@ -324,7 +314,6 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-	prwe.settings.Logger.Debug("function called", zap.String("method", "execute"))
 	buf := bufferPool.Get().(*buffer)
 	buf.protobuf.Reset()
 	defer bufferPool.Put(buf)
@@ -352,17 +341,14 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// to continue to run after a timeout
 		select {
 		case <-ctx.Done():
-			prwe.settings.Logger.Debug("context expired", zap.String("method", "executeFunc"))
 			return backoff.Permanent(ctx.Err())
 		default:
 			// continue
 		}
 
 		// Create the HTTP POST request to send to the endpoint
-		prwe.settings.Logger.Debug("building http request", zap.String("method", "executeFunc"))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
-			prwe.settings.Logger.Debug("failed to build http request", zap.Error(err), zap.String("method", "executeFunc"))
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
@@ -374,7 +360,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		resp, err := prwe.client.Do(req)
-		prwe.settings.Logger.Debug("http response status code", zap.Int("statusCode", resp.StatusCode), zap.String("method", "executeFunc"))
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
 			return err
@@ -407,7 +392,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
-	prwe.settings.Logger.Debug("sending compressed data", zap.String("method", "execute"), zap.Bool("retry", prwe.retrySettings.Enabled))
 	var err error
 	if prwe.retrySettings.Enabled {
 		// Use the BackOff instance to retry the func with exponential backoff.
