@@ -26,13 +26,13 @@ service:
       processors:
         - resourcedetection
         - resourcedetection/cloud
-        - deltatocumulative
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        - deltatocumulative
         - batch
       exporters: [prometheusremotewrite/observe]
 
