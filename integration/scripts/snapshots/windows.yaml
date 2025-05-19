@@ -14,6 +14,17 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
+    otlphttp/observemetrics:
+        compression: zstd
+        endpoint: https://123456789.collect.observe-eng.com/v2/otel
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Metrics
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
     otlphttp/observetracing:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
@@ -277,7 +288,6 @@ service:
                 - prometheusremotewrite/observe
             processors:
                 - memory_limiter
-                - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes

@@ -47,7 +47,8 @@ type HealthCheckConfig struct {
 }
 
 type ForwardingConfig struct {
-	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Enabled     bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	OtlpMetrics bool `yaml:"otlp_metrics,omitempty" mapstructure:"otlp_metrics"`
 }
 
 type InternalTelemetryMetricsConfig struct {

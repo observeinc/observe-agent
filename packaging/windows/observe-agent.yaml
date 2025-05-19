@@ -7,6 +7,11 @@ observe_url: "${OBSERVE_COLLECTION_ENDPOINT}"
 # Debug mode - Sets agent log level to debug
 debug: false
 
+# Enable forwarding of local app metrics and traces
+forwarding:
+  enabled: true
+  otlp_metrics: true
+
 # collect metrics and logs pertaining to the agent itself
 self_monitoring:
   enabled: true
