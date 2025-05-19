@@ -1,0 +1,55 @@
+# Target Observe collection url
+observe_url: https://123456789.collect.observe-eng.com/
+
+# Observe data token
+token: abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+
+cloud_resource_detectors:
+    - ec2
+    - test
+
+# Debug mode - Sets agent log level to debug
+debug: true
+
+attributes:
+    test-attr: test-value
+
+resource_attributes:
+    service.name: test-service
+    deployment.environment: test
+
+health_check:
+    enabled: true
+    endpoint: localhost:12345
+    path: /test-status
+
+internal_telemetry:
+    enabled: true
+    logs:
+        enabled: true
+        level: ERROR
+    metrics:
+        enabled: true
+        host: 0.0.0.0
+        level: normal
+        port: 12346
+
+forwarding:
+    enabled: true
+
+host_monitoring:
+    enabled: true
+    logs:
+        enabled: true
+        exclude: [exclude1, exclude2]
+        include: [include1, include2]
+    metrics:
+        host:
+            enabled: true
+        process:
+            enabled: true
+
+self_monitoring:
+    enabled: true
+
+otel_config_overrides: {}
