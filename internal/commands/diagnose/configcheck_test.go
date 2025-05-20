@@ -62,10 +62,15 @@ func Test_checkConfig(t *testing.T) {
 		f, err := os.CreateTemp("", "test-config-*.yaml")
 		assert.NoError(t, err)
 		defer os.Remove(f.Name())
-		f.Write([]byte(tc.confStr))
+		_, err = f.Write([]byte(tc.confStr))
+		assert.NoError(t, err)
 
 		v := viper.New()
 		v.SetConfigFile(f.Name())
+		err = v.ReadInConfig()
+		if tc.shouldParse {
+			assert.NoError(t, err)
+		}
 		success, resultAny, err := checkConfig(v)
 		assert.NoError(t, err)
 		result, ok := resultAny.(ConfigTestResult)
