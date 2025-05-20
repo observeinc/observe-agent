@@ -45,12 +45,12 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
-        {{- if not .Forwarding.OtlpMetrics }}
+        {{- if not .Forwarding.Metrics.OtlpMetrics }}
         - deltatocumulative
         {{- end }}
         - batch
       exporters:
-        {{- if .Forwarding.OtlpMetrics }}
+        {{- if .Forwarding.Metrics.OtlpMetrics }}
         - otlphttp/observemetrics
         {{- else }}
         - prometheusremotewrite/observe

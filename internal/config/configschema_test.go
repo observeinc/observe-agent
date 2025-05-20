@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/mcuadros/go-defaults"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,37 +13,64 @@ func TestAgentConfigValidate(t *testing.T) {
 		Token:      "some:token",
 		ObserveURL: "https://observeinc.com",
 	}
+	defaults.SetDefaults(&validConfig)
 	assert.NoError(t, validConfig.Validate())
 
 	missingURLConfig := AgentConfig{
 		Token:      "some:token",
 		ObserveURL: "",
 	}
+	defaults.SetDefaults(&missingURLConfig)
 	assert.ErrorContains(t, missingURLConfig.Validate(), "missing ObserveURL")
 
 	invalidURLConfig1 := AgentConfig{
 		Token:      "some:token",
 		ObserveURL: "observeinc.com",
 	}
+	defaults.SetDefaults(&invalidURLConfig1)
 	assert.ErrorContains(t, invalidURLConfig1.Validate(), "missing scheme for ObserveURL")
 
 	invalidURLConfig2 := AgentConfig{
 		Token:      "some:token",
 		ObserveURL: "http://",
 	}
+	defaults.SetDefaults(&invalidURLConfig2)
 	assert.ErrorContains(t, invalidURLConfig2.Validate(), "missing host for ObserveURL")
 
 	missingTokenConfig := AgentConfig{
 		Token:      "",
 		ObserveURL: "https://observeinc.com",
 	}
+	defaults.SetDefaults(&missingTokenConfig)
 	assert.ErrorContains(t, missingTokenConfig.Validate(), "missing Token")
 
 	invalidTokenConfig := AgentConfig{
 		Token:      "1234",
 		ObserveURL: "https://observeinc.com",
 	}
+	defaults.SetDefaults(&invalidTokenConfig)
 	assert.ErrorContains(t, invalidTokenConfig.Validate(), "invalid Token")
+
+	invalidMetricsForwardingFormat := AgentConfig{
+		Token:      "some:token",
+		ObserveURL: "https://observeinc.com",
+		Forwarding: ForwardingConfig{
+			Enabled: true,
+			Metrics: ForwardingMetricsConfig{
+				OutputFormat: "invalid",
+			},
+		},
+	}
+	defaults.SetDefaults(&invalidMetricsForwardingFormat)
+	assert.ErrorContains(t, invalidMetricsForwardingFormat.Validate(), "invalid metrics forwarding output format")
+
+	emptyMetricsForwardingFormat := AgentConfig{
+		Token:      "some:token",
+		ObserveURL: "https://observeinc.com",
+	}
+	defaults.SetDefaults(&emptyMetricsForwardingFormat)
+	emptyMetricsForwardingFormat.Forwarding.Metrics.OutputFormat = ""
+	assert.ErrorContains(t, emptyMetricsForwardingFormat.Validate(), "invalid metrics forwarding output format")
 }
 
 func TestAgentConfigFromViper(t *testing.T) {

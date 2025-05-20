@@ -2,12 +2,12 @@ package diagnose
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 type ConfigTestResult struct {
@@ -22,12 +22,11 @@ func checkConfig(v *viper.Viper) (bool, any, error) {
 	if configFile == "" {
 		return false, nil, fmt.Errorf("no config file defined")
 	}
-	contents, err := os.ReadFile(configFile)
-	if err != nil {
-		return false, nil, err
+	if _, err := os.Stat(configFile); err != nil && errors.Is(err, os.ErrNotExist) {
+		return false, nil, fmt.Errorf("config file %s does not exist", configFile)
 	}
-	var conf config.AgentConfig
-	if err = yaml.Unmarshal(contents, &conf); err != nil {
+	agentConfig, err := config.AgentConfigFromViper(v)
+	if err != nil {
 		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: false,
@@ -35,7 +34,7 @@ func checkConfig(v *viper.Viper) (bool, any, error) {
 			Error:          err.Error(),
 		}, nil
 	}
-	if err = conf.Validate(); err != nil {
+	if err = agentConfig.Validate(); err != nil {
 		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: true,
