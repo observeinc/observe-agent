@@ -51,7 +51,7 @@ type ForwardingMetricsConfig struct {
 }
 
 func (config *ForwardingMetricsConfig) OtlpMetrics() bool {
-	return config.OutputFormat == "otlp"
+	return config.OutputFormat == "otel"
 }
 
 type ForwardingConfig struct {
@@ -155,8 +155,8 @@ func (config *AgentConfig) Validate() error {
 		return errors.New("invalid Token, the provided value may be the token ID instead of the token itself")
 	}
 
-	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otlp" {
-		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otlp'", config.Forwarding.Metrics.OutputFormat)
+	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otel" {
+		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
 	}
 
 	return nil

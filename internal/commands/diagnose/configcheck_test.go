@@ -18,6 +18,11 @@ observe_url: "https://collect.observeinc.com"
 # Debug mode - Sets agent log level to debug
 debug: false
 
+forwarding:
+  enabled: true
+  metrics:
+    output_format: otel
+
 # collect metrics and logs pertaining to the agent itself
 self_monitoring:
   enabled: true

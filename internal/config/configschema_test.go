@@ -16,6 +16,18 @@ func TestAgentConfigValidate(t *testing.T) {
 	defaults.SetDefaults(&validConfig)
 	assert.NoError(t, validConfig.Validate())
 
+	validConfigOtel := AgentConfig{
+		Token:      "some:token",
+		ObserveURL: "https://observeinc.com",
+		Forwarding: ForwardingConfig{
+			Metrics: ForwardingMetricsConfig{
+				OutputFormat: "otel",
+			},
+		},
+	}
+	defaults.SetDefaults(&validConfigOtel)
+	assert.NoError(t, validConfigOtel.Validate())
+
 	missingURLConfig := AgentConfig{
 		Token:      "some:token",
 		ObserveURL: "",
