@@ -127,6 +127,8 @@ else
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=false"
         fi
     fi
+    # Add default args
+    INIT_FLAGS="$INIT_FLAGS --forwarding::metrics::output_format=true"
     sudo $observeagent_install_dir/observe-agent init-config $INIT_FLAGS
     sudo chown root:wheel $observeagent_install_dir/observe-agent.yaml
 fi

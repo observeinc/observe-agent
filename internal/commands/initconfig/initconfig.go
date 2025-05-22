@@ -19,6 +19,7 @@ var (
 	observe_url                             string
 	cloud_resource_detectors                []string
 	resource_attributes                     map[string]string
+	forwarding_metrics_format               string
 	self_monitoring_enabled                 bool
 	host_monitoring_enabled                 bool
 	host_monitoring_logs_enabled            bool
@@ -86,6 +87,9 @@ func RegisterConfigFlags(cmd *cobra.Command, v *viper.Viper) {
 
 	cmd.PersistentFlags().StringToStringVar(&resource_attributes, "resource_attributes", map[string]string{}, "The cloud environments from which to detect resources")
 	v.BindPFlag("resource_attributes", cmd.PersistentFlags().Lookup("resource_attributes"))
+
+	cmd.PersistentFlags().StringVar(&forwarding_metrics_format, "forwarding::metrics::output_format", "", "Format for sending app metrics to Observe, valid options are 'prometheus' and 'otel'")
+	v.BindPFlag("forwarding::metrics::output_format", cmd.PersistentFlags().Lookup("forwarding::metrics::output_format"))
 
 	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
 	v.BindPFlag("self_monitoring::enabled", cmd.PersistentFlags().Lookup("self_monitoring::enabled"))

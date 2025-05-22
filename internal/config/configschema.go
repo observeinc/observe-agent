@@ -46,8 +46,17 @@ type HealthCheckConfig struct {
 	Path     string `yaml:"path" mapstructure:"path" default:"/status"`
 }
 
+type ForwardingMetricsConfig struct {
+	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus"`
+}
+
+func (config *ForwardingMetricsConfig) OtlpMetrics() bool {
+	return config.OutputFormat == "otel"
+}
+
 type ForwardingConfig struct {
-	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Enabled bool                    `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Metrics ForwardingMetricsConfig `yaml:"metrics,omitempty" mapstructure:"metrics"`
 }
 
 type InternalTelemetryMetricsConfig struct {
@@ -145,5 +154,10 @@ func (config *AgentConfig) Validate() error {
 	if !strings.Contains(config.Token, ":") {
 		return errors.New("invalid Token, the provided value may be the token ID instead of the token itself")
 	}
+
+	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otel" {
+		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
+	}
+
 	return nil
 }
