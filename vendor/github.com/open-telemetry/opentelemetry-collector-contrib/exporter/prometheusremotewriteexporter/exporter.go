@@ -366,6 +366,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
+			prwe.settings.Logger.Error("failed to send request", zap.Error(err))
 			return err
 		}
 		defer func() {
@@ -383,6 +384,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		prwe.settings.Logger.Error("received http error response", zap.Error(rerr), zap.Int("status_code", resp.StatusCode), zap.Bool("retry_on_429", prwe.retryOnHTTP429))
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
@@ -393,7 +395,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 			return rerr
 		}
 
-		prwe.settings.Logger.Error("failed to send request", zap.Error(rerr), zap.Int("status_code", resp.StatusCode))
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
