@@ -205,6 +205,7 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
 func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	prwe.settings.Logger.Debug("PushMetrics function called")
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
@@ -264,6 +265,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
 	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
 	if err = prwe.wal.persistToWAL(requests); err != nil {
+		prwe.settings.Logger.Error("failed to persist to WAL", zap.Error(err))
 		return consumererror.NewPermanent(err)
 	}
 	return nil
@@ -299,6 +301,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 						return
 					}
 					if errExecute := prwe.execute(ctx, request); errExecute != nil {
+						prwe.settings.Logger.Error("failed during export call to execute", zap.Int("ts_len", len(request.Timeseries)), zap.Error(errExecute))
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
@@ -320,6 +323,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	errMarshal := buf.protobuf.Marshal(writeReq)
 	if errMarshal != nil {
+		prwe.settings.Logger.Error("failed to marshal proto", zap.Error(errMarshal))
 		return consumererror.NewPermanent(errMarshal)
 	}
 	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
@@ -348,6 +352,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
+			prwe.settings.Logger.Error("failed to create http request", zap.Error(err))
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
@@ -361,6 +366,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
+			prwe.settings.Logger.Error("failed to send request", zap.Error(err))
 			return err
 		}
 		defer func() {
@@ -378,6 +384,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		prwe.settings.Logger.Error("received http error response", zap.Error(rerr), zap.Int("status_code", resp.StatusCode), zap.Bool("retry_on_429", prwe.retryOnHTTP429))
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
@@ -408,6 +415,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	}
 
 	if err != nil {
+		prwe.settings.Logger.Error("failed calling executeFunc", zap.Bool("retry_enabled", prwe.retrySettings.Enabled), zap.Error(err))
 		return consumererror.NewPermanent(err)
 	}
 
