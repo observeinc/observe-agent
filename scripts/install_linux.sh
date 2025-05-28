@@ -120,6 +120,8 @@ else
             INIT_FLAGS="$INIT_FLAGS --host_monitoring::metrics::host::enabled=false"
         fi
     fi
+    # Add default args
+    INIT_FLAGS="$INIT_FLAGS --forwarding::metrics::output_format=otel"
     sudo $agent_binary_path init-config $INIT_FLAGS
     sudo chown root:root $observeagent_config_dir/observe-agent.yaml
 fi

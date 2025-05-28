@@ -2,12 +2,13 @@ package diagnose
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type ConfigTestResult struct {
@@ -18,16 +19,22 @@ type ConfigTestResult struct {
 }
 
 func checkConfig(v *viper.Viper) (bool, any, error) {
+	// Ensure there is an observe-agent config file.
 	configFile := v.ConfigFileUsed()
 	if configFile == "" {
 		return false, nil, fmt.Errorf("no config file defined")
 	}
+	if _, err := os.Stat(configFile); err != nil && errors.Is(err, os.ErrNotExist) {
+		return false, nil, fmt.Errorf("config file %s does not exist", configFile)
+	}
+
+	// Ensure the file is valid yaml.
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return false, nil, err
+		return false, nil, fmt.Errorf("error reading config file %s: %w", configFile, err)
 	}
-	var conf config.AgentConfig
-	if err = yaml.Unmarshal(contents, &conf); err != nil {
+	var yamlMap map[string]any
+	if err = yaml.Unmarshal(contents, &yamlMap); err != nil {
 		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: false,
@@ -35,7 +42,20 @@ func checkConfig(v *viper.Viper) (bool, any, error) {
 			Error:          err.Error(),
 		}, nil
 	}
-	if err = conf.Validate(); err != nil {
+
+	// Ensure the agent config can be loaded via viper.
+	agentConfig, err := config.AgentConfigFromViper(v)
+	if err != nil {
+		return false, ConfigTestResult{
+			ConfigFile:     configFile,
+			ParseSucceeded: false,
+			IsValid:        false,
+			Error:          err.Error(),
+		}, nil
+	}
+
+	// Ensure the agent config is valid.
+	if err = agentConfig.Validate(); err != nil {
 		return false, ConfigTestResult{
 			ConfigFile:     configFile,
 			ParseSucceeded: true,
@@ -43,6 +63,8 @@ func checkConfig(v *viper.Viper) (bool, any, error) {
 			Error:          err.Error(),
 		}, nil
 	}
+
+	// All checks passed.
 	return true, ConfigTestResult{
 		ConfigFile:     configFile,
 		ParseSucceeded: true,

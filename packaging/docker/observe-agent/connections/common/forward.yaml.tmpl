@@ -19,11 +19,24 @@ exporters:
       enabled: true
     compression: zstd
 
+  otlphttp/observemetrics:
+    endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
+    headers:
+      authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+      x-observe-target-package: "Metrics"
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+    compression: zstd
+
 service:
   pipelines:
     metrics/forward:
       receivers: [otlp]
       processors:
+        - memory_limiter
         - resourcedetection
         - resourcedetection/cloud
         {{- if .HasAttributes }}
@@ -32,13 +45,22 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        {{- if not .Forwarding.Metrics.OtlpMetrics }}
         - deltatocumulative
+        {{- end }}
         - batch
-      exporters: [prometheusremotewrite/observe]
+      exporters:
+        {{- if .Forwarding.Metrics.OtlpMetrics }}
+        - otlphttp/observemetrics
+        {{- else }}
+        - prometheusremotewrite/observe
+        {{- end }}
 
     logs/forward:
       receivers: [otlp]
       processors:
+        - memory_limiter
+        - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
         {{- if .HasAttributes }}
@@ -47,11 +69,14 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        - batch
       exporters: [otlphttp/observe, count]
 
     traces/forward:
       receivers: [otlp]
       processors:
+        - memory_limiter
+        - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
         {{- if .HasAttributes }}
@@ -60,4 +85,5 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        - batch
       exporters: [otlphttp/observetracing]

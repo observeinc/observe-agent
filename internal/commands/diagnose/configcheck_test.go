@@ -18,6 +18,11 @@ observe_url: "https://collect.observeinc.com"
 # Debug mode - Sets agent log level to debug
 debug: false
 
+forwarding:
+  enabled: true
+  metrics:
+    output_format: otel
+
 # collect metrics and logs pertaining to the agent itself
 self_monitoring:
   enabled: true
@@ -62,10 +67,15 @@ func Test_checkConfig(t *testing.T) {
 		f, err := os.CreateTemp("", "test-config-*.yaml")
 		assert.NoError(t, err)
 		defer os.Remove(f.Name())
-		f.Write([]byte(tc.confStr))
+		_, err = f.Write([]byte(tc.confStr))
+		assert.NoError(t, err)
 
 		v := viper.New()
 		v.SetConfigFile(f.Name())
+		err = v.ReadInConfig()
+		if tc.shouldParse {
+			assert.NoError(t, err)
+		}
 		success, resultAny, err := checkConfig(v)
 		assert.NoError(t, err)
 		result, ok := resultAny.(ConfigTestResult)
