@@ -198,7 +198,7 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 
 	if pod.DeletionTimestamp != nil && pod.Status.Reason == nodeUnreachablePodReason {
 		reason = "Unknown"
-	} else if pod.DeletionTimestamp != nil && !isPodPhaseTerminal(v1.PodPhase(podPhase)) {
+	} else if pod.DeletionTimestamp != nil {
 		reason = "Terminating"
 	}
 
