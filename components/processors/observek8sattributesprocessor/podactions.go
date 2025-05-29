@@ -77,8 +77,7 @@ func NewPodStatusAction() PodStatusAction {
 
 // Generates the Pod "status" facet.
 func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
-	// based on https://github.com/kubernetes/kubernetes/blob/0d3b859af81e6a5f869a7766c8d45afd1c600b04/pkg/printers/internalversion/printers.go#L901
-	restarts := 0
+	// based on https://github.com/kubernetes/kubernetes/blob/cd3b5c57668a0a6e32057ef82dfab40e9b0bec5b/pkg/printers/internalversion/printers.go#L881
 	restartableInitContainerRestarts := 0
 	totalContainers := len(pod.Spec.Containers)
 	readyContainers := 0
