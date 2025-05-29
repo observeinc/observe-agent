@@ -19,6 +19,28 @@ const (
 	OTEL_OVERRIDE_YAML_KEY = "otel_config_overrides"
 )
 
+func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
+	// Set Env Vars from config
+	err := SetEnvVars()
+	if err != nil {
+		return nil, nil, err
+	}
+	// Set up our temp dir annd temp config files
+	tmpDir, err := os.MkdirTemp("", TempFilesFolder)
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanup := func() {
+		os.RemoveAll(tmpDir)
+	}
+	configFilePaths, err := GetAllOtelConfigFilePaths(ctx, tmpDir)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	return configFilePaths, cleanup, nil
+}
+
 func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
 	configFilePaths := []string{}
 	// Get additional config paths based on connection configs

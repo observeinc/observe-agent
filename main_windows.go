@@ -3,12 +3,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/observeinc/observe-agent/internal/commands/start"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
 	"go.opentelemetry.io/collector/otelcol"
@@ -31,14 +31,13 @@ func run() error {
 	root.InitConfig()
 
 	// Get the collector settings along with our bundled config files.
-	configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(start.DefaultLoggerCtx())
+	colSettings, cleanup, err := observecol.GetOtelCollectorSettings(context.Background())
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
 		return err
 	}
-	colSettings := observecol.GenerateCollectorSettingsWithConfigFiles(configFilePaths)
 
 	if err := svc.Run("", otelcol.NewSvcHandler(*colSettings)); err != nil {
 		if errors.Is(err, windows.ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
