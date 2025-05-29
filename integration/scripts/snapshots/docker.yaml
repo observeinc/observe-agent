@@ -1,0 +1,428 @@
+connectors:
+    count: null
+exporters:
+    debug: null
+    nop: null
+    otlphttp/observe:
+        compression: zstd
+        endpoint: https://123456789.collect.observe-eng.com/v2/otel
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Host Explorer
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
+    otlphttp/observemetrics:
+        compression: zstd
+        endpoint: https://123456789.collect.observe-eng.com/v2/otel
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Metrics
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
+    otlphttp/observetracing:
+        compression: zstd
+        endpoint: https://123456789.collect.observe-eng.com/v2/otel
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Tracing
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
+    prometheusremotewrite/observe:
+        endpoint: https://123456789.collect.observe-eng.com/v1/prometheus
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Host Explorer
+        max_batch_request_parallelism: 5
+        remote_write_queue:
+            num_consumers: 5
+        resource_to_telemetry_conversion:
+            enabled: true
+        send_metadata: true
+extensions:
+    cgroupruntime:
+        gomaxprocs:
+            enabled: true
+    file_storage:
+        directory: /var/lib/observe-agent/filestorage
+    health_check:
+        endpoint: localhost:12345
+        path: /test-status
+processors:
+    attributes/observe_global_attributes:
+        actions:
+            - action: insert
+              key: test-attr
+              value: test-value
+    batch:
+        timeout: 5s
+    deltatocumulative: null
+    filter/count:
+        error_mode: ignore
+        metrics:
+            metric:
+                - IsMatch(name, ".*")
+    memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 20
+    resource/observe_global_resource_attributes:
+        attributes:
+            - action: insert
+              key: deployment.environment
+              value: test
+            - action: insert
+              key: service.name
+              value: test-service
+    resourcedetection:
+        detectors:
+            - env
+            - system
+        system:
+            hostname_sources:
+                - dns
+                - os
+            resource_attributes:
+                host.arch:
+                    enabled: true
+                host.cpu.cache.l2.size:
+                    enabled: true
+                host.cpu.family:
+                    enabled: true
+                host.cpu.model.id:
+                    enabled: true
+                host.cpu.model.name:
+                    enabled: true
+                host.cpu.stepping:
+                    enabled: true
+                host.cpu.vendor.id:
+                    enabled: true
+                host.id:
+                    enabled: false
+                host.name:
+                    enabled: true
+                os.description:
+                    enabled: true
+                os.type:
+                    enabled: true
+    resourcedetection/cloud:
+        detectors:
+            - ec2
+            - test
+        override: false
+        timeout: 2s
+    transform/truncate:
+        log_statements:
+            - context: log
+              statements:
+                - truncate_all(attributes, 4095)
+                - truncate_all(resource.attributes, 4095)
+        trace_statements:
+            - context: span
+              statements:
+                - truncate_all(attributes, 4095)
+                - truncate_all(resource.attributes, 4095)
+receivers:
+    filelog/agent-config:
+        include:
+            - /etc/observe-agent/connections/common/base.yaml.tmpl
+        include_file_path: true
+        multiline:
+            line_end_pattern: ENDOFLINEPATTERN
+        poll_interval: 5m
+        start_at: beginning
+    filelog/host_monitoring:
+        exclude:
+            - exclude1
+            - exclude2
+        include:
+            - include1
+            - include2
+        include_file_path: true
+        max_log_size: 4MiB
+        operators:
+            - expr: body matches "otel-contrib"
+              type: filter
+        retry_on_failure:
+            enabled: true
+        storage: file_storage
+    filestats/agent:
+        collection_interval: 5m
+        include: /etc/observe-agent/connections/common/base.yaml.tmpl
+        initial_delay: 60s
+    hostmetrics/host-monitoring-host:
+        collection_interval: 60s
+        root_path: /hostfs
+        scrapers:
+            cpu:
+                metrics:
+                    system.cpu.frequency:
+                        enabled: true
+                    system.cpu.logical.count:
+                        enabled: true
+                    system.cpu.physical.count:
+                        enabled: true
+                    system.cpu.utilization:
+                        enabled: true
+            disk: null
+            filesystem:
+                metrics:
+                    system.filesystem.utilization:
+                        enabled: true
+            load: null
+            memory:
+                metrics:
+                    system.linux.memory.available:
+                        enabled: true
+                    system.memory.utilization:
+                        enabled: true
+            network: null
+            paging:
+                metrics:
+                    system.paging.utilization:
+                        enabled: true
+            processes: null
+    hostmetrics/host-monitoring-process:
+        collection_interval: 60s
+        root_path: /hostfs
+        scrapers:
+            process:
+                metrics:
+                    process.context_switches:
+                        enabled: true
+                    process.cpu.utilization:
+                        enabled: true
+                    process.disk.operations:
+                        enabled: true
+                    process.memory.utilization:
+                        enabled: true
+                    process.open_file_descriptors:
+                        enabled: true
+                    process.paging.faults:
+                        enabled: true
+                    process.signals_pending:
+                        enabled: true
+                    process.threads:
+                        enabled: true
+                mute_process_exe_error: true
+                mute_process_io_error: true
+                mute_process_name_error: true
+                mute_process_user_error: true
+    journald/agent:
+        priority: info
+        units:
+            - observe-agent
+    journald/host_monitoring:
+        priority: info
+        units:
+            - cron
+            - ssh
+            - systemd-networkd
+            - systemd-resolved
+            - systemd-login
+            - multipathd
+            - systemd-user-sessions
+            - ufw
+            - observe-agent
+    nop: null
+    otlp:
+        protocols:
+            grpc:
+                endpoint: localhost:4317
+            http:
+                endpoint: localhost:4318
+    prometheus/agent:
+        config:
+            scrape_configs:
+                - job_name: otelcol
+                  metric_relabel_configs:
+                    - action: drop
+                      regex: .*grpc_io.*
+                      source_labels:
+                        - __name__
+                  scrape_interval: 10s
+                  static_configs:
+                    - targets:
+                        - 0.0.0.0:8888
+service:
+    extensions:
+        - health_check
+        - file_storage
+        - cgroupruntime
+    pipelines:
+        logs/agent-config:
+            exporters:
+                - otlphttp/observe
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - filelog/agent-config
+        logs/agent-journald:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - journald/agent
+        logs/forward:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - otlp
+        logs/host_monitoring-file:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - filelog/host_monitoring
+        logs/host_monitoring-journald:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - journald/host_monitoring
+        metrics/agent-filestats:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - filestats/agent
+        metrics/agent-internal:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - deltatocumulative
+                - batch
+            receivers:
+                - prometheus/agent
+                - count
+        metrics/count-nop-in:
+            exporters:
+                - count
+            receivers:
+                - nop
+        metrics/count-nop-out:
+            exporters:
+                - nop
+            receivers:
+                - count
+        metrics/forward:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - deltatocumulative
+                - batch
+            receivers:
+                - otlp
+        metrics/host_monitoring_host:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - hostmetrics/host-monitoring-host
+        metrics/host_monitoring_process:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - hostmetrics/host-monitoring-process
+        traces/forward:
+            exporters:
+                - otlphttp/observetracing
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - otlp
+    telemetry:
+        logs:
+            level: ERROR
+        metrics:
+            level: normal
+            readers:
+                - pull:
+                    exporter:
+                        prometheus:
+                            host: 0.0.0.0
+                            port: 12346
+

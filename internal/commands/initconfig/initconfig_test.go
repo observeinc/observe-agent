@@ -74,6 +74,33 @@ func Test_InitConfigCommand(t *testing.T) {
 			}),
 			expectErr: "",
 		},
+		{
+			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--forwarding::metrics::output_format=otel"},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				Forwarding: config.ForwardingConfig{
+					Metrics: config.ForwardingMetricsConfig{
+						OutputFormat: "otel",
+					},
+				},
+				SelfMonitoring: config.SelfMonitoringConfig{
+					Enabled: true,
+				},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs: config.HostMonitoringLogsConfig{
+						Enabled: true,
+					},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{
+							Enabled: true,
+						},
+					},
+				},
+			}),
+			expectErr: "",
+		},
 	}
 	for _, tc := range testcases {
 		v := viper.NewWithOptions(viper.KeyDelimiter("::"))
