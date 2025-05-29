@@ -1,0 +1,22 @@
+# Target Observe collection url
+observe_url: https://test.collect.observeinc.com/
+
+# Observe data token
+token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
+
+debug: false
+
+forwarding:
+    enabled: false
+
+health_check:
+    enabled: false
+
+internal_telemetry:
+    enabled: false
+
+host_monitoring:
+    enabled: false
+
+self_monitoring:
+    enabled: false

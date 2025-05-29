@@ -4,11 +4,15 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package root
 
 import (
+	"context"
 	"fmt"
 	"os"
 
+	"github.com/observeinc/observe-agent/build"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
+	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,6 +25,7 @@ var RootCmd = &cobra.Command{
 	Short: "Observe distribution of OTEL Collector",
 	Long: `Observe distribution of OTEL Collector along with CLI utils to help with setup
 and maintenance. To start the agent, run: observe-agent start`,
+	Version: build.Version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -35,11 +40,15 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(InitConfig)
 
-	RootCmd.PersistentFlags().StringVar(&CfgFile, "observe-config", "", "observe-agent config file path")
+	flags := RootCmd.PersistentFlags()
+	flags.StringVar(&CfgFile, "observe-config", "", "observe-agent config file path")
+	observecol.AddConfigFlags(flags)
+	observecol.AddFeatureGateFlag(flags)
 }
 
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
+	ctx := logger.WithCtx(context.Background(), logger.Get())
 	// Some keys in OTEL component configs use "." as part of the key but viper ends up parsing that into
 	// a subobject since the default key delimiter is "." which causes config validation to fail.
 	// We set it to "::" here to prevent that behavior. This call modifies the global viper instance.
@@ -67,4 +76,7 @@ func InitConfig() {
 			fmt.Fprintln(os.Stderr, "error reading config file:", err)
 		}
 	}
+
+	// Apply feature gates
+	observecol.ApplyFeatureGates(ctx)
 }
