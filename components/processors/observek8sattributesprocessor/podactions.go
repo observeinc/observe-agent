@@ -2,10 +2,8 @@ package observek8sattributesprocessor
 
 import (
 	"fmt"
-	"time"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -82,8 +80,6 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	restartableInitContainerRestarts := 0
 	totalContainers := len(pod.Spec.Containers)
 	readyContainers := 0
-	lastRestartDate := metav1.NewTime(time.Time{})
-	lastRestartableInitContainerRestartDate := metav1.NewTime(time.Time{})
 
 	podPhase := pod.Status.Phase
 	reason := string(podPhase)
@@ -110,21 +106,6 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	for i := range pod.Status.InitContainerStatuses {
 		container := pod.Status.InitContainerStatuses[i]
 		restarts += int(container.RestartCount)
-		if container.LastTerminationState.Terminated != nil {
-			terminatedDate := container.LastTerminationState.Terminated.FinishedAt
-			if lastRestartDate.Before(&terminatedDate) {
-				lastRestartDate = terminatedDate
-			}
-		}
-		if isRestartableInitContainer(initContainers[container.Name]) {
-			restartableInitContainerRestarts += int(container.RestartCount)
-			if container.LastTerminationState.Terminated != nil {
-				terminatedDate := container.LastTerminationState.Terminated.FinishedAt
-				if lastRestartableInitContainerRestartDate.Before(&terminatedDate) {
-					lastRestartableInitContainerRestartDate = terminatedDate
-				}
-			}
-		}
 		switch {
 		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
 			continue
@@ -158,18 +139,10 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 
 	if !initializing || isPodInitializedConditionTrue(&pod.Status) {
 		restarts = restartableInitContainerRestarts
-		lastRestartDate = lastRestartableInitContainerRestartDate
 		hasRunning := false
 		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
 			container := pod.Status.ContainerStatuses[i]
-
 			restarts += int(container.RestartCount)
-			if container.LastTerminationState.Terminated != nil {
-				terminatedDate := container.LastTerminationState.Terminated.FinishedAt
-				if lastRestartDate.Before(&terminatedDate) {
-					lastRestartDate = terminatedDate
-				}
-			}
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
