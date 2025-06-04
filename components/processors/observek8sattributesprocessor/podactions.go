@@ -76,11 +76,6 @@ func NewPodStatusAction() PodStatusAction {
 // Generates the Pod "status" facet.
 func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	// based on https://github.com/kubernetes/kubernetes/blob/cd3b5c57668a0a6e32057ef82dfab40e9b0bec5b/pkg/printers/internalversion/printers.go#L881
-	restarts := 0
-	restartableInitContainerRestarts := 0
-	totalContainers := len(pod.Spec.Containers)
-	readyContainers := 0
-
 	podPhase := pod.Status.Phase
 	reason := string(podPhase)
 	if pod.Status.Reason != "" {
@@ -97,23 +92,16 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	initContainers := make(map[string]*v1.Container)
 	for i := range pod.Spec.InitContainers {
 		initContainers[pod.Spec.InitContainers[i].Name] = &pod.Spec.InitContainers[i]
-		if isRestartableInitContainer(&pod.Spec.InitContainers[i]) {
-			totalContainers++
-		}
 	}
 
 	initializing := false
 	for i := range pod.Status.InitContainerStatuses {
 		container := pod.Status.InitContainerStatuses[i]
-		restarts += int(container.RestartCount)
 		switch {
 		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
 			continue
 		case isRestartableInitContainer(initContainers[container.Name]) &&
 			container.Started != nil && *container.Started:
-			if container.Ready {
-				readyContainers++
-			}
 			continue
 		case container.State.Terminated != nil:
 			// initialization is failed
@@ -138,11 +126,9 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 	}
 
 	if !initializing || isPodInitializedConditionTrue(&pod.Status) {
-		restarts = restartableInitContainerRestarts
 		hasRunning := false
 		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
 			container := pod.Status.ContainerStatuses[i]
-			restarts += int(container.RestartCount)
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
@@ -155,7 +141,6 @@ func (PodStatusAction) ComputeAttributes(pod v1.Pod) (attributes, error) {
 				}
 			} else if container.Ready && container.State.Running != nil {
 				hasRunning = true
-				readyContainers++
 			}
 		}
 
