@@ -43,6 +43,7 @@ host_monitoring:
         enabled: true
         exclude: [exclude1, exclude2]
         include: [include1, include2]
+        auto_multiline_detection: true
     metrics:
         host:
             enabled: true
