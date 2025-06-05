@@ -14,18 +14,19 @@ import (
 )
 
 var (
-	config_path                             string
-	token                                   string
-	observe_url                             string
-	cloud_resource_detectors                []string
-	resource_attributes                     map[string]string
-	forwarding_metrics_format               string
-	self_monitoring_enabled                 bool
-	host_monitoring_enabled                 bool
-	host_monitoring_logs_enabled            bool
-	host_monitoring_logs_include            []string
-	host_monitoring_metrics_host_enabled    bool
-	host_monitoring_metrics_process_enabled bool
+	config_path                                   string
+	token                                         string
+	observe_url                                   string
+	cloud_resource_detectors                      []string
+	resource_attributes                           map[string]string
+	forwarding_metrics_format                     string
+	self_monitoring_enabled                       bool
+	host_monitoring_enabled                       bool
+	host_monitoring_logs_enabled                  bool
+	host_monitoring_logs_include                  []string
+	host_monitoring_logs_auto_multiline_detection bool
+	host_monitoring_metrics_host_enabled          bool
+	host_monitoring_metrics_process_enabled       bool
 )
 
 func NewConfigureCmd(v *viper.Viper) *cobra.Command {
@@ -105,6 +106,10 @@ func RegisterConfigFlags(cmd *cobra.Command, v *viper.Viper) {
 
 	cmd.PersistentFlags().StringSliceVar(&host_monitoring_logs_include, "host_monitoring::logs::include", nil, "Set host monitoring log include paths")
 	v.BindPFlag("host_monitoring::logs::include", cmd.PersistentFlags().Lookup("host_monitoring::logs::include"))
+
+	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_auto_multiline_detection, "host_monitoring::logs::auto_multiline_detection", false, "Enable host monitoring log auto multiline detection")
+	v.BindPFlag("host_monitoring::logs::auto_multiline_detection", cmd.PersistentFlags().Lookup("host_monitoring::logs::auto_multiline_detection"))
+	v.SetDefault("host_monitoring::logs::auto_multiline_detection", false)
 
 	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_host_enabled, "host_monitoring::metrics::host::enabled", true, "Enable host monitoring host metrics")
 	v.BindPFlag("host_monitoring::metrics::host::enabled", cmd.PersistentFlags().Lookup("host_monitoring::metrics::host::enabled"))

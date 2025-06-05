@@ -12,9 +12,10 @@ import (
 )
 
 type HostMonitoringLogsConfig struct {
-	Enabled bool     `yaml:"enabled" mapstructure:"enabled"`
-	Include []string `yaml:"include,omitempty" mapstructure:"include"`
-	Exclude []string `yaml:"exclude,omitempty" mapstructure:"exclude"`
+	Enabled                bool     `yaml:"enabled" mapstructure:"enabled"`
+	Include                []string `yaml:"include,omitempty" mapstructure:"include"`
+	Exclude                []string `yaml:"exclude,omitempty" mapstructure:"exclude"`
+	AutoMultilineDetection bool     `yaml:"auto_multiline_detection" mapstructure:"auto_multiline_detection"`
 }
 
 type HostMonitoringHostMetricsConfig struct {

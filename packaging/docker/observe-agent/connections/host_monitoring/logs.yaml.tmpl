@@ -23,6 +23,12 @@ receivers:
     operators:
       - type: filter
         expr: 'body matches "otel-contrib"'
+      {{- if .HostMonitoring.Logs.AutoMultilineDetection }}
+      - id: multiline-recombine
+        type: recombine
+        combine_field: body
+        is_first_entry: body matches "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z?|[A-Za-z]+ \\d{1,2} \\d{2}:\\d{2}:\\d{2}|\\d{4}\\/\\d{2}\\/\\d{2} \\d{2}:\\d{2}:\\d{2})"
+      {{- end }}
 
   journald/host_monitoring:
     units:
