@@ -6,9 +6,8 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 
-	"github.com/observeinc/observe-agent/internal/commands/start"
-	"github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/cobra"
@@ -33,19 +32,12 @@ bundled OTel configuration.`,
 		}
 
 		ctx := logger.WithCtx(context.Background(), logger.GetNop())
-		configFilePaths, cleanup, err := start.SetupAndGetConfigFiles(ctx)
-		if cleanup != nil {
-			defer cleanup()
-		}
-		if err != nil {
-			return err
-		}
 		if singleOtel {
-			return util.PrintShortOtelConfig(ctx, configFilePaths)
+			return PrintShortOtelConfig(ctx, os.Stdout)
 		} else if detailedOtel {
-			return util.PrintFullOtelConfig(configFilePaths)
+			return PrintFullOtelConfig(ctx, os.Stdout)
 		}
-		return util.PrintAllConfigsIndividually(configFilePaths)
+		return PrintAllConfigsIndividually(ctx, os.Stdout)
 	},
 }
 

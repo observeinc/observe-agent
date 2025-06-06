@@ -1,13 +1,15 @@
-package util
+package config
 
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/confmap"
@@ -15,11 +17,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func PrintAllConfigsIndividually(configFilePaths []string) error {
+func PrintAllConfigsIndividually(ctx context.Context, w io.Writer) error {
+	configFilePaths, cleanup, err := connections.SetupAndGetConfigFiles(ctx)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return err
+	}
+
 	printConfig := func(comment string, data []byte) {
-		fmt.Printf("# ======== %s\n", comment)
-		fmt.Println(strings.Trim(string(data), "\n\t "))
-		fmt.Println("---")
+		fmt.Fprintf(w, "# ======== %s\n", comment)
+		fmt.Fprintln(w, strings.Trim(string(data), "\n\t "))
+		fmt.Fprintln(w, "---")
 	}
 
 	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
@@ -52,12 +62,18 @@ func PrintAllConfigsIndividually(configFilePaths []string) error {
 	return nil
 }
 
-func PrintShortOtelConfig(ctx context.Context, configFilePaths []string) error {
-	if len(configFilePaths) == 0 {
+func PrintShortOtelConfig(ctx context.Context, w io.Writer) error {
+	settings, cleanup, err := observecol.GetOtelCollectorSettings(ctx)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return err
+	}
+	if len(settings.ConfigProviderSettings.ResolverSettings.URIs) == 0 {
 		return nil
 	}
-	settings := observecol.ConfigProviderSettings(configFilePaths)
-	resolver, err := confmap.NewResolver(settings.ResolverSettings)
+	resolver, err := confmap.NewResolver(settings.ConfigProviderSettings.ResolverSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create new resolver: %w", err)
 	}
@@ -69,20 +85,26 @@ func PrintShortOtelConfig(ctx context.Context, configFilePaths []string) error {
 	if err != nil {
 		return fmt.Errorf("error while marshaling to YAML: %w", err)
 	}
-	fmt.Printf("%s\n", b)
+	fmt.Fprintf(w, "%s\n", b)
 	return nil
 }
 
-func PrintFullOtelConfig(configFilePaths []string) error {
-	if len(configFilePaths) == 0 {
+func PrintFullOtelConfig(ctx context.Context, w io.Writer) error {
+	settings, cleanup, err := observecol.GetOtelCollectorSettings(ctx)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return err
+	}
+	if len(settings.ConfigProviderSettings.ResolverSettings.URIs) == 0 {
 		return nil
 	}
-	colSettings := observecol.GenerateCollectorSettingsWithConfigFiles(configFilePaths)
-	factories, err := colSettings.Factories()
+	factories, err := settings.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to create component factory maps: %w", err)
 	}
-	provider, err := otelcol.NewConfigProvider(colSettings.ConfigProviderSettings)
+	provider, err := otelcol.NewConfigProvider(settings.ConfigProviderSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create config provider: %w", err)
 	}
@@ -99,6 +121,6 @@ func PrintFullOtelConfig(configFilePaths []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshall config to yaml: %w", err)
 	}
-	fmt.Printf("%s\n", cfgYaml)
+	fmt.Fprintf(w, "%s\n", cfgYaml)
 	return nil
 }
