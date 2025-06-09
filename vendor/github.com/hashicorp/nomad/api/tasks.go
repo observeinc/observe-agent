@@ -455,6 +455,7 @@ type VolumeRequest struct {
 	Type           string           `hcl:"type,optional"`
 	Source         string           `hcl:"source,optional"`
 	ReadOnly       bool             `hcl:"read_only,optional"`
+	Sticky         bool             `hcl:"sticky,optional"`
 	AccessMode     string           `hcl:"access_mode,optional"`
 	AttachmentMode string           `hcl:"attachment_mode,optional"`
 	MountOptions   *CSIMountOptions `hcl:"mount_options,block"`
@@ -511,13 +512,13 @@ type TaskGroup struct {
 	Meta             map[string]string         `hcl:"meta,block"`
 	Services         []*Service                `hcl:"service,block"`
 	ShutdownDelay    *time.Duration            `mapstructure:"shutdown_delay" hcl:"shutdown_delay,optional"`
-	// Deprecated: StopAfterClientDisconnect is deprecated in Nomad 1.8. Use Disconnect.StopOnClientAfter instead.
+	// Deprecated: StopAfterClientDisconnect is deprecated in Nomad 1.8 and ignored in Nomad 1.10. Use Disconnect.StopOnClientAfter.
 	StopAfterClientDisconnect *time.Duration `mapstructure:"stop_after_client_disconnect" hcl:"stop_after_client_disconnect,optional"`
-	// To be deprecated after 1.8.0 infavour of Disconnect.LostAfter
+	// Deprecated: MaxClientDisconnect is deprecated in Nomad 1.8.0 and ignored in Nomad 1.10. Use Disconnect.LostAfter.
 	MaxClientDisconnect *time.Duration `mapstructure:"max_client_disconnect" hcl:"max_client_disconnect,optional"`
 	Scaling             *ScalingPolicy `hcl:"scaling,block"`
 	Consul              *Consul        `hcl:"consul,block"`
-	// To be deprecated after 1.8.0 infavour of Disconnect.Replace
+	// Deprecated: PreventRescheduleOnLost is deprecated in Nomad 1.8.0 and ignored in Nomad 1.10. Use Disconnect.Replace.
 	PreventRescheduleOnLost *bool `hcl:"prevent_reschedule_on_lost,optional"`
 }
 
@@ -552,11 +553,10 @@ func (g *TaskGroup) Canonicalize(job *Job) {
 	}
 
 	// Merge job.consul onto group.consul
-	if g.Consul == nil {
-		g.Consul = new(Consul)
+	if g.Consul != nil {
+		g.Consul.MergeNamespace(job.ConsulNamespace)
+		g.Consul.Canonicalize()
 	}
-	g.Consul.MergeNamespace(job.ConsulNamespace)
-	g.Consul.Canonicalize()
 
 	// Merge the update policy from the job
 	if ju, tu := job.Update != nil, g.Update != nil; ju && tu {
@@ -639,10 +639,6 @@ func (g *TaskGroup) Canonicalize(job *Job) {
 		s.Canonicalize(nil, g, job)
 	}
 
-	if g.PreventRescheduleOnLost == nil {
-		g.PreventRescheduleOnLost = pointerOf(false)
-	}
-
 	if g.Disconnect != nil {
 		g.Disconnect.Canonicalize()
 	}
@@ -708,6 +704,12 @@ func (g *TaskGroup) RequireDisk(disk *EphemeralDisk) *TaskGroup {
 // AddSpread is used to add a new spread preference to a task group.
 func (g *TaskGroup) AddSpread(s *Spread) *TaskGroup {
 	g.Spreads = append(g.Spreads, s)
+	return g
+}
+
+// AddSpread is used to add a new spread preference to a task group.
+func (g *TaskGroup) ScalingPolicy(sp *ScalingPolicy) *TaskGroup {
+	g.Scaling = sp
 	return g
 }
 
@@ -946,6 +948,7 @@ type Template struct {
 	ChangeMode    *string        `mapstructure:"change_mode" hcl:"change_mode,optional"`
 	ChangeScript  *ChangeScript  `mapstructure:"change_script" hcl:"change_script,block"`
 	ChangeSignal  *string        `mapstructure:"change_signal" hcl:"change_signal,optional"`
+	Once          *bool          `mapstructure:"once" hcl:"once,optional"`
 	Splay         *time.Duration `mapstructure:"splay" hcl:"splay,optional"`
 	Perms         *string        `mapstructure:"perms" hcl:"perms,optional"`
 	Uid           *int           `mapstructure:"uid" hcl:"uid,optional"`
@@ -983,6 +986,9 @@ func (tmpl *Template) Canonicalize() {
 	}
 	if tmpl.ChangeScript != nil {
 		tmpl.ChangeScript.Canonicalize()
+	}
+	if tmpl.Once == nil {
+		tmpl.Once = pointerOf(false)
 	}
 	if tmpl.Splay == nil {
 		tmpl.Splay = pointerOf(5 * time.Second)
@@ -1111,17 +1117,6 @@ type TaskState struct {
 	StartedAt   time.Time
 	FinishedAt  time.Time
 	Events      []*TaskEvent
-
-	// Experimental -  TaskHandle is based on drivers.TaskHandle and used
-	// by remote task drivers to migrate task handles between allocations.
-	TaskHandle *TaskHandle
-}
-
-// Experimental - TaskHandle is based on drivers.TaskHandle and used by remote
-// task drivers to migrate task handles between allocations.
-type TaskHandle struct {
-	Version     int
-	DriverState []byte
 }
 
 const (

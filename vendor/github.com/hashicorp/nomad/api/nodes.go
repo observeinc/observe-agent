@@ -517,6 +517,8 @@ type DriverInfo struct {
 type HostVolumeInfo struct {
 	Path     string
 	ReadOnly bool
+	// ID is set for dynamic host volumes only.
+	ID string
 }
 
 // HostNetworkInfo is used to return metadata about a given HostNetwork
@@ -564,12 +566,14 @@ type Node struct {
 	Events                []*NodeEvent
 	Drivers               map[string]*DriverInfo
 	HostVolumes           map[string]*HostVolumeInfo
+	GCVolumesOnNodeGC     bool
 	HostNetworks          map[string]*HostNetworkInfo
 	CSIControllerPlugins  map[string]*CSIInfo
 	CSINodePlugins        map[string]*CSIInfo
 	LastDrain             *DrainMetadata
 	CreateIndex           uint64
 	ModifyIndex           uint64
+	NodeMaxAllocs         int
 }
 
 type NodeResources struct {

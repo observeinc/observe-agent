@@ -113,7 +113,7 @@ type Discovery struct {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &uyuniMetrics{
 		refreshMetrics: rmi,
 	}
@@ -205,9 +205,6 @@ func getEndpointInfoForSystems(
 	err := rpcclient.Call(
 		"system.monitoring.listEndpoints",
 		[]interface{}{token, systemIDs}, &endpointInfos)
-	if err != nil {
-		return nil, err
-	}
 	return endpointInfos, err
 }
 
@@ -215,7 +212,7 @@ func getEndpointInfoForSystems(
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*uyuniMetrics)
 	if !ok {
-		return nil, fmt.Errorf("invalid discovery metrics type")
+		return nil, errors.New("invalid discovery metrics type")
 	}
 
 	apiURL, err := url.Parse(conf.Server)

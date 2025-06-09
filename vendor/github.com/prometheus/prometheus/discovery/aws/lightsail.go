@@ -83,7 +83,7 @@ type LightsailSDConfig struct {
 }
 
 // NewDiscovererMetrics implements discovery.Config.
-func (*LightsailSDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
+func (*LightsailSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &lightsailMetrics{
 		refreshMetrics: rmi,
 	}
@@ -134,7 +134,7 @@ type LightsailDiscovery struct {
 func NewLightsailDiscovery(conf *LightsailSDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*LightsailDiscovery, error) {
 	m, ok := metrics.(*lightsailMetrics)
 	if !ok {
-		return nil, fmt.Errorf("invalid discovery metrics type")
+		return nil, errors.New("invalid discovery metrics type")
 	}
 
 	if logger == nil {
