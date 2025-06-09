@@ -2,6 +2,8 @@ param (
     [Parameter()]
     [String]$version,
     [Parameter()]
+    [String]$zip_dir,
+    [Parameter()]
     [String]$observe_collection_endpoint,
     [Parameter()]
     [String]$observe_token
@@ -25,7 +27,13 @@ New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\connections
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
 
-Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
+if ($PSBoundParameters.ContainsKey('zip_dir')){
+    Write-Output "Installing from provided zip file: $zip_dir..."
+    $local_installer=$zip_dir
+} else {
+    Write-Output "Downloading observe-agent from $installer_url..."
+    Invoke-WebRequest -Uri $installer_url -OutFile $local_installer
+}
 
 # Stop the observe agent if its running so that we can copy the new .exe
 if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
