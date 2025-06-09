@@ -69,6 +69,9 @@ func (vde ValueDecoderError) Error() string {
 	if vde.Received.IsValid() {
 		received = vde.Received.Type().String()
 	}
+	if !vde.Received.CanSet() {
+		received = "unsettable " + received
+	}
 	return fmt.Sprintf("%s can only decode valid and settable %s, but got %s", vde.Name, strings.Join(typeKinds, ", "), received)
 }
 
@@ -88,6 +91,7 @@ type EncodeContext struct {
 	nilSliceAsEmpty         bool
 	nilByteSliceAsEmpty     bool
 	omitZeroStruct          bool
+	omitEmpty               bool
 	useJSONStructTags       bool
 }
 

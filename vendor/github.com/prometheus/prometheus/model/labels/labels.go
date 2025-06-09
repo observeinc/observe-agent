@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"slices"
 	"strings"
+	"unsafe"
 
 	"github.com/cespare/xxhash/v2"
 )
@@ -249,15 +250,7 @@ func (ls Labels) WithoutEmpty() Labels {
 
 // Equal returns whether the two label sets are equal.
 func Equal(ls, o Labels) bool {
-	if len(ls) != len(o) {
-		return false
-	}
-	for i, l := range ls {
-		if l != o[i] {
-			return false
-		}
-	}
-	return true
+	return slices.Equal(ls, o)
 }
 
 // EmptyLabels returns n empty Labels value, for convenience.
@@ -487,4 +480,9 @@ func (b *ScratchBuilder) Labels() Labels {
 // Callers must ensure that there are no other references to ls, or any strings fetched from it.
 func (b *ScratchBuilder) Overwrite(ls *Labels) {
 	*ls = append((*ls)[:0], b.add...)
+}
+
+// SizeOfLabels returns the approximate space required for n copies of a label.
+func SizeOfLabels(name, value string, n uint64) uint64 {
+	return (uint64(len(name)) + uint64(unsafe.Sizeof(name)) + uint64(len(value)) + uint64(unsafe.Sizeof(value))) * n
 }
