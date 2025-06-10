@@ -108,3 +108,10 @@ func WithConfigFolderPath(configFolderPath string) ConnectionTypeOption {
 		c.configFolderPath = configFolderPath
 	}
 }
+
+func (c *ConnectionType) ApplyOptions(opts ...ConnectionTypeOption) *ConnectionType {
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}

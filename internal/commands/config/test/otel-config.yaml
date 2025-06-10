@@ -1,0 +1,17 @@
+receivers:
+  filelog/test:
+    include: ["./test.log"]
+
+service:
+    pipelines:
+        logs/test:
+            receivers:
+                - filelog/test
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - batch
+            exporters:
+                - otlphttp/observe
