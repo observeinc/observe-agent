@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -46,6 +47,8 @@ type KeepaliveClientConfig struct {
 	Time                time.Duration `mapstructure:"time"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
@@ -71,8 +74,8 @@ type ClientConfig struct {
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// TLS struct exposes TLS client configuration.
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -102,13 +105,16 @@ type ClientConfig struct {
 	Authority string `mapstructure:"authority,omitempty"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.Config `mapstructure:"auth,omitempty"`
+
+	// Middlewares for the gRPC client.
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
 func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		TLSSetting:   configtls.NewDefaultClientConfig(),
+		TLS:          configtls.NewDefaultClientConfig(),
 		Keepalive:    NewDefaultKeepaliveClientConfig(),
 		BalancerName: BalancerName(),
 	}
@@ -118,6 +124,8 @@ func NewDefaultClientConfig() *ClientConfig {
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
@@ -137,6 +145,8 @@ type KeepaliveServerParameters struct {
 	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
 	Time                  time.Duration `mapstructure:"time,omitempty"`
 	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
@@ -150,6 +160,8 @@ func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
 type KeepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
@@ -164,7 +176,7 @@ type ServerConfig struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.ServerConfig `mapstructure:"tls,omitempty"`
+	TLS *configtls.ServerConfig `mapstructure:"tls,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib,omitempty"`
@@ -185,10 +197,16 @@ type ServerConfig struct {
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.Config `mapstructure:"auth,omitempty"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
+
+	// Middlewares for the gRPC server.
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig returns a new instance of ServerConfig with default values.
@@ -288,7 +306,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig(ctx)
+	tlsCfg, err := gcs.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -362,6 +380,15 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 		)
 	}
 
+	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
+	for _, middleware := range gcs.Middlewares {
+		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, host.GetExtensions())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get gRPC client options from middleware: %w", err)
+		}
+		opts = append(opts, middlewareOptions...)
+	}
+
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
@@ -404,12 +431,12 @@ func (grpcServerOptionWrapper) isToServerOption() {}
 
 // ToServer returns a [grpc.Server] for the configuration.
 func (gss *ServerConfig) ToServer(
-	_ context.Context,
+	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
+	grpcOpts, err := gss.getGrpcServerOptions(ctx, host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -417,14 +444,15 @@ func (gss *ServerConfig) ToServer(
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(
+	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
 ) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
-	if gss.TLSSetting != nil {
-		tlsCfg, err := gss.TLSSetting.LoadTLSConfig(context.Background())
+	if gss.TLS != nil {
+		tlsCfg, err := gss.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -504,6 +532,15 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+
+	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
+	for _, middleware := range gss.Middlewares {
+		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, host.GetExtensions())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
+		}
+		opts = append(opts, middlewareOptions...)
+	}
 
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
