@@ -23,6 +23,7 @@ func MakeStartCommand() *cobra.Command {
 		Long: `The Observe agent is based on the OpenTelemetry Collector.
 This command reads in the local config and env vars and starts the
 collector on the current host.`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			col, cleanup, err := observecol.GetOtelCollector(DefaultLoggerCtx())
 			if cleanup != nil {
