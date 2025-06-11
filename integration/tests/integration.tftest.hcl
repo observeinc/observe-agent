@@ -89,31 +89,6 @@ run "test_version" {
   }
 }
 
-run "test_snapshot_conf" {
-  module {
-    source  = "observeinc/collection/aws//modules/testing/exec"
-    version = "2.9.0"
-  }
-
-  variables {
-    command = "python3 ./scripts/test_snapshot_conf.py"
-    env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
-    }
-  }
-
-  assert {
-    condition     = output.error == ""
-    error_message = "Error in Snapshot Test"
-  }
-}
-
-
 run "test_configure" {
   module {
     source  = "observeinc/collection/aws//modules/testing/exec"

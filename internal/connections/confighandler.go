@@ -6,9 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
-	"github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/spf13/viper"
@@ -20,11 +18,6 @@ const (
 )
 
 func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
-	// Set Env Vars from config
-	err := SetEnvVars()
-	if err != nil {
-		return nil, nil, err
-	}
 	// Set up our temp dir annd temp config files
 	tmpDir, err := os.MkdirTemp("", TempFilesFolder)
 	if err != nil {
@@ -84,38 +77,6 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 	return configFilePaths, nil
 }
 
-func SetEnvVars() error {
-	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
-	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:
-	// "${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity"
-	// without worrying about a double slash.
-	collector_url = strings.TrimRight(collector_url, "/")
-	otelEndpoint := util.JoinUrl(collector_url, "/v2/otel")
-	promEndpoint := util.JoinUrl(collector_url, "/v1/prometheus")
-	// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
-	os.Setenv("OBSERVE_COLLECTOR_URL", collector_url)
-	os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint)
-	os.Setenv("OBSERVE_PROMETHEUS_ENDPOINT", promEndpoint)
-	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
-	os.Setenv("FILESTORAGE_PATH", GetDefaultFilestoragePath())
-
-	// Default TRACE_TOKEN to be the value of the configured token if it's not set. This allows for users to upgrade to
-	// direct write tracing with ingest tokens in kubernetes without breaking backwards compatibility in our helm chart.
-	// TODO: remove this once our helm chart no longer supports TRACE_TOKEN
-	if os.Getenv("TRACE_TOKEN") == "" {
-		os.Setenv("TRACE_TOKEN", token)
-	}
-
-	if os.Getenv("OTEL_LOG_LEVEL") == "" {
-		if debug {
-			os.Setenv("OTEL_LOG_LEVEL", "DEBUG")
-		} else {
-			os.Setenv("OTEL_LOG_LEVEL", "INFO")
-		}
-	}
-	return nil
-}
-
 func GetOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
 	f, err := os.CreateTemp(tmpDir, "otel-config-overrides-*.yaml")
 	if err != nil {
@@ -146,18 +107,5 @@ func GetDefaultAgentPath() string {
 		return "/etc/observe-agent"
 	default:
 		return "/etc/observe-agent"
-	}
-}
-
-func GetDefaultFilestoragePath() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		return "/var/lib/observe-agent/filestorage"
-	case "windows":
-		return os.ExpandEnv("$ProgramData\\Observe\\observe-agent\\filestorage")
-	case "linux":
-		return "/var/lib/observe-agent/filestorage"
-	default:
-		return "/var/lib/observe-agent/filestorage"
 	}
 }

@@ -22,8 +22,53 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO rework this test to handle our snapshot tests as go unit tests.
+type PackageType string
+
+const MacOS = PackageType("macos")
+const Linux = PackageType("linux")
+const Windows = PackageType("windows")
+const Docker = PackageType("docker")
+
+type snapshotTest struct {
+	agentConfigPath string
+	otelConfigPath  string
+	outputPath      string
+	packageType     PackageType
+}
+
+var allSnapshotTests = []snapshotTest{
+	{
+		agentConfigPath: "test/snap1-full-agent-config.yaml",
+		outputPath:      "test/snap1-docker-output.yaml",
+		packageType:     Docker,
+	},
+	{
+		agentConfigPath: "test/snap1-full-agent-config.yaml",
+		outputPath:      "test/snap1-linux-output.yaml",
+		packageType:     Linux,
+	},
+	{
+		agentConfigPath: "test/snap1-full-agent-config.yaml",
+		outputPath:      "test/snap1-windows-output.yaml",
+		packageType:     Windows,
+	},
+	{
+		agentConfigPath: "test/snap2-empty-agent-config.yaml",
+		otelConfigPath:  "test/snap2-otel-config.yaml",
+		outputPath:      "test/snap2-with-otel-output.yaml",
+		packageType:     MacOS,
+	},
+}
+
 func Test_RenderOtelConfig(t *testing.T) {
+	for _, test := range allSnapshotTests {
+		t.Run(test.outputPath, func(t *testing.T) {
+			runSnapshotTest(t, test)
+		})
+	}
+}
+
+func runSnapshotTest(t *testing.T, test snapshotTest) {
 	// Get current path
 	_, filename, _, ok := runtime.Caller(0)
 	assert.True(t, ok)
@@ -31,22 +76,52 @@ func Test_RenderOtelConfig(t *testing.T) {
 
 	// Set the template base dir for all connections
 	for _, conn := range connections.AllConnectionTypes {
-		conn.ApplyOptions(connections.WithConfigFolderPath(filepath.Join(curPath, "../../../packaging/macos/connections")))
+		conn.ApplyOptions(connections.WithConfigFolderPath(getPackagingPath(t, test.packageType, curPath)))
 	}
 
 	// Set config flags
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	observecol.AddConfigFlags(flags)
-	flags.Parse([]string{"--config", filepath.Join(curPath, "test/otel-config.yaml")})
+	if test.otelConfigPath != "" {
+		flags.Parse([]string{"--config", filepath.Join(curPath, test.otelConfigPath)})
+	}
 	viper.Reset()
-	root.CfgFile = filepath.Join(curPath, "test/agent-config.yaml")
+	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
 	root.InitConfig()
+	setEnvVars(t, test.packageType)
 
 	// Run the test
 	ctx := logger.WithCtx(context.Background(), logger.GetNop())
 	var output bytes.Buffer
 	PrintShortOtelConfig(ctx, &output)
-	expected, err := os.ReadFile(filepath.Join(curPath, "test/output.yaml"))
+	expected, err := os.ReadFile(filepath.Join(curPath, test.outputPath))
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(output.String()))
+}
+
+func getPackagingPath(t *testing.T, packageType PackageType, curPath string) string {
+	const packagingPath = "../../../packaging"
+	switch packageType {
+	case MacOS, Linux, Windows:
+		return filepath.Join(curPath, packagingPath, string(packageType), "connections")
+	case Docker:
+		return filepath.Join(curPath, packagingPath, "docker/observe-agent/connections")
+	default:
+		t.Errorf("Unknown package type: %s", packageType)
+		return ""
+	}
+}
+
+func setEnvVars(t *testing.T, packageType PackageType) {
+	switch packageType {
+	case MacOS:
+		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
+	case Windows:
+		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "C:\\ProgramData\\Observe\\observe-agent\\filestorage"))
+	case Linux, Docker:
+		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
+	default:
+		t.Errorf("Unknown package type: %s", packageType)
+	}
+
 }
