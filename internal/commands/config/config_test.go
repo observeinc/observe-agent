@@ -37,6 +37,7 @@ type snapshotTest struct {
 }
 
 var allSnapshotTests = []snapshotTest{
+	// Tests with full agent config
 	{
 		agentConfigPath: "test/snap1-full-agent-config.yaml",
 		outputPath:      "test/snap1-docker-output.yaml",
@@ -52,11 +53,17 @@ var allSnapshotTests = []snapshotTest{
 		outputPath:      "test/snap1-windows-output.yaml",
 		packageType:     Windows,
 	},
+	// Tests with minimal agent config
 	{
 		agentConfigPath: "test/snap2-empty-agent-config.yaml",
 		otelConfigPath:  "test/snap2-otel-config.yaml",
 		outputPath:      "test/snap2-with-otel-output.yaml",
 		packageType:     MacOS,
+	},
+	{
+		agentConfigPath: "test/snap2-empty-agent-config.yaml",
+		outputPath:      "test/snap2-windows-output.yaml",
+		packageType:     Windows,
 	},
 }
 
