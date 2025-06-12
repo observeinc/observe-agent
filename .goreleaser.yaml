@@ -172,7 +172,7 @@ nfpms:
 
       - src: packaging/linux/config/observe-agent.service
         dst: /lib/systemd/system/observe-agent.service
-        type: config
+        type: config|noreplace
 
     scripts:
       preinstall: "packaging/linux/scripts/preinstall.sh"
