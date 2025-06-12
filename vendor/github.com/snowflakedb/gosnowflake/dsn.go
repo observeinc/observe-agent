@@ -1,5 +1,3 @@
-// Copyright (c) 2017-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -25,6 +23,7 @@ const (
 	defaultRequestTimeout         = 0 * time.Second   // Timeout for retry for request EXCLUDING clientTimeout
 	defaultJWTTimeout             = 60 * time.Second
 	defaultExternalBrowserTimeout = 120 * time.Second // Timeout for external browser login
+	defaultCloudStorageTimeout    = -1                // Timeout for calling cloud storage.
 	defaultMaxRetryCount          = 7                 // specifies maximum number of subsequent retries
 	defaultDomain                 = ".snowflakecomputing.com"
 	cnDomain                      = ".snowflakecomputing.cn"
@@ -53,6 +52,13 @@ type Config struct {
 	Role      string // Role
 	Region    string // Region
 
+	OauthClientID         string // Client id for OAuth2 external IdP
+	OauthClientSecret     string // Client secret for OAuth2 external IdP
+	OauthAuthorizationURL string // Authorization URL of Auth2 external IdP
+	OauthTokenRequestURL  string // Token request URL of Auth2 external IdP
+	OauthRedirectURI      string // Redirect URI registered in IdP. The default is http://127.0.0.1:<random port>/
+	OauthScope            string // Comma separated list of scopes. If empty it is derived from role.
+
 	// ValidateDefaultParameters disable the validation checks for Database, Schema, Warehouse and Role
 	// at the time a connection is established
 	ValidateDefaultParameters ConfigBool
@@ -77,9 +83,12 @@ type Config struct {
 	ClientTimeout          time.Duration // Timeout for network round trip + read out http response
 	JWTClientTimeout       time.Duration // Timeout for network round trip + read out http response used when JWT token auth is taking place
 	ExternalBrowserTimeout time.Duration // Timeout for external browser login
+	CloudStorageTimeout    time.Duration // Timeout for a single call to a cloud storage provider
 	MaxRetryCount          int           // Specifies how many times non-periodic HTTP request can be retried
 
-	Application  string           // application name.
+	Application       string // application name.
+	DisableOCSPChecks bool   // driver doesn't check certificate revocation status
+	// Deprecated: InsecureMode use DisableOCSPChecks instead
 	InsecureMode bool             // driver doesn't check certificate revocation status
 	OCSPFailOpen OCSPFailOpenMode // OCSP Fail Open
 
@@ -126,7 +135,7 @@ func (c *Config) Validate() error {
 
 // ocspMode returns the OCSP mode in string INSECURE, FAIL_OPEN, FAIL_CLOSED
 func (c *Config) ocspMode() string {
-	if c.InsecureMode {
+	if c.DisableOCSPChecks || c.InsecureMode {
 		return ocspModeInsecure
 	} else if c.OCSPFailOpen == ocspFailOpenNotSet || c.OCSPFailOpen == OCSPFailOpenTrue {
 		// by default or set to true
@@ -137,11 +146,16 @@ func (c *Config) ocspMode() string {
 
 // DSN constructs a DSN for Snowflake db.
 func DSN(cfg *Config) (dsn string, err error) {
-	if cfg.Region == "us-west-2" {
+	if strings.ToLower(cfg.Region) == "us-west-2" {
 		cfg.Region = ""
 	}
 	// in case account includes region
 	region, posDot := extractRegionFromAccount(cfg.Account)
+	if strings.ToLower(region) == "us-west-2" {
+		region = ""
+		cfg.Account = cfg.Account[:posDot]
+		logger.Info("Ignoring default region .us-west-2 in DSN from Account configuration.")
+	}
 	if region != "" {
 		if cfg.Region != "" {
 			return "", errRegionConflict()
@@ -182,6 +196,24 @@ func DSN(cfg *Config) (dsn string, err error) {
 	if cfg.Region != "" {
 		params.Add("region", cfg.Region)
 	}
+	if cfg.OauthClientID != "" {
+		params.Add("oauthClientId", cfg.OauthClientID)
+	}
+	if cfg.OauthClientSecret != "" {
+		params.Add("oauthClientSecret", cfg.OauthClientSecret)
+	}
+	if cfg.OauthAuthorizationURL != "" {
+		params.Add("oauthAuthorizationUrl", cfg.OauthAuthorizationURL)
+	}
+	if cfg.OauthTokenRequestURL != "" {
+		params.Add("oauthTokenRequestUrl", cfg.OauthTokenRequestURL)
+	}
+	if cfg.OauthRedirectURI != "" {
+		params.Add("oauthRedirectUri", cfg.OauthRedirectURI)
+	}
+	if cfg.OauthScope != "" {
+		params.Add("oauthScope", cfg.OauthScope)
+	}
 	if cfg.Authenticator != AuthTypeSnowflake {
 		if cfg.Authenticator == AuthTypeOkta {
 			params.Add("authenticator", strings.ToLower(cfg.OktaURL.String()))
@@ -213,6 +245,9 @@ func DSN(cfg *Config) (dsn string, err error) {
 	if cfg.ExternalBrowserTimeout != defaultExternalBrowserTimeout {
 		params.Add("externalBrowserTimeout", strconv.FormatInt(int64(cfg.ExternalBrowserTimeout/time.Second), 10))
 	}
+	if cfg.CloudStorageTimeout != defaultCloudStorageTimeout {
+		params.Add("cloudStorageTimeout", strconv.FormatInt(int64(cfg.CloudStorageTimeout/time.Second), 10))
+	}
 	if cfg.MaxRetryCount != defaultMaxRetryCount {
 		params.Add("maxRetryCount", strconv.Itoa(cfg.MaxRetryCount))
 	}
@@ -240,6 +275,9 @@ func DSN(cfg *Config) (dsn string, err error) {
 	}
 	if cfg.InsecureMode {
 		params.Add("insecureMode", strconv.FormatBool(cfg.InsecureMode))
+	}
+	if cfg.DisableOCSPChecks {
+		params.Add("disableOCSPChecks", strconv.FormatBool(cfg.DisableOCSPChecks))
 	}
 	if cfg.Tracing != "" {
 		params.Add("tracing", cfg.Tracing)
@@ -445,6 +483,14 @@ func fillMissingConfigParameters(cfg *Config) error {
 	if authRequiresPassword(cfg) && strings.TrimSpace(cfg.Password) == "" {
 		return errEmptyPassword()
 	}
+
+	if authRequiresEitherPasswordOrToken(cfg) && strings.TrimSpace(cfg.Password) == "" && strings.TrimSpace(cfg.Token) == "" {
+		return errEmptyPasswordAndToken()
+	}
+
+	if authRequiresClientIDAndSecret(cfg) && (strings.TrimSpace(cfg.OauthClientID) == "" || strings.TrimSpace(cfg.OauthClientSecret) == "") {
+		return errEmptyOAuthParameters()
+	}
 	if strings.Trim(cfg.Protocol, " ") == "" {
 		cfg.Protocol = "https"
 	}
@@ -492,6 +538,9 @@ func fillMissingConfigParameters(cfg *Config) error {
 	}
 	if cfg.ExternalBrowserTimeout == 0 {
 		cfg.ExternalBrowserTimeout = defaultExternalBrowserTimeout
+	}
+	if cfg.CloudStorageTimeout == 0 {
+		cfg.CloudStorageTimeout = defaultCloudStorageTimeout
 	}
 	if cfg.MaxRetryCount == 0 {
 		cfg.MaxRetryCount = defaultMaxRetryCount
@@ -558,14 +607,28 @@ func buildHostFromAccountAndRegion(account, region string) string {
 func authRequiresUser(cfg *Config) bool {
 	return cfg.Authenticator != AuthTypeOAuth &&
 		cfg.Authenticator != AuthTypeTokenAccessor &&
-		cfg.Authenticator != AuthTypeExternalBrowser
+		cfg.Authenticator != AuthTypeExternalBrowser &&
+		cfg.Authenticator != AuthTypePat &&
+		cfg.Authenticator != AuthTypeOAuthAuthorizationCode &&
+		cfg.Authenticator != AuthTypeOAuthClientCredentials
 }
 
 func authRequiresPassword(cfg *Config) bool {
 	return cfg.Authenticator != AuthTypeOAuth &&
 		cfg.Authenticator != AuthTypeTokenAccessor &&
 		cfg.Authenticator != AuthTypeExternalBrowser &&
-		cfg.Authenticator != AuthTypeJwt
+		cfg.Authenticator != AuthTypeJwt &&
+		cfg.Authenticator != AuthTypePat &&
+		cfg.Authenticator != AuthTypeOAuthAuthorizationCode &&
+		cfg.Authenticator != AuthTypeOAuthClientCredentials
+}
+
+func authRequiresEitherPasswordOrToken(cfg *Config) bool {
+	return cfg.Authenticator == AuthTypePat
+}
+
+func authRequiresClientIDAndSecret(cfg *Config) bool {
+	return cfg.Authenticator == AuthTypeOAuthAuthorizationCode
 }
 
 // transformAccountToHost transforms account to host
@@ -574,6 +637,11 @@ func transformAccountToHost(cfg *Config) (err error) {
 		// account name is specified instead of host:port
 		cfg.Account = cfg.Host
 		region, posDot := extractRegionFromAccount(cfg.Account)
+		if strings.ToLower(region) == "us-west-2" {
+			region = ""
+			cfg.Account = cfg.Account[:posDot]
+			logger.Info("Ignoring default region .us-west-2 from Account configuration.")
+		}
 		if region != "" {
 			cfg.Region = region
 			cfg.Account = cfg.Account[:posDot]
@@ -637,7 +705,14 @@ func parseParams(cfg *Config, posQuestion int, dsn string) (err error) {
 // parseDSNParams parses the DSN "query string". Values must be url.QueryEscape'ed
 func parseDSNParams(cfg *Config, params string) (err error) {
 	logger.Infof("Query String: %v\n", params)
-	for _, v := range strings.Split(params, "&") {
+	paramsSlice := strings.Split(params, "&")
+	insecureModeIdx := findByPrefix(paramsSlice, "insecureMode")
+	disableOCSPChecksIdx := findByPrefix(paramsSlice, "disableOCSPChecks")
+	if insecureModeIdx > -1 && disableOCSPChecksIdx > -1 {
+		logger.Warn("duplicated insecureMode and disableOCSPChecks. disableOCSPChecks takes precedence")
+		paramsSlice = append(paramsSlice[:insecureModeIdx-1], paramsSlice[insecureModeIdx+1:]...)
+	}
+	for _, v := range paramsSlice {
 		param := strings.SplitN(v, "=", 2)
 		if len(param) != 2 {
 			continue
@@ -665,6 +740,18 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			cfg.Protocol = value
 		case "passcode":
 			cfg.Passcode = value
+		case "oauthClientId":
+			cfg.OauthClientID = value
+		case "oauthClientSecret":
+			cfg.OauthClientSecret = value
+		case "oauthAuthorizationUrl":
+			cfg.OauthAuthorizationURL = value
+		case "oauthTokenRequestUrl":
+			cfg.OauthTokenRequestURL = value
+		case "oauthRedirectUri":
+			cfg.OauthRedirectURI = value
+		case "oauthScope":
+			cfg.OauthScope = value
 		case "passcodeInPassword":
 			var vv bool
 			vv, err = strconv.ParseBool(value)
@@ -702,6 +789,11 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			if err != nil {
 				return err
 			}
+		case "cloudStorageTimeout":
+			cfg.CloudStorageTimeout, err = parseTimeout(value)
+			if err != nil {
+				return err
+			}
 		case "maxRetryCount":
 			cfg.MaxRetryCount, err = strconv.Atoi(value)
 			if err != nil {
@@ -715,12 +807,20 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return err
 			}
 		case "insecureMode":
+			logInsecureModeDeprecationInfo()
 			var vv bool
 			vv, err = strconv.ParseBool(value)
 			if err != nil {
 				return
 			}
 			cfg.InsecureMode = vv
+		case "disableOCSPChecks":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			cfg.DisableOCSPChecks = vv
 		case "ocspFailOpen":
 			var vv bool
 			vv, err = strconv.ParseBool(value)
@@ -839,6 +939,10 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 	return
 }
 
+func logInsecureModeDeprecationInfo() {
+	logger.Warn("insecureMode is deprecated. Use disableOCSPChecks instead.")
+}
+
 func parseTimeout(value string) (time.Duration, error) {
 	var vv int64
 	var err error
@@ -858,7 +962,8 @@ type ConfigParam struct {
 
 // GetConfigFromEnv is used to parse the environment variable values to specific fields of the Config
 func GetConfigFromEnv(properties []*ConfigParam) (*Config, error) {
-	var account, user, password, role, host, portStr, protocol, warehouse, database, schema, region, passcode, application string
+	var account, user, password, token, role, host, portStr, protocol, warehouse, database, schema, region, passcode, application string
+	var oauthClientID, oauthClientSecret, oauthAuthorizationURL, oauthTokenRequestURL, oauthRedirectURI, oauthScope string
 	var privateKey *rsa.PrivateKey
 	var err error
 	if len(properties) == 0 || properties == nil {
@@ -876,6 +981,8 @@ func GetConfigFromEnv(properties []*ConfigParam) (*Config, error) {
 			user = value
 		case "Password":
 			password = value
+		case "Token":
+			token = value
 		case "Role":
 			role = value
 		case "Host":
@@ -901,6 +1008,20 @@ func GetConfigFromEnv(properties []*ConfigParam) (*Config, error) {
 			if err != nil {
 				return nil, err
 			}
+		case "OAuthClientId":
+			oauthClientID = value
+		case "OAuthClientSecret":
+			oauthClientSecret = value
+		case "OAuthAuthorizationURL":
+			oauthAuthorizationURL = value
+		case "OAuthTokenRequestURL":
+			oauthTokenRequestURL = value
+		case "OAuthRedirectURI":
+			oauthRedirectURI = value
+		case "OAuthScope":
+			oauthScope = value
+		default:
+			return nil, errors.New("unknown property: " + prop.Name)
 		}
 	}
 
@@ -913,20 +1034,28 @@ func GetConfigFromEnv(properties []*ConfigParam) (*Config, error) {
 	}
 
 	cfg := &Config{
-		Account:     account,
-		User:        user,
-		Password:    password,
-		Role:        role,
-		Host:        host,
-		Port:        port,
-		Protocol:    protocol,
-		Warehouse:   warehouse,
-		Database:    database,
-		Schema:      schema,
-		PrivateKey:  privateKey,
-		Region:      region,
-		Passcode:    passcode,
-		Application: application,
+		Account:               account,
+		User:                  user,
+		Password:              password,
+		Token:                 token,
+		Role:                  role,
+		Host:                  host,
+		Port:                  port,
+		Protocol:              protocol,
+		Warehouse:             warehouse,
+		Database:              database,
+		Schema:                schema,
+		PrivateKey:            privateKey,
+		Region:                region,
+		Passcode:              passcode,
+		Application:           application,
+		OauthClientID:         oauthClientID,
+		OauthClientSecret:     oauthClientSecret,
+		OauthAuthorizationURL: oauthAuthorizationURL,
+		OauthTokenRequestURL:  oauthTokenRequestURL,
+		OauthRedirectURI:      oauthRedirectURI,
+		OauthScope:            oauthScope,
+		Params:                map[string]*string{},
 	}
 	return cfg, nil
 }

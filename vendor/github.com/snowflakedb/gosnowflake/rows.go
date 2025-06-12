@@ -1,5 +1,3 @@
-// Copyright (c) 2017-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -46,6 +44,7 @@ type snowflakeRows struct {
 	errChannel          chan error
 	location            *time.Location
 	ctx                 context.Context
+	format              resultFormat
 }
 
 func (rows *snowflakeRows) getLocation() *time.Location {
@@ -166,6 +165,10 @@ func (rows *snowflakeRows) GetArrowBatches() ([]*ArrowBatch, error) {
 	// Otherwise, a panic error "invalid memory address or nil pointer dereference" will be thrown.
 	if err := rows.waitForAsyncQueryStatus(); err != nil {
 		return nil, err
+	}
+
+	if rows.format != arrowFormat {
+		return nil, errNonArrowResponseForArrowBatches(rows.queryID).exceptionTelemetry(rows.sc)
 	}
 
 	return rows.ChunkDownloader.getArrowBatches(), nil

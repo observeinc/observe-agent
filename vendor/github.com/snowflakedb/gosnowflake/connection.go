@@ -1,5 +1,3 @@
-// Copyright (c) 2017-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -20,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow/ipc"
+	"github.com/apache/arrow-go/v18/arrow/ipc"
 )
 
 const (
@@ -258,8 +256,9 @@ func (sc *snowflakeConn) BeginTx(
 		return nil, driver.ErrBadConn
 	}
 	isDesc := isDescribeOnly(ctx)
+	isInternal := isInternal(ctx)
 	if _, err := sc.exec(ctx, "BEGIN", false, /* noResult */
-		false /* isInternal */, isDesc, nil); err != nil {
+		isInternal, isDesc, nil); err != nil {
 		return nil, err
 	}
 	return &snowflakeTx{sc, ctx}, nil
@@ -277,12 +276,15 @@ func (sc *snowflakeConn) cleanup() {
 
 func (sc *snowflakeConn) Close() (err error) {
 	logger.WithContext(sc.ctx).Infoln("Close")
-	sc.telemetry.sendBatch()
+	if err := sc.telemetry.sendBatch(); err != nil {
+		logger.WithContext(sc.ctx).Warnf("error while sending telemetry. %v", err)
+	}
 	sc.stopHeartBeat()
 	defer sc.cleanup()
 
 	if sc.cfg != nil && !sc.cfg.KeepSessionAlive {
-		if err = sc.rest.FuncCloseSession(sc.ctx, sc.rest, sc.rest.RequestTimeout); err != nil {
+		// we have to replace context with background, otherwise we can use a one that is cancelled or timed out
+		if err = sc.rest.FuncCloseSession(context.Background(), sc.rest, sc.rest.RequestTimeout); err != nil {
 			logger.WithContext(sc.ctx).Error(err)
 		}
 	}
@@ -315,9 +317,9 @@ func (sc *snowflakeConn) ExecContext(
 	}
 	noResult := isAsyncMode(ctx)
 	isDesc := isDescribeOnly(ctx)
-	// TODO handle isInternal
+	isInternal := isInternal(ctx)
 	ctx = setResultType(ctx, execResultType)
-	data, err := sc.exec(ctx, query, noResult, false /* isInternal */, isDesc, args)
+	data, err := sc.exec(ctx, query, noResult, isInternal, isDesc, args)
 	if err != nil {
 		logger.WithContext(ctx).Infof("error: %v", err)
 		if data != nil {
@@ -404,8 +406,8 @@ func (sc *snowflakeConn) queryContextInternal(
 	noResult := isAsyncMode(ctx)
 	isDesc := isDescribeOnly(ctx)
 	ctx = setResultType(ctx, queryResultType)
-	// TODO: handle isInternal
-	data, err := sc.exec(ctx, query, noResult, false /* isInternal */, isDesc, args)
+	isInternal := isInternal(ctx)
+	data, err := sc.exec(ctx, query, noResult, isInternal, isDesc, args)
 	if err != nil {
 		logger.WithContext(ctx).Errorf("error: %v", err)
 		if data != nil {
@@ -432,6 +434,7 @@ func (sc *snowflakeConn) queryContextInternal(
 	rows.sc = sc
 	rows.queryID = data.Data.QueryID
 	rows.ctx = ctx
+	rows.format = resultFormat(data.Data.QueryResultFormat)
 
 	if isMultiStmt(&data.Data) {
 		// handleMultiQuery is responsible to fill rows with childResults
@@ -471,9 +474,9 @@ func (sc *snowflakeConn) Ping(ctx context.Context) error {
 	}
 	noResult := isAsyncMode(ctx)
 	isDesc := isDescribeOnly(ctx)
-	// TODO: handle isInternal
+	isInternal := isInternal(ctx)
 	ctx = setResultType(ctx, execResultType)
-	_, err := sc.exec(ctx, "SELECT 1", noResult, false, /* isInternal */
+	_, err := sc.exec(ctx, "SELECT 1", noResult, isInternal,
 		isDesc, []driver.NamedValue{})
 	return err
 }
@@ -514,7 +517,8 @@ func (sc *snowflakeConn) QueryArrowStream(ctx context.Context, query string, bin
 	ctx = WithArrowBatches(context.WithValue(ctx, asyncMode, false))
 	ctx = setResultType(ctx, queryResultType)
 	isDesc := isDescribeOnly(ctx)
-	data, err := sc.exec(ctx, query, false, false /* isinternal */, isDesc, bindings)
+	isInternal := isInternal(ctx)
+	data, err := sc.exec(ctx, query, false, isInternal, isDesc, bindings)
 	if err != nil {
 		logger.WithContext(ctx).Errorf("error: %v", err)
 		if data != nil {
@@ -773,7 +777,7 @@ func (scd *snowflakeArrowStreamChunkDownloader) GetBatches() (out []ArrowStreamB
 func buildSnowflakeConn(ctx context.Context, config Config) (*snowflakeConn, error) {
 	sc := &snowflakeConn{
 		SequenceCounter:     0,
-		ctx:                 context.Background(),
+		ctx:                 ctx,
 		cfg:                 &config,
 		queryContextCache:   (&queryContextCache{}).init(),
 		currentTimeProvider: defaultTimeProvider,
@@ -784,9 +788,9 @@ func buildSnowflakeConn(ctx context.Context, config Config) (*snowflakeConn, err
 	}
 	var st http.RoundTripper = SnowflakeTransport
 	if sc.cfg.Transporter == nil {
-		if sc.cfg.InsecureMode {
+		if sc.cfg.DisableOCSPChecks || sc.cfg.InsecureMode {
 			// no revocation check with OCSP. Think twice when you want to enable this option.
-			st = snowflakeInsecureTransport
+			st = snowflakeNoOcspTransport
 		} else {
 			// set OCSP fail open mode
 			ocspResponseCacheLock.Lock()
@@ -851,4 +855,22 @@ func buildSnowflakeConn(ctx context.Context, config Config) (*snowflakeConn, err
 	}
 
 	return sc, nil
+}
+
+func getTransport(cfg *Config) http.RoundTripper {
+	if cfg == nil {
+		logger.Debug("getTransport: got nil Config, will perform OCSP validation for cloud storage")
+		return SnowflakeTransport
+	}
+	// if user configured a custom Transporter, prioritize that
+	if cfg.Transporter != nil {
+		logger.Debug("getTransport: using Transporter configured by the user")
+		return cfg.Transporter
+	}
+	if cfg.DisableOCSPChecks || cfg.InsecureMode {
+		logger.Debug("getTransport: skipping OCSP validation for cloud storage")
+		return snowflakeNoOcspTransport
+	}
+	logger.Debug("getTransport: will perform OCSP validation for cloud storage")
+	return SnowflakeTransport
 }

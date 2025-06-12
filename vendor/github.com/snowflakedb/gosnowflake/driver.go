@@ -1,5 +1,3 @@
-// Copyright (c) 2017-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -33,13 +31,27 @@ func (d SnowflakeDriver) Open(dsn string) (driver.Conn, error) {
 	return d.OpenWithConfig(ctx, *cfg)
 }
 
+// OpenConnector creates a new connector with parsed DSN.
+func (d SnowflakeDriver) OpenConnector(dsn string) (driver.Connector, error) {
+	cfg, err := ParseDSN(dsn)
+	if err != nil {
+		return Connector{}, err
+	}
+	return NewConnector(d, *cfg), nil
+}
+
 // OpenWithConfig creates a new connection with the given Config.
 func (d SnowflakeDriver) OpenWithConfig(ctx context.Context, config Config) (driver.Conn, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
+	if config.Params == nil {
+		config.Params = make(map[string]*string)
+	}
 	if config.Tracing != "" {
-		logger.SetLogLevel(config.Tracing)
+		if err := logger.SetLogLevel(config.Tracing); err != nil {
+			return nil, err
+		}
 	}
 	logger.WithContext(ctx).Info("OpenWithConfig")
 	sc, err := buildSnowflakeConn(ctx, config)
@@ -73,19 +85,19 @@ func runningOnGithubAction() bool {
 // to the driver type, which in this case is "snowflake" and SnowflakeDriver{}. If you wish to call
 // into multiple versions of the driver from one client, this is needed because calling register
 // twice with the same name on init will cause the driver to panic.
-func skipRegisteration() bool {
+func skipRegistration() bool {
 	return os.Getenv("GOSNOWFLAKE_SKIP_REGISTERATION") != ""
 }
 
 var logger = CreateDefaultLogger()
 
 func init() {
-	if !skipRegisteration() {
+	if !skipRegistration() {
 		sql.Register("snowflake", &SnowflakeDriver{})
 	}
-	logger.SetLogLevel("error")
+	_ = logger.SetLogLevel("error")
 	if runningOnGithubAction() {
-		logger.SetLogLevel("fatal")
+		_ = logger.SetLogLevel("fatal")
 	}
 	paramsMutex = &sync.Mutex{}
 }

@@ -1,5 +1,3 @@
-// Copyright (c) 2017-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -97,7 +95,6 @@ func authenticateBySAML(
 		sr.TokenAccessor.SetTokens("", "", -1)
 		code, err := strconv.Atoi(respd.Code)
 		if err != nil {
-			code = -1
 			return nil, err
 		}
 		return nil, &SnowflakeError{

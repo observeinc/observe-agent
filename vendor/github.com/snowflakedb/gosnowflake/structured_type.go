@@ -3,6 +3,7 @@ package gosnowflake
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -19,7 +20,7 @@ import (
 type ObjectType struct {
 }
 
-var structuredObjectWriterType = reflect.TypeOf((*StructuredObjectWriter)(nil)).Elem()
+var structuredObjectWriterType = reflect.TypeFor[StructuredObjectWriter]()
 
 // StructuredObject is a representation of structured object for reading.
 type StructuredObject interface {
@@ -448,6 +449,10 @@ func buildSowcFromType(params map[string]*string, typ reflect.Type) (*structured
 				}
 			} else if field.Type.AssignableTo(structuredObjectWriterType) {
 				if err := childSowc.WriteNullableStruct(fieldName, nil, field.Type); err != nil {
+					return nil, err
+				}
+			} else if t.Implements(reflect.TypeOf((*driver.Valuer)(nil)).Elem()) {
+				if err := childSowc.WriteNullString(fieldName, sql.NullString{}); err != nil {
 					return nil, err
 				}
 			} else {

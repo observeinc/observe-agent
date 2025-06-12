@@ -1,5 +1,3 @@
-// Copyright (c) 2020-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -8,9 +6,9 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/ipc"
-	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/ipc"
+	"github.com/apache/arrow-go/v18/arrow/memory"
 )
 
 type arrowResultChunk struct {
@@ -21,6 +19,7 @@ type arrowResultChunk struct {
 }
 
 func (arc *arrowResultChunk) decodeArrowChunk(ctx context.Context, rowType []execResponseRowType, highPrec bool, params map[string]*string) ([]chunkRowType, error) {
+	defer arc.reader.Release()
 	logger.Debug("Arrow Decoder")
 	var chunkRows []chunkRowType
 

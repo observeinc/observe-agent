@@ -1,5 +1,3 @@
-// Copyright (c) 2021-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -40,7 +38,10 @@ func (sr *snowflakeRestful) processAsync(
 	go GoroutineWrapper(
 		ctx,
 		func() {
-			sr.getAsync(ctx, headers, sr.getFullURL(respd.Data.GetResultURL, nil), timeout, res, rows, cfg)
+			err := sr.getAsync(ctx, headers, sr.getFullURL(respd.Data.GetResultURL, nil), timeout, res, rows, cfg)
+			if err != nil {
+				logger.Errorf("error while calling getAsync. %v", err)
+			}
 		},
 	)
 	return respd, nil
@@ -116,6 +117,7 @@ func (sr *snowflakeRestful) getAsync(
 				rows.errChannel <- err
 				return err
 			}
+			rows.format = resultFormat(respd.Data.QueryResultFormat)
 			rows.errChannel <- nil // mark query status complete
 		}
 	} else {

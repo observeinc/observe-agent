@@ -1,5 +1,3 @@
-// Copyright (c) 2021-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -14,6 +12,8 @@ import (
 	"os"
 	"strconv"
 )
+
+const gcmIvLengthInBytes = 12
 
 var (
 	defaultKeyAad  = make([]byte, 0)
@@ -154,7 +154,7 @@ func encryptFileCBC(
 	filename string,
 	chunkSize int,
 	tmpDir string) (
-	*encryptMetadata, string, error) {
+	meta *encryptMetadata, fileName string, err error) {
 	if chunkSize == 0 {
 		chunkSize = aes.BlockSize * 4 * 1024
 	}
@@ -162,18 +162,26 @@ func encryptFileCBC(
 	if err != nil {
 		return nil, "", err
 	}
-	defer tmpOutputFile.Close()
+	defer func() {
+		if tmpErr := tmpOutputFile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 	infile, err := os.OpenFile(filename, os.O_CREATE|os.O_RDONLY, readWriteFileMode)
 	if err != nil {
 		return nil, "", err
 	}
-	defer infile.Close()
+	defer func() {
+		if tmpErr := infile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 
-	meta, err := encryptStreamCBC(sfe, infile, tmpOutputFile, chunkSize)
+	meta, err = encryptStreamCBC(sfe, infile, tmpOutputFile, chunkSize)
 	if err != nil {
 		return nil, "", err
 	}
-	return meta, tmpOutputFile.Name(), nil
+	return meta, tmpOutputFile.Name(), err
 }
 
 func decryptFileKeyECB(
@@ -220,25 +228,34 @@ func decryptFileCBC(
 	sfe *snowflakeFileEncryption,
 	filename string,
 	chunkSize int,
-	tmpDir string) (string, error) {
+	tmpDir string) (outputFileName string, err error) {
 	tmpOutputFile, err := os.CreateTemp(tmpDir, baseName(filename)+"#")
 	if err != nil {
 		return "", err
 	}
-	defer tmpOutputFile.Close()
+	defer func() {
+		if tmpErr := tmpOutputFile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 	infile, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
-	defer infile.Close()
+	defer func() {
+		if tmpErr := infile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 	totalFileSize, err := decryptStreamCBC(metadata, sfe, chunkSize, infile, tmpOutputFile)
 	if err != nil {
 		return "", err
 	}
-	tmpOutputFile.Truncate(int64(totalFileSize))
-	return tmpOutputFile.Name(), nil
+	err = tmpOutputFile.Truncate(int64(totalFileSize))
+	return tmpOutputFile.Name(), err
 }
 
+// Returns decrypted file size and any error that happened during decryption.
 func decryptStreamCBC(
 	metadata *encryptMetadata,
 	sfe *snowflakeFileEncryption,
@@ -272,7 +289,9 @@ func decryptStreamCBC(
 		totalFileSize += n
 		chunk = chunk[:n]
 		mode.CryptBlocks(chunk, chunk)
-		out.Write(chunk)
+		if _, err = out.Write(chunk); err != nil {
+			return 0, err
+		}
 		prevChunk = chunk
 	}
 	if err != nil {
@@ -305,24 +324,32 @@ func initGcm(encryptionKey []byte) (cipher.AEAD, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cipher.NewGCMWithNonceSize(block, 16)
+	return cipher.NewGCM(block)
 }
 
 func encryptFileGCM(
 	sfe *snowflakeFileEncryption,
 	filename string,
 	tmpDir string) (
-	*gcmEncryptMetadata, string, error) {
+	meta *gcmEncryptMetadata, outputFileName string, err error) {
 	tmpOutputFile, err := os.CreateTemp(tmpDir, baseName(filename)+"#")
 	if err != nil {
 		return nil, "", err
 	}
-	defer tmpOutputFile.Close()
+	defer func() {
+		if tmpErr := tmpOutputFile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 	infile, err := os.OpenFile(filename, os.O_CREATE|os.O_RDONLY, readWriteFileMode)
 	if err != nil {
 		return nil, "", err
 	}
-	defer infile.Close()
+	defer func() {
+		if tmpErr := infile.Close(); tmpErr != nil && err == nil {
+			err = tmpErr
+		}
+	}()
 	plaintext, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, "", err
@@ -334,13 +361,13 @@ func encryptFileGCM(
 	}
 	keySize := len(kek)
 	fileKey := getSecureRandom(keySize)
-	keyIv := getSecureRandom(keySize)
+	keyIv := getSecureRandom(gcmIvLengthInBytes)
 	encryptedFileKey, err := encryptGCM(keyIv, fileKey, kek, defaultKeyAad)
 	if err != nil {
 		return nil, "", err
 	}
 
-	dataIv := getSecureRandom(keySize)
+	dataIv := getSecureRandom(gcmIvLengthInBytes)
 	encryptedData, err := encryptGCM(dataIv, plaintext, fileKey, defaultDataAad)
 	if err != nil {
 		return nil, "", err
@@ -360,7 +387,7 @@ func encryptFileGCM(
 	if err != nil {
 		return nil, "", err
 	}
-	meta := &gcmEncryptMetadata{
+	meta = &gcmEncryptMetadata{
 		key:     base64.StdEncoding.EncodeToString(encryptedFileKey),
 		keyIv:   base64.StdEncoding.EncodeToString(keyIv),
 		dataIv:  base64.StdEncoding.EncodeToString(dataIv),
@@ -420,7 +447,7 @@ func decryptFileGCM(
 	if err != nil {
 		return "", err
 	}
-	tmpOutputFile.Write(plaintext)
+	_, err = tmpOutputFile.Write(plaintext)
 	if err != nil {
 		return "", err
 	}
@@ -443,7 +470,10 @@ func matdescToUnicode(matdesc materialDescriptor) (string, error) {
 
 func getSecureRandom(byteLength int) []byte {
 	token := make([]byte, byteLength)
-	rand.Read(token)
+	_, err := rand.Read(token)
+	if err != nil {
+		logger.Errorf("cannot init secure random. %v", err)
+	}
 	return token
 }
 

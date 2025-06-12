@@ -1,5 +1,3 @@
-// Copyright (c) 2021-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -18,9 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/ipc"
-	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/ipc"
+	"github.com/apache/arrow-go/v18/arrow/memory"
 )
 
 type chunkDownloader interface {
@@ -93,7 +91,7 @@ func (scd *snowflakeChunkDownloader) nextResultSet() error {
 }
 
 func (scd *snowflakeChunkDownloader) start() error {
-	if usesArrowBatches(scd.ctx) {
+	if usesArrowBatches(scd.ctx) && scd.getQueryResultFormat() == arrowFormat {
 		return scd.startArrowBatches()
 	}
 	scd.CurrentChunkSize = len(scd.RowSet.JSON) // cache the size

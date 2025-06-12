@@ -1,5 +1,3 @@
-// Copyright (c) 2021-2022 Snowflake Computing Inc. All rights reserved.
-
 package gosnowflake
 
 import (
@@ -76,8 +74,12 @@ func (sc *snowflakeConn) connectionTelemetry(cfg *Config) {
 		data.Message[k] = *v
 	}
 	paramsMutex.Unlock()
-	sc.telemetry.addLog(data)
-	sc.telemetry.sendBatch()
+	if err := sc.telemetry.addLog(data); err != nil {
+		logger.WithContext(sc.ctx).Warn(err)
+	}
+	if err := sc.telemetry.sendBatch(); err != nil {
+		logger.WithContext(sc.ctx).Warn(err)
+	}
 }
 
 // processFileTransfer creates a snowflakeFileTransferAgent object to process
@@ -88,15 +90,22 @@ func (sc *snowflakeConn) processFileTransfer(
 	query string,
 	isInternal bool) (
 	*execResponse, error) {
+	options := &SnowflakeFileTransferOptions{
+		RaisePutGetError: true,
+	}
 	sfa := snowflakeFileTransferAgent{
 		ctx:          ctx,
 		sc:           sc,
 		data:         &data.Data,
 		command:      query,
-		options:      new(SnowflakeFileTransferOptions),
+		options:      options,
 		streamBuffer: new(bytes.Buffer),
 	}
-	if fs := getFileStream(ctx); fs != nil {
+	fs, err := getFileStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if fs != nil {
 		sfa.sourceStream = fs
 		if isInternal {
 			sfa.data.AutoCompress = false
@@ -111,7 +120,7 @@ func (sc *snowflakeConn) processFileTransfer(
 	if err := sfa.execute(); err != nil {
 		return nil, err
 	}
-	data, err := sfa.result()
+	data, err = sfa.result()
 	if err != nil {
 		return nil, err
 	}
@@ -123,15 +132,18 @@ func (sc *snowflakeConn) processFileTransfer(
 	return data, nil
 }
 
-func getFileStream(ctx context.Context) *bytes.Buffer {
+func getFileStream(ctx context.Context) (*bytes.Buffer, error) {
 	s := ctx.Value(fileStreamFile)
+	if s == nil {
+		return nil, nil
+	}
 	r, ok := s.(io.Reader)
 	if !ok {
-		return nil
+		return nil, errors.New("incorrect io.Reader")
 	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
-	return buf
+	_, err := buf.ReadFrom(r)
+	return buf, err
 }
 
 func getFileTransferOptions(ctx context.Context) *SnowflakeFileTransferOptions {
@@ -200,6 +212,15 @@ func isAsyncMode(ctx context.Context) bool {
 
 func isDescribeOnly(ctx context.Context) bool {
 	v := ctx.Value(describeOnly)
+	if v == nil {
+		return false
+	}
+	d, ok := v.(bool)
+	return ok && d
+}
+
+func isInternal(ctx context.Context) bool {
+	v := ctx.Value(internalQuery)
 	if v == nil {
 		return false
 	}
@@ -311,6 +332,12 @@ func populateChunkDownloader(
 
 func setupOCSPEnvVars(ctx context.Context, host string) error {
 	host = strings.ToLower(host)
+
+	// only set OCSP envs if not already set
+	if val, set := os.LookupEnv(cacheServerURLEnv); set {
+		logger.WithContext(ctx).Debugf("OCSP Cache Server already set by user for %v: %v\n", host, val)
+		return nil
+	}
 	if isPrivateLink(host) {
 		if err := setupOCSPPrivatelink(ctx, host); err != nil {
 			return err

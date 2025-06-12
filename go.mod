@@ -498,4 +498,6 @@ replace (
 	github.com/observeinc/observe-agent/observecol => ./observecol
 	golang.org/x/net => golang.org/x/net v0.38.0
 	golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
+	github.com/Microsoft/go-winio => github.com/microsoft/go-winio v0.6.2
+	github.com/snowflakedb/gosnowflake => github.com/snowflakedb/gosnowflake v1.13.3
 )

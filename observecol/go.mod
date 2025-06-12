@@ -493,3 +493,4 @@ require (
 replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../components/processors/observek8sattributesprocessor
 
 replace github.com/observeinc/observe-agent => ../
+
