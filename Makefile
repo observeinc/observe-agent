@@ -7,7 +7,7 @@ endif
 ifeq ($(UNAME_S),Darwin)
 	OS = darwin
 endif
-OCB_VERSION = 0.124.0
+OCB_VERSION := $(shell ./scripts/get_ocb_version.sh)
 ARCH := $(shell arch)
 ifeq ($(ARCH),x86_64)
 	ARCH = amd64
