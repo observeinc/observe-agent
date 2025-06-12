@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.23.8
+go 1.23.10
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.2.1
