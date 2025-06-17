@@ -87,6 +87,7 @@ This section lists the components that are included in the Observe Distribution 
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                         |                                     |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                         |                                     |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                         |                                     |
+| [sqlquery][sqlqueryreceiver]                            |                                                       |                                                        |                                         |                                     |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
@@ -111,6 +112,7 @@ This section lists the components that are included in the Observe Distribution 
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/prometheusreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/redisreceiver
 [snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/snmpreceiver
+[sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/sqlqueryreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/statsdreceiver
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/tcplogreceiver
 [udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/receiver/udplogreceiver
@@ -133,7 +135,7 @@ This section lists the components that are included in the Observe Distribution 
 [debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.124.0/exporter/debugexporter
 [fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/exporter/fileexporter
 [loadbalancingexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/exporter/loadbalancingexporter
-[otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.124.0/exporter/otlpexporter
+[otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.124.0/exporter/otlpexporter
 [otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.124.0/exporter/otlphttpexporter
 [prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/exporter/prometheusremotewriteexporter
 [countconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.124.0/connector/countconnector
