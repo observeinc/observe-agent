@@ -1,193 +1,220 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "token": {
-      "type": "string",
-      "description": "Observe ingest token used for authentication when sending telemetry data."
+  "$defs": {
+    "AgentConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "cloud_resource_detectors": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "debug": {
+          "type": "boolean"
+        },
+        "forwarding": {
+          "$ref": "#/$defs/ForwardingConfig"
+        },
+        "health_check": {
+          "$ref": "#/$defs/HealthCheckConfig"
+        },
+        "host_monitoring": {
+          "$ref": "#/$defs/HostMonitoringConfig"
+        },
+        "internal_telemetry": {
+          "$ref": "#/$defs/InternalTelemetryConfig"
+        },
+        "observe_url": {
+          "type": "string"
+        },
+        "otel_config_overrides": {
+          "type": "object"
+        },
+        "resource_attributes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "self_monitoring": {
+          "$ref": "#/$defs/SelfMonitoringConfig"
+        },
+        "token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "token"
+      ],
+      "type": "object"
     },
-    "observe_url": {
-      "type": "string",
-      "format": "uri",
-      "description": "The Observe collection endpoint URL to which telemetry data will be sent."
-    },
-    "debug": {
-      "type": "boolean",
-      "description": "Enable or disable debug mode, which sets the agent log level to debug and also adds the debug exporter to default pipelines."
-    },
-    "cloud_resource_detectors": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "List of cloud resource detector plugins (e.g., ec2) to identify cloud environments."
-    },
-    "attributes": {
-      "type": "object",
-      "additionalProperties": { "type": "string" },
-      "description": "Key-value pairs of static attributes added to all telemetry data."
-    },
-    "resource_attributes": {
-      "type": "object",
-      "additionalProperties": { "type": "string" },
-      "description": "Resource-level attributes such as service name or deployment environment to add to all telemetry data."
-    },
-    "health_check": {
-      "type": "object",
-      "description": "Configuration for the agent’s health check HTTP server.",
+    "ForwardingConfig": {
+      "additionalProperties": false,
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Enable or disable the health check endpoint."
+          "type": "boolean"
+        },
+        "metrics": {
+          "$ref": "#/$defs/ForwardingMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "ForwardingMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "output_format": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HealthCheckConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
         },
         "endpoint": {
-          "type": "string",
-          "description": "The address and port where the health check endpoint is hosted."
+          "type": "string"
         },
         "path": {
-          "type": "string",
-          "description": "The HTTP path used to check agent health."
+          "type": "string"
         }
-      }
+      },
+      "type": "object"
     },
-    "internal_telemetry": {
-      "type": "object",
-      "description": "Telemetry about the agent's own internal operations.",
+    "HostMonitoringConfig": {
+      "additionalProperties": false,
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Enable or disable internal telemetry reporting."
+          "type": "boolean"
         },
         "logs": {
-          "type": "object",
-          "description": "Configuration for internal telemetry logs.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable or disable internal logging."
-            },
-            "level": {
-              "type": "string",
-              "description": "Log level for internal logs (e.g., ERROR, DEBUG)."
-            }
-          }
+          "$ref": "#/$defs/HostMonitoringLogsConfig"
         },
         "metrics": {
-          "type": "object",
-          "description": "Configuration for internal telemetry metrics.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable or disable internal metrics collection."
-            },
-            "host": {
-              "type": "string",
-              "description": "The host IP address where internal metrics are exposed."
-            },
-            "level": {
-              "type": "string",
-              "description": "Verbosity level of internal metrics."
-            },
-            "port": {
-              "type": "integer",
-              "description": "Port number where internal metrics are exposed."
-            }
-          }
+          "$ref": "#/$defs/HostMonitoringMetricsConfig"
         }
-      }
+      },
+      "type": "object"
     },
-    "forwarding": {
-      "type": "object",
-      "description": "Settings for forwarding metrics and traces to Observe.",
+    "HostMonitoringHostMetricsConfig": {
+      "additionalProperties": false,
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Enable or disable telemetry forwarding."
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringLogsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "auto_multiline_detection": {
+          "type": "boolean"
         },
-        "metrics": {
-          "type": "object",
-          "description": "Forwarding options for metrics.",
-          "properties": {
-            "output_format": {
-              "type": "string",
-              "description": "Format used for outputting metrics (e.g., otel)."
-            }
-          }
+        "enabled": {
+          "type": "boolean"
+        },
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "include": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
-      }
+      },
+      "type": "object"
     },
-    "host_monitoring": {
-      "type": "object",
-      "description": "Configuration for monitoring host-level metrics and logs.",
+    "HostMonitoringMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "$ref": "#/$defs/HostMonitoringHostMetricsConfig"
+        },
+        "process": {
+          "$ref": "#/$defs/HostMonitoringProcessMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringProcessMetricsConfig": {
+      "additionalProperties": false,
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Enable or disable host monitoring."
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "InternalTelemetryConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
         },
         "logs": {
-          "type": "object",
-          "description": "Configuration for collecting host logs.",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable or disable collection of host logs."
-            },
-            "include": {
-              "type": "array",
-              "items": { "type": "string" },
-              "description": "List of file patterns to include for log collection."
-            },
-            "exclude": {
-              "type": "array",
-              "items": { "type": "string" },
-              "description": "List of file patterns to exclude from log collection."
-            },
-            "auto_multiline_detection": {
-              "type": "boolean",
-              "description": "Enable to automatically detect and join multi-line log entries."
-            }
-          }
+          "$ref": "#/$defs/InternalTelemetryLogsConfig"
         },
         "metrics": {
-          "type": "object",
-          "description": "Host-level metrics collection settings.",
-          "properties": {
-            "host": {
-              "type": "object",
-              "description": "Metrics about the host system (CPU, memory, etc.).",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "description": "Enable or disable collection of host metrics."
-                }
-              }
-            },
-            "process": {
-              "type": "object",
-              "description": "Metrics about running processes.",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "description": "Enable or disable collection of process-level metrics."
-                }
-              }
-            }
-          }
+          "$ref": "#/$defs/InternalTelemetryMetricsConfig"
         }
-      }
+      },
+      "type": "object"
     },
-    "self_monitoring": {
-      "type": "object",
-      "description": "Enable or disable metrics and logs about the agent itself.",
+    "InternalTelemetryLogsConfig": {
+      "additionalProperties": false,
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Enable self-monitoring for the agent."
+          "type": "boolean"
+        },
+        "level": {
+          "type": "string"
         }
-      }
+      },
+      "type": "object"
     },
-    "otel_config_overrides": {
-      "type": "object",
-      "description": "Advanced configuration overrides for OpenTelemetry pipelines, exporters, processors, etc.",
-      "additionalProperties": true
+    "InternalTelemetryMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "host": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SelfMonitoringConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
     }
-  }
+  },
+  "$id": "https://github.com/observeinc/observe-agent/internal/config/agent-config",
+  "$ref": "#/$defs/AgentConfig",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }
