@@ -48,7 +48,7 @@ type HealthCheckConfig struct {
 }
 
 type ForwardingMetricsConfig struct {
-	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus"`
+	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus" jsonschema:"pattern=^(prometheus|otel)$"`
 }
 
 func (config *ForwardingMetricsConfig) OtlpMetrics() bool {

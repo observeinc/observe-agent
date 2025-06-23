@@ -70,6 +70,7 @@
       "additionalProperties": false,
       "properties": {
         "output_format": {
+          "pattern": "^(prometheus|otel)$",
           "type": "string"
         }
       },
