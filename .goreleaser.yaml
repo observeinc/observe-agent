@@ -168,7 +168,7 @@ nfpms:
 
       - src: packaging/linux/config/observe-agent.yaml
         dst: /etc/observe-agent/observe-agent.yaml
-        type: config
+        type: config|noreplace
 
       - src: packaging/linux/config/observe-agent.service
         dst: /lib/systemd/system/observe-agent.service
