@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "AgentConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "cloud_resource_detectors": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "debug": {
+          "type": "boolean"
+        },
+        "forwarding": {
+          "$ref": "#/$defs/ForwardingConfig"
+        },
+        "health_check": {
+          "$ref": "#/$defs/HealthCheckConfig"
+        },
+        "host_monitoring": {
+          "$ref": "#/$defs/HostMonitoringConfig"
+        },
+        "internal_telemetry": {
+          "$ref": "#/$defs/InternalTelemetryConfig"
+        },
+        "observe_url": {
+          "type": "string"
+        },
+        "otel_config_overrides": {
+          "type": "object"
+        },
+        "resource_attributes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "self_monitoring": {
+          "$ref": "#/$defs/SelfMonitoringConfig"
+        },
+        "token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "token",
+        "observe_url"
+      ],
+      "type": "object"
+    },
+    "ForwardingConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "metrics": {
+          "$ref": "#/$defs/ForwardingMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "ForwardingMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "output_format": {
+          "pattern": "^(prometheus|otel)$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HealthCheckConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "logs": {
+          "$ref": "#/$defs/HostMonitoringLogsConfig"
+        },
+        "metrics": {
+          "$ref": "#/$defs/HostMonitoringMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringHostMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringLogsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "auto_multiline_detection": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "include": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "$ref": "#/$defs/HostMonitoringHostMetricsConfig"
+        },
+        "process": {
+          "$ref": "#/$defs/HostMonitoringProcessMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "HostMonitoringProcessMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "InternalTelemetryConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "logs": {
+          "$ref": "#/$defs/InternalTelemetryLogsConfig"
+        },
+        "metrics": {
+          "$ref": "#/$defs/InternalTelemetryMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "InternalTelemetryLogsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "level": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InternalTelemetryMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "host": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SelfMonitoringConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/observeinc/observe-agent/internal/config/agent-config",
+  "$ref": "#/$defs/AgentConfig",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -48,7 +48,7 @@ type HealthCheckConfig struct {
 }
 
 type ForwardingMetricsConfig struct {
-	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus"`
+	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus" jsonschema:"pattern=^(prometheus|otel)$"`
 }
 
 func (config *ForwardingMetricsConfig) OtlpMetrics() bool {
@@ -79,8 +79,8 @@ type InternalTelemetryConfig struct {
 }
 
 type AgentConfig struct {
-	Token                  string                  `yaml:"token" mapstructure:"token"`
-	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url"`
+	Token                  string                  `yaml:"token" mapstructure:"token" jsonschema:"required"`
+	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url" jsonschema:"required"`
 	CloudResourceDetectors []string                `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`

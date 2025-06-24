@@ -64,4 +64,9 @@ build-ocb:
 install-tools:
 	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
 
+
+## generate-jsonschema: Generates JSON schema from config
+generate-jsonschema:
+	go run ./scripts/generate_jsonschema.go
+
 .PHONY: all vendor build go-test release install-ocb build-ocb install-tools
