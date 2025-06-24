@@ -80,7 +80,7 @@ type InternalTelemetryConfig struct {
 
 type AgentConfig struct {
 	Token                  string                  `yaml:"token" mapstructure:"token" jsonschema:"required"`
-	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url"`
+	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url" jsonschema:"required"`
 	CloudResourceDetectors []string                `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
