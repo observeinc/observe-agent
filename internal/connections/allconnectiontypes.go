@@ -15,7 +15,7 @@ var CommonConnectionType = MakeConnectionType(
 	func(_ *config.AgentConfig) bool {
 		return true
 	},
-	[]CollectorConfigFragment{
+	[]BundledConfigFragment{
 		{
 			enabledCheck: func(_ *config.AgentConfig) bool {
 				// Always include the base connection.
@@ -55,7 +55,7 @@ var HostMonitoringConnectionType = MakeConnectionType(
 	func(agentConfig *config.AgentConfig) bool {
 		return agentConfig.HostMonitoring.Enabled
 	},
-	[]CollectorConfigFragment{
+	[]BundledConfigFragment{
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
 				// TODO remove this deprecated template
@@ -89,7 +89,7 @@ var SelfMonitoringConnectionType = MakeConnectionType(
 	func(agentConfig *config.AgentConfig) bool {
 		return agentConfig.SelfMonitoring.Enabled
 	},
-	[]CollectorConfigFragment{
+	[]BundledConfigFragment{
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
 				return agentConfig.SelfMonitoring.Enabled

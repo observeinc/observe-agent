@@ -31,7 +31,7 @@ build:
 	go build ./...
 
 docker-image:
-	env GOOS=linux GOARCH=arm64 go build -o observe-agent
+	env GOOS=linux GOARCH=arm64 go build -tags docker -o observe-agent
 	docker build -f packaging/docker/Dockerfile -t observe-agent:dev .
 
 ## test: Runs Go tests across all packages

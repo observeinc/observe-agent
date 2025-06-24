@@ -49,7 +49,7 @@ func getStatusFromTemplate(v *viper.Viper) error {
 		return err
 	}
 	t := template.Must(template.New(statusTemplate).
-		Funcs(connections.GetTemplateFuncMap()).
+		Funcs(connections.TemplateFuncMap).
 		ParseFS(statusTemplateFS, statusTemplate))
 	if err := t.ExecuteTemplate(os.Stdout, statusTemplate, data); err != nil {
 		return err
