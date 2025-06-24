@@ -115,6 +115,25 @@ receivers:
             line_end_pattern: ENDOFLINEPATTERN
         poll_interval: 5m
         start_at: beginning
+    filelog/host_monitoring:
+        exclude:
+            - exclude1
+            - exclude2
+        include:
+            - include1
+            - include2
+        include_file_path: true
+        max_log_size: 4MiB
+        operators:
+            - expr: body matches "otel-contrib"
+              type: filter
+            - combine_field: body
+              id: multiline-recombine
+              is_first_entry: body matches "^(\\d{4}[-/]\\d{2}[-/]\\d{2} \\d{2}:\\d{2}:\\d{2}|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z?|[A-Za-z]+ \\d{1,2} \\d{2}:\\d{2}:\\d{2})"
+              type: recombine
+        retry_on_failure:
+            enabled: true
+        storage: file_storage
     filestats/agent:
         collection_interval: 5m
         include: C:\Program Files\Observe\observe-agent\connections\common\base.yaml.tmpl
@@ -230,6 +249,20 @@ service:
                 - batch
             receivers:
                 - otlp
+        logs/host_monitoring-file:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - filelog/host_monitoring
         logs/host_monitoring-windowsevents:
             exporters:
                 - otlphttp/observe
