@@ -2,13 +2,16 @@ package connections
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
+	"strings"
 	"text/template"
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
 	"go.uber.org/zap"
 )
 
@@ -16,59 +19,64 @@ var TempFilesFolder = "observe-agent"
 
 type EnabledCheckFn func(*config.AgentConfig) bool
 
-type ConfigFieldHandler interface {
-	GenerateCollectorConfigFragment() interface{}
-}
-
-type CollectorConfigFragment struct {
+type BundledConfigFragment struct {
 	enabledCheck      EnabledCheckFn
 	colConfigFilePath string
 }
 
+type ConfigOverrides = map[string]embed.FS
+
 type ConnectionType struct {
-	Name         string
-	ConfigFields []CollectorConfigFragment
-	EnabledCheck EnabledCheckFn
+	Name                   string
+	BundledConfigFragments []BundledConfigFragment
+	EnabledCheck           EnabledCheckFn
 
-	configFolderPath string
+	templateOverrides ConfigOverrides
 }
 
-func (c *ConnectionType) GetTemplateFilepath(tplFilename string) string {
-	return filepath.Join(c.configFolderPath, c.Name, tplFilename)
+func (c *ConnectionType) getTemplate(tplName string) (*template.Template, error) {
+	var fs embed.FS
+	var ok bool
+	if fs, ok = c.templateOverrides[tplName]; !ok {
+		fs, ok = bundledconfig.SharedTemplateFS[tplName]
+		if !ok {
+			return nil, fmt.Errorf("template %s not found", tplName)
+		}
+	}
+	return template.New(path.Base(tplName)).Funcs(TemplateFuncMap).ParseFS(fs, tplName)
 }
 
-func RenderConfigTemplate(ctx context.Context, tmpDir string, tplPath string, confValues any) (string, error) {
-	_, tplFilename := filepath.Split(tplPath)
-	tmpl, err := template.New("").Funcs(GetTemplateFuncMap()).ParseFiles(tplPath)
+func renderBundledConfigTemplate(ctx context.Context, tmpDir string, outFileName string, tmpl *template.Template, confValues any) (string, error) {
+	f, err := os.CreateTemp(tmpDir, fmt.Sprintf("*-%s", outFileName))
 	if err != nil {
-		logger.FromCtx(ctx).Error("failed to parse config fragment template", zap.String("file", tplPath), zap.Error(err))
+		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.String("fileName", outFileName), zap.Error(err))
 		return "", err
 	}
-	f, err := os.CreateTemp(tmpDir, fmt.Sprintf("*-%s", tplFilename))
+	err = tmpl.Execute(f, confValues)
 	if err != nil {
-		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.String("file", tplPath), zap.Error(err))
-		return "", err
-	}
-	err = tmpl.ExecuteTemplate(f, tplFilename, confValues)
-	if err != nil {
-		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("file", tplPath), zap.Error(err))
+		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("fileName", outFileName), zap.Error(err))
 		return "", err
 	}
 	return f.Name(), nil
 }
 
-func (c *ConnectionType) RenderConfigTemplate(ctx context.Context, tmpDir string, tplFilename string, confValues any) (string, error) {
-	tplPath := c.GetTemplateFilepath(tplFilename)
-	return RenderConfigTemplate(ctx, tmpDir, tplPath, confValues)
+func (c *ConnectionType) renderBundledConfigTemplate(ctx context.Context, tmpDir string, tplName string, confValues any) (string, error) {
+	tmpl, err := c.getTemplate(c.Name + "/" + tplName)
+	if err != nil {
+		fmt.Printf("TODO err1: %s\n", err.Error())
+		return "", err
+	}
+	outFileName := c.Name + "-" + strings.TrimSuffix(tplName, ".tmpl")
+	return renderBundledConfigTemplate(ctx, tmpDir, outFileName, tmpl, confValues)
 }
 
-func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
+func (c *ConnectionType) renderAllBundledConfigFragments(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
 	paths := make([]string, 0)
-	for _, field := range c.ConfigFields {
-		if !field.enabledCheck(agentConfig) || field.colConfigFilePath == "" {
+	for _, fragment := range c.BundledConfigFragments {
+		if !fragment.enabledCheck(agentConfig) || fragment.colConfigFilePath == "" {
 			continue
 		}
-		configPath, err := c.RenderConfigTemplate(ctx, tmpDir, field.colConfigFilePath, agentConfig)
+		configPath, err := c.renderBundledConfigTemplate(ctx, tmpDir, fragment.colConfigFilePath, agentConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -77,12 +85,12 @@ func (c *ConnectionType) ProcessConfigFields(ctx context.Context, tmpDir string,
 	return paths, nil
 }
 
-func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
+func (c *ConnectionType) GetBundledConfigs(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
 	if !c.EnabledCheck(agentConfig) {
 		return []string{}, nil
 	}
 
-	configPaths, err := c.ProcessConfigFields(ctx, tmpDir, agentConfig)
+	configPaths, err := c.renderAllBundledConfigFragments(ctx, tmpDir, agentConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +99,9 @@ func (c *ConnectionType) GetConfigFilePaths(ctx context.Context, tmpDir string, 
 
 type ConnectionTypeOption func(*ConnectionType)
 
-func MakeConnectionType(name string, enabledCheck EnabledCheckFn, configFields []CollectorConfigFragment, opts ...ConnectionTypeOption) *ConnectionType {
-	var c = &ConnectionType{Name: name, EnabledCheck: enabledCheck, ConfigFields: configFields}
-	c.configFolderPath = GetConfigFragmentFolderPath()
+func MakeConnectionType(name string, enabledCheck EnabledCheckFn, fragments []BundledConfigFragment, opts ...ConnectionTypeOption) *ConnectionType {
+	var c = &ConnectionType{Name: name, EnabledCheck: enabledCheck, BundledConfigFragments: fragments}
+	c.templateOverrides = bundledconfig.OverrideTemplates
 
 	// Apply provided options
 	for _, opt := range opts {
@@ -103,9 +111,9 @@ func MakeConnectionType(name string, enabledCheck EnabledCheckFn, configFields [
 	return c
 }
 
-func WithConfigFolderPath(configFolderPath string) ConnectionTypeOption {
+func WithConfigTemplateOverrides(templateOverrides ConfigOverrides) ConnectionTypeOption {
 	return func(c *ConnectionType) {
-		c.configFolderPath = configFolderPath
+		c.templateOverrides = templateOverrides
 	}
 }
 

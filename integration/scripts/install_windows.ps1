@@ -36,5 +36,4 @@ Expand-Archive -Force -LiteralPath $local_installer  -DestinationPath "$temp_dir
 Write-Output "Copying files from $temp_dir\observe-agent_extract to $observeagent_install_dir"
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.exe -Destination $observeagent_install_dir
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.yaml -Destination $observeagent_install_dir
-Copy-Item -Force -Path $temp_dir\observe-agent_extract\connections\* -Destination $observeagent_install_dir\connections -Recurse
 Get-ChildItem -Path $observeagent_install_dir -Recurse
