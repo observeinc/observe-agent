@@ -50,6 +50,11 @@ var allSnapshotTests = []snapshotTest{
 	},
 	{
 		agentConfigPath: "test/snap1-full-agent-config.yaml",
+		outputPath:      "test/snap1-macos-output.yaml",
+		packageType:     MacOS,
+	},
+	{
+		agentConfigPath: "test/snap1-full-agent-config.yaml",
 		outputPath:      "test/snap1-windows-output.yaml",
 		packageType:     Windows,
 	},
