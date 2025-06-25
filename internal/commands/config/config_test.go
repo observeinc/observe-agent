@@ -128,10 +128,13 @@ func setEnvVars(t *testing.T, packageType PackageType) {
 	switch packageType {
 	case MacOS:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
+		assert.NoError(t, os.Setenv("OBSERVE_AGENT_CONFIG_PATH", "/usr/local/observe-agent/observe-agent.yaml"))
 	case Windows:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "C:\\ProgramData\\Observe\\observe-agent\\filestorage"))
+		assert.NoError(t, os.Setenv("OBSERVE_AGENT_CONFIG_PATH", "C:\\Program Files\\Observe\\observe-agent\\observe-agent.yaml"))
 	case Linux, Docker:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
+		assert.NoError(t, os.Setenv("OBSERVE_AGENT_CONFIG_PATH", "/etc/observe-agent/observe-agent.yaml"))
 	default:
 		t.Errorf("Unknown package type: %s", packageType)
 	}

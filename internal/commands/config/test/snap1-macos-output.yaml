@@ -128,14 +128,6 @@ processors:
                 - truncate_all(attributes, 4095)
                 - truncate_all(resource.attributes, 4095)
 receivers:
-    filelog/agent-config:
-        include:
-            - /usr/local/observe-agent/connections/common/base.yaml.tmpl
-        include_file_path: true
-        multiline:
-            line_end_pattern: ENDOFLINEPATTERN
-        poll_interval: 5m
-        start_at: beginning
     filelog/host_monitoring:
         exclude:
             - exclude1
@@ -157,7 +149,7 @@ receivers:
         storage: file_storage
     filestats/agent:
         collection_interval: 5m
-        include: /usr/local/observe-agent/connections/common/base.yaml.tmpl
+        include: /usr/local/observe-agent/observe-agent.yaml
         initial_delay: 60s
     hostmetrics/host-monitoring-host:
         collection_interval: 60s
@@ -245,17 +237,9 @@ service:
     pipelines:
         logs/agent-config:
             exporters:
-                - otlphttp/observe
-            processors:
-                - memory_limiter
-                - transform/truncate
-                - resourcedetection
-                - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - batch
+                - nop
             receivers:
-                - filelog/agent-config
+                - nop
         logs/forward:
             exporters:
                 - otlphttp/observe

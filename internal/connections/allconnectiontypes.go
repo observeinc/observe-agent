@@ -58,6 +58,7 @@ var HostMonitoringConnectionType = MakeConnectionType(
 	[]CollectorConfigFragment{
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				// TODO remove this deprecated template
 				return agentConfig.HostMonitoring.Enabled
 			},
 			colConfigFilePath: "host.yaml.tmpl",
