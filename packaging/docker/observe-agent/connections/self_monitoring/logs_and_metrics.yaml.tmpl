@@ -1,12 +1,5 @@
 receivers:
-  filelog/agent-config: # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
-    # TODO deprecate this
-    include: [/etc/observe-agent/connections/common/base.yaml.tmpl]
-    include_file_path: true
-    start_at: beginning
-    poll_interval: 5m
-    multiline:
-      line_end_pattern: ENDOFLINEPATTERN
+  # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
 
   prometheus/agent:
     config:
@@ -60,18 +53,7 @@ service:
         - batch
       exporters: [otlphttp/observe, count]
 
+    # Deprecated
     logs/agent-config:
-      receivers: [filelog/agent-config]
-      processors:
-        - memory_limiter
-        - transform/truncate
-        - resourcedetection
-        - resourcedetection/cloud
-        {{- if .HasAttributes }}
-        - attributes/observe_global_attributes
-        {{- end }}
-        {{- if .HasResourceAttributes }}
-        - resource/observe_global_resource_attributes
-        {{- end }}
-        - batch
-      exporters: [otlphttp/observe]
+      receivers: [nop]
+      exporters: [nop]

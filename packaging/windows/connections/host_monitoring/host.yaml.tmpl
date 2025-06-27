@@ -1,7 +1,6 @@
 receivers:
-  # TODO deprecate this
   filestats/agent:
-    include: 'C:\Program Files\Observe\observe-agent\connections\common\base.yaml.tmpl'
+    include: "${env:OBSERVE_AGENT_CONFIG_PATH}"
     collection_interval: 5m
     initial_delay: 60s
 

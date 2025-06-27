@@ -104,6 +104,11 @@ func setEnvVars() error {
 	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
 	os.Setenv("FILESTORAGE_PATH", getDefaultFilestoragePath())
 
+	configFile := viper.ConfigFileUsed()
+	if configFile != "" {
+		os.Setenv("OBSERVE_AGENT_CONFIG_PATH", configFile)
+	}
+
 	// Default TRACE_TOKEN to be the value of the configured token if it's not set. This allows for users to upgrade to
 	// direct write tracing with ingest tokens in kubernetes without breaking backwards compatibility in our helm chart.
 	// TODO: remove this once our helm chart no longer supports TRACE_TOKEN
