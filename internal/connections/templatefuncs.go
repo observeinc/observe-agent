@@ -8,20 +8,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func GetTemplateFuncMap() template.FuncMap {
-	return template.FuncMap{
-		"inlineArrayInt": TplInlineArray[int],
-		"inlineArrayStr": TplInlineArray[string],
-		"valToYaml":      TplValueToYaml,
-		"objToYaml":      TplToYaml,
-		"add": func(values ...int) int {
-			sum := 0
-			for _, i := range values {
-				sum += i
-			}
-			return sum
-		},
-	}
+var TemplateFuncMap = template.FuncMap{
+	"inlineArrayInt": TplInlineArray[int],
+	"inlineArrayStr": TplInlineArray[string],
+	"valToYaml":      TplValueToYaml,
+	"objToYaml":      TplToYaml,
+	"add": func(values ...int) int {
+		sum := 0
+		for _, i := range values {
+			sum += i
+		}
+		return sum
+	},
 }
 
 func TplInlineArray[T any](arr []T) string {

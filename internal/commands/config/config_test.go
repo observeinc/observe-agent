@@ -6,6 +6,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"embed"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/connections"
+	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/pflag"
@@ -109,7 +111,7 @@ func runSnapshotTest(t *testing.T, test snapshotTest) {
 
 	// Set the template base dir for all connections
 	for _, conn := range connections.AllConnectionTypes {
-		conn.ApplyOptions(connections.WithConfigFolderPath(getPackagingPath(t, test.packageType, curPath)))
+		conn.ApplyOptions(connections.WithConfigTemplateOverrides(getTemplateOverrides(t, test.packageType, curPath)))
 	}
 
 	// Set config flags
@@ -132,16 +134,19 @@ func runSnapshotTest(t *testing.T, test snapshotTest) {
 	assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(output.String()))
 }
 
-func getPackagingPath(t *testing.T, packageType PackageType, curPath string) string {
-	const packagingPath = "../../../packaging"
+func getTemplateOverrides(t *testing.T, packageType PackageType, curPath string) map[string]embed.FS {
 	switch packageType {
-	case MacOS, Linux, Windows:
-		return filepath.Join(curPath, packagingPath, string(packageType), "connections")
+	case MacOS:
+		return bundledconfig.MacOSTemplateFS
+	case Linux:
+		return bundledconfig.LinuxTemplateFS
+	case Windows:
+		return bundledconfig.WindowsTemplateFS
 	case Docker:
-		return filepath.Join(curPath, packagingPath, "docker/observe-agent/connections")
+		return bundledconfig.DockerTemplateFS
 	default:
 		t.Errorf("Unknown package type: %s", packageType)
-		return ""
+		return nil
 	}
 }
 
