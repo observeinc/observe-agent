@@ -1,0 +1,24 @@
+# Target Observe collection url
+observe_url: https://123456789.collect.observe-eng.com/
+
+# Observe data token
+token: abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+
+# These are the recommended defaults for new users.
+forwarding:
+  enabled: true
+  metrics:
+    output_format: otel
+
+self_monitoring:
+  enabled: true
+
+host_monitoring:
+  enabled: true
+  logs:
+    enabled: true
+  metrics:
+    host:
+      enabled: true
+    process:
+      enabled: false

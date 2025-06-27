@@ -37,6 +37,27 @@ type snapshotTest struct {
 }
 
 var allSnapshotTests = []snapshotTest{
+	// Tests with default agent config
+	{
+		agentConfigPath: "test/snap0-default-agent-config.yaml",
+		outputPath:      "test/snap0-docker-output.yaml",
+		packageType:     Docker,
+	},
+	{
+		agentConfigPath: "test/snap0-default-agent-config.yaml",
+		outputPath:      "test/snap0-linux-output.yaml",
+		packageType:     Linux,
+	},
+	{
+		agentConfigPath: "test/snap0-default-agent-config.yaml",
+		outputPath:      "test/snap0-macos-output.yaml",
+		packageType:     MacOS,
+	},
+	{
+		agentConfigPath: "test/snap0-default-agent-config.yaml",
+		outputPath:      "test/snap0-windows-output.yaml",
+		packageType:     Windows,
+	},
 	// Tests with full agent config
 	{
 		agentConfigPath: "test/snap1-full-agent-config.yaml",
