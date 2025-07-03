@@ -1,0 +1,52 @@
+{{- /* Forked from the default due to hostfs root path */ -}}
+receivers:
+  hostmetrics/host-monitoring-host:
+    collection_interval: 60s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+          system.cpu.frequency:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.physical.count:
+            enabled: true
+      load:
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+          system.linux.memory.available:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network:
+        {{- /* TODO: add system.network.conntrack metrics, copy from the shared file */}}
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      processes:
+
+service:
+  pipelines:
+    metrics/host_monitoring_host:
+      receivers: [hostmetrics/host-monitoring-host]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
+      exporters: [prometheusremotewrite/observe]

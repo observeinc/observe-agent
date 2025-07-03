@@ -18,7 +18,7 @@ const (
 )
 
 func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
-	// Set up our temp dir annd temp config files
+	// Set up our temp dir and temp config files
 	tmpDir, err := os.MkdirTemp("", TempFilesFolder)
 	if err != nil {
 		return nil, nil, err
@@ -26,7 +26,7 @@ func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
 	cleanup := func() {
 		os.RemoveAll(tmpDir)
 	}
-	configFilePaths, err := GetAllOtelConfigFilePaths(ctx, tmpDir)
+	configFilePaths, err := getAllOtelConfigFilePaths(ctx, tmpDir)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -34,7 +34,7 @@ func SetupAndGetConfigFiles(ctx context.Context) ([]string, func(), error) {
 	return configFilePaths, cleanup, nil
 }
 
-func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
+func getAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, error) {
 	configFilePaths := []string{}
 	// Get additional config paths based on connection configs
 	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
@@ -42,7 +42,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 		return nil, err
 	}
 	for _, conn := range AllConnectionTypes {
-		connectionPaths, err := conn.GetConfigFilePaths(ctx, tmpDir, agentConfig)
+		connectionPaths, err := conn.GetBundledConfigs(ctx, tmpDir, agentConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 		}
 		// Only create the config file if there are overrides present (ie ignore empty maps)
 		if len(overrides) != 0 {
-			overridePath, err := GetOverrideConfigFile(tmpDir, overrides)
+			overridePath, err := getOverrideConfigFile(tmpDir, overrides)
 			if err != nil {
 				return nil, err
 			}
@@ -77,7 +77,7 @@ func GetAllOtelConfigFilePaths(ctx context.Context, tmpDir string) ([]string, er
 	return configFilePaths, nil
 }
 
-func GetOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
+func getOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
 	f, err := os.CreateTemp(tmpDir, "otel-config-overrides-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("failed to create config file to write to: %w", err)
