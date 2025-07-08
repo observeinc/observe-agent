@@ -109,7 +109,7 @@ func runSnapshotTest(t *testing.T, test snapshotTest) {
 	assert.True(t, ok)
 	curPath := path.Dir(filename)
 
-	// Set the template base dir for all connections
+	// Set the template overrides for all connections
 	for _, conn := range connections.AllConnectionTypes {
 		conn.ApplyOptions(connections.WithConfigTemplateOverrides(getTemplateOverrides(t, test.packageType, curPath)))
 	}

@@ -9,8 +9,10 @@ import (
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/windows"
 )
 
+type ConfigTemplates = map[string]embed.FS
+
 // TODO break up some of the larger connections in order to share more configs.
-var SharedTemplateFS = map[string]embed.FS{
+var SharedTemplateFS = ConfigTemplates{
 	"common/attributes.yaml.tmpl":                shared.AttributesTemplateFS,
 	"common/internal_telemetry.yaml.tmpl":        shared.InternalTelemetryTemplateFS,
 	"common/health_check.yaml.tmpl":              shared.HealthCheckTemplateFS,
@@ -23,7 +25,7 @@ var SharedTemplateFS = map[string]embed.FS{
 	"self_monitoring/logs_and_metrics.yaml.tmpl": shared.LogsAndMetricsTemplateFS,
 }
 
-var DockerTemplateFS = map[string]embed.FS{
+var DockerTemplateFS = ConfigTemplates{
 	"common/base.yaml.tmpl":                      docker.BaseTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":             docker.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl":     docker.HostMetricsTemplateFS,
@@ -31,15 +33,15 @@ var DockerTemplateFS = map[string]embed.FS{
 	"self_monitoring/logs_and_metrics.yaml.tmpl": docker.LogsAndMetricsTemplateFS,
 }
 
-var LinuxTemplateFS = map[string]embed.FS{
+var LinuxTemplateFS = ConfigTemplates{
 	"host_monitoring/logs.yaml.tmpl":             linux.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl":     linux.HostMetricsTemplateFS,
 	"self_monitoring/logs_and_metrics.yaml.tmpl": linux.LogsAndMetricsTemplateFS,
 }
 
-var MacOSTemplateFS = map[string]embed.FS{}
+var MacOSTemplateFS = ConfigTemplates{}
 
-var WindowsTemplateFS = map[string]embed.FS{
+var WindowsTemplateFS = ConfigTemplates{
 	"common/base.yaml.tmpl":                  windows.BaseTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":         windows.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl": windows.HostMetricsTemplateFS,

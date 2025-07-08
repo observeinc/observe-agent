@@ -24,14 +24,12 @@ type BundledConfigFragment struct {
 	colConfigFilePath string
 }
 
-type ConfigOverrides = map[string]embed.FS
-
 type ConnectionType struct {
 	Name                   string
 	BundledConfigFragments []BundledConfigFragment
 	EnabledCheck           EnabledCheckFn
 
-	templateOverrides ConfigOverrides
+	templateOverrides bundledconfig.ConfigTemplates
 }
 
 func (c *ConnectionType) getTemplate(tplName string) (*template.Template, error) {
@@ -111,7 +109,7 @@ func MakeConnectionType(name string, enabledCheck EnabledCheckFn, fragments []Bu
 	return c
 }
 
-func WithConfigTemplateOverrides(templateOverrides ConfigOverrides) ConnectionTypeOption {
+func WithConfigTemplateOverrides(templateOverrides bundledconfig.ConfigTemplates) ConnectionTypeOption {
 	return func(c *ConnectionType) {
 		c.templateOverrides = templateOverrides
 	}

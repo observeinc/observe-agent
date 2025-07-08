@@ -15,12 +15,14 @@ import (
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
+	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var CfgFile string
+var configMode string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -45,12 +47,39 @@ func init() {
 
 	flags := RootCmd.PersistentFlags()
 	flags.StringVar(&CfgFile, "observe-config", "", "observe-agent config file path")
+	flags.StringVar(&configMode, "config-mode", "", "The mode to use for bundled config. Valid values are Linux, Docker, Mac, and Windows.")
+	flags.MarkHidden("config-mode")
 	observecol.AddConfigFlags(flags)
 	observecol.AddFeatureGateFlag(flags)
 }
 
+func setConfigMode() {
+	var overrides bundledconfig.ConfigTemplates
+	switch strings.ToLower(configMode) {
+	case "":
+		return
+	case "linux":
+		overrides = bundledconfig.LinuxTemplateFS
+	case "docker":
+		overrides = bundledconfig.DockerTemplateFS
+	case "mac":
+		overrides = bundledconfig.MacOSTemplateFS
+	case "windows":
+		overrides = bundledconfig.WindowsTemplateFS
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid config mode specified: %s. Valid values are Linux, Docker, Mac, and Windows.\n", configMode)
+		os.Exit(1)
+	}
+	// Set the template overrides for all connections
+	for _, conn := range connections.AllConnectionTypes {
+		conn.ApplyOptions(connections.WithConfigTemplateOverrides(overrides))
+	}
+
+}
+
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
+	setConfigMode()
 	ctx := logger.WithCtx(context.Background(), logger.Get())
 	// Some keys in OTEL component configs use "." as part of the key but viper ends up parsing that into
 	// a subobject since the default key delimiter is "." which causes config validation to fail.
