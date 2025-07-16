@@ -69,6 +69,9 @@ func writeConfigFile(f *os.File, agentConfig *config.AgentConfig, includeAllOpti
 		yamlStr += "\n" + strings.Trim(otelOverrideSection, " \n\t\r") + "\n"
 	}
 
+	// Add the latest schema comment at the top.
+	yamlStr = "# yaml-language-server: $schema=https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent.schema.json\n\n" + yamlStr
+
 	_, err = f.WriteString(yamlStr)
 	return err
 }
