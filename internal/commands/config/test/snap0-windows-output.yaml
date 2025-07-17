@@ -256,6 +256,7 @@ service:
                 - otlp
     telemetry:
         logs:
+            encoding: console
             level: INFO
         metrics:
             level: detailed

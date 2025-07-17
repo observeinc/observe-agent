@@ -13,4 +13,5 @@ service:
     {{- if .InternalTelemetry.Logs.Enabled }}
     logs:
       level: {{ .InternalTelemetry.Logs.Level }}
+      encoding: {{ .InternalTelemetry.Logs.Encoding }}
     {{- end }}

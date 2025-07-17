@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../../observe-agent.schema.json
 # Target Observe collection url
 observe_url: https://test.collect.observeinc.com/
 

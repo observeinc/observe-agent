@@ -68,8 +68,9 @@ type InternalTelemetryMetricsConfig struct {
 }
 
 type InternalTelemetryLogsConfig struct {
-	Enabled bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
-	Level   string `yaml:"level" mapstructure:"level" default:"${env:OTEL_LOG_LEVEL}"`
+	Enabled  bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Level    string `yaml:"level" mapstructure:"level" default:"${env:OTEL_LOG_LEVEL}"`
+	Encoding string `yaml:"encoding" mapstructure:"encoding" default:"console" jsonschema:"pattern=^(console|json)$"`
 }
 
 type InternalTelemetryConfig struct {
