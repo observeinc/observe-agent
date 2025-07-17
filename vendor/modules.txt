@@ -649,6 +649,8 @@ github.com/go-sql-driver/mysql
 ## explicit; go 1.18
 # github.com/go-viper/mapstructure/v2 v2.2.1
 ## explicit; go 1.18
+# github.com/go-viper/mapstructure/v2 v2.4.0
+## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
 # github.com/go-zookeeper/zk v1.0.4
@@ -1654,7 +1656,9 @@ github.com/ovh/go-ovh/ovh
 ## explicit; go 1.16
 github.com/pbnjay/memory
 # github.com/pelletier/go-toml/v2 v2.2.2
-## explicit; go 1.16
+## explicit; go 1.21.0
+# github.com/pelletier/go-toml/v2 v2.2.3
+## explicit; go 1.21.0
 github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
@@ -1851,7 +1855,9 @@ github.com/relvacode/iso8601
 github.com/rs/cors
 github.com/rs/cors/internal
 # github.com/sagikazarmark/locafero v0.6.0
-## explicit; go 1.20
+## explicit; go 1.21
+# github.com/sagikazarmark/locafero v0.7.0
+## explicit; go 1.21
 github.com/sagikazarmark/locafero
 # github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 ## explicit; go 1.17
@@ -1921,11 +1927,15 @@ github.com/sourcegraph/conc/internal/multierror
 github.com/sourcegraph/conc/iter
 github.com/sourcegraph/conc/panics
 # github.com/spf13/afero v1.11.0
-## explicit; go 1.19
+## explicit; go 1.21
+# github.com/spf13/afero v1.12.0
+## explicit; go 1.21
 github.com/spf13/afero
 github.com/spf13/afero/internal/common
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.6.0
+## explicit; go 1.19
+# github.com/spf13/cast v1.7.1
 ## explicit; go 1.19
 github.com/spf13/cast
 # github.com/spf13/cobra v1.9.1
@@ -1935,7 +1945,9 @@ github.com/spf13/cobra
 ## explicit; go 1.12
 github.com/spf13/pflag
 # github.com/spf13/viper v1.20.0-alpha.6
-## explicit; go 1.21
+## explicit; go 1.21.0
+# github.com/spf13/viper v1.20.1
+## explicit; go 1.21.0
 github.com/spf13/viper
 github.com/spf13/viper/internal/encoding/dotenv
 github.com/spf13/viper/internal/encoding/json
