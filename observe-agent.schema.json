@@ -182,6 +182,10 @@
         "enabled": {
           "type": "boolean"
         },
+        "encoding": {
+          "pattern": "^(console|json)$",
+          "type": "string"
+        },
         "level": {
           "type": "string"
         }

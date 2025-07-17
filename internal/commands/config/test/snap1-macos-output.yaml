@@ -357,6 +357,7 @@ service:
                 - otlp
     telemetry:
         logs:
+            encoding: json
             level: ERROR
         metrics:
             level: normal

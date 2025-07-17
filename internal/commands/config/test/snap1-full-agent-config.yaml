@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../../observe-agent.schema.json
 # Target Observe collection url
 observe_url: https://123456789.collect.observe-eng.com/
 
@@ -28,6 +29,7 @@ internal_telemetry:
     logs:
         enabled: true
         level: ERROR
+        encoding: json
     metrics:
         enabled: true
         host: 0.0.0.0
