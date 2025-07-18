@@ -10,12 +10,3 @@ trim_trailing_whitespace = true
 
 [*.go]
 indent_style = tab
-
-[{Makefile,*.mk}]
-indent_style = tab
-
-[*.nix]
-indent_size = 2
-
-[.golangci.yaml]
-indent_size = 2
