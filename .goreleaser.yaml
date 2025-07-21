@@ -195,6 +195,7 @@ release:
   # Add all install scripts to the release
   extra_files:
     - "./scripts/*install*"
+    - "./observe-agent.schema.json"
 
 dockers:
   - image_templates:
