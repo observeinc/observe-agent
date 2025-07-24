@@ -83,6 +83,20 @@ func TestAgentConfigValidate(t *testing.T) {
 	defaults.SetDefaults(&emptyMetricsForwardingFormat)
 	emptyMetricsForwardingFormat.Forwarding.Metrics.OutputFormat = ""
 	assert.ErrorContains(t, emptyMetricsForwardingFormat.Validate(), "invalid metrics forwarding output format")
+
+	invalidMaxSpanDurationFormat := AgentConfig{
+		Token:      "some:token",
+		ObserveURL: "https://observeinc.com",
+		Forwarding: ForwardingConfig{
+			Enabled: true,
+			Traces: ForwardingTracesConfig{
+				MaxSpanDuration: "five months",
+			},
+		},
+	}
+	defaults.SetDefaults(&invalidMaxSpanDurationFormat)
+	assert.ErrorContains(t, invalidMaxSpanDurationFormat.Validate(), "invalid max span duration 'five months' - Expected a number with a valid time unit: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration")
+
 }
 
 func TestAgentConfigFromViper(t *testing.T) {

@@ -8,6 +8,7 @@ var AllConnectionTypes = []*ConnectionType{
 	CommonConnectionType,
 	HostMonitoringConnectionType,
 	SelfMonitoringConnectionType,
+	ApplicationConnectionType,
 }
 
 var CommonConnectionType = MakeConnectionType(
@@ -95,6 +96,22 @@ var SelfMonitoringConnectionType = MakeConnectionType(
 				return agentConfig.SelfMonitoring.Enabled
 			},
 			colConfigFilePath: "logs_and_metrics.yaml.tmpl",
+		},
+	},
+)
+
+var ApplicationConnectionType = MakeConnectionType(
+	"application",
+	func(agentConfig *config.AgentConfig) bool {
+		// Make this check more broadly applicable when we have more than one application connection type.
+		return agentConfig.Application.REDMetrics.Enabled
+	},
+	[]BundledConfigFragment{
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.Application.REDMetrics.Enabled
+			},
+			colConfigFilePath: "RED_metrics.yaml.tmpl",
 		},
 	},
 )

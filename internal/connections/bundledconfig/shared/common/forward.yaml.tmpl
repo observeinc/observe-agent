@@ -6,6 +6,25 @@ receivers:
       http:
         endpoint: localhost:4318
 
+processors:
+  transform/add_span_status_code:
+    error_mode: ignore
+    trace_statements:
+      - set(span.attributes["status_code"], Int(span.attributes["rpc.grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.grpc.status_code"] != nil
+      - set(span.attributes["status_code"], Int(span.attributes["grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["grpc.status_code"] != nil
+      - set(span.attributes["status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.status_code"] != nil
+      - set(span.attributes["status_code"], Int(span.attributes["http.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.status_code"] != nil
+      - set(span.attributes["status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.response.status_code"] != nil
+
+{{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
+  # This drops spans that are longer than the configured time (default 1hr) to match service explorer behavior.
+  filter/drop_long_spans:
+    error_mode: ignore
+    traces:
+      span:
+        - (span.end_time - span.start_time) > Duration("{{ .Forwarding.Traces.MaxSpanDuration }}")
+{{- end }}
+
 exporters:
   otlphttp/observetracing:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
@@ -76,9 +95,13 @@ service:
       receivers: [otlp]
       processors:
         - memory_limiter
+        {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
+        - filter/drop_long_spans
+        {{- end }}
         - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
+        - transform/add_span_status_code
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}

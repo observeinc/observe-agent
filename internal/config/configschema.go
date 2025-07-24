@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/mcuadros/go-defaults"
@@ -55,9 +56,14 @@ func (config *ForwardingMetricsConfig) OtlpMetrics() bool {
 	return config.OutputFormat == "otel"
 }
 
+type ForwardingTracesConfig struct {
+	MaxSpanDuration string `yaml:"max_span_duration,omitempty" mapstructure:"max_span_duration" default:"1h" jsonschema:"pattern=^(none|[0-9]+(ns|us|µs|ms|s|m|h))$"`
+}
+
 type ForwardingConfig struct {
 	Enabled bool                    `yaml:"enabled" mapstructure:"enabled" default:"true"`
 	Metrics ForwardingMetricsConfig `yaml:"metrics,omitempty" mapstructure:"metrics"`
+	Traces  ForwardingTracesConfig  `yaml:"traces,omitempty" mapstructure:"traces"`
 }
 
 type InternalTelemetryMetricsConfig struct {
@@ -79,6 +85,14 @@ type InternalTelemetryConfig struct {
 	Logs    InternalTelemetryLogsConfig    `yaml:"logs" mapstructure:"logs"`
 }
 
+type REDMetricsConfig struct {
+	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"false"`
+}
+
+type ApplicationConfig struct {
+	REDMetrics REDMetricsConfig `yaml:"RED_metrics,omitempty" mapstructure:"RED_metrics" json:"RED_metrics"`
+}
+
 type AgentConfig struct {
 	Token                  string                  `yaml:"token" mapstructure:"token" jsonschema:"required"`
 	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url" jsonschema:"required"`
@@ -86,6 +100,7 @@ type AgentConfig struct {
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
 	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
+	Application            ApplicationConfig       `yaml:"application,omitempty" mapstructure:"application"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
 	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry" mapstructure:"internal_telemetry"`
@@ -159,6 +174,12 @@ func (config *AgentConfig) Validate() error {
 
 	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otel" {
 		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
+	}
+
+	if config.Forwarding.Traces.MaxSpanDuration != "none" {
+		if _, err := time.ParseDuration(config.Forwarding.Traces.MaxSpanDuration); err != nil {
+			return fmt.Errorf("invalid max span duration '%s' - Expected a number with a valid time unit: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration", config.Forwarding.Traces.MaxSpanDuration)
+		}
 	}
 
 	return nil

@@ -116,4 +116,9 @@ service:
     metrics/count-nop-out:
        receivers: [count]
        exporters: [nop]
-  extensions: [health_check, file_storage, cgroupruntime]
+  extensions:
+    {{- if .HealthCheck.Enabled }}
+    - health_check
+    {{- end }}
+    - file_storage
+    - cgroupruntime

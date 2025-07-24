@@ -98,7 +98,6 @@ receivers:
     nop: null
 service:
     extensions:
-        - health_check
         - file_storage
     pipelines:
         logs/test:

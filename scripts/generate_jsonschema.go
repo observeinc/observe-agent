@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/invopop/jsonschema"
 	"github.com/observeinc/observe-agent/internal/config"
@@ -12,7 +13,14 @@ import (
 
 func main() {
 	r := new(jsonschema.Reflector)
-	r.KeyNamer = strcase.SnakeCase // from package github.com/stoewer/go-strcase
+	r.KeyNamer = func(name string) string {
+		// If the name already contains an underscore, assume it's a custom name.
+		if strings.Contains(name, "_") {
+			return name
+		}
+		// from package github.com/stoewer/go-strcase
+		return strcase.SnakeCase(name)
+	}
 	r.RequiredFromJSONSchemaTags = true
 
 	s := r.Reflect(&config.AgentConfig{})

@@ -95,6 +95,45 @@ var allSnapshotTests = []snapshotTest{
 	},
 }
 
+// This test cannot be run in our CI since some of the OTel components validate file paths
+// which are not set up in our CI environment (ex checking that the file storage dir exists).
+func XTest_ValidateOtelConfig(t *testing.T) {
+	for _, test := range allSnapshotTests {
+		// Skip environments that don't match the current OS; some OTel component behavior is OS-specific.
+		switch test.packageType {
+		case MacOS:
+			if runtime.GOOS != "darwin" {
+				continue
+			}
+		case Linux, Docker:
+			if runtime.GOOS != "linux" {
+				continue
+			}
+		case Windows:
+			if runtime.GOOS != "windows" {
+				continue
+			}
+		}
+		t.Run(test.outputPath, func(t *testing.T) {
+			runValidateTest(t, test)
+		})
+	}
+}
+
+func runValidateTest(t *testing.T, test snapshotTest) {
+	setupConfig(t, test)
+
+	// Run the test
+	ctx := logger.WithCtx(context.Background(), logger.GetNop())
+	col, cleanup, err := observecol.GetOtelCollector(ctx)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	assert.NoError(t, err)
+	err = col.DryRun(ctx)
+	assert.NoError(t, err)
+}
+
 func Test_RenderOtelConfig(t *testing.T) {
 	for _, test := range allSnapshotTests {
 		t.Run(test.outputPath, func(t *testing.T) {
@@ -104,17 +143,26 @@ func Test_RenderOtelConfig(t *testing.T) {
 }
 
 func runSnapshotTest(t *testing.T, test snapshotTest) {
-	// Get current path
-	_, filename, _, ok := runtime.Caller(0)
-	assert.True(t, ok)
-	curPath := path.Dir(filename)
+	setupConfig(t, test)
 
+	// Run the test
+	curPath := getCurPath()
+	ctx := logger.WithCtx(context.Background(), logger.GetNop())
+	var output bytes.Buffer
+	PrintShortOtelConfig(ctx, &output)
+	expected, err := os.ReadFile(filepath.Join(curPath, test.outputPath))
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(output.String()))
+}
+
+func setupConfig(t *testing.T, test snapshotTest) {
 	// Set the template overrides for all connections
 	for _, conn := range connections.AllConnectionTypes {
-		conn.ApplyOptions(connections.WithConfigTemplateOverrides(getTemplateOverrides(t, test.packageType, curPath)))
+		conn.ApplyOptions(connections.WithConfigTemplateOverrides(getTemplateOverrides(t, test.packageType)))
 	}
 
 	// Set config flags
+	curPath := getCurPath()
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	observecol.AddConfigFlags(flags)
 	if test.otelConfigPath != "" {
@@ -124,17 +172,9 @@ func runSnapshotTest(t *testing.T, test snapshotTest) {
 	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
 	root.InitConfig()
 	setEnvVars(t, test.packageType)
-
-	// Run the test
-	ctx := logger.WithCtx(context.Background(), logger.GetNop())
-	var output bytes.Buffer
-	PrintShortOtelConfig(ctx, &output)
-	expected, err := os.ReadFile(filepath.Join(curPath, test.outputPath))
-	assert.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(output.String()))
 }
 
-func getTemplateOverrides(t *testing.T, packageType PackageType, curPath string) map[string]embed.FS {
+func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embed.FS {
 	switch packageType {
 	case MacOS:
 		return bundledconfig.MacOSTemplateFS
@@ -165,4 +205,12 @@ func setEnvVars(t *testing.T, packageType PackageType) {
 		t.Errorf("Unknown package type: %s", packageType)
 	}
 
+}
+
+func getCurPath() string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("Failed to get current path")
+	}
+	return path.Dir(filename)
 }

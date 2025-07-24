@@ -1,5 +1,18 @@
 connectors:
     count: null
+    spanmetrics:
+        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+        dimensions:
+            - name: service.namespace
+            - name: service.version
+            - name: deployment.environment
+            - name: peer.db.name
+            - name: peer.messaging.system
+            - name: status.message
+            - name: status_code
+        histogram:
+            exponential:
+                max_size: 100
 exporters:
     debug: null
     nop: null
@@ -67,6 +80,23 @@ processors:
         metrics:
             metric:
                 - IsMatch(name, ".*")
+    filter/drop_long_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - (span.end_time - span.start_time) > Duration("30m")
+    filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client:
+        error_mode: ignore
+        traces:
+            span:
+                - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.messaging.system"] == nil and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+                - span.kind == SPAN_KIND_UNSPECIFIED
+                - span.kind == SPAN_KIND_INTERNAL
+                - span.kind == SPAN_KIND_PRODUCER
+    groupbyattrs/peers:
+        keys:
+            - peer.db.name
+            - peer.messaging.system
     memory_limiter:
         check_interval: 1s
         limit_percentage: 80
@@ -113,9 +143,40 @@ processors:
     resourcedetection/cloud:
         detectors:
             - ec2
-            - test
+            - system
         override: false
         timeout: 2s
+    transform/add_span_status_code:
+        error_mode: ignore
+        trace_statements:
+            - set(span.attributes["status_code"], Int(span.attributes["rpc.grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.grpc.status_code"] != nil
+            - set(span.attributes["status_code"], Int(span.attributes["grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["grpc.status_code"] != nil
+            - set(span.attributes["status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.status_code"] != nil
+            - set(span.attributes["status_code"], Int(span.attributes["http.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.status_code"] != nil
+            - set(span.attributes["status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.response.status_code"] != nil
+    transform/fix_peer_attributes:
+        error_mode: ignore
+        metric_statements:
+            - set(datapoint.attributes["peer.db.name"], resource.attributes["peer.db.name"]) where resource.attributes["peer.db.name"] != nil
+            - set(datapoint.attributes["peer.messaging.system"], resource.attributes["peer.messaging.system"]) where resource.attributes["peer.messaging.system"] != nil
+    transform/fix_red_metrics_resource_attributes:
+        error_mode: ignore
+        metric_statements:
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
+            - set(datapoint.attributes["response_status"], datapoint.attributes["status.code"])
+            - delete_key(datapoint.attributes, "status.code")
+    transform/remove_service_name_for_peer_metrics:
+        error_mode: ignore
+        metric_statements:
+            - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
+    transform/shape_spans_for_red_metrics:
+        error_mode: ignore
+        trace_statements:
+            - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
+            - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+            - set(span.attributes["status.message"], span.status.message) where span.status.message != ""
     transform/truncate:
         log_statements:
             - context: log
@@ -307,14 +368,13 @@ service:
                 - count
         metrics/forward:
             exporters:
-                - prometheusremotewrite/observe
+                - otlphttp/observemetrics
             processors:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
-                - deltatocumulative
                 - batch
             receivers:
                 - otlp
@@ -342,17 +402,46 @@ service:
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-process
-        traces/forward:
+        metrics/spanmetrics:
             exporters:
-                - otlphttp/observetracing
+                - otlphttp/observemetrics
             processors:
                 - memory_limiter
-                - transform/truncate
+                - groupbyattrs/peers
+                - transform/fix_peer_attributes
+                - transform/remove_service_name_for_peer_metrics
+                - transform/fix_red_metrics_resource_attributes
                 - resourcedetection
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
                 - batch
+            receivers:
+                - spanmetrics
+        traces/forward:
+            exporters:
+                - otlphttp/observetracing
+            processors:
+                - memory_limiter
+                - filter/drop_long_spans
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - transform/add_span_status_code
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - batch
+            receivers:
+                - otlp
+        traces/spanmetrics:
+            exporters:
+                - spanmetrics
+            processors:
+                - memory_limiter
+                - filter/drop_long_spans
+                - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
+                - transform/shape_spans_for_red_metrics
+                - transform/add_span_status_code
             receivers:
                 - otlp
     telemetry:
