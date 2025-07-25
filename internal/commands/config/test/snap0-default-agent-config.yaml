@@ -10,6 +10,12 @@ forwarding:
   enabled: true
   metrics:
     output_format: otel
+  traces:
+    max_span_duration: none
+
+application:
+  RED_metrics:
+    enabled: false
 
 self_monitoring:
   enabled: true

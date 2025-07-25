@@ -7,7 +7,7 @@ token: abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
 
 cloud_resource_detectors:
     - ec2
-    - test
+    - system
 
 # Debug mode - Sets agent log level to debug
 debug: true
@@ -38,6 +38,10 @@ internal_telemetry:
 
 forwarding:
     enabled: true
+    metrics:
+        output_format: otel
+    traces:
+        max_span_duration: 30m
 
 host_monitoring:
     enabled: true
@@ -54,5 +58,9 @@ host_monitoring:
 
 self_monitoring:
     enabled: true
+
+application:
+    RED_metrics:
+        enabled: true
 
 otel_config_overrides: {}

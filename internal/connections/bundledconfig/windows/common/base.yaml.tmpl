@@ -94,4 +94,8 @@ service:
        receivers: [count]
        exporters: [nop]
 
-  extensions: [health_check, file_storage]
+  extensions:
+    {{- if .HealthCheck.Enabled }}
+    - health_check
+    {{- end }}
+    - file_storage

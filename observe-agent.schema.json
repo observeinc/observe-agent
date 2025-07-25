@@ -3,6 +3,9 @@
     "AgentConfig": {
       "additionalProperties": false,
       "properties": {
+        "application": {
+          "$ref": "#/$defs/ApplicationConfig"
+        },
         "attributes": {
           "additionalProperties": {
             "type": "string"
@@ -55,6 +58,15 @@
       ],
       "type": "object"
     },
+    "ApplicationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "RED_metrics": {
+          "$ref": "#/$defs/REDMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
     "ForwardingConfig": {
       "additionalProperties": false,
       "properties": {
@@ -63,6 +75,9 @@
         },
         "metrics": {
           "$ref": "#/$defs/ForwardingMetricsConfig"
+        },
+        "traces": {
+          "$ref": "#/$defs/ForwardingTracesConfig"
         }
       },
       "type": "object"
@@ -72,6 +87,16 @@
       "properties": {
         "output_format": {
           "pattern": "^(prometheus|otel)$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ForwardingTracesConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "max_span_duration": {
+          "pattern": "^(none|[0-9]+(ns|us|µs|ms|s|m|h))$",
           "type": "string"
         }
       },
@@ -206,6 +231,15 @@
         },
         "port": {
           "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "REDMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
         }
       },
       "type": "object"
