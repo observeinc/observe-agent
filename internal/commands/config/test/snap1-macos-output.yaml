@@ -8,8 +8,8 @@ connectors:
             - name: deployment.environment
             - name: peer.db.name
             - name: peer.messaging.system
-            - name: status.message
-            - name: status_code
+            - name: otel.status_description
+            - name: observe.status_code
         histogram:
             exponential:
                 max_size: 100
@@ -160,11 +160,11 @@ processors:
     transform/add_span_status_code:
         error_mode: ignore
         trace_statements:
-            - set(span.attributes["status_code"], Int(span.attributes["rpc.grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.grpc.status_code"] != nil
-            - set(span.attributes["status_code"], Int(span.attributes["grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["grpc.status_code"] != nil
-            - set(span.attributes["status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.status_code"] != nil
-            - set(span.attributes["status_code"], Int(span.attributes["http.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.status_code"] != nil
-            - set(span.attributes["status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.response.status_code"] != nil
+            - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.grpc.status_code"] != nil
+            - set(span.attributes["observe.status_code"], Int(span.attributes["grpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["grpc.status_code"] != nil
+            - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["status_code"] == nil and span.attributes["rpc.status_code"] != nil
+            - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.status_code"] != nil
+            - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.response.status_code"] != nil
     transform/fix_peer_attributes:
         error_mode: ignore
         metric_statements:
@@ -175,7 +175,8 @@ processors:
         metric_statements:
             - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
             - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
-            - set(datapoint.attributes["response_status"], datapoint.attributes["status.code"])
+            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
             - delete_key(datapoint.attributes, "status.code")
     transform/remove_service_name_for_peer_metrics:
         error_mode: ignore
@@ -187,7 +188,7 @@ processors:
             - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
             - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
             - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
-            - set(span.attributes["status.message"], span.status.message) where span.status.message != ""
+            - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
     transform/truncate:
         log_statements:
             - context: log
