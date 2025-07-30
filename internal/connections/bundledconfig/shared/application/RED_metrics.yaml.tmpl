@@ -12,8 +12,8 @@ connectors:
       - name: deployment.environment
       - name: peer.db.name
       - name: peer.messaging.system
-      - name: status.message
-      - name: status_code
+      - name: otel.status_description
+      - name: observe.status_code
 
 processors:
   # This handles schema normalization as well as moving status to attributes so it can be a dimension in spanmetrics
@@ -26,7 +26,7 @@ processors:
       # deployment.environment = coalesce(deployment.environment, deployment.environment.name)
       - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
       # Needed because `spanmetrics` connector can only operate on attributes or resource attributes.
-      - set(span.attributes["status.message"], span.status.message) where span.status.message != ""
+      - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
 
   # This regroups the metrics by the peer attributes so we can remove `service.name` from the resource when these metric attributes are present
   # NB: these will be deleted from the metric attributes and added to the resource.
@@ -69,7 +69,8 @@ processors:
       - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
 
       # Rename status.code to response_status to be consistent with Trace Explorer and disambiguate from status_code (with an underscore).
-      - set(datapoint.attributes["response_status"], datapoint.attributes["status.code"])
+      - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+      - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
       - delete_key(datapoint.attributes, "status.code")
 
 service:
