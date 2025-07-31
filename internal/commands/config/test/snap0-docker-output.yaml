@@ -69,6 +69,17 @@ processors:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    resource/add_empty_service_attributes:
+        attributes:
+            - action: insert
+              key: service.name
+              value: ""
+            - action: insert
+              key: service.namespace
+              value: ""
+            - action: insert
+              key: deployment.environment
+              value: ""
     resourcedetection:
         detectors:
             - env
@@ -333,6 +344,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
+                - resource/add_empty_service_attributes
                 - batch
             receivers:
                 - otlp
