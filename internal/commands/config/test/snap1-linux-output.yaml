@@ -101,6 +101,17 @@ processors:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    resource/add_empty_service_attributes:
+        attributes:
+            - action: insert
+              key: service.name
+              value: ""
+            - action: insert
+              key: service.namespace
+              value: ""
+            - action: insert
+              key: deployment.environment
+              value: ""
     resource/observe_global_resource_attributes:
         attributes:
             - action: insert
@@ -469,6 +480,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
+                - resource/add_empty_service_attributes
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
                 - batch
@@ -483,6 +495,7 @@ service:
                 - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
                 - transform/shape_spans_for_red_metrics
                 - transform/add_span_status_code
+                - resource/add_empty_service_attributes
             receivers:
                 - otlp
     telemetry:
