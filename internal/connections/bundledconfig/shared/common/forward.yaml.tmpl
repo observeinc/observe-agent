@@ -16,6 +16,19 @@ processors:
       - set(span.attributes["status_code"], Int(span.attributes["http.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.status_code"] != nil
       - set(span.attributes["status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["status_code"] == nil and span.attributes["http.response.status_code"] != nil
 
+  # Always add service.name, service.namespace, and deployment.environment to the resource attributes.
+  resource/add_empty_service_attributes:
+    attributes:
+      - key: service.name
+        value: ""
+        action: insert
+      - key: service.namespace
+        value: ""
+        action: insert
+      - key: deployment.environment
+        value: ""
+        action: insert
+
 {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
   # This drops spans that are longer than the configured time (default 1hr) to match service explorer behavior.
   filter/drop_long_spans:
@@ -102,6 +115,7 @@ service:
         - resourcedetection
         - resourcedetection/cloud
         - transform/add_span_status_code
+        - resource/add_empty_service_attributes
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
