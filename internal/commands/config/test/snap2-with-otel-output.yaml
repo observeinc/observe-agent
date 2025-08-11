@@ -29,6 +29,14 @@ extensions:
     file_storage:
         directory: /var/lib/observe-agent/filestorage
 processors:
+    attributes/test:
+        actions:
+            - action: insert
+              key: test-env-attr1
+              value: test-value
+            - action: insert
+              key: test-env-attr2
+              value: test-value
     batch:
         timeout: 5s
     deltatocumulative: null
@@ -108,6 +116,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/test
                 - batch
             receivers:
                 - filelog/test

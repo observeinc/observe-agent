@@ -30,7 +30,7 @@ func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:          URIs,
-				DefaultScheme: "file",
+				DefaultScheme: "env",
 				ProviderFactories: []confmap.ProviderFactory{
 					fileprovider.NewFactory(),
 					envprovider.NewFactory(),

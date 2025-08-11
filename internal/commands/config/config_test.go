@@ -149,7 +149,8 @@ func runSnapshotTest(t *testing.T, test snapshotTest) {
 	curPath := getCurPath()
 	ctx := logger.WithCtx(context.Background(), logger.GetNop())
 	var output bytes.Buffer
-	PrintShortOtelConfig(ctx, &output)
+	err := PrintShortOtelConfig(ctx, &output)
+	assert.NoError(t, err)
 	expected, err := os.ReadFile(filepath.Join(curPath, test.outputPath))
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(output.String()))
@@ -191,6 +192,7 @@ func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embe
 }
 
 func setEnvVars(t *testing.T, packageType PackageType) {
+	os.Setenv("TEST_ENV_VAR", "test-value")
 	switch packageType {
 	case MacOS:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
