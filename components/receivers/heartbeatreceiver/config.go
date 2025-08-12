@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	Interval string `mapstructure:"interval"`
+	Interval      string `mapstructure:"interval"`
+	LocalFilePath string `mapstructure:"local_file_path"`
 }
 
 func (cfg *Config) Validate() error {
