@@ -25,6 +25,7 @@ type HeartbeatReceiver struct {
 	obsrecv      *receiverhelper.ObsReport
 	nextConsumer consumer.Logs
 	ticker       *time.Ticker
+	cancel       context.CancelFunc
 }
 
 type HeartbeatLocalData struct {
@@ -83,6 +84,7 @@ func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*H
 }
 
 func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) error {
+	ctx, r.cancel = context.WithCancel(ctx)
 	err := r.InitializeAgentLocalData(ctx)
 	if err != nil {
 		return err
@@ -128,6 +130,10 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	if r.ticker != nil {
 		r.ticker.Stop()
 	}
+	if r.cancel != nil {
+		r.cancel()
+	}
+
 	return nil
 }
 
@@ -147,18 +153,18 @@ func (r *HeartbeatReceiver) PersistToLocalFile(ctx context.Context) error {
 	}
 
 	// Create the directory if it doesn't exist
-	dir := filepath.Dir(localDataFilePath)
+	dir := filepath.Dir(r.cfg.LocalFilePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
 	// Write the JSON data to the file
-	return os.WriteFile(localDataFilePath, jsonData, 0644)
+	return os.WriteFile(r.cfg.LocalFilePath, jsonData, 0644)
 }
 
 func (r *HeartbeatReceiver) ParseLocalFile(ctx context.Context) error {
 	// Check if the file exists
-	if _, err := os.Stat(localDataFilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(localDataFilePath); err != nil {
 		return err
 	}
 
@@ -180,7 +186,7 @@ func (r *HeartbeatReceiver) InitializeAgentLocalData(ctx context.Context) error 
 	err := r.ParseLocalFile(ctx)
 
 	// If the local file doesn't exist, then generate new local data and persist it to disk
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(err) {
 		localData.AgentInstanceId = r.GenerateAgentInstanceId(ctx)
 		// Persist the local data to file
 		if err := r.PersistToLocalFile(ctx); err != nil {

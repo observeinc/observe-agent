@@ -2,7 +2,6 @@ package heartbeatreceiver
 
 import (
 	"context"
-	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
@@ -17,12 +16,13 @@ func (ReceiverType) Type() component.Type {
 }
 
 const (
-	defaultInterval = 5 * time.Minute
+	defaultIntervalString = "10m"
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Interval: string(defaultInterval),
+		Interval:      defaultIntervalString,
+		LocalFilePath: localDataFilePath,
 	}
 }
 
