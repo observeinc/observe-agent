@@ -1,0 +1,44 @@
+package heartbeatreceiver
+
+import (
+	"context"
+	"time"
+
+	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+)
+
+type ReceiverType struct{}
+
+func (ReceiverType) Type() component.Type {
+	return metadata.Type
+}
+
+const (
+	defaultInterval = 5 * time.Minute
+)
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		Interval: string(defaultInterval),
+	}
+}
+
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		receiver.WithLogs(createLogsProcessor, metadata.LogsStability),
+	)
+}
+
+func createLogsProcessor(
+	ctx context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	return nil, nil
+}
