@@ -513,6 +513,8 @@ require (
 	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
+replace github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver => ../components/receivers/heartbeatreceiver
+
 replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../components/processors/observek8sattributesprocessor
 
 replace github.com/observeinc/observe-agent => ../
