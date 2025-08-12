@@ -84,6 +84,7 @@ func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*H
 }
 
 func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) error {
+	r.settings.Logger.Info("Starting heartbeat receiver")
 	ctx, r.cancel = context.WithCancel(ctx)
 	err := r.InitializeAgentLocalData(ctx)
 	if err != nil {
@@ -101,7 +102,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				// 	AgentStartTime:  localData.AgentStartTime,
 				// }
 				// jsonHb, _ := json.Marshal(hb)
-
+				r.settings.Logger.Info("Sending heartbeat", zap.String("agent_instance_id", localData.AgentInstanceId))
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				resourceLogs.Resource().Attributes().PutStr("agentInstanceId", localData.AgentInstanceId)
@@ -127,6 +128,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 }
 
 func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
+	r.settings.Logger.Info("Shutting down heartbeat receiver")
 	if r.ticker != nil {
 		r.ticker.Stop()
 	}
