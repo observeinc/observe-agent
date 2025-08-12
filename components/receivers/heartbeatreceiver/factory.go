@@ -30,15 +30,16 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsProcessor, metadata.LogsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
-func createLogsProcessor(
+func createLogsReceiver(
 	ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return nil, nil
+	c := cfg.(*Config)
+	return newReceiver(set, c, nextConsumer)
 }
