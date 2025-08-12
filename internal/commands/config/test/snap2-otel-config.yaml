@@ -2,6 +2,16 @@ receivers:
   filelog/test:
     include: ["./test.log"]
 
+processors:
+  attributes/test:
+    actions:
+      - action: insert
+        key: test-env-attr1
+        value: ${TEST_ENV_VAR}
+      - action: insert
+        key: test-env-attr2
+        value: ${env:TEST_ENV_VAR}
+
 service:
     pipelines:
         logs/test:
@@ -12,6 +22,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - attributes/test
                 - batch
             exporters:
                 - otlphttp/observe
