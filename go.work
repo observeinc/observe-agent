@@ -3,5 +3,6 @@ go 1.23.10
 use (
 	.
 	./components/processors/observek8sattributesprocessor
+	./components/receivers/heartbeatreceiver
 	./observecol
 )
