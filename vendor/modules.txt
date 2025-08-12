@@ -430,7 +430,7 @@ github.com/cespare/xxhash/v2
 # github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 ## explicit; go 1.19
 # github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
-## go 1.19
+## explicit; go 1.19
 github.com/cncf/xds/go/udpa/annotations
 github.com/cncf/xds/go/xds/annotations/v3
 github.com/cncf/xds/go/xds/core/v3
@@ -1146,6 +1146,8 @@ github.com/mwitkow/go-conntrack
 # github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 ## explicit; go 1.24.6
 =======
+## explicit; go 1.23.10
+# github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 ## explicit; go 1.23.10
 # github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000 => ./observecol
 ## explicit; go 1.23.10
@@ -2914,7 +2916,7 @@ google.golang.org/api/transport/http
 # google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822
 ## explicit; go 1.23.0
 # google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a
-## go 1.23.0
+## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
@@ -2994,8 +2996,6 @@ google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
 # google.golang.org/protobuf v1.34.2
-## explicit; go 1.22
-# google.golang.org/protobuf v1.36.6
 ## explicit; go 1.22
 # google.golang.org/protobuf v1.36.7
 ## explicit; go 1.22
