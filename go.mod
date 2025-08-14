@@ -222,6 +222,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+	github.com/observeinc/observe-agent/components/extensions/agentresourceextension v0.0.0-00010101000000-000000000000 // indirect
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 // indirect
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
@@ -516,6 +517,7 @@ require (
 replace (
 	github.com/Microsoft/go-winio => github.com/microsoft/go-winio v0.6.2
 	github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
+	github.com/observeinc/observe-agent/components/extensions/agentresourceextension v0.0.0-00010101000000-000000000000 => ./components/extensions/agentresourceextension
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 	github.com/observeinc/observe-agent/observecol => ./observecol

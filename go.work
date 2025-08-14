@@ -2,6 +2,7 @@ go 1.23.10
 
 use (
 	.
+	./components/extensions/agentresourceextension
 	./components/processors/observek8sattributesprocessor
 	./components/receivers/heartbeatreceiver
 	./observecol

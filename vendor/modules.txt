@@ -1119,6 +1119,8 @@ github.com/munnerz/goautoneg
 github.com/mwitkow/go-conntrack
 # github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000 => .
 ## explicit; go 1.23.10
+# github.com/observeinc/observe-agent/components/extensions/agentresourceextension v0.0.0-00010101000000-000000000000 => ./components/extensions/agentresourceextension
+## explicit; go 1.23.10
 # github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 ## explicit; go 1.23.10
 # github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
