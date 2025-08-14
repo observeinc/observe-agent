@@ -1,0 +1,9 @@
+type: agentresource
+scope_name: observe-agent/extension/agentresourceextension
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  codeowners:
+    active: [observeinc]

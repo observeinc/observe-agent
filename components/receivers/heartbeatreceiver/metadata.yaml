@@ -1,0 +1,13 @@
+type: heartbeat
+scope_name: observe-agent/receiver/heartbeatreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [alexylew]
+
+tests:
+  config:
+    local_file_path: fixtures/heartbeat_local_data.json
