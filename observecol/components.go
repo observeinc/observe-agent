@@ -66,6 +66,7 @@ import (
 	tcplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	udplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	windowseventlogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+	heartbeatreceiver "github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver"
 )
 
 func components() (otelcol.Factories, error) {
@@ -115,6 +116,7 @@ func components() (otelcol.Factories, error) {
 		tcplogreceiver.NewFactory(),
 		udplogreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
+		heartbeatreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -145,6 +147,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[tcplogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.128.0"
 	factories.ReceiverModules[udplogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.128.0"
 	factories.ReceiverModules[windowseventlogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.128.0"
+	factories.ReceiverModules[heartbeatreceiver.NewFactory().Type()] = "github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000"
 
 	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		debugexporter.NewFactory(),
