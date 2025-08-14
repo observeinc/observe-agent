@@ -10,5 +10,4 @@ status:
     active: [alexylew]
 
 tests:
-  config:
-    local_file_path: fixtures/heartbeat_local_data.json
+  config: {}

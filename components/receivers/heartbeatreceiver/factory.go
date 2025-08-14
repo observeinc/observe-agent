@@ -21,8 +21,7 @@ const (
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Interval:      defaultIntervalString,
-		LocalFilePath: localDataFilePath,
+		Interval: defaultIntervalString,
 	}
 }
 
