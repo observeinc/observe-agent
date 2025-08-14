@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/observeinc/observe-agent/internal/utils"
+	"github.com/spf13/viper"
 )
 
 func TestAgentResource(t *testing.T) {
@@ -13,8 +14,13 @@ func TestAgentResource(t *testing.T) {
 	tempDir := t.TempDir()
 	testFilePath := filepath.Join(tempDir, "test_agent_data.json")
 
+	// Set up viper with custom path for this test
+	originalPath := viper.GetString("agent_local_file_path")
+	viper.Set("agent_local_file_path", testFilePath)
+	defer viper.Set("agent_local_file_path", originalPath)
+
 	// Test 1: Initialize with new file (file doesn't exist)
-	agent1 := New(testFilePath)
+	agent1 := New()
 	err := agent1.Initialize()
 	if err != nil {
 		t.Fatalf("Failed to initialize agent resource: %v", err)
@@ -35,7 +41,7 @@ func TestAgentResource(t *testing.T) {
 	firstStartTime := agent1.GetAgentStartTime()
 
 	// Test 2: Initialize with existing file (should load same ID)
-	agent2 := New(testFilePath)
+	agent2 := New()
 	err = agent2.Initialize()
 	if err != nil {
 		t.Fatalf("Failed to initialize agent resource from existing file: %v", err)
@@ -68,5 +74,40 @@ func TestDefaultPath(t *testing.T) {
 		if path != "/etc/observe-agent" {
 			t.Errorf("Unexpected path for linux: %s", path)
 		}
+	}
+}
+
+func TestAgentResourceWithConfig(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "custom_agent_data.json")
+
+	// Store original value and restore after test
+	originalPath := viper.GetString("agent_local_file_path")
+	defer viper.Set("agent_local_file_path", originalPath)
+	
+	// Set custom path
+	viper.Set("agent_local_file_path", configPath)
+
+	// Test that New() uses the configured path
+	agent := New()
+	if agent.filePath != configPath {
+		t.Errorf("Expected file path %s, got %s", configPath, agent.filePath)
+	}
+
+	// Test initialization
+	err := agent.Initialize()
+	if err != nil {
+		t.Fatalf("Failed to initialize agent resource: %v", err)
+	}
+
+	// Verify file was created at configured location
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("Agent local data file was not created at configured path")
+	}
+
+	// Verify agent instance ID was generated
+	if agent.GetAgentInstanceId() == "" {
+		t.Error("Agent instance ID should not be empty")
 	}
 }

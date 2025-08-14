@@ -121,7 +121,7 @@ func InitConfig() {
 
 func setEnvVars() error {
 	// Initialize agent resource to get/generate agent instance ID
-	agentRes := agentresource.New("")
+	agentRes := agentresource.New()
 	if err := agentRes.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize agent resource: %w", err)
 	}
