@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/observeinc/observe-agent/build"
+	"github.com/observeinc/observe-agent/internal/agentresource"
 	"github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
@@ -122,6 +123,15 @@ func InitConfig() {
 }
 
 func setEnvVars() error {
+	// Initialize agent resource to get/generate agent instance ID
+	agentRes := agentresource.New("")
+	if err := agentRes.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize agent resource: %w", err)
+	}
+
+	// Set agent instance ID as environment variable
+	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
+
 	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
 	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:
 	// "${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity"
