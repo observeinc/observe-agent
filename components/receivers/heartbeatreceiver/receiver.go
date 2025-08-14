@@ -2,12 +2,8 @@ package heartbeatreceiver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
@@ -39,31 +35,6 @@ type HeartbeatLogRecord struct {
 }
 
 var localData HeartbeatLocalData
-var localDataFilePath = GetDefaultAgentPath() + "/heartbeat_local_data.json"
-
-const nameSuffixCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-// generateRandomString generates a random alphanumeric string of the specified length
-func generateRandomString(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = nameSuffixCharset[rand.Intn(len(nameSuffixCharset))]
-	}
-	return string(b)
-}
-
-func GetDefaultAgentPath() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		return "/usr/local/observe-agent"
-	case "windows":
-		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent")
-	case "linux":
-		return "/etc/observe-agent"
-	default:
-		return "/etc/observe-agent"
-	}
-}
 
 func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*HeartbeatReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -105,7 +76,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				r.settings.Logger.Info("Sending heartbeat", zap.String("agent_instance_id", localData.AgentInstanceId))
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
-				resourceLogs.Resource().Attributes().PutStr("agentInstanceId", localData.AgentInstanceId)
+				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
@@ -139,63 +110,12 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (r *HeartbeatReceiver) GenerateAgentInstanceId(ctx context.Context) string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-	return fmt.Sprintf("agent-%s-%s", hostname, generateRandomString(6))
-}
-
-func (r *HeartbeatReceiver) PersistToLocalFile(ctx context.Context) error {
-	// Marshal the localData to JSON
-	jsonData, err := json.Marshal(localData)
-	if err != nil {
-		return err
-	}
-
-	// Create the directory if it doesn't exist
-	dir := filepath.Dir(r.cfg.LocalFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
-	// Write the JSON data to the file
-	return os.WriteFile(r.cfg.LocalFilePath, jsonData, 0644)
-}
-
-func (r *HeartbeatReceiver) ParseLocalFile(ctx context.Context) error {
-	// Check if the file exists
-	if _, err := os.Stat(localDataFilePath); err != nil {
-		return err
-	}
-
-	// Read the file
-	jsonData, err := os.ReadFile(localDataFilePath)
-	if err != nil {
-		return err
-	}
-
-	// Unmarshal the JSON data into localData
-	return json.Unmarshal(jsonData, &localData)
-}
-
 func (r *HeartbeatReceiver) InitializeAgentLocalData(ctx context.Context) error {
 	// Set the local start time
 	localData.AgentStartTime = time.Now().Unix()
-
-	// Parse the local file if it exists
-	err := r.ParseLocalFile(ctx)
-
-	// If the local file doesn't exist, then generate new local data and persist it to disk
-	if err != nil && os.IsNotExist(err) {
-		localData.AgentInstanceId = r.GenerateAgentInstanceId(ctx)
-		// Persist the local data to file
-		if err := r.PersistToLocalFile(ctx); err != nil {
-			return err
-		}
-		return nil
-	} else {
-		return err
+	localData.AgentInstanceId = os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	if localData.AgentInstanceId == "" {
+		return fmt.Errorf("OBSERVE_AGENT_INSTANCE_ID environment variable must be set")
 	}
+	return nil
 }
