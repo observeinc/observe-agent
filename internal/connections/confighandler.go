@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -94,18 +94,9 @@ func getOverrideConfigFile(tmpDir string, data map[string]any) (string, error) {
 }
 
 func GetConfigFragmentFolderPath() string {
-	return filepath.Join(GetDefaultAgentPath(), "connections")
+	return filepath.Join(utils.GetDefaultAgentPath(), "connections")
 }
 
 func GetDefaultAgentPath() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		return "/usr/local/observe-agent"
-	case "windows":
-		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent")
-	case "linux":
-		return "/etc/observe-agent"
-	default:
-		return "/etc/observe-agent"
-	}
+	return utils.GetDefaultAgentPath()
 }
