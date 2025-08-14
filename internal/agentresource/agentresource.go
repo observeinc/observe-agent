@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/observeinc/observe-agent/internal/utils"
+	"github.com/spf13/viper"
 )
 
 type AgentLocalData struct {
@@ -23,6 +24,8 @@ type AgentResource struct {
 
 const nameSuffixCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+var defaultLocalFilePath = filepath.Join(utils.GetDefaultAgentPath(), "agent_local_data.json")
+
 func generateRandomString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
@@ -31,9 +34,14 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
-func New(filePath string) *AgentResource {
-	if filePath == "" {
-		filePath = filepath.Join(utils.GetDefaultAgentPath(), "agent_local_data.json")
+func New() *AgentResource {
+	var filePath string
+	// Check if configured in viper
+	configuredPath := viper.GetString("agent_local_file_path")
+	if configuredPath != "" {
+		filePath = configuredPath
+	} else {
+		filePath = defaultLocalFilePath
 	}
 
 	return &AgentResource{
@@ -73,6 +81,10 @@ func (a *AgentResource) GetAgentStartTime() int64 {
 
 func (a *AgentResource) GetAgentData() AgentLocalData {
 	return *a.data
+}
+
+func (a *AgentResource) GetFilePath() string {
+	return a.filePath
 }
 
 func (a *AgentResource) generateAgentInstanceId() string {
