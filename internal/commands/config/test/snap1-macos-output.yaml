@@ -470,4 +470,9 @@ service:
                         prometheus:
                             host: 0.0.0.0
                             port: 12346
+                            with_resource_constant_labels:
+                                included:
+                                    - observe.agent.instance.id
+        resource:
+            observe.agent.instance.id: test-agent-instance-id
 
