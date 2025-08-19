@@ -71,23 +71,24 @@ This section lists the components that are included in the Observe Distribution 
 | [awsecscontainermetrics][awsecscontainermetricsreceiver] | [attributes][attributesprocessor]                     | [debug][debugexporter]                                 | [cgroupruntime][cgroupruntimeextension] | [count][countconnector]             |
 | [docker_stats][dockerstatsreceiver]                      | [batch][batchprocessor]                               | [file][fileexporter]                                   | [file_storage][filestorage]             | [forward][forwardconnector]         |
 | [elasticsearch][elasticsearchreceiver]                   | [cumulativetodelta][cumulativetodeltaprocessor]       | [loadbalancing][loadbalancingexporter]                 | [health_check][healthcheckextension]    | [spanmetrics][spanmetricsconnector] |
-| [filelog][filelogreceiver]                               | [deltatocumulative][deltatocumulativeprocessor]       | [otlp][otlpexporter]                                   | [pprof][pprofextension]                 |                                     |
-| [filestats][filestatsreceiver]                           | [filter][filterprocessor]                             | [otlphttp][otlphttpexporter]                           | [zpages][zpagesextension]               |                                     |
-| [hostmetrics][hostmetricsreceiver]                       | [k8sattributes][k8sattributesprocessor]               | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
-| [httpcheck][httpcheckreceiver]                           | [memory_limiter][memorylimiterprocessor]              |                                                        |                                         |                                     |
-| [iis][iisreceiver]                                       | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                         |                                     |
-| [journald][journaldreceiver]                             | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                         |                                     |
-| [k8s_cluster][k8sclusterreceiver]                        | [redaction][redactionprocessor]                       |                                                        |                                         |                                     |
-| [k8sobjects][k8sobjectsreceiver]                         | [resource][resourceprocessor]                         |                                                        |                                         |                                     |
-| [kafkametrics][kafkametricsreceiver]                     | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                         |                                     |
-| [kafka][kafkareceiver]                                   | [span][spanprocessor]                                 |                                                        |                                         |                                     |
-| [kubeletstats][kubeletstatsreceiver]                     | [tailsampling][tailsamplingprocessor]                 |                                                        |                                         |                                     |
-| [mongodb][mongodbreceiver]                               | [transform][transformprocessor]                       |                                                        |                                         |                                     |
-| [otlp][otlpreceiver]                                     |                                                       |                                                        |                                         |                                     |
+| [filelog][filelogreceiver]                               | [deltatocumulative][deltatocumulativeprocessor]       | [nop][nopexporter]                                     | [pprof][pprofextension]                 |                                     |
+| [filestats][filestatsreceiver]                           | [filter][filterprocessor]                             | [otlp][otlpexporter]                                   | [zpages][zpagesextension]               |                                     |
+| [hostmetrics][hostmetricsreceiver]                       | [groupbyattrs][groupbyattrsprocessor]                 | [otlphttp][otlphttpexporter]                           |                                         |                                     |
+| [httpcheck][httpcheckreceiver]                           | [k8sattributes][k8sattributesprocessor]               | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
+| [iis][iisreceiver]                                       | [memory_limiter][memorylimiterprocessor]              |                                                        |                                         |                                     |
+| [journald][journaldreceiver]                             | [metricstransform][metricstransformprocessor]         |                                                        |                                         |                                     |
+| [k8s_cluster][k8sclusterreceiver]                        | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                         |                                     |
+| [k8sobjects][k8sobjectsreceiver]                         | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                         |                                     |
+| [kafkametrics][kafkametricsreceiver]                     | [redaction][redactionprocessor]                       |                                                        |                                         |                                     |
+| [kafka][kafkareceiver]                                   | [resource][resourceprocessor]                         |                                                        |                                         |                                     |
+| [kubeletstats][kubeletstatsreceiver]                     | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                         |                                     |
+| [mongodb][mongodbreceiver]                               | [span][spanprocessor]                                 |                                                        |                                         |                                     |
+| [nop][nopreceiver]                                       | [tailsampling][tailsamplingprocessor]                 |                                                        |                                         |                                     |
+| [otlp][otlpreceiver]                                     | [transform][transformprocessor]                       |                                                        |                                         |                                     |
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                         |                                     |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                         |                                     |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                         |                                     |
-| [sqlquery][sqlqueryreceiver]                            |                                                       |                                                        |                                         |                                     |
+| [sqlquery][sqlqueryreceiver]                             |                                                       |                                                        |                                         |                                     |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
@@ -108,6 +109,7 @@ This section lists the components that are included in the Observe Distribution 
 [kafkareceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/receiver/kafkareceiver
 [kubeletstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/receiver/kubeletstatsreceiver
 [mongodbreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/receiver/mongodbreceiver
+[nopreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/receiver/nopreceiver
 [otlpreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/receiver/otlpreceiver
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/receiver/prometheusreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/receiver/redisreceiver
@@ -122,8 +124,10 @@ This section lists the components that are included in the Observe Distribution 
 [cumulativetodeltaprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/cumulativetodeltaprocessor
 [deltatocumulativeprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/deltatocumulativeprocessor
 [filterprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/filterprocessor
+[groupbyattrsprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/groupbyattrsprocessor
 [k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/k8sattributesprocessor
 [memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/processor/memorylimiterprocessor
+[metricstransformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/metricstransformprocessor
 [observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
 [probabilisticsamplerprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/probabilisticsamplerprocessor
 [redactionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/processor/redactionprocessor
@@ -135,6 +139,7 @@ This section lists the components that are included in the Observe Distribution 
 [debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/exporter/debugexporter
 [fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/exporter/fileexporter
 [loadbalancingexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/exporter/loadbalancingexporter
+[nopexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/exporter/nopexporter
 [otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/exporter/otlpexporter
 [otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.128.0/exporter/otlphttpexporter
 [prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.128.0/exporter/prometheusremotewriteexporter
