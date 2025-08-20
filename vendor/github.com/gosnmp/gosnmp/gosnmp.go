@@ -16,6 +16,7 @@ import (
 	"math/big"
 	"net"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -27,9 +28,6 @@ const (
 	// strangely. 60 seems to be a common value that works, but you will want
 	// to change this in the GoSNMP struct
 	MaxOids = 60
-
-	// Base OID for MIB-2 defined SNMP variables
-	baseOid = ".1.3.6.1.2.1"
 
 	// Max oid sub-identifier value
 	// https://tools.ietf.org/html/rfc2578#section-7.1.3
@@ -111,8 +109,7 @@ type GoSNMP struct {
 	// See comments in https://github.com/gosnmp/gosnmp/issues/100
 	MaxRepetitions uint32
 
-	// NonRepeaters sets the GETBULK max-repeaters used by BulkWalk*.
-	// (default: 0 as per RFC 1905)
+	// Deprecated: This parameter is not used and ignored
 	NonRepeaters int
 
 	// UseUnconnectedUDPSocket if set, changes net.Conn to be unconnected UDP socket.
@@ -171,6 +168,9 @@ type GoSNMP struct {
 
 	// Internal - we use to send packets if using unconnected socket.
 	uaddr *net.UDPAddr
+
+	// Internal - mutual exclusion allows us to idempotently perform operations
+	mu sync.Mutex
 }
 
 // Default connection settings
@@ -285,6 +285,23 @@ func (x *GoSNMP) ConnectIPv4() error {
 // ConnectIPv6 forces an IPv6-only connection
 func (x *GoSNMP) ConnectIPv6() error {
 	return x.connect("6")
+}
+
+// Close closes the underlaying connection.
+//
+// This method is safe to call multiple times and from concurrent goroutines.
+// Only the first call will close the connection; subsequent calls are no-ops.
+func (x *GoSNMP) Close() error {
+	x.mu.Lock()
+	defer x.mu.Unlock()
+
+	if x.Conn == nil {
+		return nil
+	}
+
+	err := x.Conn.Close()
+	x.Conn = nil
+	return err
 }
 
 // connect to address addr on the given network

@@ -77,7 +77,10 @@ func (e *Encoder) Transform(dst, src []byte, atEOF bool) (nDst, nSrc int, err er
 			}
 		}
 		r, n := utf8.DecodeRune(src[i:])
-		if r == utf8.RuneError {
+		// invalid UTF-8 cases:
+		// - if p is empty it returns (RuneError, 0)
+		// - otherwise, if the encoding is invalid, it returns (RuneError, 1)
+		if (n == 0 || n == 1) && r == utf8.RuneError {
 			decodeErr := newDecodeError(UTF8, i, src)
 			if e.errorHandler == nil {
 				return j, i, decodeErr
@@ -134,8 +137,26 @@ func (d *Decoder) Transform(dst, src []byte, atEOF bool) (nDst, nSrc int, err er
 				return j, i, transform.ErrShortSrc
 			}
 		}
-		r, n := DecodeRune(src[i:])
-		if r == utf8.RuneError {
+		/*
+			cannot use DecodeRune as we cannot distinguish betweeen
+			.unicode replacement character and
+			.invalid surrogate
+			r, n := DecodeRune(src[i:])
+		*/
+		var (
+			r         rune
+			n         int
+			isInvalid bool
+		)
+		p := src[i:]
+		if !isSurrogate(p) {
+			r, n = utf8.DecodeRune(p)
+			isInvalid = r == utf8.RuneError && (n == 0 || n == 1)
+		} else {
+			r, n = decodeSurrogates(p)
+			isInvalid = r == utf8.RuneError
+		}
+		if isInvalid {
 			decodeErr := newDecodeError(CESU8, i, src)
 			if d.errorHandler == nil {
 				return j, i, decodeErr

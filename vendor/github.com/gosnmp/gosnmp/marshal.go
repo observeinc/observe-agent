@@ -190,6 +190,7 @@ func (x *GoSNMP) sendOneRequest(packetOut *SnmpPacket,
 
 	timeout := x.Timeout
 	withContextDeadline := false
+sendRetry:
 	for retries := 0; ; retries++ {
 		if retries > 0 {
 			if x.OnRetry != nil {
@@ -202,6 +203,9 @@ func (x *GoSNMP) sendOneRequest(packetOut *SnmpPacket,
 				break
 			}
 			if retries > x.Retries {
+				if err == nil {
+					err = fmt.Errorf("max retries (%d) exceeded", x.Retries)
+				}
 				if strings.Contains(err.Error(), "timeout") {
 					err = fmt.Errorf("request timeout (after %d retries)", retries-1)
 				}
@@ -293,15 +297,12 @@ func (x *GoSNMP) sendOneRequest(packetOut *SnmpPacket,
 			var resp []byte
 			resp, err = x.receive()
 			if err == io.EOF && strings.HasPrefix(x.Transport, tcp) {
-				// EOF on TCP: reconnect and retry. Do not count
-				// as retry as socket was broken
 				x.Logger.Printf("ERROR: EOF. Performing reconnect")
 				err = x.netConnect()
 				if err != nil {
 					return nil, err
 				}
-				retries--
-				break
+				continue sendRetry
 			} else if err != nil {
 				// receive error. retrying won't help. abort
 				break
@@ -943,7 +944,10 @@ func marshalVarbind(pdu *SnmpPDU) ([]byte, error) {
 		tmpBuf.Write([]byte{byte(ObjectIdentifier), byte(len(oid))})
 		tmpBuf.Write(oid)
 		tmpBuf.WriteByte(byte(pdu.Type))
-		intBytes := marshalUint64(pdu.Value)
+		intBytes, err := marshalUint64(pdu.Value)
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling: %w", err)
+		}
 		tmpBuf.WriteByte(byte(len(intBytes)))
 		tmpBuf.Write(intBytes)
 		tmpBytes := tmpBuf.Bytes()

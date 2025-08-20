@@ -780,7 +780,7 @@ func readCekTableEntry(r *tdsBuffer) cekTableEntry {
 // http://msdn.microsoft.com/en-us/library/dd357254.aspx
 func parseRow(ctx context.Context, r *tdsBuffer, s *tdsSession, columns []columnStruct, row []interface{}) error {
 	for i, column := range columns {
-		columnContent := column.ti.Reader(&column.ti, r, nil)
+		columnContent := column.ti.Reader(&column.ti, r, nil, s.encoding)
 		if columnContent == nil {
 			row[i] = columnContent
 			continue
@@ -792,7 +792,7 @@ func parseRow(ctx context.Context, r *tdsBuffer, s *tdsSession, columns []column
 				return err
 			}
 			// Decrypt
-			row[i] = column.cryptoMeta.typeInfo.Reader(&column.cryptoMeta.typeInfo, buffer, column.cryptoMeta)
+			row[i] = column.cryptoMeta.typeInfo.Reader(&column.cryptoMeta.typeInfo, buffer, column.cryptoMeta, s.encoding)
 		} else {
 			row[i] = columnContent
 		}
@@ -865,14 +865,14 @@ func parseNbcRow(ctx context.Context, r *tdsBuffer, s *tdsSession, columns []col
 			row[i] = nil
 			continue
 		}
-		columnContent := col.ti.Reader(&col.ti, r, nil)
+		columnContent := col.ti.Reader(&col.ti, r, nil, s.encoding)
 		if col.isEncrypted() {
 			buffer, err := decryptColumn(ctx, col, s, columnContent)
 			if err != nil {
 				return err
 			}
 			// Decrypt
-			row[i] = col.cryptoMeta.typeInfo.Reader(&col.cryptoMeta.typeInfo, buffer, col.cryptoMeta)
+			row[i] = col.cryptoMeta.typeInfo.Reader(&col.cryptoMeta.typeInfo, buffer, col.cryptoMeta, s.encoding)
 		} else {
 			row[i] = columnContent
 		}
@@ -933,7 +933,7 @@ func parseReturnValue(r *tdsBuffer, s *tdsSession) (nv namedValue) {
 	}
 
 	ti2 := readTypeInfo(r, ti.TypeId, cryptoMetadata, s.encoding)
-	nv.Value = ti2.Reader(&ti2, r, cryptoMetadata)
+	nv.Value = ti2.Reader(&ti2, r, cryptoMetadata, s.encoding)
 
 	return
 }
@@ -941,14 +941,14 @@ func parseReturnValue(r *tdsBuffer, s *tdsSession) (nv namedValue) {
 func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenStruct, outs outputs) {
 	defer func() {
 		if err := recover(); err != nil {
-			sess.LogF(ctx, msdsn.LogErrors, "Intercepted panic %v", err)
+			sess.LogF(ctx, msdsn.LogErrors, "intercepted panic: %v", err)
 			if outs.msgq != nil {
 				var derr error
 				switch e := err.(type) {
 				case error:
 					derr = e
 				default:
-					derr = fmt.Errorf("Unhandled session error %v", e)
+					derr = fmt.Errorf("unhandled session error: %v", e)
 				}
 				_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgError{Error: derr})
 
@@ -1001,7 +1001,6 @@ func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenS
 		case tokenDoneInProc:
 			done := parseDoneInProc(sess.buf)
 
-			ch <- done
 			if done.Status&doneCount != 0 {
 				sess.LogF(ctx, msdsn.LogRows, "(%d rows affected)", done.RowCount)
 
@@ -1009,10 +1008,14 @@ func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenS
 					_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgRowsAffected{Count: int64(done.RowCount)})
 				}
 			}
+
+			ch <- done
+
 			if outs.msgq != nil {
 				// For now we ignore ctx->Done errors that ReturnMessageEnqueue might return
 				// It's not clear how to handle them correctly here, and data/sql seems
 				// to set Rows.Err correctly when ctx expires already
+				sess.LogF(ctx, msdsn.LogDebug, "queueing MsgNextResultSet after tokenDoneInProc")
 				_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgNextResultSet{})
 			}
 			colsReceived = false
@@ -1020,6 +1023,7 @@ func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenS
 				// Rows marks the request as done when seeing this done token. We queue another result set message
 				// so the app calls NextResultSet again which will return false.
 				if outs.msgq != nil {
+					sess.LogF(ctx, msdsn.LogDebug, "queueing MsgNextResultSet after tokenDoneInProc with doneMore=0")
 					_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgNextResultSet{})
 				}
 				return
@@ -1034,11 +1038,11 @@ func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenS
 			if done.Status&doneSrvError != 0 {
 				ch <- ServerError{done.getError()}
 				if outs.msgq != nil {
+					sess.LogF(ctx, msdsn.LogDebug, "queueing MsgNextResultSet after tokenDone with doneSrvError")
 					_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgNextResultSet{})
 				}
 				return
 			}
-			ch <- done
 			if done.Status&doneCount != 0 {
 				sess.LogF(ctx, msdsn.LogRows, "(Rows affected: %d)", done.RowCount)
 
@@ -1047,14 +1051,19 @@ func processSingleResponse(ctx context.Context, sess *tdsSession, ch chan tokenS
 				}
 
 			}
+
+			ch <- done
+
 			colsReceived = false
 			if outs.msgq != nil {
+				sess.LogF(ctx, msdsn.LogDebug, "queueing MsgNextResultSet after tokenDone or tokenDoneProc")
 				_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgNextResultSet{})
 			}
 			if done.Status&doneMore == 0 {
 				// Rows marks the request as done when seeing this done token. We queue another result set message
 				// so the app calls NextResultSet again which will return false.
 				if outs.msgq != nil {
+					sess.LogF(ctx, msdsn.LogDebug, "queueing MsgNextResultSet after tokenDone or tokenDoneProc with doneMore=0")
 					_ = sqlexp.ReturnMessageEnqueue(ctx, outs.msgq, sqlexp.MsgNextResultSet{})
 				}
 				return
@@ -1187,6 +1196,7 @@ func (t tokenProcessor) nextToken() (tokenStruct, error) {
 	case tok, more := <-t.tokChan:
 		err, more := tok.(error)
 		if more {
+			t.sess.LogF(t.ctx, msdsn.LogDebug, "nextToken returned an error:"+err.Error())
 			// this is an error and not a token
 			return nil, err
 		} else {
@@ -1201,7 +1211,6 @@ func (t tokenProcessor) nextToken() (tokenStruct, error) {
 		if more {
 			err, ok := tok.(error)
 			if ok {
-				// this is an error and not a token
 				return nil, err
 			} else {
 				return tok, nil
@@ -1211,13 +1220,10 @@ func (t tokenProcessor) nextToken() (tokenStruct, error) {
 			return nil, nil
 		}
 	case <-t.ctx.Done():
-		// It seems the Message function on t.outs.msgq doesn't get the Done if it comes here instead
-		if t.outs.msgq != nil {
-			_ = sqlexp.ReturnMessageEnqueue(t.ctx, t.outs.msgq, sqlexp.MsgNextResultSet{})
-		}
 		if t.noAttn {
 			return nil, t.ctx.Err()
 		}
+		t.sess.LogF(t.ctx, msdsn.LogDebug, "Sending attention to the server")
 		if err := sendAttention(t.sess.buf); err != nil {
 			// unable to send attention, current connection is bad
 			// notify caller and close channel
