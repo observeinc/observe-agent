@@ -62,6 +62,13 @@ func (x *GoSNMP) SendTrap(trap SnmpTrap) (result *SnmpPacket, err error) {
 		// If it's an inform, do that instead.
 		if trap.IsInform {
 			pdutype = InformRequest
+			// Per RFC 3414 Section 4:
+			// When sending an SNMPv3 InformRequest, the Reportable flag MUST be set in MsgFlags.
+			// This ensures that the authoritative engine will return a Report PDU containing
+			// engineBoots and engineTime for time synchronization which is required before
+			// authenticated communication can succeed. Without this, the engine may reject
+			// the Inform as out-of-time-window or unknown engine.
+			x.MsgFlags = (x.MsgFlags | Reportable)
 		}
 
 		if trap.Variables[0].Type != TimeTicks {
@@ -131,6 +138,8 @@ type TrapListener struct {
 	usmStatsUnknownEngineIDsCount uint32
 
 	finish int32 // Atomic flag; set to 1 when closing connection
+
+	buffSize uint // SNMP message buffer size
 }
 
 // Default timeout value for CloseTimeout of 3 seconds
@@ -156,12 +165,25 @@ type TrapHandlerFunc func(s *SnmpPacket, u *net.UDPAddr)
 func NewTrapListener() *TrapListener {
 	tl := &TrapListener{
 		finish:       0,
+		buffSize:     4096,
 		done:         make(chan bool),
 		listening:    make(chan bool, 1), // Buffered because one doesn't have to block on it.
 		CloseTimeout: defaultCloseTimeout,
 	}
 
 	return tl
+}
+
+// WithBufferSize changes the snmp message buffer size of the current TrapListener
+//
+// NOTE: The buffer size cannot be 0 bytes, the default size is 4096 bytes
+func (t *TrapListener) WithBufferSize(i uint) *TrapListener {
+	if i < 1 {
+		i = 1
+	}
+
+	t.buffSize = i
+	return t
 }
 
 // Listening returns a sentinel channel on which one can block
@@ -240,8 +262,8 @@ func (t *TrapListener) listenUDP(addr string) error {
 			return nil
 
 		default:
-			var buf [4096]byte
-			rlen, remote, err := t.conn.ReadFromUDP(buf[:])
+			buf := make([]byte, t.buffSize)
+			rlen, remote, err := t.conn.ReadFromUDP(buf)
 			if err != nil {
 				if atomic.LoadInt32(&t.finish) == 1 {
 					// err most likely comes from reading from a closed connection

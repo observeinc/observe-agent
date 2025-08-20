@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -110,8 +109,8 @@ type Connection struct {
 		timestamp int
 	}
 	bad                      bool
-	dbTimeZone               *time.Location
-	dbServerTimeZone         *time.Location
+	dbTimeZone               *time.Location // equivalent to database timezone used for timestamp with local timezone
+	dbServerTimeZone         *time.Location // equivalent to timezone of the server carry the database
 	dbServerTimeZoneExplicit *time.Location
 }
 
@@ -317,23 +316,22 @@ func (conn *Connection) getDefaultStrConv() (converters.IStringConverter, error)
 	return conn.getStrConv(conn.getDefaultCharsetID())
 }
 func (conn *Connection) getStrConv(charsetID int) (converters.IStringConverter, error) {
-	if conn.cStrConv != nil && charsetID == conn.cStrConv.GetLangID() {
-		return conn.cStrConv, nil
-	}
-
 	if conn.sStrConv != nil && charsetID == conn.sStrConv.GetLangID() {
+		if conn.cStrConv != nil {
+			return conn.cStrConv, nil
+		}
 		return conn.sStrConv, nil
 	}
 
 	if conn.nStrConv != nil && charsetID == conn.nStrConv.GetLangID() {
 		return conn.nStrConv, nil
 	}
-
-	temp := converters.NewStringConverter(charsetID)
-	if temp == nil {
-		return nil, fmt.Errorf("server requested charset id: %d which is not supported by the driver", charsetID)
-	}
-	return temp, nil
+	return conn.sStrConv, nil
+	//temp := converters.NewStringConverter(charsetID)
+	//if temp == nil {
+	//	return nil, fmt.Errorf("server requested charset id: %d which is not supported by the driver", charsetID)
+	//}
+	//return temp, nil
 }
 
 func (conn *Connection) Logoff() error {
@@ -527,7 +525,7 @@ func (conn *Connection) OpenWithContext(ctx context.Context) error {
 	if len(conn.NLSData.Language) == 0 {
 		_, err = conn.GetNLS()
 		if err != nil {
-			return err
+			tracer.Print("Error getting NLS: ", err)
 		}
 	}
 	conn.getDBServerTimeZone()
@@ -572,6 +570,7 @@ func (conn *Connection) getDBTimeZone() error {
 		return err
 	}
 	conn.dbTimeZone = time.FixedZone(result, tzHours*60*60+tzMin*60)
+
 	return nil
 }
 
@@ -975,153 +974,167 @@ var insertQueryBracketsRegexp = lazy_init.NewLazyInit(func() (interface{}, error
 })
 
 // StructsInsert support interface{} array
-func (conn *Connection) StructsInsert(sqlText string, values []interface{}) (queryResult *QueryResult, err error) {
-	if len(values) == 0 {
-		return nil, nil
-	}
-
-	var insertQueryBracketsRegexpAny interface{}
-	insertQueryBracketsRegexpAny, err = insertQueryBracketsRegexp.GetValue()
-	if err != nil {
-		return nil, err
-	}
-
-	matchArray := insertQueryBracketsRegexpAny.(*regexp.Regexp).FindStringSubmatch(sqlText)
-	if len(matchArray) < 2 {
-		return nil, fmt.Errorf("invalid sql must be like: insert into a (name,age) values (:1,:2)")
-	}
-	fields := strings.Split(matchArray[1], ",")
-	fieldsMap := make(map[string]int)
-	for i, field := range fields {
-		fieldsMap[strings.TrimSpace(strings.ToLower(field))] = i
-	}
-	_type := reflect.TypeOf(values[0])
-	result := make([][]driver.Value, _type.NumField())
-	idx := 0
-	for i := 0; i < _type.NumField(); i++ {
-		db := _type.Field(i).Tag.Get("db")
-		db = strings.TrimSpace(strings.ToLower(db))
-		if db != "" {
-			if _, ok := fieldsMap[db]; ok {
-				f := make([]driver.Value, len(values))
-				result[idx] = f
-				idx++
-			}
-		}
-	}
-	if idx != len(fieldsMap) {
-		return nil, &network.OracleError{ErrCode: 947, ErrMsg: "ORA-00947: Not enough values"}
-	}
-	for i, item := range values {
-		_value := reflect.ValueOf(item)
-		for j := 0; j < _type.NumField(); j++ {
-			db := _type.Field(j).Tag.Get("db")
-			if db != "" {
-				if v, ok := fieldsMap[strings.ToLower(db)]; ok {
-					if !_value.Field(j).IsValid() {
-						result[v][i] = nil
-					} else {
-						result[v][i] = _value.Field(j).Interface()
-					}
-				}
-			}
-
-		}
-	}
-	return conn.BulkInsert(sqlText, len(values), result...)
-}
+//func (conn *Connection) StructsInsert(sqlText string, values []interface{}) (driver.Result, error) {
+//	return conn.BulkInsert(sqlText, len(values), values...)
+//	//if len(values) == 0 {
+//	//	return nil, nil
+//	//}
+//	//
+//	//var insertQueryBracketsRegexpAny interface{}
+//	//insertQueryBracketsRegexpAny, err = insertQueryBracketsRegexp.GetValue()
+//	//if err != nil {
+//	//	return nil, err
+//	//}
+//	//
+//	//matchArray := insertQueryBracketsRegexpAny.(*regexp.Regexp).FindStringSubmatch(sqlText)
+//	//if len(matchArray) < 2 {
+//	//	return nil, fmt.Errorf("invalid sql must be like: insert into a (name,age) values (:1,:2)")
+//	//}
+//	//fields := strings.Split(matchArray[1], ",")
+//	//fieldsMap := make(map[string]int)
+//	//for i, field := range fields {
+//	//	fieldsMap[strings.TrimSpace(strings.ToLower(field))] = i
+//	//}
+//	//_type := reflect.TypeOf(values[0])
+//	//result := make([][]driver.Value, _type.NumField())
+//	//idx := 0
+//	//for i := 0; i < _type.NumField(); i++ {
+//	//	db := _type.Field(i).Tag.Get("db")
+//	//	db = strings.TrimSpace(strings.ToLower(db))
+//	//	if db != "" {
+//	//		if _, ok := fieldsMap[db]; ok {
+//	//			f := make([]driver.Value, len(values))
+//	//			result[idx] = f
+//	//			idx++
+//	//		}
+//	//	}
+//	//}
+//	//if idx != len(fieldsMap) {
+//	//	return nil, &network.OracleError{ErrCode: 947, ErrMsg: "ORA-00947: Not enough values"}
+//	//}
+//	//for i, item := range values {
+//	//	_value := reflect.ValueOf(item)
+//	//	for j := 0; j < _type.NumField(); j++ {
+//	//		db := _type.Field(j).Tag.Get("db")
+//	//		if db != "" {
+//	//			if v, ok := fieldsMap[strings.ToLower(db)]; ok {
+//	//				if !_value.Field(j).IsValid() {
+//	//					result[v][i] = nil
+//	//				} else {
+//	//					result[v][i] = _value.Field(j).Interface()
+//	//				}
+//	//			}
+//	//		}
+//	//
+//	//	}
+//	//}
+//	//return conn.BulkInsert(sqlText, len(values), result...)
+//}
 
 // BulkInsert mass insert column values into a table
 // all columns should pass as an array of values
-func (conn *Connection) BulkInsert(sqlText string, rowNum int, columns ...[]driver.Value) (*QueryResult, error) {
-	if conn.State != Opened {
-		return nil, &network.OracleError{ErrCode: 6413, ErrMsg: "ORA-06413: Connection not open"}
-	}
-	if rowNum == 0 {
-		return nil, nil
-	}
+func (conn *Connection) BulkInsert(sqlText string, rowNum int, columns ...[]driver.Value) (driver.Result, error) {
 	stmt := NewStmt(sqlText, conn)
-	stmt.arrayBindCount = rowNum
-	defer func() {
-		_ = stmt.Close()
-	}()
-	tracer := conn.tracer
-	tracer.Printf("BulkInsert:\n%s", stmt.text)
-	tracer.Printf("Row Num: %d", rowNum)
-	tracer.Printf("Column Num: %d", len(columns))
-	for idx, col := range columns {
-		if len(col) < rowNum {
-			return nil, fmt.Errorf("size of column no. %d is less than rowNum", idx)
-		}
-
-		par, err := stmt.NewParam("", col[0], 0, Input)
-		if err != nil {
-			return nil, err
-		}
-
-		maxLen := par.MaxLen
-		maxCharLen := par.MaxCharLen
-		dataType := par.DataType
-
-		for index, val := range col {
-			if index == 0 {
-				continue
-			}
-			par.Value = val
-			err = par.encodeValue(0, conn)
-			if err != nil {
-				return nil, err
-			}
-
-			if maxLen < par.MaxLen {
-				maxLen = par.MaxLen
-			}
-
-			if maxCharLen < par.MaxCharLen {
-				maxCharLen = par.MaxCharLen
-			}
-
-			if par.DataType != dataType && par.DataType != NCHAR {
-				dataType = par.DataType
-			}
-		}
-		par.Value = col[0]
-		_ = par.encodeValue(0, conn)
-		par.MaxLen = maxLen
-		par.MaxCharLen = maxCharLen
-		par.DataType = dataType
-		stmt.Pars = append(stmt.Pars, *par)
-	}
-	session := conn.session
-	session.ResetBuffer()
-	err := stmt.basicWrite(stmt.getExeOption(), stmt.parse, stmt.define)
+	stmt.autoClose = true
+	input := make([]driver.Value, 100)
 	for x := 0; x < rowNum; x++ {
-		for idx, col := range columns {
-			stmt.Pars[idx].Value = col[x]
-			err = stmt.Pars[idx].encodeValue(0, conn)
-			if err != nil {
-				return nil, err
-			}
-		}
-		err = stmt.writePars()
-		if err != nil {
-			return nil, err
-		}
+		input[x] = NewBatch(columns[x])
 	}
-	err = session.Write()
+	result, err := stmt.Exec(input)
 	if err != nil {
+		_ = stmt.Close()
 		return nil, err
 	}
-	dataSet := new(DataSet)
-	err = stmt.read(dataSet)
-	if err != nil {
-		return nil, err
-	}
-	result := new(QueryResult)
-	if session.Summary != nil {
-		result.rowsAffected = int64(session.Summary.CurRowNumber)
-	}
-	return result, nil
+	err = stmt.Close()
+	return result, err
+	//if conn.State != Opened {
+	//	return nil, &network.OracleError{ErrCode: 6413, ErrMsg: "ORA-06413: Connection not open"}
+	//}
+	//if rowNum == 0 {
+	//	return nil, nil
+	//}
+	//stmt := NewStmt(sqlText, conn)
+	//stmt.arrayBindCount = rowNum
+	//defer func() {
+	//	_ = stmt.Close()
+	//}()
+	//tracer := conn.tracer
+	//tracer.Printf("BulkInsert:\n%s", stmt.text)
+	//tracer.Printf("Row Num: %d", rowNum)
+	//tracer.Printf("Column Num: %d", len(columns))
+	//for idx, col := range columns {
+	//	if len(col) < rowNum {
+	//		return nil, fmt.Errorf("size of column no. %d is less than rowNum", idx)
+	//	}
+	//
+	//	par, err := stmt.NewParam("", col[0], 0, Input)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	maxLen := par.MaxLen
+	//	maxCharLen := par.MaxCharLen
+	//	dataType := par.DataType
+	//
+	//	for index, val := range col {
+	//		if index == 0 {
+	//			continue
+	//		}
+	//		par.Value = val
+	//		err = par.encodeValue(0, conn)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//
+	//		if maxLen < par.MaxLen {
+	//			maxLen = par.MaxLen
+	//		}
+	//
+	//		if maxCharLen < par.MaxCharLen {
+	//			maxCharLen = par.MaxCharLen
+	//		}
+	//
+	//		if par.DataType != dataType && par.DataType != NCHAR {
+	//			dataType = par.DataType
+	//		}
+	//	}
+	//	par.Value = col[0]
+	//	_ = par.encodeValue(0, conn)
+	//	par.MaxLen = maxLen
+	//	par.MaxCharLen = maxCharLen
+	//	par.DataType = dataType
+	//	stmt.Pars = append(stmt.Pars, *par)
+	//}
+	//session := conn.session
+	//session.ResetBuffer()
+	//err := stmt.basicWrite(stmt.getExeOption(), stmt.parse, stmt.define)
+	//for x := 0; x < rowNum; x++ {
+	//	for idx, col := range columns {
+	//		stmt.Pars[idx].Value = col[x]
+	//		err = stmt.Pars[idx].encodeValue(0, conn)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//	}
+	//	err = stmt.writePars()
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	//err = session.Write()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//dataSet := new(DataSet)
+	//err = stmt.read(dataSet)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//result := new(QueryResult)
+	//if session.Summary != nil {
+	//	result.rowsAffected = int64(session.Summary.CurRowNumber)
+	//}
+	//return result, nil
 }
 
 func (conn *Connection) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
@@ -1136,7 +1149,11 @@ func (conn *Connection) ExecContext(ctx context.Context, query string, args []dr
 	return result, err
 }
 
-func (conn *Connection) CheckNamedValue(_ *driver.NamedValue) error {
+func (conn *Connection) CheckNamedValue(nv *driver.NamedValue) error {
+	if _, ok := nv.Value.(driver.Valuer); ok {
+		return driver.ErrSkip
+	}
+
 	return nil
 }
 
@@ -1145,11 +1162,14 @@ func (conn *Connection) QueryRowContext(ctx context.Context, query string, args 
 	stmt.autoClose = true
 	rows, err := stmt.QueryContext(ctx, args)
 	if err != nil {
-		return &DataSet{lasterr: err}
+		dataSet := &DataSet{}
+		dataSet.currentResultSet().lastErr = err
+		return dataSet
 	}
 	dataSet, ok := rows.(*DataSet)
 	if !ok {
-		return &DataSet{lasterr: errors.New("type object should be *DataSet")}
+		dataSet.currentResultSet().lastErr = fmt.Errorf("expected DataSet, got %T", rows)
+		return dataSet
 	}
 	dataSet.Next_()
 	return dataSet
@@ -1258,7 +1278,7 @@ func (conn *Connection) readMsg(msgCode uint8) error {
 				}
 				if len(bty) >= 8 {
 					queryID := binary.LittleEndian.Uint64(bty[size-8:])
-					fmt.Println("query ID: ", queryID)
+					os.Stderr.WriteString(fmt.Sprintln("query ID: ", queryID))
 				}
 			}
 		}
@@ -1299,7 +1319,7 @@ func (conn *Connection) readMsg(msgCode uint8) error {
 			return err
 		}
 		if warning != nil {
-			fmt.Println(warning)
+			os.Stderr.WriteString(fmt.Sprintln(warning))
 		}
 	case 23:
 		opCode, err := session.GetByte()
