@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -27,7 +29,6 @@ type batch struct {
 type partitionBatcher struct {
 	cfg            BatchConfig
 	wp             *workerPool
-	sizerType      request.SizerType
 	sizer          request.Sizer[request.Request]
 	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
@@ -35,22 +36,23 @@ type partitionBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+	logger         *zap.Logger
 }
 
 func newPartitionBatcher(
 	cfg BatchConfig,
-	sizerType request.SizerType,
 	sizer request.Sizer[request.Request],
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
+	logger *zap.Logger,
 ) *partitionBatcher {
 	return &partitionBatcher{
 		cfg:         cfg,
 		wp:          wp,
-		sizerType:   sizerType,
 		sizer:       sizer,
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
+		logger:      logger,
 	}
 }
 
@@ -60,20 +62,33 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
-		if mergeSplitErr != nil || len(reqList) == 0 {
+		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
+		if mergeSplitErr != nil {
+			// Do not return in case of error if there are data, try to export as much as possible.
+			qb.logger.Warn("Failed to split request.", zap.Error(mergeSplitErr))
+		}
+
+		if len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
 			return
 		}
 
 		// If more than one flush is required for this request, call done only when all flushes are done.
-		if len(reqList) > 1 {
-			done = newRefCountDone(done, int64(len(reqList)))
+		numRefs := len(reqList)
+		// Need to also inform about the mergeSplitErr, consider the errored data as 1 batch.
+		if mergeSplitErr != nil {
+			numRefs++
+		}
+		if numRefs > 1 {
+			done = newRefCountDone(done, int64(numRefs))
+			if mergeSplitErr != nil {
+				done.OnDone(mergeSplitErr)
+			}
 		}
 
 		// We have at least one result in the reqList. Last in the list may not have enough data to be flushed.
@@ -98,17 +113,30 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
-	if mergeSplitErr != nil || len(reqList) == 0 {
+	if mergeSplitErr != nil {
+		// Do not return in case of error if there are data, try to export as much as possible.
+		qb.logger.Warn("Failed to split request.", zap.Error(mergeSplitErr))
+	}
+
+	if len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
 		return
 	}
 
 	// If more than one flush is required for this request, call done only when all flushes are done.
-	if len(reqList) > 1 {
+	numRefs := len(reqList)
+	// Need to also inform about the mergeSplitErr, consider the errored data as 1 batch.
+	if mergeSplitErr != nil {
+		numRefs++
+	}
+	if numRefs > 1 {
 		done = newRefCountDone(done, int64(len(reqList)))
+		if mergeSplitErr != nil {
+			done.OnDone(mergeSplitErr)
+		}
 	}
 
 	// We have at least one result in the reqList, if more results here is what that means:
@@ -203,7 +231,7 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
-func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
@@ -229,7 +257,7 @@ func (wp *workerPool) execute(f func()) {
 	wp.workers <- struct{}{}
 }
 
-type multiDone []Done
+type multiDone []queue.Done
 
 func (mdc multiDone) OnDone(err error) {
 	for _, d := range mdc {
@@ -238,13 +266,13 @@ func (mdc multiDone) OnDone(err error) {
 }
 
 type refCountDone struct {
-	done     Done
+	done     queue.Done
 	mu       sync.Mutex
 	refCount int64
 	err      error
 }
 
-func newRefCountDone(done Done, refCount int64) Done {
+func newRefCountDone(done queue.Done, refCount int64) queue.Done {
 	return &refCountDone{
 		done:     done,
 		refCount: refCount,
