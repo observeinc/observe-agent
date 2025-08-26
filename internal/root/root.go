@@ -110,7 +110,10 @@ func InitConfig() {
 	}
 
 	// Apply feature gates
-	observecol.ApplyFeatureGates(ctx)
+	err := observecol.ApplyFeatureGates(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error applying feature gates: %s\n", err.Error())
+	}
 
 	// Set up env vars
 	if err := setEnvVars(); err != nil {
