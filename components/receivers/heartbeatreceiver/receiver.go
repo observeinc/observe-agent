@@ -29,9 +29,17 @@ type HeartbeatLocalData struct {
 	AgentStartTime  int64
 }
 
+type AuthCheckData struct {
+	Passed       bool   `json:"passed"`
+	URL          string `json:"url"`
+	ResponseCode int    `json:"response_code"`
+	Error        string `json:"error,omitempty"`
+}
+
 type HeartbeatLogRecord struct {
-	AgentInstanceId string `json:"agent_instance_id"`
-	AgentStartTime  int64  `json:"agent_start_time"`
+	AgentInstanceId string        `json:"agent_instance_id"`
+	AgentStartTime  int64         `json:"agent_start_time"`
+	AuthCheck       AuthCheckData `json:"auth_check"`
 }
 
 var localData HeartbeatLocalData
@@ -68,12 +76,14 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 		for {
 			select {
 			case <-r.ticker.C:
-				// hb := HeartbeatLogRecord{
-				// 	AgentInstanceId: localData.AgentInstanceId,
-				// 	AgentStartTime:  localData.AgentStartTime,
-				// }
-				// jsonHb, _ := json.Marshal(hb)
-				r.settings.Logger.Info("Sending heartbeat", zap.String("agent_instance_id", localData.AgentInstanceId))
+				// Perform authentication check
+				authResult := PerformAuthCheck()
+
+				r.settings.Logger.Info("Sending heartbeat",
+					zap.String("agent_instance_id", localData.AgentInstanceId),
+					zap.Bool("auth_check_passed", authResult.Passed),
+					zap.String("auth_check_url", authResult.URL))
+
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
@@ -83,6 +93,15 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				body := logRecord.Body().SetEmptyMap()
 				body.PutStr("agent_instance_id", localData.AgentInstanceId)
 				body.PutInt("agent_start_time", localData.AgentStartTime)
+
+				// Add auth check results to the log body under a nested object
+				authCheck := body.PutEmptyMap("auth_check")
+				authCheck.PutBool("passed", authResult.Passed)
+				authCheck.PutStr("url", authResult.URL)
+				authCheck.PutInt("response_code", int64(authResult.ResponseCode))
+				if authResult.Error != "" {
+					authCheck.PutStr("error", authResult.Error)
+				}
 
 				ctx := r.obsrecv.StartLogsOp(context.Background())
 				err := r.nextConsumer.ConsumeLogs(context.Background(), logs)
