@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExemplarSlice logically represents a slice of Exemplar.
@@ -33,7 +34,8 @@ func newExemplarSlice(orig *[]otlpmetrics.Exemplar, state *internal.State) Exemp
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
-	return newExemplarSlice(&orig, internal.NewState())
+	state := internal.StateMutable
+	return newExemplarSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -127,7 +129,6 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigExemplar(&(*es.orig)[i], false)
 			continue
 		}
 		if newLen == i {
@@ -136,7 +137,6 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		(*es.orig)[i].Reset()
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,8 +145,38 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	dest.state.AssertMutable()
-	if es.orig == dest.orig {
-		return
+	*dest.orig = copyOrigExemplarSlice(*dest.orig, *es.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExemplarSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
 	}
-	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, otlpmetrics.Exemplar{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
+func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
+	if cap(dest) < len(src) {
+		dest = make([]otlpmetrics.Exemplar, len(src))
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigExemplar(&dest[i], &src[i])
+	}
+	return dest
 }

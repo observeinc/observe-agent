@@ -42,8 +42,7 @@ func tryWithAttributeSet(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 
 type consoleCoreWithAttributes struct {
 	zapcore.Core
-	from        zapcore.Core
-	extraFields []zap.Field
+	from zapcore.Core
 }
 
 var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
@@ -51,23 +50,19 @@ var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
 // NewConsoleCoreWithAttributes wraps a Zap core in order to inject component attributes as Zap fields.
 //
 // This is used for the Collector's console output.
-func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set, extraFields ...zap.Field) zapcore.Core {
+func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
+	var fields []zap.Field
+	for _, kv := range attrs.ToSlice() {
+		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
+	}
 	return &consoleCoreWithAttributes{
-		Core: c.With(ToZapFields(attrs)).With(extraFields),
+		Core: c.With(fields),
 		from: c,
 	}
 }
 
-func (ccwa *consoleCoreWithAttributes) With(fields []zapcore.Field) zapcore.Core {
-	return &consoleCoreWithAttributes{
-		Core:        ccwa.Core.With(fields),
-		from:        ccwa.from,
-		extraFields: append(ccwa.extraFields, fields...),
-	}
-}
-
 func (ccwa *consoleCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
-	return NewConsoleCoreWithAttributes(ccwa.from, attrs, ccwa.extraFields...)
+	return NewConsoleCoreWithAttributes(ccwa.from, attrs)
 }
 
 type otelTeeCoreWithAttributes struct {

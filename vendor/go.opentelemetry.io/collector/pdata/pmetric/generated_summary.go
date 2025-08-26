@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
@@ -32,7 +33,8 @@ func newSummary(orig *otlpmetrics.Summary, state *internal.State) Summary {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
-	return newSummary(internal.NewOrigSummary(), internal.NewState())
+	state := internal.StateMutable
+	return newSummary(&otlpmetrics.Summary{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms Summary) MoveTo(dest Summary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSummary(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Summary{}
 }
 
 // DataPoints returns the DataPoints associated with this Summary.
@@ -56,5 +58,19 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSummary(dest.orig, ms.orig)
+	copyOrigSummary(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Summary) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(ms.orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		ms.DataPoints().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigSummary(dest, src *otlpmetrics.Summary) {
+	dest.DataPoints = copyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }

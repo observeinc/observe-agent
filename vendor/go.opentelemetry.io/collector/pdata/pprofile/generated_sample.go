@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +34,8 @@ func newSample(orig *otlpprofiles.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	return newSample(internal.NewOrigSample(), internal.NewState())
+	state := internal.StateMutable
+	return newSample(&otlpprofiles.Sample{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +47,8 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigSample(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpprofiles.Sample{}
 }
 
 // LocationsStartIndex returns the locationsstartindex associated with this Sample.
@@ -87,7 +89,7 @@ func (ms Sample) LinkIndex() int32 {
 }
 
 // HasLinkIndex returns true if the Sample contains a
-// LinkIndex value otherwise.
+// LinkIndex value, false otherwise.
 func (ms Sample) HasLinkIndex() bool {
 	return ms.orig.LinkIndex_ != nil
 }
@@ -112,5 +114,53 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	internal.CopyOrigSample(dest.orig, ms.orig)
+	copyOrigSample(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Sample) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.LocationsStartIndex != int32(0) {
+		dest.WriteObjectField("locationsStartIndex")
+		dest.WriteInt32(ms.orig.LocationsStartIndex)
+	}
+	if ms.orig.LocationsLength != int32(0) {
+		dest.WriteObjectField("locationsLength")
+		dest.WriteInt32(ms.orig.LocationsLength)
+	}
+	if len(ms.orig.Value) > 0 {
+		dest.WriteObjectField("value")
+		internal.MarshalJSONStreamInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), dest)
+	}
+	if len(ms.orig.AttributeIndices) > 0 {
+		dest.WriteObjectField("attributeIndices")
+		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
+	}
+	if ms.HasLinkIndex() {
+		dest.WriteObjectField("linkIndex")
+		dest.WriteInt32(ms.LinkIndex())
+	}
+	if len(ms.orig.TimestampsUnixNano) > 0 {
+		dest.WriteObjectField("timestampsUnixNano")
+		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigSample(dest, src *otlpprofiles.Sample) {
+	dest.LocationsStartIndex = src.LocationsStartIndex
+	dest.LocationsLength = src.LocationsLength
+	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	if srcLinkIndex, ok := src.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		destLinkIndex, ok := dest.LinkIndex_.(*otlpprofiles.Sample_LinkIndex)
+		if !ok {
+			destLinkIndex = &otlpprofiles.Sample_LinkIndex{}
+			dest.LinkIndex_ = destLinkIndex
+		}
+		destLinkIndex.LinkIndex = srcLinkIndex.LinkIndex
+	} else {
+		dest.LinkIndex_ = nil
+	}
+	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }

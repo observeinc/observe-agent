@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AttributeUnitSlice logically represents a slice of AttributeUnit.
@@ -34,7 +35,8 @@ func newAttributeUnitSlice(orig *[]*otlpprofiles.AttributeUnit, state *internal.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeUnitSlice() AttributeUnitSlice {
 	orig := []*otlpprofiles.AttributeUnit(nil)
-	return newAttributeUnitSlice(&orig, internal.NewState())
+	state := internal.StateMutable
+	return newAttributeUnitSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -99,7 +101,7 @@ func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
 // It returns the newly added AttributeUnit.
 func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigAttributeUnit())
+	*es.orig = append(*es.orig, &otlpprofiles.AttributeUnit{})
 	return es.At(es.Len() - 1)
 }
 
@@ -128,9 +130,6 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigAttributeUnit((*es.orig)[i], true)
-			(*es.orig)[i] = nil
-
 			continue
 		}
 		if newLen == i {
@@ -139,8 +138,6 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
-		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -149,10 +146,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
-	if es.orig == dest.orig {
-		return
-	}
-	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = copyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
@@ -161,4 +155,41 @@ func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 func (es AttributeUnitSlice) Sort(less func(a, b AttributeUnit) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms AttributeUnitSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms AttributeUnitSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpprofiles.AttributeUnit{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
+func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.AttributeUnit, len(src))
+		data := make([]otlpprofiles.AttributeUnit, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigAttributeUnit(dest[i], src[i])
+	}
+	return dest
 }

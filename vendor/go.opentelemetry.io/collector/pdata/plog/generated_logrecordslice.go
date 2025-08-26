@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // LogRecordSlice logically represents a slice of LogRecord.
@@ -34,7 +35,8 @@ func newLogRecordSlice(orig *[]*otlplogs.LogRecord, state *internal.State) LogRe
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogRecordSlice() LogRecordSlice {
 	orig := []*otlplogs.LogRecord(nil)
-	return newLogRecordSlice(&orig, internal.NewState())
+	state := internal.StateMutable
+	return newLogRecordSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -99,7 +101,7 @@ func (es LogRecordSlice) EnsureCapacity(newCap int) {
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigLogRecord())
+	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
 }
 
@@ -128,9 +130,6 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigLogRecord((*es.orig)[i], true)
-			(*es.orig)[i] = nil
-
 			continue
 		}
 		if newLen == i {
@@ -139,8 +138,6 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
-		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -149,10 +146,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	dest.state.AssertMutable()
-	if es.orig == dest.orig {
-		return
-	}
-	*dest.orig = internal.CopyOrigLogRecordSlice(*dest.orig, *es.orig)
+	*dest.orig = copyOrigLogRecordSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the LogRecord elements within LogRecordSlice given the
@@ -161,4 +155,41 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms LogRecordSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms LogRecordSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlplogs.LogRecord{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
+func copyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
+	if cap(dest) < len(src) {
+		dest = make([]*otlplogs.LogRecord, len(src))
+		data := make([]otlplogs.LogRecord, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigLogRecord(dest[i], src[i])
+	}
+	return dest
 }

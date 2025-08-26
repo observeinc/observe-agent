@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +34,8 @@ func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistog
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(internal.NewOrigExponentialHistogramDataPoint_Buckets(), internal.NewState())
+	state := internal.StateMutable
+	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +47,8 @@ func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramD
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExponentialHistogramDataPoint_Buckets(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
 // Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
@@ -60,7 +62,7 @@ func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.orig.Offset = v
 }
 
-// BucketCounts returns the BucketCounts associated with this ExponentialHistogramDataPointBuckets.
+// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
 }
@@ -68,5 +70,22 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
+	copyOrigExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.Offset != int32(0) {
+		dest.WriteObjectField("offset")
+		dest.WriteInt32(ms.orig.Offset)
+	}
+	dest.WriteObjectField("bucketCounts")
+	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	dest.WriteObjectEnd()
+}
+
+func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	dest.Offset = src.Offset
+	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
 }

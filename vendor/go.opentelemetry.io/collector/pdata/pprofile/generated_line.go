@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Line details a specific line in a source code, linked to a function.
@@ -32,7 +33,8 @@ func newLine(orig *otlpprofiles.Line, state *internal.State) Line {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLine() Line {
-	return newLine(internal.NewOrigLine(), internal.NewState())
+	state := internal.StateMutable
+	return newLine(&otlpprofiles.Line{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms Line) MoveTo(dest Line) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigLine(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpprofiles.Line{}
 }
 
 // FunctionIndex returns the functionindex associated with this Line.
@@ -84,5 +86,29 @@ func (ms Line) SetColumn(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Line) CopyTo(dest Line) {
 	dest.state.AssertMutable()
-	internal.CopyOrigLine(dest.orig, ms.orig)
+	copyOrigLine(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Line) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.FunctionIndex != int32(0) {
+		dest.WriteObjectField("functionIndex")
+		dest.WriteInt32(ms.orig.FunctionIndex)
+	}
+	if ms.orig.Line != int64(0) {
+		dest.WriteObjectField("line")
+		dest.WriteInt64(ms.orig.Line)
+	}
+	if ms.orig.Column != int64(0) {
+		dest.WriteObjectField("column")
+		dest.WriteInt64(ms.orig.Column)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigLine(dest, src *otlpprofiles.Line) {
+	dest.FunctionIndex = src.FunctionIndex
+	dest.Line = src.Line
+	dest.Column = src.Column
 }

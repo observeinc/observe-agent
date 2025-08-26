@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,7 +35,8 @@ func newLink(orig *otlpprofiles.Link, state *internal.State) Link {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLink() Link {
-	return newLink(internal.NewOrigLink(), internal.NewState())
+	state := internal.StateMutable
+	return newLink(&otlpprofiles.Link{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,8 +48,8 @@ func (ms Link) MoveTo(dest Link) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigLink(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpprofiles.Link{}
 }
 
 // TraceID returns the traceid associated with this Link.
@@ -75,5 +77,24 @@ func (ms Link) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Link) CopyTo(dest Link) {
 	dest.state.AssertMutable()
-	internal.CopyOrigLink(dest.orig, ms.orig)
+	copyOrigLink(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Link) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		ms.orig.TraceId.MarshalJSONStream(dest)
+	}
+	if ms.orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		ms.orig.SpanId.MarshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigLink(dest, src *otlpprofiles.Link) {
+	dest.TraceId = src.TraceId
+	dest.SpanId = src.SpanId
 }

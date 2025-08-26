@@ -8,7 +8,8 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +21,11 @@ import (
 // Must use NewAttribute function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Attribute struct {
-	orig  *otlpcommon.KeyValue
+	orig  *v1.KeyValue
 	state *internal.State
 }
 
-func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
+func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
 	return Attribute{orig: orig, state: state}
 }
 
@@ -33,7 +34,8 @@ func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttribute() Attribute {
-	return newAttribute(internal.NewOrigKeyValue(), internal.NewState())
+	state := internal.StateMutable
+	return newAttribute(&v1.KeyValue{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,8 +47,8 @@ func (ms Attribute) MoveTo(dest Attribute) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigKeyValue(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = v1.KeyValue{}
 }
 
 // Key returns the key associated with this Attribute.
@@ -68,5 +70,22 @@ func (ms Attribute) Value() pcommon.Value {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
-	internal.CopyOrigKeyValue(dest.orig, ms.orig)
+	copyOrigAttribute(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Attribute) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.Key != "" {
+		dest.WriteObjectField("key")
+		dest.WriteString(ms.orig.Key)
+	}
+	dest.WriteObjectField("value")
+	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Value, ms.state), dest)
+	dest.WriteObjectEnd()
+}
+
+func copyOrigAttribute(dest, src *v1.KeyValue) {
+	dest.Key = src.Key
+	internal.CopyOrigValue(&dest.Value, &src.Value)
 }

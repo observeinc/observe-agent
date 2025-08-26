@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
@@ -32,7 +33,8 @@ func newGauge(orig *otlpmetrics.Gauge, state *internal.State) Gauge {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewGauge() Gauge {
-	return newGauge(internal.NewOrigGauge(), internal.NewState())
+	state := internal.StateMutable
+	return newGauge(&otlpmetrics.Gauge{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms Gauge) MoveTo(dest Gauge) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigGauge(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Gauge{}
 }
 
 // DataPoints returns the DataPoints associated with this Gauge.
@@ -56,5 +58,19 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
 	dest.state.AssertMutable()
-	internal.CopyOrigGauge(dest.orig, ms.orig)
+	copyOrigGauge(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Gauge) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(ms.orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		ms.DataPoints().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigGauge(dest, src *otlpmetrics.Gauge) {
+	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
