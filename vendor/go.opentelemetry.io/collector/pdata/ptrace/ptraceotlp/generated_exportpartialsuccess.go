@@ -9,6 +9,7 @@ package ptraceotlp
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -32,7 +33,8 @@ func newExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess,
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(internal.NewOrigExportTracePartialSuccess(), internal.NewState())
+	state := internal.StateMutable
+	return newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportTracePartialSuccess(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcollectortrace.ExportTracePartialSuccess{}
 }
 
 // RejectedSpans returns the rejectedspans associated with this ExportPartialSuccess.
@@ -73,5 +75,24 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportTracePartialSuccess(dest.orig, ms.orig)
+	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.RejectedSpans != int64(0) {
+		dest.WriteObjectField("rejectedSpans")
+		dest.WriteInt64(ms.orig.RejectedSpans)
+	}
+	if ms.orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(ms.orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigExportPartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
+	dest.RejectedSpans = src.RejectedSpans
+	dest.ErrorMessage = src.ErrorMessage
 }

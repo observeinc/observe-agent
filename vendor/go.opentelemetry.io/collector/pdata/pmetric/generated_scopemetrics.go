@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +34,8 @@ func newScopeMetrics(orig *otlpmetrics.ScopeMetrics, state *internal.State) Scop
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeMetrics() ScopeMetrics {
-	return newScopeMetrics(internal.NewOrigScopeMetrics(), internal.NewState())
+	state := internal.StateMutable
+	return newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -45,18 +47,13 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigScopeMetrics(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ScopeMetrics{}
 }
 
 // Scope returns the scope associated with this ScopeMetrics.
 func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
-}
-
-// Metrics returns the Metrics associated with this ScopeMetrics.
-func (ms ScopeMetrics) Metrics() MetricSlice {
-	return newMetricSlice(&ms.orig.Metrics, ms.state)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
@@ -70,8 +67,35 @@ func (ms ScopeMetrics) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
+// Metrics returns the Metrics associated with this ScopeMetrics.
+func (ms ScopeMetrics) Metrics() MetricSlice {
+	return newMetricSlice(&ms.orig.Metrics, ms.state)
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
 	dest.state.AssertMutable()
-	internal.CopyOrigScopeMetrics(dest.orig, ms.orig)
+	copyOrigScopeMetrics(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ScopeMetrics) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("scope")
+	internal.MarshalJSONStreamInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), dest)
+	if ms.orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(ms.orig.SchemaUrl)
+	}
+	if len(ms.orig.Metrics) > 0 {
+		dest.WriteObjectField("metrics")
+		ms.Metrics().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
+	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
+	dest.SchemaUrl = src.SchemaUrl
+	dest.Metrics = copyOrigMetricSlice(dest.Metrics, src.Metrics)
 }

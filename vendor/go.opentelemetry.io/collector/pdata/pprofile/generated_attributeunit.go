@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AttributeUnit Represents a mapping between Attribute Keys and Units.
@@ -32,7 +33,8 @@ func newAttributeUnit(orig *otlpprofiles.AttributeUnit, state *internal.State) A
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewAttributeUnit() AttributeUnit {
-	return newAttributeUnit(internal.NewOrigAttributeUnit(), internal.NewState())
+	state := internal.StateMutable
+	return newAttributeUnit(&otlpprofiles.AttributeUnit{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigAttributeUnit(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpprofiles.AttributeUnit{}
 }
 
 // AttributeKeyStrindex returns the attributekeystrindex associated with this AttributeUnit.
@@ -73,5 +75,24 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	internal.CopyOrigAttributeUnit(dest.orig, ms.orig)
+	copyOrigAttributeUnit(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms AttributeUnit) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.AttributeKeyStrindex != int32(0) {
+		dest.WriteObjectField("attributeKeyStrindex")
+		dest.WriteInt32(ms.orig.AttributeKeyStrindex)
+	}
+	if ms.orig.UnitStrindex != int32(0) {
+		dest.WriteObjectField("unitStrindex")
+		dest.WriteInt32(ms.orig.UnitStrindex)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
+	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
+	dest.UnitStrindex = src.UnitStrindex
 }

@@ -6,7 +6,6 @@ package pmetricotlp // import "go.opentelemetry.io/collector/pdata/pmetric/pmetr
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -24,9 +23,10 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
+	state := internal.StateMutable
 	return ExportRequest{
 		orig:  &otlpcollectormetrics.ExportMetricsServiceRequest{},
-		state: internal.NewState(),
+		state: &state,
 	}
 }
 
@@ -42,26 +42,12 @@ func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	if !internal.UseCustomProtoEncoding.IsEnabled() {
-		return ms.orig.Marshal()
-	}
-	size := internal.SizeProtoOrigExportMetricsServiceRequest(ms.orig)
-	buf := make([]byte, size)
-	_ = internal.MarshalProtoOrigExportMetricsServiceRequest(ms.orig, buf)
-	return buf, nil
+	return ms.orig.Marshal()
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	if !internal.UseCustomProtoEncoding.IsEnabled() {
-		return ms.orig.Unmarshal(data)
-	}
-	err := internal.UnmarshalProtoOrigExportMetricsServiceRequest(ms.orig, data)
-	if err != nil {
-		return err
-	}
-	otlp.MigrateMetrics(ms.orig.ResourceMetrics)
-	return nil
+	return ms.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals ExportRequest into JSON bytes.

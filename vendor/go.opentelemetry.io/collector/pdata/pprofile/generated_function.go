@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.
@@ -32,7 +33,8 @@ func newFunction(orig *otlpprofiles.Function, state *internal.State) Function {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewFunction() Function {
-	return newFunction(internal.NewOrigFunction(), internal.NewState())
+	state := internal.StateMutable
+	return newFunction(&otlpprofiles.Function{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms Function) MoveTo(dest Function) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigFunction(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpprofiles.Function{}
 }
 
 // NameStrindex returns the namestrindex associated with this Function.
@@ -95,5 +97,34 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	internal.CopyOrigFunction(dest.orig, ms.orig)
+	copyOrigFunction(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Function) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.NameStrindex != int32(0) {
+		dest.WriteObjectField("nameStrindex")
+		dest.WriteInt32(ms.orig.NameStrindex)
+	}
+	if ms.orig.SystemNameStrindex != int32(0) {
+		dest.WriteObjectField("systemNameStrindex")
+		dest.WriteInt32(ms.orig.SystemNameStrindex)
+	}
+	if ms.orig.FilenameStrindex != int32(0) {
+		dest.WriteObjectField("filenameStrindex")
+		dest.WriteInt32(ms.orig.FilenameStrindex)
+	}
+	if ms.orig.StartLine != int64(0) {
+		dest.WriteObjectField("startLine")
+		dest.WriteInt64(ms.orig.StartLine)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigFunction(dest, src *otlpprofiles.Function) {
+	dest.NameStrindex = src.NameStrindex
+	dest.SystemNameStrindex = src.SystemNameStrindex
+	dest.FilenameStrindex = src.FilenameStrindex
+	dest.StartLine = src.StartLine
 }

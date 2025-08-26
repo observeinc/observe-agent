@@ -8,7 +8,8 @@ package pprofileotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -19,11 +20,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectorprofiles.ExportProfilesPartialSuccess
+	orig  *otlpcollectorprofile.ExportProfilesPartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 
@@ -32,7 +33,8 @@ func newExportPartialSuccess(orig *otlpcollectorprofiles.ExportProfilesPartialSu
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(internal.NewOrigExportProfilesPartialSuccess(), internal.NewState())
+	state := internal.StateMutable
+	return newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,8 +46,8 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	if ms.orig == dest.orig {
 		return
 	}
-	internal.DeleteOrigExportProfilesPartialSuccess(dest.orig, false)
-	*dest.orig, *ms.orig = *ms.orig, *dest.orig
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcollectorprofile.ExportProfilesPartialSuccess{}
 }
 
 // RejectedProfiles returns the rejectedprofiles associated with this ExportPartialSuccess.
@@ -73,5 +75,24 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	internal.CopyOrigExportProfilesPartialSuccess(dest.orig, ms.orig)
+	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.RejectedProfiles != int64(0) {
+		dest.WriteObjectField("rejectedProfiles")
+		dest.WriteInt64(ms.orig.RejectedProfiles)
+	}
+	if ms.orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(ms.orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
+}
+
+func copyOrigExportPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {
+	dest.RejectedProfiles = src.RejectedProfiles
+	dest.ErrorMessage = src.ErrorMessage
 }

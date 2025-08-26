@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // MappingSlice logically represents a slice of Mapping.
@@ -34,7 +35,8 @@ func newMappingSlice(orig *[]*otlpprofiles.Mapping, state *internal.State) Mappi
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMappingSlice() MappingSlice {
 	orig := []*otlpprofiles.Mapping(nil)
-	return newMappingSlice(&orig, internal.NewState())
+	state := internal.StateMutable
+	return newMappingSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -99,7 +101,7 @@ func (es MappingSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Mapping.
 func (es MappingSlice) AppendEmpty() Mapping {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigMapping())
+	*es.orig = append(*es.orig, &otlpprofiles.Mapping{})
 	return es.At(es.Len() - 1)
 }
 
@@ -128,9 +130,6 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigMapping((*es.orig)[i], true)
-			(*es.orig)[i] = nil
-
 			continue
 		}
 		if newLen == i {
@@ -139,8 +138,6 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
-		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -149,10 +146,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MappingSlice) CopyTo(dest MappingSlice) {
 	dest.state.AssertMutable()
-	if es.orig == dest.orig {
-		return
-	}
-	*dest.orig = internal.CopyOrigMappingSlice(*dest.orig, *es.orig)
+	*dest.orig = copyOrigMappingSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Mapping elements within MappingSlice given the
@@ -161,4 +155,41 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 func (es MappingSlice) Sort(less func(a, b Mapping) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms MappingSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms MappingSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpprofiles.Mapping{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
+func copyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Mapping {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Mapping, len(src))
+		data := make([]otlpprofiles.Mapping, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigMapping(dest[i], src[i])
+	}
+	return dest
 }

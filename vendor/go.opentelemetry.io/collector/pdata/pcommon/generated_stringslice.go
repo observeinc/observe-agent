@@ -31,7 +31,8 @@ func (ms StringSlice) getState() *internal.State {
 // NewStringSlice creates a new empty StringSlice.
 func NewStringSlice() StringSlice {
 	orig := []string(nil)
-	return StringSlice(internal.NewStringSlice(&orig, internal.NewState()))
+	state := internal.StateMutable
+	return StringSlice(internal.NewStringSlice(&orig, &state))
 }
 
 // AsRaw returns a copy of the []string slice.
@@ -130,9 +131,6 @@ func (ms StringSlice) MoveAndAppendTo(dest StringSlice) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms StringSlice) CopyTo(dest StringSlice) {
 	dest.getState().AssertMutable()
-	if ms.getOrig() == dest.getOrig() {
-		return
-	}
 	*dest.getOrig() = internal.CopyOrigStringSlice(*dest.getOrig(), *ms.getOrig())
 }
 

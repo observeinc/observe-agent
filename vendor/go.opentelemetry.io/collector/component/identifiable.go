@@ -4,7 +4,6 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
-	"encoding"
 	"errors"
 	"fmt"
 	"regexp"
@@ -72,12 +71,6 @@ func MustNewType(strType string) Type {
 	return ty
 }
 
-var (
-	_ fmt.Stringer             = ID{}
-	_ encoding.TextMarshaler   = ID{}
-	_ encoding.TextUnmarshaler = (*ID)(nil)
-)
-
 // ID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
 // * name - the name of that component.
@@ -107,7 +100,7 @@ func NewIDWithName(typeVal Type, nameVal string) ID {
 // MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
 // This is equivalent to NewIDWithName(MustNewType(typeVal), nameVal).
 // See MustNewType to check the valid values of typeVal.
-func MustNewIDWithName(typeVal, nameVal string) ID {
+func MustNewIDWithName(typeVal string, nameVal string) ID {
 	return NewIDWithName(MustNewType(typeVal), nameVal)
 }
 
@@ -123,7 +116,7 @@ func (id ID) Name() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // This marshals the type and name as one string in the config.
-func (id ID) MarshalText() ([]byte, error) {
+func (id ID) MarshalText() (text []byte, err error) {
 	return []byte(id.String()), nil
 }
 

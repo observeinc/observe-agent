@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SpanSlice logically represents a slice of Span.
@@ -34,7 +35,8 @@ func newSpanSlice(orig *[]*otlptrace.Span, state *internal.State) SpanSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanSlice() SpanSlice {
 	orig := []*otlptrace.Span(nil)
-	return newSpanSlice(&orig, internal.NewState())
+	state := internal.StateMutable
+	return newSpanSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -99,7 +101,7 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Span.
 func (es SpanSlice) AppendEmpty() Span {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewOrigSpan())
+	*es.orig = append(*es.orig, &otlptrace.Span{})
 	return es.At(es.Len() - 1)
 }
 
@@ -128,9 +130,6 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
-			internal.DeleteOrigSpan((*es.orig)[i], true)
-			(*es.orig)[i] = nil
-
 			continue
 		}
 		if newLen == i {
@@ -139,8 +138,6 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
-		// Cannot delete here since we just move the data(or pointer to data) to a different position in the slice.
-		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -149,10 +146,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanSlice) CopyTo(dest SpanSlice) {
 	dest.state.AssertMutable()
-	if es.orig == dest.orig {
-		return
-	}
-	*dest.orig = internal.CopyOrigSpanSlice(*dest.orig, *es.orig)
+	*dest.orig = copyOrigSpanSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Span elements within SpanSlice given the
@@ -161,4 +155,41 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 func (es SpanSlice) Sort(less func(a, b Span) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms SpanSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SpanSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlptrace.Span{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
+func copyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
+	if cap(dest) < len(src) {
+		dest = make([]*otlptrace.Span, len(src))
+		data := make([]otlptrace.Span, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigSpan(dest[i], src[i])
+	}
+	return dest
 }
