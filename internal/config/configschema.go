@@ -106,6 +106,7 @@ type AgentConfig struct {
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
 	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
+	AgentLocalFilePath     string                  `yaml:"agent_local_file_path,omitempty" mapstructure:"agent_local_file_path"`
 	Application            ApplicationConfig       `yaml:"application,omitempty" mapstructure:"application"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
