@@ -38,6 +38,9 @@ internal_telemetry:
 
 forwarding:
     enabled: true
+    endpoints:
+        http: 0.0.0.0:5678
+        grpc: 0.0.0.0:6789
     metrics:
         output_format: otel
     traces:

@@ -2,7 +2,11 @@
 
 Code for the Observe agent and CLI. The agent code is based on the OpenTelemetry Collector.
 
-# Build
+## Configuration
+
+See <https://docs.observeinc.com/en/latest/content/observe-agent/configuration.html> for observe-agent configuration documentation. We also offer a json schema for the observe-agent config file, which can be added to editors to provide autocomplete and validation. The schema can be found at <https://github.com/observeinc/observe-agent/releases/latest/download/observe-agent.schema.json>.
+
+## Build
 
 To run the code you need to have `golang v1.23.10` installed. Then you can run the following command to compile the binary.
 

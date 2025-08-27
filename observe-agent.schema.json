@@ -73,6 +73,9 @@
         "enabled": {
           "type": "boolean"
         },
+        "endpoints": {
+          "$ref": "#/$defs/ForwardingReceiverEndpointsConfig"
+        },
         "metrics": {
           "$ref": "#/$defs/ForwardingMetricsConfig"
         },
@@ -87,6 +90,18 @@
       "properties": {
         "output_format": {
           "pattern": "^(prometheus|otel)$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ForwardingReceiverEndpointsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "grpc": {
+          "type": "string"
+        },
+        "http": {
           "type": "string"
         }
       },

@@ -300,9 +300,9 @@ receivers:
     otlp:
         protocols:
             grpc:
-                endpoint: localhost:4317
+                endpoint: 0.0.0.0:6789
             http:
-                endpoint: localhost:4318
+                endpoint: 0.0.0.0:5678
     prometheus/agent:
         config:
             scrape_configs:
