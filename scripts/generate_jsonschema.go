@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// Write to file
-	if err := os.WriteFile("observe-agent.schema.json", prettySchema, 0644); err != nil {
+	if err := os.WriteFile("observe-agent.schema.json", prettySchema, 0600); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing schema to file: %v\n", err)
 		os.Exit(1)
 	}
