@@ -93,11 +93,12 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
-				logRecord.Attributes().PutStr("observe_transform.agent_instance_id", localData.AgentInstanceId)
-				logRecord.Attributes().PutInt("observe_transform.valid_from", time.Now().Unix())
-				logRecord.Attributes().PutInt("observe_transform.valid_to", time.Now().Unix()+5400000000000)
-				logRecord.Attributes().PutStr("observe_transform.kind", "AgentLifecycleEvent")
-
+				observe_transform := logRecord.Attributes().PutEmptyMap("observe_transform")
+				observe_transform.PutStr("agent_instance_id", localData.AgentInstanceId)
+				observe_transform.PutInt("process_start_time", localData.AgentStartTime)
+				observe_transform.PutInt("valid_from", time.Now().Unix())
+				observe_transform.PutInt("valid_to", time.Now().Unix()+5400000000000)
+				observe_transform.PutStr("kind", "AgentLifecycleEvent")
 				body := logRecord.Body().SetEmptyMap()
 				body.PutStr("agent_instance_id", localData.AgentInstanceId)
 				body.PutInt("agent_start_time", localData.AgentStartTime)
