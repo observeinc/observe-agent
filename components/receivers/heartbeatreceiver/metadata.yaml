@@ -10,4 +10,6 @@ status:
     active: [alexylew]
 
 tests:
-  config: {}
+  config:
+    interval: "5m"
+    environment: "linux"

@@ -87,6 +87,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
+				resourceLogs.Resource().Attributes().PutStr("observe.agent.environment", r.cfg.Environment)
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
