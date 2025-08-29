@@ -519,12 +519,9 @@ require (
 	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
-// TODO remove the expr-lang/expr, x/net, and x/oauth2 replacements once our dependencies are updated beyond the vulnerable versions.
 replace (
-	github.com/Microsoft/go-winio => github.com/microsoft/go-winio v0.6.2
-	github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/observecol => ./observecol
-	golang.org/x/net => golang.org/x/net v0.38.0
-	golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
+	// TODO remove this replacement once the otel upstream is fixed; see: https://github.com/open-telemetry/opentelemetry-collector-releases/pull/1067
+	go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.58.0
 )
