@@ -93,6 +93,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
+				logRecord.Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
 				body := logRecord.Body().SetEmptyMap()
 				body.PutStr("agent_instance_id", localData.AgentInstanceId)
 				body.PutInt("agent_start_time", localData.AgentStartTime)
