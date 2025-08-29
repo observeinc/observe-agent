@@ -105,8 +105,8 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				// observe_transform fields
 				observe_transform.PutInt("process_start_time", localData.AgentStartTime)
-				observe_transform.PutInt("valid_from", time.Now().Unix())
-				observe_transform.PutInt("valid_to", time.Now().Unix()+5400000000000)
+				observe_transform.PutInt("valid_from", time.Now().UnixNano())
+				observe_transform.PutInt("valid_to", time.Now().UnixNano()+5400000000000)
 				observe_transform.PutStr("kind", "AgentLifecycleEvent")
 				body := logRecord.Body().SetEmptyMap()
 				body.PutStr("agent_instance_id", localData.AgentInstanceId)
