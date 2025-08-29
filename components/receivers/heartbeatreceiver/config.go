@@ -5,8 +5,16 @@ import (
 	"time"
 )
 
+var validEnvironments = map[string]bool{
+	"linux":      true,
+	"macos":      true,
+	"windows":    true,
+	"kubernetes": true,
+}
+
 type Config struct {
-	Interval string `mapstructure:"interval"`
+	Interval    string `mapstructure:"interval"`
+	Environment string `mapstructure:"environment"`
 }
 
 func (cfg *Config) Validate() error {
@@ -14,5 +22,15 @@ func (cfg *Config) Validate() error {
 	if interval.Seconds() < 5 {
 		return fmt.Errorf("when defined, the interval has to be set to at least 1 minute (1m)")
 	}
+
+	// Validate environment field is required
+	if cfg.Environment == "" {
+		return fmt.Errorf("environment is required and must be one of: linux, macos, windows, kubernetes")
+	}
+
+	if !validEnvironments[cfg.Environment] {
+		return fmt.Errorf("environment must be one of: linux, macos, windows, kubernetes")
+	}
+
 	return nil
 }
