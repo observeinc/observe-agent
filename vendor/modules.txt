@@ -137,7 +137,7 @@ github.com/JohnCGriffin/overflow
 # github.com/KimMachineGun/automemlimit v0.7.4
 ## explicit; go 1.22.0
 github.com/KimMachineGun/automemlimit/memlimit
-# github.com/Microsoft/go-winio v0.6.2 => github.com/microsoft/go-winio v0.6.2
+# github.com/Microsoft/go-winio v0.6.2
 ## explicit; go 1.21
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/internal/fs
@@ -548,7 +548,7 @@ github.com/envoyproxy/go-control-plane/envoy/type/v3
 # github.com/envoyproxy/protoc-gen-validate v1.2.1
 ## explicit; go 1.21.1
 github.com/envoyproxy/protoc-gen-validate/validate
-# github.com/expr-lang/expr v1.17.5 => github.com/expr-lang/expr v1.17.0
+# github.com/expr-lang/expr v1.17.5
 ## explicit; go 1.18
 github.com/expr-lang/expr
 github.com/expr-lang/expr/ast
@@ -2603,7 +2603,7 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/envconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/otlpconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/retry
-# go.opentelemetry.io/otel/exporters/prometheus v0.59.0
+# go.opentelemetry.io/otel/exporters/prometheus v0.59.0 => go.opentelemetry.io/otel/exporters/prometheus v0.58.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/otel/exporters/prometheus
 # go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.13.0
@@ -2736,9 +2736,9 @@ golang.org/x/exp/slices
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.29.0 => golang.org/x/net v0.38.0
+# golang.org/x/net v0.29.0
 ## explicit; go 1.23.0
-# golang.org/x/net v0.42.0 => golang.org/x/net v0.38.0
+# golang.org/x/net v0.42.0
 ## explicit; go 1.23.0
 golang.org/x/net/bpf
 golang.org/x/net/context
@@ -2761,7 +2761,7 @@ golang.org/x/net/netutil
 golang.org/x/net/proxy
 golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.30.0 => golang.org/x/oauth2 v0.27.0
+# golang.org/x/oauth2 v0.30.0
 ## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/authhandler
@@ -3489,7 +3489,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 sigs.k8s.io/yaml/goyaml.v3
-# github.com/Microsoft/go-winio => github.com/microsoft/go-winio v0.6.2
-# github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
-# golang.org/x/net => golang.org/x/net v0.38.0
-# golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
+# go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.58.0
