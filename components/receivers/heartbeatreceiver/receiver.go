@@ -94,7 +94,16 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
 				observe_transform := logRecord.Attributes().PutEmptyMap("observe_transform")
-				observe_transform.PutStr("agent_instance_id", localData.AgentInstanceId)
+
+				// Identifiers subobject
+				identifiers := observe_transform.PutEmptyMap("identifiers")
+				identifiers.PutStr("agent_instance_id", localData.AgentInstanceId)
+
+				// Control subobject
+				control := observe_transform.PutEmptyMap("control")
+				control.PutBool("isDelete", false)
+
+				// observe_transform fields
 				observe_transform.PutInt("process_start_time", localData.AgentStartTime)
 				observe_transform.PutInt("valid_from", time.Now().Unix())
 				observe_transform.PutInt("valid_to", time.Now().Unix()+5400000000000)
