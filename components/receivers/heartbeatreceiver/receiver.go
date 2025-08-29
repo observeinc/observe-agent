@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
@@ -88,6 +89,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.environment", r.cfg.Environment)
+				resourceLogs.Resource().Attributes().PutStr("observe.agent.processId", strconv.Itoa(os.Getpid()))
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
