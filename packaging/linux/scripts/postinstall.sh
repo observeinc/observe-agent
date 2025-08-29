@@ -4,6 +4,9 @@ sudo setcap 'cap_dac_read_search=ep' /usr/bin/observe-agent
 
 # Check if systemd is available and handle service restart for upgrades
 if command -v systemctl >/dev/null 2>&1; then
+    # Reload systemd daemon to pick up any service file changes
+    systemctl daemon-reload
+
     # For RPM packages: $1 = 1 (install), $1 = 2 (upgrade)
     # For DEB packages: $1 = "configure" (both install and upgrade)
     # We'll check if the service exists and is active to determine if this is an upgrade
