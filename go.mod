@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.23.10
+go 1.24.6
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.4.0
@@ -95,7 +95,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/digitalocean/godo v1.152.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.2.2+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -519,12 +519,9 @@ require (
 	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
-// TODO remove the expr-lang/expr, x/net, and x/oauth2 replacements once our dependencies are updated beyond the vulnerable versions.
 replace (
-	github.com/Microsoft/go-winio => github.com/microsoft/go-winio v0.6.2
-	github.com/expr-lang/expr => github.com/expr-lang/expr v1.17.0
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/observecol => ./observecol
-	golang.org/x/net => golang.org/x/net v0.38.0
-	golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
+	// TODO remove this replacement once the otel upstream is fixed; see: https://github.com/open-telemetry/opentelemetry-collector-releases/pull/1067
+	go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.58.0
 )

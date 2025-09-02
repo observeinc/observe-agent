@@ -60,10 +60,16 @@ type ForwardingTracesConfig struct {
 	MaxSpanDuration string `yaml:"max_span_duration,omitempty" mapstructure:"max_span_duration" default:"1h" jsonschema:"pattern=^(none|[0-9]+(ns|us|µs|ms|s|m|h))$"`
 }
 
+type ForwardingReceiverEndpointsConfig struct {
+	HTTP string `yaml:"http,omitempty" mapstructure:"http" default:"localhost:4318"`
+	GRPC string `yaml:"grpc,omitempty" mapstructure:"grpc" default:"localhost:4317"`
+}
+
 type ForwardingConfig struct {
-	Enabled bool                    `yaml:"enabled" mapstructure:"enabled" default:"true"`
-	Metrics ForwardingMetricsConfig `yaml:"metrics,omitempty" mapstructure:"metrics"`
-	Traces  ForwardingTracesConfig  `yaml:"traces,omitempty" mapstructure:"traces"`
+	Enabled   bool                              `yaml:"enabled" mapstructure:"enabled" default:"true"`
+	Endpoints ForwardingReceiverEndpointsConfig `yaml:"endpoints,omitempty" mapstructure:"endpoints"`
+	Metrics   ForwardingMetricsConfig           `yaml:"metrics,omitempty" mapstructure:"metrics"`
+	Traces    ForwardingTracesConfig            `yaml:"traces,omitempty" mapstructure:"traces"`
 }
 
 type InternalTelemetryMetricsConfig struct {

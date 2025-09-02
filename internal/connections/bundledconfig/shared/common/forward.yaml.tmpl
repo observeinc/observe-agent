@@ -2,9 +2,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: localhost:4317
+        endpoint: {{ .Forwarding.Endpoints.GRPC }}
       http:
-        endpoint: localhost:4318
+        endpoint: {{ .Forwarding.Endpoints.HTTP }}
 
 processors:
   transform/add_span_status_code:
