@@ -3,7 +3,7 @@
 sudo setcap 'cap_dac_read_search=ep' /usr/bin/observe-agent
 
 # Check if systemd is available and handle service restart for upgrades
-if command -v systemctl >/dev/null 2>&1; then
+if [[ -d /run/systemd/system ]]; then
     # Reload systemd daemon to pick up any service file changes
     systemctl daemon-reload
 
