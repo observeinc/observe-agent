@@ -20,10 +20,9 @@ func TestAgentResource(t *testing.T) {
 	defer viper.Set("agent_local_file_path", originalPath)
 
 	// Test 1: Initialize with new file (file doesn't exist)
-	agent1 := New()
-	err := agent1.Initialize()
+	agent1, err := New()
 	if err != nil {
-		t.Fatalf("Failed to initialize agent resource: %v", err)
+		t.Fatalf("Failed to create agent resource: %v", err)
 	}
 
 	// Verify agent instance ID was generated
@@ -41,10 +40,9 @@ func TestAgentResource(t *testing.T) {
 	firstStartTime := agent1.GetAgentStartTime()
 
 	// Test 2: Initialize with existing file (should load same ID)
-	agent2 := New()
-	err = agent2.Initialize()
+	agent2, err := New()
 	if err != nil {
-		t.Fatalf("Failed to initialize agent resource from existing file: %v", err)
+		t.Fatalf("Failed to create agent resource from existing file: %v", err)
 	}
 
 	// Verify same agent instance ID was loaded
@@ -85,20 +83,17 @@ func TestAgentResourceWithConfig(t *testing.T) {
 	// Store original value and restore after test
 	originalPath := viper.GetString("agent_local_file_path")
 	defer viper.Set("agent_local_file_path", originalPath)
-	
+
 	// Set custom path
 	viper.Set("agent_local_file_path", configPath)
 
 	// Test that New() uses the configured path
-	agent := New()
+	agent, err := New()
+	if err != nil {
+		t.Fatalf("Failed to create agent resource: %v", err)
+	}
 	if agent.filePath != configPath {
 		t.Errorf("Expected file path %s, got %s", configPath, agent.filePath)
-	}
-
-	// Test initialization
-	err := agent.Initialize()
-	if err != nil {
-		t.Fatalf("Failed to initialize agent resource: %v", err)
 	}
 
 	// Verify file was created at configured location

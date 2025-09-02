@@ -34,7 +34,7 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
-func New() *AgentResource {
+func New() (*AgentResource, error) {
 	var filePath string
 	// Check if configured in viper
 	configuredPath := viper.GetString("agent_local_file_path")
@@ -44,13 +44,19 @@ func New() *AgentResource {
 		filePath = defaultLocalFilePath
 	}
 
-	return &AgentResource{
+	agentResource := &AgentResource{
 		data:     &AgentLocalData{},
 		filePath: filePath,
 	}
+
+	if err := agentResource.initialize(); err != nil {
+		return nil, err
+	}
+
+	return agentResource, nil
 }
 
-func (a *AgentResource) Initialize() error {
+func (a *AgentResource) initialize() error {
 	a.data.AgentStartTime = time.Now().Unix()
 
 	err := a.parseLocalFile()

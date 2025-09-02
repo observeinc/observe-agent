@@ -164,24 +164,3 @@ func TestPerformAuthCheckWithValidServer(t *testing.T) {
 	assert.Equal(t, server.URL, result.URL)
 	assert.Empty(t, result.Error)
 }
-
-func TestHeartbeatLogRecordStructure(t *testing.T) {
-	// Test that HeartbeatLogRecord struct has all expected fields with nested auth check
-	record := HeartbeatLogRecord{
-		AgentInstanceId: "test-instance",
-		AgentStartTime:  1234567890,
-		AuthCheck: AuthCheckData{
-			Passed:       true,
-			URL:          "https://example.com",
-			ResponseCode: 200,
-			Error:        "",
-		},
-	}
-
-	assert.Equal(t, "test-instance", record.AgentInstanceId)
-	assert.Equal(t, int64(1234567890), record.AgentStartTime)
-	assert.True(t, record.AuthCheck.Passed)
-	assert.Equal(t, "https://example.com", record.AuthCheck.URL)
-	assert.Equal(t, 200, record.AuthCheck.ResponseCode)
-	assert.Empty(t, record.AuthCheck.Error)
-}

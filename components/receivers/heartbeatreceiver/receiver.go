@@ -23,9 +23,10 @@ type HeartbeatReceiver struct {
 	nextConsumer consumer.Logs
 	ticker       *time.Ticker
 	cancel       context.CancelFunc
+	state        HeartbeatReceiverState
 }
 
-type HeartbeatLocalData struct {
+type HeartbeatReceiverState struct {
 	AgentInstanceId string `json:"agent_instance_id"`
 	AgentStartTime  int64
 }
@@ -42,8 +43,6 @@ type HeartbeatLogRecord struct {
 	AgentStartTime  int64         `json:"agent_start_time"`
 	AuthCheck       AuthCheckData `json:"auth_check"`
 }
-
-var localData HeartbeatLocalData
 
 func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*HeartbeatReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -66,7 +65,7 @@ func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*H
 func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting heartbeat receiver")
 	ctx, r.cancel = context.WithCancel(ctx)
-	err := r.InitializeAgentLocalData(ctx)
+	err := r.InitializeReceiverState(ctx)
 	if err != nil {
 		return err
 	}
@@ -81,13 +80,13 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				authResult := PerformAuthCheck()
 
 				r.settings.Logger.Info("Sending heartbeat",
-					zap.String("agent_instance_id", localData.AgentInstanceId),
+					zap.String("agent_instance_id", r.state.AgentInstanceId),
 					zap.Bool("auth_check_passed", authResult.Passed),
 					zap.String("auth_check_url", authResult.URL))
 
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
-				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", localData.AgentInstanceId)
+				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.environment", r.cfg.Environment)
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.processId", strconv.Itoa(os.Getpid()))
 
@@ -97,20 +96,21 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				// Identifiers subobject
 				identifiers := observe_transform.PutEmptyMap("identifiers")
-				identifiers.PutStr("agent_instance_id", localData.AgentInstanceId)
+				identifiers.PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
 
 				// Control subobject
 				control := observe_transform.PutEmptyMap("control")
 				control.PutBool("isDelete", false)
 
 				// observe_transform fields
-				observe_transform.PutInt("process_start_time", localData.AgentStartTime)
+				observe_transform.PutInt("process_start_time", r.state.AgentStartTime)
 				observe_transform.PutInt("valid_from", time.Now().UnixNano())
+				// The entities will be valid for 90 minutes
 				observe_transform.PutInt("valid_to", time.Now().UnixNano()+5400000000000)
 				observe_transform.PutStr("kind", "AgentLifecycleEvent")
 				body := logRecord.Body().SetEmptyMap()
-				body.PutStr("agent_instance_id", localData.AgentInstanceId)
-				body.PutInt("agent_start_time", localData.AgentStartTime)
+				body.PutStr("agent_instance_id", r.state.AgentInstanceId)
+				body.PutInt("agent_start_time", r.state.AgentStartTime)
 
 				// Add auth check results to the log body under a nested object
 				authCheck := body.PutEmptyMap("auth_check")
@@ -147,11 +147,11 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (r *HeartbeatReceiver) InitializeAgentLocalData(ctx context.Context) error {
+func (r *HeartbeatReceiver) InitializeReceiverState(ctx context.Context) error {
 	// Set the local start time
-	localData.AgentStartTime = time.Now().Unix()
-	localData.AgentInstanceId = os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
-	if localData.AgentInstanceId == "" {
+	r.state.AgentStartTime = time.Now().Unix()
+	r.state.AgentInstanceId = os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	if r.state.AgentInstanceId == "" {
 		return fmt.Errorf("OBSERVE_AGENT_INSTANCE_ID environment variable must be set")
 	}
 	return nil
