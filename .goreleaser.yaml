@@ -182,6 +182,7 @@ nfpms:
       preinstall: "packaging/linux/scripts/preinstall.sh"
       postinstall: "packaging/linux/scripts/postinstall.sh"
       preremove: "packaging/linux/scripts/preremove.sh"
+      postremove: "packaging/linux/scripts/postremove.sh"
 
 nightly:
   tag_name: dev-nightly
