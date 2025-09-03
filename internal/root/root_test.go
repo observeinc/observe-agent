@@ -16,12 +16,16 @@ func TestSetEnvVars(t *testing.T) {
 	// Save original viper config and env var if they exist
 	originalPath := viper.GetString("agent_local_file_path")
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
-	defer func() {
+
+	// Set up cleanup to restore original state
+	t.Cleanup(func() {
 		viper.Set("agent_local_file_path", originalPath)
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
 		}
-	}()
+	})
 
 	// Set up viper with custom path for this test to avoid permission issues
 	viper.Set("agent_local_file_path", testFilePath)

@@ -17,7 +17,9 @@ func TestAgentResource(t *testing.T) {
 	// Set up viper with custom path for this test
 	originalPath := viper.GetString("agent_local_file_path")
 	viper.Set("agent_local_file_path", testFilePath)
-	defer viper.Set("agent_local_file_path", originalPath)
+	t.Cleanup(func() {
+		viper.Set("agent_local_file_path", originalPath)
+	})
 
 	// Test 1: Initialize with new file (file doesn't exist)
 	agent1, err := New()
@@ -82,7 +84,9 @@ func TestAgentResourceWithConfig(t *testing.T) {
 
 	// Store original value and restore after test
 	originalPath := viper.GetString("agent_local_file_path")
-	defer viper.Set("agent_local_file_path", originalPath)
+	t.Cleanup(func() {
+		viper.Set("agent_local_file_path", originalPath)
+	})
 
 	// Set custom path
 	viper.Set("agent_local_file_path", configPath)
