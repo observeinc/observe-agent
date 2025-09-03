@@ -172,6 +172,12 @@ func setupConfig(t *testing.T, test snapshotTest) {
 	viper.Reset()
 	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
 	root.InitConfig()
+
+	// Set agent local data path to a temporary directory to avoid permission issues
+	tempDir := t.TempDir()
+	testFilePath := filepath.Join(tempDir, "test_agent_data.json")
+	viper.Set("agent_local_file_path", testFilePath)
+
 	setEnvVars(t, test.packageType)
 }
 
