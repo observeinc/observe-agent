@@ -80,7 +80,7 @@ func PerformAuthCheck() AuthCheckResult {
 	if collectorURL == "" {
 		return AuthCheckResult{
 			Passed: false,
-			Error:  "Observe url environment variable is not set",
+			Error:  "OBSERVE_COLLECTOR_URL environment variable is not set",
 			URL:    "",
 		}
 	}
@@ -88,7 +88,7 @@ func PerformAuthCheck() AuthCheckResult {
 	if authHeader == "" {
 		return AuthCheckResult{
 			Passed: false,
-			Error:  "Observe token environment variable is not set",
+			Error:  "OBSERVE_AUTHORIZATION_HEADER environment variable is not set",
 			URL:    collectorURL,
 		}
 	}
