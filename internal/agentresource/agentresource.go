@@ -108,11 +108,11 @@ func (a *AgentResource) persistToLocalFile() error {
 	}
 
 	dir := filepath.Dir(a.filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 
-	return os.WriteFile(a.filePath, jsonData, 0644)
+	return os.WriteFile(a.filePath, jsonData, 0600)
 }
 
 func (a *AgentResource) parseLocalFile() error {

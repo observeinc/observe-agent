@@ -13,10 +13,18 @@ var validEnvironments = map[string]bool{
 }
 
 type Config struct {
-	Interval    string `mapstructure:"interval"`
-	Environment string `mapstructure:"environment"`
-	URL         string `mapstructure:"url"`
-	AuthHeader  string `mapstructure:"auth_header"`
+	Interval    string          `mapstructure:"interval"`
+	Environment string          `mapstructure:"environment"`
+	AuthCheck   AuthCheckConfig `mapstructure:"auth_check"`
+}
+
+type AuthCheckConfig struct {
+	URL     string           `mapstructure:"url"`
+	Headers AuthCheckHeaders `mapstructure:"headers"`
+}
+
+type AuthCheckHeaders struct {
+	Authorization string `mapstructure:"authorization"`
 }
 
 func (cfg *Config) Validate() error {

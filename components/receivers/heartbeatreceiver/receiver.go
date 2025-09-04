@@ -77,7 +77,8 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 			select {
 			case <-r.ticker.C:
 				// Perform authentication check
-				authResult := PerformAuthCheck(r.cfg.URL, r.cfg.AuthHeader)
+				r.settings.Logger.Debug("Performing authentication check", zap.String("url", r.cfg.AuthCheck.URL))
+				authResult := PerformAuthCheck(r.cfg.AuthCheck.URL, r.cfg.AuthCheck.Headers.Authorization)
 
 				r.settings.Logger.Info("Sending heartbeat",
 					zap.String("agent_instance_id", r.state.AgentInstanceId),
@@ -86,22 +87,22 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				// Add resource attributes
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.environment", r.cfg.Environment)
 				resourceLogs.Resource().Attributes().PutStr("observe.agent.processId", strconv.Itoa(os.Getpid()))
 
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
-				observe_transform := logRecord.Attributes().PutEmptyMap("observe_transform")
 
+				// Add fields to the observe_transform object
+				observe_transform := logRecord.Attributes().PutEmptyMap("observe_transform")
 				// Identifiers subobject
 				identifiers := observe_transform.PutEmptyMap("identifiers")
 				identifiers.PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
-
 				// Control subobject
 				control := observe_transform.PutEmptyMap("control")
 				control.PutBool("isDelete", false)
-
 				// observe_transform fields
 				observe_transform.PutInt("process_start_time", r.state.AgentStartTime)
 				observe_transform.PutInt("valid_from", time.Now().UnixNano())

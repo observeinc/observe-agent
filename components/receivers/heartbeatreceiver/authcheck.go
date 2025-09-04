@@ -70,8 +70,7 @@ func makeAuthRequest(url string, authHeader string) AuthCheckResult {
 	}
 }
 
-// PerformAuthCheck performs an authentication check using environment variables
-// OBSERVE_COLLECTOR_URL and OBSERVE_AUTHORIZATION_HEADER
+// PerformAuthCheck performs an authentication check using the provided URL and auth header
 func PerformAuthCheck(URL, authHeader string) AuthCheckResult {
 	if URL == "" {
 		return AuthCheckResult{

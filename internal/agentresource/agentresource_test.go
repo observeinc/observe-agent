@@ -37,9 +37,7 @@ func TestAgentResource(t *testing.T) {
 
 	// Test 2: Initialize with existing file (should load same ID)
 	agent2, err := New()
-	if err != nil {
-		t.Fatalf("Failed to create agent resource from existing file: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create agent resource from existing file")
 
 	// Verify same agent instance ID was loaded
 	assert.Equal(t, firstAgentId, agent2.GetAgentInstanceId(), "Agent instance ID should be the same")
