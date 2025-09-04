@@ -1,6 +1,7 @@
   receivers:
     heartbeat:
       interval: 10s
+      environment: macos
       auth_check:
         url: ${env:OBSERVE_COLLECTOR_URL}
         headers:
@@ -10,9 +11,6 @@
       attributes:
       - key: observe.agent.hostname
         from_attribute: host.name
-        action: insert
-      - key: observe.agent.podName
-        from_attribute: k8s.pod.name
         action: insert
   exporters:
     debug:
