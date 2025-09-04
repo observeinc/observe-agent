@@ -355,3 +355,8 @@ service:
                         prometheus:
                             host: localhost
                             port: 8888
+                            with_resource_constant_labels:
+                                included:
+                                    - observe.agent.instance.id
+        resource:
+            observe.agent.instance.id: test-agent-instance-id

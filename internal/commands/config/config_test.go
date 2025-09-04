@@ -170,8 +170,20 @@ func setupConfig(t *testing.T, test snapshotTest) {
 		flags.Parse([]string{"--config", filepath.Join(curPath, test.otelConfigPath)})
 	}
 	viper.Reset()
+
+	// Set agent local data path to a temporary directory BEFORE calling InitConfig
+	// to avoid permission issues when setEnvVars is called during InitConfig
+	tempDir := t.TempDir()
+	testFilePath := filepath.Join(tempDir, "test_agent_data.json")
+	originalPath := viper.GetString("agent_local_file_path")
+	viper.Set("agent_local_file_path", testFilePath)
+	t.Cleanup(func() {
+		viper.Set("agent_local_file_path", originalPath)
+	})
+
 	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
 	root.InitConfig()
+
 	setEnvVars(t, test.packageType)
 }
 
@@ -193,6 +205,8 @@ func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embe
 
 func setEnvVars(t *testing.T, packageType PackageType) {
 	os.Setenv("TEST_ENV_VAR", "test-value")
+	// Set a predictable agent instance ID for tests
+	assert.NoError(t, os.Setenv("OBSERVE_AGENT_INSTANCE_ID", "test-agent-instance-id"))
 	switch packageType {
 	case MacOS:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))

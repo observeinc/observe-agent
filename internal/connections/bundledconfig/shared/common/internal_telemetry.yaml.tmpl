@@ -1,5 +1,7 @@
 service:
   telemetry:
+    resource:
+      observe.agent.instance.id: ${env:OBSERVE_AGENT_INSTANCE_ID}
     {{- if .InternalTelemetry.Metrics.Enabled }}
     metrics:
       level: {{ .InternalTelemetry.Metrics.Level }}
@@ -9,6 +11,9 @@ service:
               prometheus:
                 host: {{ .InternalTelemetry.Metrics.Host }}
                 port: {{ .InternalTelemetry.Metrics.Port }}
+                with_resource_constant_labels:
+                  included:
+                    - observe.agent.instance.id
     {{- end }}
     {{- if .InternalTelemetry.Logs.Enabled }}
     logs:
