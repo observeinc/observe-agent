@@ -38,8 +38,13 @@ type HostMonitoringConfig struct {
 	Metrics HostMonitoringMetricsConfig `yaml:"metrics,omitempty" mapstructure:"metrics"`
 }
 
+type FleetHeartbeatConfig struct {
+	Enabled  bool   `yaml:"enabled" mapstructure:"enabled"`
+	Interval string `yaml:"interval" mapstructure:"interval" default:"10m"`
+}
 type SelfMonitoringConfig struct {
-	Enabled bool `yaml:"enabled" mapstructure:"enabled"`
+	Enabled bool                 `yaml:"enabled" mapstructure:"enabled"`
+	Fleet   FleetHeartbeatConfig `yaml:"fleet,omitempty" mapstructure:"fleet"`
 }
 
 type HealthCheckConfig struct {
