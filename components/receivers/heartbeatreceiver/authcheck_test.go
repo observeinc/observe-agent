@@ -94,14 +94,14 @@ func TestPerformAuthCheck(t *testing.T) {
 			collectorURL:        "",
 			authHeader:          "Bearer test-token",
 			expectedPassed:      false,
-			expectedErrorSubstr: "OBSERVE_COLLECTOR_URL environment variable is not set",
+			expectedErrorSubstr: "heartbeat auth check URL is not set",
 		},
 		{
 			name:                "missing auth header",
 			collectorURL:        "https://example.com",
 			authHeader:          "",
 			expectedPassed:      false,
-			expectedErrorSubstr: "OBSERVE_AUTHORIZATION_HEADER environment variable is not set",
+			expectedErrorSubstr: "heartbeat auth check authorization header is not set",
 		},
 	}
 

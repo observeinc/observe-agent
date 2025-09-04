@@ -75,7 +75,7 @@ func PerformAuthCheck(URL, authHeader string) AuthCheckResult {
 	if URL == "" {
 		return AuthCheckResult{
 			Passed: false,
-			Error:  "OBSERVE_COLLECTOR_URL environment variable is not set",
+			Error:  "heartbeat auth check URL is not set",
 			URL:    "",
 		}
 	}
@@ -83,7 +83,7 @@ func PerformAuthCheck(URL, authHeader string) AuthCheckResult {
 	if authHeader == "" {
 		return AuthCheckResult{
 			Passed: false,
-			Error:  "OBSERVE_AUTHORIZATION_HEADER environment variable is not set",
+			Error:  "heartbeat auth check authorization header is not set",
 			URL:    URL,
 		}
 	}
