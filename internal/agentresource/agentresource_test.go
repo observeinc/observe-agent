@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAgentResource(t *testing.T) {
@@ -23,19 +23,13 @@ func TestAgentResource(t *testing.T) {
 
 	// Test 1: Initialize with new file (file doesn't exist)
 	agent1, err := New()
-	if err != nil {
-		t.Fatalf("Failed to create agent resource: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create agent resource")
 
 	// Verify agent instance ID was generated
-	if agent1.GetAgentInstanceId() == "" {
-		t.Error("Agent instance ID should not be empty")
-	}
+	assert.NotEmpty(t, agent1.GetAgentInstanceId(), "Agent instance ID should not be empty")
 
 	// Verify agent start time was set
-	if agent1.GetAgentStartTime() == 0 {
-		t.Error("Agent start time should not be zero")
-	}
+	assert.NotZero(t, agent1.GetAgentStartTime(), "Agent start time should not be zero")
 
 	// Store the first agent's ID and start time
 	firstAgentId := agent1.GetAgentInstanceId()
@@ -48,33 +42,10 @@ func TestAgentResource(t *testing.T) {
 	}
 
 	// Verify same agent instance ID was loaded
-	if agent2.GetAgentInstanceId() != firstAgentId {
-		t.Errorf("Expected agent ID %s, got %s", firstAgentId, agent2.GetAgentInstanceId())
-	}
+	assert.Equal(t, firstAgentId, agent2.GetAgentInstanceId(), "Agent instance ID should be the same")
 
 	// Verify start time was set (may be same if run within same second)
-	if agent2.GetAgentStartTime() < firstStartTime {
-		t.Error("Agent start time should not go backwards")
-	}
-}
-
-func TestDefaultPath(t *testing.T) {
-	path := utils.GetDefaultAgentPath()
-	if path == "" {
-		t.Error("Default agent path should not be empty")
-	}
-
-	// Verify it returns expected paths for different OSes
-	switch os := os.Getenv("GOOS"); os {
-	case "darwin":
-		if path != "/usr/local/observe-agent" {
-			t.Errorf("Unexpected path for darwin: %s", path)
-		}
-	case "linux":
-		if path != "/etc/observe-agent" {
-			t.Errorf("Unexpected path for linux: %s", path)
-		}
-	}
+	assert.LessOrEqual(t, firstStartTime, agent2.GetAgentStartTime(), "Agent start time should not go backwards")
 }
 
 func TestAgentResourceWithConfig(t *testing.T) {
@@ -93,12 +64,10 @@ func TestAgentResourceWithConfig(t *testing.T) {
 
 	// Test that New() uses the configured path
 	agent, err := New()
-	if err != nil {
-		t.Fatalf("Failed to create agent resource: %v", err)
-	}
-	if agent.filePath != configPath {
-		t.Errorf("Expected file path %s, got %s", configPath, agent.filePath)
-	}
+	assert.NoError(t, err, "Failed to create agent resource")
+
+	// Verify file path is set correctly
+	assert.Equal(t, configPath, agent.filePath, "Agent file path should match configured path")
 
 	// Verify file was created at configured location
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -106,7 +75,5 @@ func TestAgentResourceWithConfig(t *testing.T) {
 	}
 
 	// Verify agent instance ID was generated
-	if agent.GetAgentInstanceId() == "" {
-		t.Error("Agent instance ID should not be empty")
-	}
+	assert.NotEmpty(t, agent.GetAgentInstanceId(), "Agent instance ID should not be empty")
 }

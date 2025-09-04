@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
 // AuthCheckResult represents the result of an authentication check
@@ -73,11 +72,8 @@ func makeAuthRequest(url string, authHeader string) AuthCheckResult {
 
 // PerformAuthCheck performs an authentication check using environment variables
 // OBSERVE_COLLECTOR_URL and OBSERVE_AUTHORIZATION_HEADER
-func PerformAuthCheck() AuthCheckResult {
-	collectorURL := os.Getenv("OBSERVE_COLLECTOR_URL")
-	authHeader := os.Getenv("OBSERVE_AUTHORIZATION_HEADER")
-
-	if collectorURL == "" {
+func PerformAuthCheck(URL, authHeader string) AuthCheckResult {
+	if URL == "" {
 		return AuthCheckResult{
 			Passed: false,
 			Error:  "OBSERVE_COLLECTOR_URL environment variable is not set",
@@ -89,9 +85,9 @@ func PerformAuthCheck() AuthCheckResult {
 		return AuthCheckResult{
 			Passed: false,
 			Error:  "OBSERVE_AUTHORIZATION_HEADER environment variable is not set",
-			URL:    collectorURL,
+			URL:    URL,
 		}
 	}
 
-	return makeAuthRequest(collectorURL, authHeader)
+	return makeAuthRequest(URL, authHeader)
 }

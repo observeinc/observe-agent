@@ -3,7 +3,6 @@ package heartbeatreceiver
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,31 +107,14 @@ func TestPerformAuthCheck(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up environment variables
-			if tt.collectorURL != "" {
-				os.Setenv("OBSERVE_COLLECTOR_URL", tt.collectorURL)
-			} else {
-				os.Unsetenv("OBSERVE_COLLECTOR_URL")
-			}
-
-			if tt.authHeader != "" {
-				os.Setenv("OBSERVE_AUTHORIZATION_HEADER", tt.authHeader)
-			} else {
-				os.Unsetenv("OBSERVE_AUTHORIZATION_HEADER")
-			}
-
 			// Perform the check
-			result := PerformAuthCheck()
+			result := PerformAuthCheck(tt.collectorURL, tt.authHeader)
 
 			// Verify results
 			assert.Equal(t, tt.expectedPassed, result.Passed)
 			if tt.expectedErrorSubstr != "" {
 				assert.Contains(t, result.Error, tt.expectedErrorSubstr)
 			}
-
-			// Clean up environment variables
-			os.Unsetenv("OBSERVE_COLLECTOR_URL")
-			os.Unsetenv("OBSERVE_AUTHORIZATION_HEADER")
 		})
 	}
 }
@@ -147,16 +129,8 @@ func TestPerformAuthCheckWithValidServer(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Set environment variables
-	os.Setenv("OBSERVE_COLLECTOR_URL", server.URL)
-	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer test-token")
-	defer func() {
-		os.Unsetenv("OBSERVE_COLLECTOR_URL")
-		os.Unsetenv("OBSERVE_AUTHORIZATION_HEADER")
-	}()
-
 	// Perform the check
-	result := PerformAuthCheck()
+	result := PerformAuthCheck(server.URL, "Bearer test-token")
 
 	// Verify results
 	assert.True(t, result.Passed)

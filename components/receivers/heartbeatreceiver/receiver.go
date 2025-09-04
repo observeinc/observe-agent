@@ -77,7 +77,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 			select {
 			case <-r.ticker.C:
 				// Perform authentication check
-				authResult := PerformAuthCheck()
+				authResult := PerformAuthCheck(r.cfg.URL, r.cfg.AuthHeader)
 
 				r.settings.Logger.Info("Sending heartbeat",
 					zap.String("agent_instance_id", r.state.AgentInstanceId),

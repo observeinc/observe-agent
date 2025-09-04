@@ -204,43 +204,9 @@ func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embe
 }
 
 func setEnvVars(t *testing.T, packageType PackageType) {
-	// Get values from viper configuration
-	collector_url := viper.GetString("observe_url")
-	token := viper.GetString("token")
-	debug := viper.GetBool("debug")
-
-	// Set up the same environment variables as the root setEnvVars function
-	if collector_url != "" && token != "" {
-		// Ensure the collector url does not end with a slash for consistency
-		collector_url = strings.TrimRight(collector_url, "/")
-		otelEndpoint := collector_url + "/v2/otel"
-		promEndpoint := collector_url + "/v1/prometheus"
-
-		// Setting values from the Observe agent config as env vars to fill in the OTEL collector config
-		assert.NoError(t, os.Setenv("OBSERVE_COLLECTOR_URL", collector_url))
-		assert.NoError(t, os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint))
-		assert.NoError(t, os.Setenv("OBSERVE_PROMETHEUS_ENDPOINT", promEndpoint))
-		assert.NoError(t, os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token))
-	}
-
 	os.Setenv("TEST_ENV_VAR", "test-value")
 	// Set a predictable agent instance ID for tests
 	assert.NoError(t, os.Setenv("OBSERVE_AGENT_INSTANCE_ID", "test-agent-instance-id"))
-
-	// Set TRACE_TOKEN if not already set
-	if os.Getenv("TRACE_TOKEN") == "" && token != "" {
-		assert.NoError(t, os.Setenv("TRACE_TOKEN", token))
-	}
-
-	// Set OTEL_LOG_LEVEL if not already set
-	if os.Getenv("OTEL_LOG_LEVEL") == "" {
-		if debug {
-			assert.NoError(t, os.Setenv("OTEL_LOG_LEVEL", "DEBUG"))
-		} else {
-			assert.NoError(t, os.Setenv("OTEL_LOG_LEVEL", "INFO"))
-		}
-	}
-
 	switch packageType {
 	case MacOS:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))
