@@ -57,7 +57,7 @@ func New() (*AgentResource, error) {
 }
 
 func (a *AgentResource) initialize() error {
-	a.data.AgentStartTime = time.Now().Unix()
+	a.data.AgentStartTime = time.Now().UnixNano()
 
 	err := a.parseLocalFile()
 
