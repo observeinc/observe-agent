@@ -1564,6 +1564,11 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckrece
 ## explicit; go 1.23.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.131.0
+## explicit; go 1.23.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.131.0
 ## explicit; go 1.23.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
@@ -2339,8 +2344,6 @@ go.opentelemetry.io/collector/extension/xextension/storage
 ## explicit; go 1.23.0
 go.opentelemetry.io/collector/extension/zpagesextension
 go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata
-# go.opentelemetry.io/collector/featuregate v1.37.0
-## explicit; go 1.24
 # go.opentelemetry.io/collector/featuregate v1.39.0
 ## explicit; go 1.24
 go.opentelemetry.io/collector/featuregate
@@ -2410,8 +2413,6 @@ go.opentelemetry.io/collector/pdata/testdata
 go.opentelemetry.io/collector/pdata/xpdata/request
 go.opentelemetry.io/collector/pdata/xpdata/request/internal
 # go.opentelemetry.io/collector/pipeline v0.110.0
-## explicit; go 1.24
-# go.opentelemetry.io/collector/pipeline v0.131.0
 ## explicit; go 1.24
 # go.opentelemetry.io/collector/pipeline v1.39.0
 ## explicit; go 1.24
@@ -2918,8 +2919,6 @@ google.golang.org/api/internal/third_party/uritemplates
 google.golang.org/api/option
 google.golang.org/api/option/internaloption
 google.golang.org/api/transport/http
-# google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822
-## explicit; go 1.23.0
 # google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7
 ## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/api
@@ -2927,16 +2926,12 @@ google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20240930140551-af27646dc61f
 ## explicit; go 1.23.0
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822
-## explicit; go 1.23.0
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7
 ## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.67.1
-## explicit; go 1.23.0
-# google.golang.org/grpc v1.74.2
 ## explicit; go 1.23.0
 # google.golang.org/grpc v1.75.0
 ## explicit; go 1.23.0
@@ -3003,8 +2998,6 @@ google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
 # google.golang.org/protobuf v1.34.2
-## explicit; go 1.22
-# google.golang.org/protobuf v1.36.6
 ## explicit; go 1.22
 # google.golang.org/protobuf v1.36.7
 ## explicit; go 1.22
