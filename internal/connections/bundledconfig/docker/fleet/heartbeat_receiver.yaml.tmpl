@@ -1,0 +1,8 @@
+receivers:
+  heartbeat:
+    interval: 10s
+    environment: docker
+    auth_check:
+      url: ${env:OBSERVE_COLLECTOR_URL}
+      headers:
+        authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}

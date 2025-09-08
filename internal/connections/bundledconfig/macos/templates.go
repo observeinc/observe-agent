@@ -3,7 +3,7 @@ package macos
 import "embed"
 
 var (
-	//go:embed fleet/heartbeat.yaml.tmpl
+	//go:embed fleet/heartbeat_receiver.yaml.tmpl
 	HeartbeatTemplateFS embed.FS
 )
 

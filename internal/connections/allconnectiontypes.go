@@ -127,7 +127,13 @@ var FleetConnectionType = MakeConnectionType(
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
 				return agentConfig.SelfMonitoring.Fleet.Enabled
 			},
-			colConfigFilePath: "heartbeat.yaml.tmpl",
+			colConfigFilePath: "heartbeat_receiver.yaml.tmpl",
+		},
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.SelfMonitoring.Fleet.Enabled
+			},
+			colConfigFilePath: "heartbeat_shared.yaml.tmpl",
 		},
 	},
 )
