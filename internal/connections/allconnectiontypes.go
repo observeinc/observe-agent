@@ -125,13 +125,13 @@ var FleetConnectionType = MakeConnectionType(
 	[]BundledConfigFragment{
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
-				return agentConfig.SelfMonitoring.Fleet.Enabled
+				return agentConfig.SelfMonitoring.Enabled && agentConfig.SelfMonitoring.Fleet.Enabled
 			},
 			colConfigFilePath: "heartbeat_receiver.yaml.tmpl",
 		},
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {
-				return agentConfig.SelfMonitoring.Fleet.Enabled
+				return agentConfig.SelfMonitoring.Enabled && agentConfig.SelfMonitoring.Fleet.Enabled
 			},
 			colConfigFilePath: "heartbeat_shared.yaml.tmpl",
 		},
