@@ -24,6 +24,12 @@ processors:
           - truncate_all(attributes, 4095)
           - truncate_all(resource.attributes, 4095)
 
+  resource/agent_instance:
+    attributes:
+    - key: observe.agent.instance.id
+      action: upsert
+      value: ${env:OBSERVE_AGENT_INSTANCE_ID}
+
   memory_limiter:
     check_interval: 1s
     limit_percentage: 80

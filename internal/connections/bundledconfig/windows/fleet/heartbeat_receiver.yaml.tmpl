@@ -1,6 +1,6 @@
 receivers:
   heartbeat:
-    interval: {{.AgentConfig.SelfMonitoring.Fleet.Interval}}
+    interval: {{.SelfMonitoring.Fleet.Interval}}
     environment: windows
     auth_check:
       url: ${env:OBSERVE_COLLECTOR_URL}
