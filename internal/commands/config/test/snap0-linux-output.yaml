@@ -77,6 +77,11 @@ processors:
             - action: insert
               key: deployment.environment
               value: ""
+    resource/agent_instance:
+        attributes:
+            - action: upsert
+              key: observe.agent.instance.id
+              value: test-agent-instance-id
     resourcedetection:
         detectors:
             - env

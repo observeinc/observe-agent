@@ -1,6 +1,6 @@
 receivers:
   heartbeat:
-    interval: 10s
+    interval: {{.AgentConfig.SelfMonitoring.Fleet.Interval}}
     environment: macos
     auth_check:
       url: ${env:OBSERVE_COLLECTOR_URL}

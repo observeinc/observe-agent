@@ -112,6 +112,11 @@ processors:
             - action: insert
               key: deployment.environment
               value: ""
+    resource/agent_instance:
+        attributes:
+            - action: upsert
+              key: observe.agent.instance.id
+              value: test-agent-instance-id
     resource/observe_global_resource_attributes:
         attributes:
             - action: insert

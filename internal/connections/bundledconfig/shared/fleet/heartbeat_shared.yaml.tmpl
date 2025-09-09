@@ -5,10 +5,6 @@ processors:
       from_attribute: host.name
       action: insert
 exporters:
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
   otlphttp/agentheartbeat:
       compression: zstd
       logs_endpoint: ${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity
@@ -24,5 +20,5 @@ service:
   pipelines:
     logs/heartbeat:
       receivers: [heartbeat]
-      processors: [resourcedetection, resource/heartbeat]
-      exporters: [otlphttp/agentheartbeat, debug]  
+      processors: [resourcedetection, resourcedetection/cloud, resource/agent_instance, resource/heartbeat]
+      exporters: [otlphttp/agentheartbeat]  
