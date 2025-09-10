@@ -41,6 +41,11 @@ processors:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    resource/agent_instance:
+        attributes:
+            - action: upsert
+              key: observe.agent.instance.id
+              value: test-agent-instance-id
     resourcedetection:
         detectors:
             - env
