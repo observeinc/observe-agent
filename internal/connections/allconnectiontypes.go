@@ -9,6 +9,7 @@ var AllConnectionTypes = []*ConnectionType{
 	HostMonitoringConnectionType,
 	SelfMonitoringConnectionType,
 	ApplicationConnectionType,
+	FleetConnectionType,
 }
 
 var CommonConnectionType = MakeConnectionType(
@@ -112,6 +113,27 @@ var ApplicationConnectionType = MakeConnectionType(
 				return agentConfig.Application.REDMetrics.Enabled
 			},
 			colConfigFilePath: "RED_metrics.yaml.tmpl",
+		},
+	},
+)
+
+var FleetConnectionType = MakeConnectionType(
+	"fleet",
+	func(agentConfig *config.AgentConfig) bool {
+		return agentConfig.SelfMonitoring.Fleet.Enabled
+	},
+	[]BundledConfigFragment{
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.SelfMonitoring.Enabled && agentConfig.SelfMonitoring.Fleet.Enabled
+			},
+			colConfigFilePath: "heartbeat_receiver.yaml.tmpl",
+		},
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.SelfMonitoring.Enabled && agentConfig.SelfMonitoring.Fleet.Enabled
+			},
+			colConfigFilePath: "heartbeat_shared.yaml.tmpl",
 		},
 	},
 )

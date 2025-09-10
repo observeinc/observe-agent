@@ -67,6 +67,18 @@
       },
       "type": "object"
     },
+    "FleetHeartbeatConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ForwardingConfig": {
       "additionalProperties": false,
       "properties": {
@@ -264,6 +276,9 @@
       "properties": {
         "enabled": {
           "type": "boolean"
+        },
+        "heartbeat": {
+          "$ref": "#/$defs/FleetHeartbeatConfig"
         }
       },
       "type": "object"

@@ -5,6 +5,7 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/docker"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/linux"
+	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/macos"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/shared"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/windows"
 )
@@ -24,6 +25,7 @@ var SharedTemplateFS = ConfigTemplates{
 	"host_monitoring/host.yaml.tmpl":             shared.HostTemplateFS,
 	"host_monitoring/process_metrics.yaml.tmpl":  shared.ProcessMetricsTemplateFS,
 	"self_monitoring/logs_and_metrics.yaml.tmpl": shared.LogsAndMetricsTemplateFS,
+	"fleet/heartbeat_shared.yaml.tmpl":           shared.HeartbeatSharedTemplateFS,
 }
 
 var DockerTemplateFS = ConfigTemplates{
@@ -32,18 +34,23 @@ var DockerTemplateFS = ConfigTemplates{
 	"host_monitoring/host_metrics.yaml.tmpl":     docker.HostMetricsTemplateFS,
 	"host_monitoring/process_metrics.yaml.tmpl":  docker.ProcessMetricsTemplateFS,
 	"self_monitoring/logs_and_metrics.yaml.tmpl": docker.LogsAndMetricsTemplateFS,
+	"fleet/heartbeat_receiver.yaml.tmpl":         docker.HeartbeatTemplateFS,
 }
 
 var LinuxTemplateFS = ConfigTemplates{
 	"host_monitoring/logs.yaml.tmpl":             linux.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl":     linux.HostMetricsTemplateFS,
 	"self_monitoring/logs_and_metrics.yaml.tmpl": linux.LogsAndMetricsTemplateFS,
+	"fleet/heartbeat_receiver.yaml.tmpl":         linux.HeartbeatTemplateFS,
 }
 
-var MacOSTemplateFS = ConfigTemplates{}
+var MacOSTemplateFS = ConfigTemplates{
+	"fleet/heartbeat_receiver.yaml.tmpl": macos.HeartbeatTemplateFS,
+}
 
 var WindowsTemplateFS = ConfigTemplates{
 	"common/base.yaml.tmpl":                  windows.BaseTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":         windows.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl": windows.HostMetricsTemplateFS,
+	"fleet/heartbeat_receiver.yaml.tmpl":     windows.HeartbeatTemplateFS,
 }
