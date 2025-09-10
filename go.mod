@@ -290,6 +290,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.131.0 // indirect
