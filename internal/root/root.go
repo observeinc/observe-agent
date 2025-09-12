@@ -126,11 +126,11 @@ func setEnvVars() error {
 	// Initialize agent resource to get/generate agent instance ID
 	agentRes, err := agentresource.New()
 	if err != nil {
-		return fmt.Errorf("failed to initialize agent resource: %w", err)
+		fmt.Fprintf(os.Stderr, "Could not instantiate agent resource: %w\n", err)
+	} else {
+		// Set agent instance ID as environment variable
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
 	}
-
-	// Set agent instance ID as environment variable
-	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
 
 	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
 	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:
