@@ -16,6 +16,17 @@ connectors:
 exporters:
     debug: null
     nop: null
+    otlphttp/agentheartbeat:
+        compression: zstd
+        headers:
+            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            x-observe-target-package: Observe Agent
+        logs_endpoint: https://123456789.collect.observe-eng.com/v1/kubernetes/v1/entity
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
     otlphttp/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
@@ -115,6 +126,16 @@ processors:
             - action: insert
               key: deployment.environment
               value: ""
+    resource/agent_instance:
+        attributes:
+            - action: upsert
+              key: observe.agent.instance.id
+              value: test-agent-instance-id
+    resource/heartbeat:
+        attributes:
+            - action: insert
+              from_attribute: host.name
+              key: observe.agent.hostname
     resource/observe_global_resource_attributes:
         attributes:
             - action: insert
@@ -227,6 +248,13 @@ receivers:
         collection_interval: 5m
         include: /etc/observe-agent/observe-agent.yaml
         initial_delay: 60s
+    heartbeat:
+        auth_check:
+            headers:
+                authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            url: https://123456789.collect.observe-eng.com
+        environment: docker
+        interval: 30s
     hostmetrics/host-monitoring-host:
         collection_interval: 60s
         root_path: /hostfs
@@ -360,6 +388,16 @@ service:
                 - batch
             receivers:
                 - otlp
+        logs/heartbeat:
+            exporters:
+                - otlphttp/agentheartbeat
+            processors:
+                - resourcedetection
+                - resourcedetection/cloud
+                - resource/agent_instance
+                - resource/heartbeat
+            receivers:
+                - heartbeat
         logs/host_monitoring-file:
             exporters:
                 - otlphttp/observe
@@ -517,4 +555,9 @@ service:
                         prometheus:
                             host: 0.0.0.0
                             port: 12346
+                            with_resource_constant_labels:
+                                included:
+                                    - observe.agent.instance.id
+        resource:
+            observe.agent.instance.id: test-agent-instance-id
 

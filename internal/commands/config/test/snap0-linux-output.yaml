@@ -77,6 +77,11 @@ processors:
             - action: insert
               key: deployment.environment
               value: ""
+    resource/agent_instance:
+        attributes:
+            - action: upsert
+              key: observe.agent.instance.id
+              value: test-agent-instance-id
     resourcedetection:
         detectors:
             - env
@@ -355,3 +360,8 @@ service:
                         prometheus:
                             host: localhost
                             port: 8888
+                            with_resource_constant_labels:
+                                included:
+                                    - observe.agent.instance.id
+        resource:
+            observe.agent.instance.id: test-agent-instance-id

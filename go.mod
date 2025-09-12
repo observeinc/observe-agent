@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stoewer/go-strcase v1.3.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.37.0
+	go.opentelemetry.io/collector/confmap v1.39.0
 	go.opentelemetry.io/collector/otelcol v0.131.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.34.0
@@ -226,6 +226,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 // indirect
+	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.131.0 // indirect
@@ -289,6 +290,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.131.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.131.0 // indirect
@@ -421,7 +423,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.131.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.131.0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.131.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.39.0 // indirect
 	go.opentelemetry.io/collector/filter v0.131.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.131.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.131.0 // indirect
@@ -431,7 +433,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.131.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.131.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.131.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.131.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.39.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.131.0 // indirect
 	go.opentelemetry.io/collector/processor v1.37.0 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.131.0 // indirect
@@ -497,10 +499,10 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.238.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/grpc v1.74.2 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/grpc v1.75.0 // indirect
+	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -521,6 +523,7 @@ require (
 
 replace (
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
+	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 	github.com/observeinc/observe-agent/observecol => ./observecol
 	// TODO remove this replacement once the otel upstream is fixed; see: https://github.com/open-telemetry/opentelemetry-collector-releases/pull/1067
 	go.opentelemetry.io/otel/exporters/prometheus => go.opentelemetry.io/otel/exporters/prometheus v0.58.0

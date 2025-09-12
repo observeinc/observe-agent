@@ -38,8 +38,13 @@ type HostMonitoringConfig struct {
 	Metrics HostMonitoringMetricsConfig `yaml:"metrics,omitempty" mapstructure:"metrics"`
 }
 
+type FleetHeartbeatConfig struct {
+	Enabled  bool   `yaml:"enabled" mapstructure:"enabled"`
+	Interval string `yaml:"interval" mapstructure:"interval" default:"10m"`
+}
 type SelfMonitoringConfig struct {
-	Enabled bool `yaml:"enabled" mapstructure:"enabled"`
+	Enabled bool                 `yaml:"enabled" mapstructure:"enabled"`
+	Fleet   FleetHeartbeatConfig `yaml:"fleet,omitempty" mapstructure:"fleet"`
 }
 
 type HealthCheckConfig struct {
@@ -106,6 +111,7 @@ type AgentConfig struct {
 	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
 	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
+	AgentLocalFilePath     string                  `yaml:"agent_local_file_path,omitempty" mapstructure:"agent_local_file_path"`
 	Application            ApplicationConfig       `yaml:"application,omitempty" mapstructure:"application"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
