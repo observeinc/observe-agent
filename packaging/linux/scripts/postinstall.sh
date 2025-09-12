@@ -13,14 +13,20 @@ if [[ -d /run/systemd/system ]]; then
     if systemctl list-unit-files observe-agent.service >/dev/null 2>&1; then
         # Determine if this is an upgrade or fresh install
         # For RPM: 1 = install, 2+ = upgrade
-        # For DEB: we check if service was previously running or enabled
+        # For DEB: we check if service was previously running or enabled, or if service file exists
         IS_UPGRADE=false
         if [ "$1" = "2" ] || [ "$1" -gt "2" ] 2>/dev/null; then
             # RPM upgrade
             IS_UPGRADE=true
-        elif [ "$1" = "configure" ] && (systemctl is-active --quiet observe-agent.service || systemctl is-enabled --quiet observe-agent.service); then
-            # DEB upgrade (service was previously active or enabled)
-            IS_UPGRADE=true
+        elif [ "$1" = "configure" ]; then
+            # For DEB packages, check multiple indicators of previous installation
+            if systemctl is-enabled --quiet observe-agent.service 2>/dev/null || \
+               systemctl is-active --quiet observe-agent.service 2>/dev/null || \
+               [ -f /var/lib/systemd/deb-systemd-helper-enabled/observe-agent.service.dsh-also ] || \
+               [ -f /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/observe-agent.service ]; then
+                # DEB upgrade (service was previously installed and potentially enabled)
+                IS_UPGRADE=true
+            fi
         fi
         
         if [ "$IS_UPGRADE" = true ]; then
