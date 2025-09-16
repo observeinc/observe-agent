@@ -2,6 +2,7 @@ package gosnowflake
 
 import (
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -52,12 +53,13 @@ type Config struct {
 	Role      string // Role
 	Region    string // Region
 
-	OauthClientID         string // Client id for OAuth2 external IdP
-	OauthClientSecret     string // Client secret for OAuth2 external IdP
-	OauthAuthorizationURL string // Authorization URL of Auth2 external IdP
-	OauthTokenRequestURL  string // Token request URL of Auth2 external IdP
-	OauthRedirectURI      string // Redirect URI registered in IdP. The default is http://127.0.0.1:<random port>/
-	OauthScope            string // Comma separated list of scopes. If empty it is derived from role.
+	OauthClientID                string // Client id for OAuth2 external IdP
+	OauthClientSecret            string // Client secret for OAuth2 external IdP
+	OauthAuthorizationURL        string // Authorization URL of Auth2 external IdP
+	OauthTokenRequestURL         string // Token request URL of Auth2 external IdP
+	OauthRedirectURI             string // Redirect URI registered in IdP. The default is http://127.0.0.1:<random port>
+	OauthScope                   string // Comma separated list of scopes. If empty it is derived from role.
+	EnableSingleUseRefreshTokens bool   // Enables single use refresh tokens for Snowflake IdP
 
 	// ValidateDefaultParameters disable the validation checks for Database, Schema, Warehouse and Role
 	// at the time a connection is established
@@ -100,6 +102,9 @@ type Config struct {
 
 	Transporter http.RoundTripper // RoundTripper to intercept HTTP requests and responses
 
+	tlsConfig     *tls.Config // Custom TLS configuration
+	TLSConfigName string      // Name of the TLS config to use
+
 	DisableTelemetry bool // indicates whether to disable telemetry
 
 	Tracing string // sets logging level
@@ -123,6 +128,15 @@ type Config struct {
 
 	WorkloadIdentityProvider      string // The workload identity provider to use for WIF authentication
 	WorkloadIdentityEntraResource string // The resource to use for WIF authentication on Azure environment
+
+	CertRevocationCheckMode           CertRevocationCheckMode // revocation check mode for CRLs
+	CrlAllowCertificatesWithoutCrlURL ConfigBool              // Allow certificates (not short-lived) without CRL DP included to be treated as correct ones
+	CrlInMemoryCacheDisabled          bool                    // Should the in-memory cache be disabled
+	CrlOnDiskCacheDisabled            bool                    // Should the on-disk cache be disabled
+	CrlHTTPClientTimeout              time.Duration           // Timeout for HTTP client used to download CRL
+
+	ConnectionDiagnosticsEnabled       bool   // Indicates whether connection diagnostics should be enabled
+	ConnectionDiagnosticsAllowlistFile string // File path to the allowlist file for connection diagnostics. If not specified, the allowlist.json file in the current directory will be used.
 }
 
 // Validate enables testing if config is correct.
@@ -217,6 +231,9 @@ func DSN(cfg *Config) (dsn string, err error) {
 	if cfg.OauthScope != "" {
 		params.Add("oauthScope", cfg.OauthScope)
 	}
+	if cfg.EnableSingleUseRefreshTokens {
+		params.Add("enableSingleUseRefreshTokens", strconv.FormatBool(cfg.EnableSingleUseRefreshTokens))
+	}
 	if cfg.WorkloadIdentityProvider != "" {
 		params.Add("workloadIdentityProvider", cfg.WorkloadIdentityProvider)
 	}
@@ -269,6 +286,21 @@ func DSN(cfg *Config) (dsn string, err error) {
 	if cfg.Token != "" {
 		params.Add("token", cfg.Token)
 	}
+	if cfg.CertRevocationCheckMode != CertRevocationCheckDisabled {
+		params.Add("certRevocationCheckMode", cfg.CertRevocationCheckMode.String())
+	}
+	if cfg.CrlAllowCertificatesWithoutCrlURL == ConfigBoolTrue {
+		params.Add("crlAllowCertificatesWithoutCrlURL", "true")
+	}
+	if cfg.CrlInMemoryCacheDisabled {
+		params.Add("crlInMemoryCacheDisabled", "true")
+	}
+	if cfg.CrlOnDiskCacheDisabled {
+		params.Add("crlOnDiskCacheDisabled", "true")
+	}
+	if cfg.CrlHTTPClientTimeout != 0 {
+		params.Add("crlHttpClientTimeout", strconv.FormatInt(int64(cfg.CrlHTTPClientTimeout/time.Second), 10))
+	}
 	if cfg.Params != nil {
 		for k, v := range cfg.Params {
 			params.Add(k, *v)
@@ -320,6 +352,15 @@ func DSN(cfg *Config) (dsn string, err error) {
 	}
 	if cfg.DisableSamlURLCheck != configBoolNotSet {
 		params.Add("disableSamlURLCheck", strconv.FormatBool(cfg.DisableSamlURLCheck != ConfigBoolFalse))
+	}
+	if cfg.ConnectionDiagnosticsEnabled {
+		params.Add("connectionDiagnosticsEnabled", strconv.FormatBool(cfg.ConnectionDiagnosticsEnabled))
+	}
+	if cfg.ConnectionDiagnosticsAllowlistFile != "" {
+		params.Add("connectionDiagnosticsAllowlistFile", cfg.ConnectionDiagnosticsAllowlistFile)
+	}
+	if cfg.TLSConfigName != "" {
+		params.Add("tlsConfigName", cfg.TLSConfigName)
 	}
 
 	dsn = fmt.Sprintf("%v:%v@%v:%v", url.QueryEscape(cfg.User), url.QueryEscape(cfg.Password), cfg.Host, cfg.Port)
@@ -578,6 +619,16 @@ func fillMissingConfigParameters(cfg *Config) error {
 			MessageArgs: []interface{}{cfg.Host},
 		}
 	}
+	if cfg.TLSConfigName != "" {
+		if tlsConfig, ok := getTLSConfig(cfg.TLSConfigName); ok {
+			cfg.tlsConfig = tlsConfig
+		} else {
+			return &SnowflakeError{
+				Number:  ErrCodeMissingTLSConfig,
+				Message: fmt.Sprintf(errMsgMissingTLSConfig, cfg.TLSConfigName),
+			}
+		}
+	}
 	return nil
 }
 
@@ -763,6 +814,13 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			cfg.OauthRedirectURI = value
 		case "oauthScope":
 			cfg.OauthScope = value
+		case "enableSingleUseRefreshTokens":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			cfg.EnableSingleUseRefreshTokens = vv
 		case "passcodeInPassword":
 			var vv bool
 			vv, err = strconv.ParseBool(value)
@@ -846,6 +904,8 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 
 		case "token":
 			cfg.Token = value
+		case "tlsConfigName":
+			cfg.TLSConfigName = value
 		case "workloadIdentityProvider":
 			cfg.WorkloadIdentityProvider = value
 		case "workloadIdentityEntraResource":
@@ -943,6 +1003,59 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			} else {
 				cfg.DisableSamlURLCheck = ConfigBoolFalse
 			}
+		case "certRevocationCheckMode":
+			var certRevocationCheckMode CertRevocationCheckMode
+			certRevocationCheckMode, err = parseCertRevocationCheckMode(value)
+			if err != nil {
+				return
+			}
+			cfg.CertRevocationCheckMode = certRevocationCheckMode
+		case "crlAllowCertificatesWithoutCrlURL":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if vv {
+				cfg.CrlAllowCertificatesWithoutCrlURL = ConfigBoolTrue
+			} else {
+				cfg.CrlAllowCertificatesWithoutCrlURL = ConfigBoolFalse
+			}
+		case "crlInMemoryCacheDisabled":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			if vv {
+				cfg.CrlInMemoryCacheDisabled = true
+			} else {
+				cfg.CrlInMemoryCacheDisabled = false
+			}
+		case "crlOnDiskCacheDisabled":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			if vv {
+				cfg.CrlOnDiskCacheDisabled = true
+			} else {
+				cfg.CrlOnDiskCacheDisabled = false
+			}
+		case "crlHttpClientTimeout":
+			var vv int64
+			vv, err = strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return
+			}
+			cfg.CrlHTTPClientTimeout = time.Duration(vv * int64(time.Second))
+		case "connectionDiagnosticsEnabled":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			cfg.ConnectionDiagnosticsEnabled = vv
+		case "connectionDiagnosticsAllowlistFile":
+			cfg.ConnectionDiagnosticsAllowlistFile = value
 		default:
 			if cfg.Params == nil {
 				cfg.Params = make(map[string]*string)

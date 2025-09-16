@@ -94,22 +94,8 @@ The following connection parameters are supported:
     0 (zero) specifies that the driver should wait indefinitely. The default is 0 seconds.
     The query request gives up after the timeout length if the HTTP response is success.
 
-  - authenticator: Specifies the authenticator to use for authenticating user credentials:
-
-  - To use the internal Snowflake authenticator, specify snowflake (Default). If you want to cache your MFA logins, use AuthTypeUsernamePasswordMFA authenticator.
-
-  - To use programmatic access tokens, specify programmatic_access_token.
-
-  - To authenticate through Okta, specify https://<okta_account_name>.okta.com (URL prefix for Okta).
-
-  - To authenticate using your IDP via a browser, specify externalbrowser.
-
-  - To authenticate via OAuth with token, specify oauth and provide an OAuth Access Token (see the token parameter below).
-
-  - To authenticate via full OAuth flow, specify oauth_authorization_code or oauth_client_credentials and fill relevant parameters (oauthClientId, oauthClientSecret, oauthAuthorizationUrl, oauthTokenRequestUrl, oauthRedirectUri, oauthScope).
-    Specify URLs if you want to use external OAuth2 IdP, otherwise Snowflake will be used as a default IdP.
-    If oauthScope is not configured, the role is used (giving session:role:<roleName> scope).
-    For more information, please reach to official Snowflake documentation.
+  - authenticator: Specifies the authenticator to use for authenticating user credentials.
+    See "Authenticator Values" section below for supported values.
 
   - application: Identifies your application to Snowflake Support.
 
@@ -127,6 +113,30 @@ The following connection parameters are supported:
     the access forever as long as the process is alive.
 
   - ocspFailOpen: true by default. Set to false to make OCSP check fail closed mode.
+
+  - certRevocationCheckMode (enabled, advisory, disabled): Specifies the certificate revocation check mode.
+    When enabled, the driver performs a certificate revocation check using CRL.
+    When advisory, the driver performs a certificate revocation check using CRL, but fails the connection only if the certificate is revoked.
+    If the status cannot be determined, the connection is established.
+    When disabled, the driver does not perform a certificate revocation check.
+    Keep in mind that the certificate revocation check with CRLs is a heavy task, both for memory and CPU.
+    The default is disabled.
+
+  - crlAllowCertificatesWithoutCrlURL: if a certificate does not have a CRL URL, the driver will
+    allow the connection to be established.
+    The default is false.
+
+  - SNOWFLAKE_CRL_CACHE_VALIDITY_TIME (environment variable): specifies the validity time of the CRL cache in seconds.
+
+  - crlInMemoryCacheDisabled: set to disable in-memory caching of CRLs.
+
+  - crlOnDiskCacheDisabled: set to disable on-disk caching of CRLs (on-disk cache may help with cold starts).
+
+  - SNOWFLAKE_CRL_ON_DISK_CACHE_DIR (environment variable): set to customize the directory for on-disk caching of CRLs.
+
+  - SNOWFLAKE_CRL_ON_DISK_CACHE_REMOVAL_DELAY (environment variable): set the delay (in seconds) for removing the on-disk cache (for debuggability).
+
+  - crlHTTPClientTimeout: customize the HTTP client timeout for downloading CRLs.
 
   - validateDefaultParameters: true by default. Set to false to disable checks on existence and privileges check for
     Database, Schema, Warehouse and Role when setting up the connection
@@ -158,6 +168,32 @@ Session-level parameters can also be set by using the SQL command "ALTER SESSION
 (https://docs.snowflake.com/en/sql-reference/sql/alter-session.html).
 
 Alternatively, use OpenWithConfig() function to create a database handle with the specified Config.
+
+# Authenticator values
+
+  - To use the internal Snowflake authenticator, specify snowflake (Default).
+
+  - To use programmatic access tokens, specify programmatic_access_token.
+    If you want to cache your MFA logins, use AuthTypeUsernamePasswordMFA authenticator.
+
+  - To authenticate through Okta, specify https://<okta_account_name>.okta.com (URL prefix for Okta).
+
+  - To authenticate using your IDP via a browser, specify externalbrowser.
+
+  - To authenticate via OAuth with token, specify oauth and provide an OAuth Access Token (see the token parameter below).
+
+  - To authenticate via full OAuth flow, specify oauth_authorization_code or oauth_client_credentials and fill relevant parameters (oauthClientId, oauthClientSecret, oauthAuthorizationUrl, oauthTokenRequestUrl, oauthRedirectUri, oauthScope).
+    Specify URLs if you want to use external OAuth2 IdP, otherwise Snowflake will be used as a default IdP.
+    If oauthScope is not configured, the role is used (giving session:role:<roleName> scope).
+    For more information, please reach to official Snowflake documentation.
+
+  - To authenticate via workload identity, specify workload_identity.
+
+    This option requires workloadIdentityProvider option to be set (AWS, GCP, AZURE, OIDC).
+
+    When workloadIdentityProvider=AZURE, workloadIdentityEntraResource can be optionally set to customize entra resource used to fetch JWT token.
+
+    For more details, refer to the usage guide: https://docs.snowflake.com/en/user-guide/workload-identity-federation
 
 # Connection Config
 
@@ -1350,5 +1386,35 @@ If you wish to ignore those errors instead, you can set `RaisePutGetError: false
 
 	ctx := WithFileTransferOptions(context.Background(), &SnowflakeFileTransferOptions{RaisePutGetError: false})
 	db.ExecContext(ctx, "PUT ...")
+
+# Connectivity diagnostics
+
+==> Relevant configuration
+
+- `ConnectionDiagnosticsEnabled` (default: false) - main flag to enable the diagnostics
+
+- `ConnectionDiagnosticsAllowlistFile` - specify `/path/to/allowlist.json` to use a specific allowlist file which the driver should parse. If not specified, the driver tries to open `allowlist.json` from the current directory.
+The `ConnectionDiagnosticsAllowlistFile` is only taken into consideration when `ConnectionDiagnosticsEnabled=true`
+
+==> Flow of operation when `ConnectionDiagnosticsEnabled=true`
+
+1. upon initial startup, driver opens and reads the `allowlist.json` to determine which hosts it needs to connect to, and then for each entry in the allowlist
+
+2. perform a DNS resolution test to see if the hostname is resolvable
+
+3. driver logs an Error, when encountering a _public_ IP address for a host which looks to be a _private_ link hostname
+
+4. checks if proxy is used in the connection
+
+5. sets up a connection; for which we use the same transport which is driven by the driver's config (custom transport, or when OCSP disabled then OCSP-less transport, or by default, the OCSP-enabled transport)
+
+6. for HTTP endpoints, issues a HTTP GET request and see if it connects
+
+7. for HTTPS endpoints, the same , plus
+  - verifies if HTTPS connectivity is set up correctly
+  - parses the certificate chain and logs information on each certificate (on DEBUG loglevel, dump the whole cert)
+  - if (implicitly) configured from `CertRevocationCheckMode` being `advisory` or `enabled`, also tries to connect to the CRL endpoints
+
+8. the driver exits after performing diagnostics. If you want to use the driver 'normally' after performing connection diagnostics, set `ConnectionDiagnosticsEnabled=false` or remove it from the config
 */
 package gosnowflake
