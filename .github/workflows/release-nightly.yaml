@@ -61,7 +61,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Run GoReleaser
-        timeout-minutes: 25
+        timeout-minutes: 35
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
