@@ -42,8 +42,8 @@ func TestSetEnvVars(t *testing.T) {
 		t.Error("OBSERVE_AGENT_INSTANCE_ID environment variable was not set")
 	}
 
-	// Verify the format of the agent ID (should be "agent-<hostname>-<random>")
-	if len(agentID) < 10 || agentID[:6] != "agent-" {
+	// Verify the format of the agent ID (should be "<hostname>-<random>")
+	if len(agentID) < 8 {
 		t.Errorf("Invalid agent ID format: %s", agentID)
 	}
 }

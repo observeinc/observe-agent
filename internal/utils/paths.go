@@ -19,3 +19,16 @@ func GetDefaultAgentPath() string {
 		return "/etc/observe-agent"
 	}
 }
+
+func GetDefaultLocalStoragePath() string {
+	switch currOS := runtime.GOOS; currOS {
+	case "darwin":
+		return "/var/lib/observe-agent"
+	case "windows":
+		return os.ExpandEnv("$ProgramFiles\\Observe\\observe-agent")
+	case "linux":
+		return "/var/lib/observe-agent"
+	default:
+		return "/var/lib/observe-agent"
+	}
+}
