@@ -98,7 +98,7 @@ func (a *AgentResource) generateAgentInstanceId() string {
 	if err != nil {
 		hostname = "unknown"
 	}
-	return fmt.Sprintf("agent-%s-%s", hostname, generateRandomString(6))
+	return fmt.Sprintf("%s-%s", hostname, generateRandomString(6))
 }
 
 func (a *AgentResource) persistToLocalFile() error {

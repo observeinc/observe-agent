@@ -21,4 +21,4 @@ service:
     logs/heartbeat:
       receivers: [heartbeat]
       processors: [resourcedetection, resourcedetection/cloud, transform/hostname]
-      exporters: [otlphttp/agentheartbeat, debug]  
+      exporters: [otlphttp/agentheartbeat]  
