@@ -126,7 +126,7 @@ func setEnvVars() error {
 	// Initialize agent resource to get/generate agent instance ID
 	agentRes, err := agentresource.New()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not instantiate agent resource: %w\n", err)
+		fmt.Fprintf(os.Stderr, "Could not instantiate agent resource: %v\n", err)
 	} else {
 		// Set agent instance ID as environment variable
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
