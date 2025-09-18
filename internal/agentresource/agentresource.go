@@ -24,7 +24,7 @@ type AgentResource struct {
 
 const nameSuffixCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-var defaultLocalFilePath = filepath.Join(utils.GetDefaultAgentPath(), "agent_local_data.json")
+var defaultLocalFilePath = filepath.Join(utils.GetDefaultLocalStoragePath(), "agent_local_data.json")
 
 func generateRandomString(length int) string {
 	b := make([]byte, length)
