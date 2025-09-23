@@ -138,7 +138,7 @@ if [[ -d /run/systemd/system ]]; then
         sudo getent passwd observe-agent >/dev/null || sudo useradd --system --user-group --no-create-home --shell /sbin/nologin observe-agent
         sudo usermod -a -G systemd-journal observe-agent
         sudo mkdir -p /var/lib/observe-agent/filestorage
-        sudo chown -R observe-agent:observe-agent /var/lib/observe-agent/filestorage
+        sudo chown -R observe-agent:observe-agent /var/lib/observe-agent
 
         # Copy the service file and start the service.
         sudo cp -f $tmp_dir/observe-agent.service /etc/systemd/system/observe-agent.service
