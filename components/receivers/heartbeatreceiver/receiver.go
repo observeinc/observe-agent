@@ -87,11 +87,6 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
-				// Add resource attributes
-				resourceLogs.Resource().Attributes().PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
-				resourceLogs.Resource().Attributes().PutStr("observe.agent.environment", r.cfg.Environment)
-				resourceLogs.Resource().Attributes().PutStr("observe.agent.processId", strconv.Itoa(os.Getpid()))
-
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				logRecord := scopeLogs.LogRecords().AppendEmpty()
 
@@ -100,16 +95,24 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				// Identifiers subobject
 				identifiers := observe_transform.PutEmptyMap("identifiers")
 				identifiers.PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
+				identifiers.PutStr("observe.agent.processId", strconv.Itoa(os.Getpid()))
+				identifiers.PutStr("observe.agent.environment", r.cfg.Environment)
+
 				// Control subobject
 				control := observe_transform.PutEmptyMap("control")
 				control.PutBool("isDelete", false)
 				// observe_transform fields
 				observe_transform.PutInt("process_start_time", r.state.AgentStartTime)
 				observe_transform.PutInt("valid_from", time.Now().UnixNano())
+
+				// facets
+				observe_transform.PutEmptyMap("facets")
+
 				// The entities will be valid for 90 minutes
 				observe_transform.PutInt("valid_to", time.Now().UnixNano()+5400000000000)
 				observe_transform.PutStr("kind", "AgentLifecycleEvent")
 				body := logRecord.Body().SetEmptyMap()
+				body.PutStr("event_type", "HEARTBEAT")
 				body.PutStr("agent_instance_id", r.state.AgentInstanceId)
 				body.PutInt("agent_start_time", r.state.AgentStartTime)
 

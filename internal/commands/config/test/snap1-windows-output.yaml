@@ -128,11 +128,6 @@ processors:
             - action: upsert
               key: observe.agent.instance.id
               value: test-agent-instance-id
-    resource/heartbeat:
-        attributes:
-            - action: insert
-              from_attribute: host.name
-              key: observe.agent.hostname
     resource/observe_global_resource_attributes:
         attributes:
             - action: insert
@@ -178,6 +173,11 @@ processors:
             - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
             - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
             - delete_key(datapoint.attributes, "status.code")
+    transform/hostname:
+        log_statements:
+            - context: log
+              statements:
+                - set(attributes["observe_transform"]["identifiers"]["observe.agent.hostname"], resource.attributes["host.name"])
     transform/remove_service_name_for_peer_metrics:
         error_mode: ignore
         metric_statements:
@@ -340,8 +340,7 @@ service:
             processors:
                 - resourcedetection
                 - resourcedetection/cloud
-                - resource/agent_instance
-                - resource/heartbeat
+                - transform/hostname
             receivers:
                 - heartbeat
         logs/host_monitoring-file:
