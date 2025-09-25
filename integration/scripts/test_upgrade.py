@@ -73,36 +73,36 @@ def _verify_running(remote_host: u.Host, status_command: str, version_command: s
     return version
 
 
-def _find_upgrade_package(env_vars: dict, platform: str) -> tuple:
-    """Find the built distribution package for upgrade
+def _get_installation_package(env_vars: dict) -> tuple:
+    """Get the built distribution package for installation/upgrade
 
     Args:
         env_vars (dict): environment variables with machine config
-        platform (str): platform name (windows, linux)
 
     Returns:
         tuple: (filename, full_path) of the package
     """
-    print("⬆️ Upgrading to new version...")
-
     current_dir = os.getcwd()
     dist_directory = os.path.abspath(os.path.join(current_dir, "..", "dist"))
     files = os.listdir(dist_directory)
 
     package_type = env_vars["machine_config"]["package_type"]
     architecture = env_vars["machine_config"]["architecture"]
+    distribution = env_vars["machine_config"]["distribution"]
 
-    filename = None
-    for file in files:
-        if package_type in file and architecture in file and platform.lower() in file.lower():
-            filename = file
-            break
+    # Iterate through files and find matches
+    for filename in files:
+        if package_type in filename and architecture in filename:
+            # We can make this more general if need be.
+            if "windows" in distribution and "windows" not in filename.lower():
+                continue
+            full_path = os.path.join(dist_directory, filename)
+            print(f"Found matching file {filename} at: {full_path}")
+            return filename, full_path
 
-    if not filename:
-        u.die(f"❌ No matching upgrade package found in {dist_directory}")
-
-    full_path = os.path.join(dist_directory, filename)
-    return filename, full_path
+    u.die(
+        f"❌ No matching file found for {distribution},{architecture},{package_type} in {dist_directory}: {', '.join(files)}"
+    )
 
 
 def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
@@ -197,7 +197,8 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     old_version_actual = _verify_running(remote_host, status_command, version_command, "old")
 
     # Find and perform upgrade
-    filename, full_path = _find_upgrade_package(env_vars, "windows")
+    print("⬆️ Upgrading to new version...")
+    filename, full_path = _get_installation_package(env_vars)
     _perform_upgrade(remote_host, filename, full_path, "windows", env_vars)
 
     # Verify upgrade was successful
@@ -230,7 +231,8 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     old_version_actual = _verify_running(remote_host, status_command, version_command, "old")
 
     # Find and perform upgrade
-    filename, full_path = _find_upgrade_package(env_vars, "linux")
+    print("⬆️ Upgrading to new version...")
+    filename, full_path = _get_installation_package(env_vars)
     _perform_upgrade(remote_host, filename, full_path, "linux")
 
     # Verify upgrade was successful
