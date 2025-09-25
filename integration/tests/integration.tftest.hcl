@@ -1,5 +1,11 @@
 //provider "aws" {}
 
+variable "old_version" {
+  description = "Old version of observe-agent to upgrade from (e.g., v2.5.0)"
+  type        = string
+  default     = "v2.5.0"
+}
+
 
 run "setup_ec2" {
   module {
@@ -181,6 +187,7 @@ run "test_upgrade" {
       PASSWORD       = run.setup_ec2.password
       MACHINE_NAME   = run.setup_ec2.machine_name
       MACHINE_CONFIG = run.setup_ec2.machine_config
+      OLD_VERSION    = try(var.old_version, "v2.5.0")
     }
   }
 
