@@ -181,7 +181,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         env_vars (dict): environment variables passed into for testing
     """
     # Get old version from env var, default to v2.5.0
-    old_version = env_vars.get("old_version", "v2.5.0")
+    old_version = os.environ.get("OLD_VERSION", "v2.5.0")
 
     # Commands for Windows
     install_old_command = fr'powershell -Command "& {{ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri \"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip\" -OutFile \"observe-agent-old.zip\"; Expand-Archive -Path \"observe-agent-old.zip\" -DestinationPath \"observe-agent-old\" -Force; ./observe-agent-old/install.ps1 }}"'
@@ -215,7 +215,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
         env_vars (dict): environment variables passed into for testing
     """
     # Get old version from env var, default to v2.5.0
-    old_version = env_vars.get("old_version", "v2.5.0")
+    old_version = os.environ.get("OLD_VERSION", "v2.5.0")
 
     # Commands for Linux
     install_old_command = f"curl -s -L https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Linux_$(arch).tar.gz | sudo tar -xz -C /tmp && sudo /tmp/observe-agent/install_linux.sh"
