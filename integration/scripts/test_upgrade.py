@@ -3,7 +3,8 @@ import os
 import sys
 import time
 import tempfile
-import requests
+import urllib.request
+import urllib.error
 import utils as u
 
 
@@ -188,12 +189,12 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
         print(f"Downloading {download_url}...")
         try:
-            response = requests.get(download_url, timeout=60)
-            if response.status_code != 200:
-                u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
-            temp_file.write(response.content)
+            with urllib.request.urlopen(download_url, timeout=60) as response:
+                temp_file.write(response.read())
             local_package_path = temp_file.name
-        except requests.RequestException as e:
+        except urllib.error.URLError as e:
+            u.die(f"❌ Error downloading old version: {e}")
+        except Exception as e:
             u.die(f"❌ Error downloading old version: {e}")
 
     # Upload the package to remote host with correct filename (same as test_install.py)
@@ -284,12 +285,12 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pkg') as temp_file:
         print(f"Downloading {package_url}...")
         try:
-            response = requests.get(package_url, timeout=60)
-            if response.status_code != 200:
-                u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
-            temp_file.write(response.content)
+            with urllib.request.urlopen(package_url, timeout=60) as response:
+                temp_file.write(response.read())
             local_package_path = temp_file.name
-        except requests.RequestException as e:
+        except urllib.error.URLError as e:
+            u.die(f"❌ Error downloading old version: {e}")
+        except Exception as e:
             u.die(f"❌ Error downloading old version: {e}")
 
     # Upload the package to remote host with correct filename (same as test_install.py)
