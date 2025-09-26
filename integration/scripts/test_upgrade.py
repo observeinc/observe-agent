@@ -9,6 +9,56 @@ import utils as u
 
 
 
+def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None:
+    """Configure the observe-agent with minimal settings to allow it to start
+
+    Args:
+        remote_host (Host): instance to ssh into
+        platform (str): platform name (windows, linux)
+        env_vars (dict): environment variables with config
+    """
+    print("🔧 Configuring observe-agent...")
+
+    # Use dummy values if observe credentials aren't provided
+    observe_url = env_vars.get("observe_url", "https://dummy.observe.com")
+    observe_token = env_vars.get("observe_token", "dummy_token")
+
+    if platform == "windows":
+        config_command = (
+            r'Set-Location "C:\Program Files\Observe\observe-agent"; '
+            r'./observe-agent init-config --token {} --observe_url {} --print'.format(
+                observe_token, observe_url
+            )
+        )
+    else:  # Linux
+        config_command = 'sudo observe-agent init-config --token {} --observe_url {} --print'.format(
+            observe_token, observe_url
+        )
+
+    # First print what we're going to configure
+    result = remote_host.run_command(config_command)
+    u.print_remote_result(result)
+
+    # Now actually set the config (remove --print)
+    if platform == "windows":
+        config_command = (
+            r'Set-Location "C:\Program Files\Observe\observe-agent"; '
+            r'./observe-agent init-config --token {} --observe_url {}'.format(
+                observe_token, observe_url
+            )
+        )
+    else:  # Linux
+        config_command = 'sudo observe-agent init-config --token {} --observe_url {}'.format(
+            observe_token, observe_url
+        )
+
+    result = remote_host.run_command(config_command)
+    if result.exited != 0:
+        print("⚠️ Warning: Configuration may have failed, but continuing...")
+    else:
+        print("✅ Agent configured successfully")
+
+
 def _start_service(remote_host: u.Host, start_command: str, platform: str, env_vars: dict = None):
     """Start the observe-agent service
 
@@ -222,6 +272,11 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
     # Cleanup local temp file
     os.unlink(local_package_path)
+
+    # Configure the old version so it can start properly
+    _configure_agent(remote_host, "windows", env_vars)
+
+    # Start the configured service
     _start_service(remote_host, start_command, "windows", env_vars)
 
     # Verify old version is running
@@ -268,13 +323,18 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
 
     if "redhat" in distribution:
         # Use RPM package for RedHat-based systems
-        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{arch}.rpm"
-        filename = f"observe-agent_{arch}.rpm"
+        # v2.5.0 uses format: observe-agent-2.5.0-1.x86_64.rpm
+        version_number = old_version.lstrip('v')  # Remove 'v' prefix
+        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent-{version_number}-1.{arch}.rpm"
+        filename = f"observe-agent-{version_number}-1.{arch}.rpm"
         install_command = f"cd ~ && sudo yum localinstall {filename} -y"
     elif "debian" in distribution:
         # Use DEB package for Debian-based systems
-        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{arch}.deb"
-        filename = f"observe-agent_{arch}.deb"
+        # v2.5.0 uses format: observe-agent_2.5.0_amd64.deb (note: amd64 not x86_64)
+        version_number = old_version.lstrip('v')  # Remove 'v' prefix
+        deb_arch = "amd64" if arch == "x86_64" else arch  # Debian uses amd64 instead of x86_64
+        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{version_number}_{deb_arch}.deb"
+        filename = f"observe-agent_{version_number}_{deb_arch}.deb"
         install_command = f"cd ~ && sudo dpkg -i {filename}"
     else:
         u.die(f"❌ Unsupported distribution for package installation: {distribution}")
@@ -307,6 +367,11 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
 
     # Cleanup local temp file
     os.unlink(local_package_path)
+
+    # Configure the old version so it can start properly
+    _configure_agent(remote_host, "linux", env_vars)
+
+    # Start the configured service
     _start_service(remote_host, start_command, "linux")
 
     # Verify old version is running
