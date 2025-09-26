@@ -1,4 +1,10 @@
-//provider "aws" {}
+provider "aws" {
+  region  = "us-west-1" # Specify the AWS region
+  profile = "blunderdome"
+  assume_role {
+      role_arn = "arn:aws:iam::767397788203:role/gh-observe_agent-repo"
+  }
+}
 
 variables {
   old_version = "v2.5.0"

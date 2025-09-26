@@ -170,56 +170,54 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     status_command = r'Get-Service ObserveAgent;Set-Location "${Env:Programfiles}\Observe\observe-agent"; ./observe-agent status'
     version_command = r'Set-Location "${Env:Programfiles}\Observe\observe-agent"; ./observe-agent version'
 
-    # Install old version with separate commands
+    # Install old version using the same approach as test_install.py
     print("🔄 Installing older version of observe-agent...")
 
-    # Download the old version
+    # Set windows home dir paths for consistency (same as test_install.py)
+    home_dir = r"/C:/Users/{}".format(env_vars["user"])  # for user in sftp
+    home_dir_powershell = r"C:\Users\{}".format(env_vars["user"])  # for use in powershell script
+
+    # Download the old version Windows package locally, then upload (same as test_install.py)
+    import tempfile
+    import requests
+
     download_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip"
-    download_command = f'powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri \'{download_url}\' -OutFile \'observe-agent-old.zip\'"'
+    old_filename = "observe-agent-old.zip"
 
-    result = remote_host.run_command(download_command)
+    # Download to local temp file first
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
+        print(f"Downloading {download_url}...")
+        response = requests.get(download_url)
+        if response.status_code != 200:
+            u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
+        temp_file.write(response.content)
+        local_package_path = temp_file.name
+
+    # Upload the package to remote host (same as test_install.py)
+    remote_host.put_file(local_path=local_package_path, remote_path=home_dir)
+
+    # Copy the install script from the scripts directory (same as test_install.py)
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    ps_installation_script_path = os.path.join(current_script_dir, "install_windows.ps1")
+    remote_host.put_file(local_path=ps_installation_script_path, remote_path=home_dir)
+
+    # Run install script with the uploaded package (same pattern as test_install.py)
+    result = remote_host.run_command(
+        r".\install_windows.ps1 -local_installer {}\{}".format(
+            home_dir_powershell, old_filename
+        )
+    )
     u.print_remote_result(result)
+
     if result.stderr:
-        u.die("❌ Error downloading older version of observe-agent")
-
-    # Extract the downloaded file to a subdirectory to avoid conflicts
-    extract_command = 'powershell -Command "Expand-Archive -Path \'observe-agent-old.zip\' -DestinationPath \'observe-agent-old\' -Force"'
-    result = remote_host.run_command(extract_command)
-    u.print_remote_result(result)
-    if result.stderr:
-        u.die("❌ Error extracting older version of observe-agent")
-
-    # Check what was extracted
-    ls_result = remote_host.run_command("dir observe-agent-old")
-    print("Contents of observe-agent-old directory:")
-    u.print_remote_result(ls_result)
-
-    # Find the install script - it might be in a subdirectory
-    find_result = remote_host.run_command('powershell -Command "Get-ChildItem -Path observe-agent-old -Filter install*.ps1 -Recurse | Select-Object -First 1 | ForEach-Object { $_.FullName }"')
-    print("Looking for install script:")
-    u.print_remote_result(find_result)
-
-    # Determine the correct install path
-    if find_result.stdout and find_result.stdout.strip():
-        # Use the found path, converting to relative path
-        install_script_path = find_result.stdout.strip()
-        # Convert to relative path from current directory
-        if "\\" in install_script_path:
-            # Extract just the relative path part
-            relative_path = install_script_path.split("Administrator\\")[-1] if "Administrator" in install_script_path else install_script_path
-            install_command = f'powershell -ExecutionPolicy Bypass -File ".\\{relative_path}"'
-        else:
-            install_command = f'powershell -ExecutionPolicy Bypass -File "{install_script_path}"'
+        # Use RuntimeError like test_install.py
+        raise RuntimeError("❌ Installation error in install_windows.ps1 powershell script")
     else:
-        # Try default locations
-        install_command = r"powershell -ExecutionPolicy Bypass -File .\observe-agent-old\install.ps1"
+        print("✅ Old version installation completed")
 
-    result = remote_host.run_command(install_command)
-    u.print_remote_result(result)
-    if result.stderr:
-        # Check if it's just a warning about already being installed
-        if "already installed" not in result.stderr.lower() and "warning" not in result.stderr.lower():
-            u.die("❌ Error installing older version of observe-agent")
+    # Cleanup local temp file
+    import os
+    os.unlink(local_package_path)
     _start_service(remote_host, start_command, "windows", env_vars)
 
     # Verify old version is running
@@ -251,7 +249,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     status_command = "observe-agent status"
     version_command = "observe-agent version"
 
-    # Install old version with separate commands
+    # Install old version using package managers like test_install.py
     print("🔄 Installing older version of observe-agent...")
 
     # Get architecture
@@ -260,45 +258,50 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
         u.die("❌ Error getting system architecture")
     arch = arch_result.stdout.strip()
 
-    # Download the old version
-    download_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Linux_{arch}.tar.gz"
-    download_command = f"curl -s -L {download_url} -o /tmp/observe-agent-old.tar.gz"
+    # Determine package type and download URL based on distribution
+    distribution = env_vars["machine_config"]["distribution"].lower()
+    home_dir = f"/home/{env_vars['user']}"
 
-    result = remote_host.run_command(download_command)
-    u.print_remote_result(result)
-    if result.exited != 0:
-        u.die("❌ Error downloading older version of observe-agent")
-
-    # Extract the downloaded file (without sudo first, then with sudo if needed)
-    extract_command = "tar -xzf /tmp/observe-agent-old.tar.gz -C /tmp 2>/dev/null || sudo tar -xzf /tmp/observe-agent-old.tar.gz -C /tmp"
-    result = remote_host.run_command(extract_command)
-    u.print_remote_result(result)
-    if result.exited != 0:
-        u.die("❌ Error extracting older version of observe-agent")
-
-    # Check what was extracted to find the correct path
-    ls_result = remote_host.run_command("ls -la /tmp/ | grep -i observe")
-    print("Found observe-agent files/dirs in /tmp:")
-    u.print_remote_result(ls_result)
-
-    # Try to find the install script
-    find_result = remote_host.run_command("find /tmp -name 'install_linux.sh' -type f 2>/dev/null | head -5")
-    print("Found install scripts:")
-    u.print_remote_result(find_result)
-
-    # The v2.5.0 release might extract files directly without a subdirectory
-    # Try running the install script if it exists at the root of /tmp
-    check_result = remote_host.run_command("test -f /tmp/install_linux.sh && echo 'found at /tmp' || echo 'not at /tmp'")
-    if "found at /tmp" in check_result.stdout:
-        install_command = "cd /tmp && sudo bash ./install_linux.sh"
+    if "redhat" in distribution:
+        # Use RPM package for RedHat-based systems
+        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{arch}.rpm"
+        filename = f"observe-agent_{arch}.rpm"
+        install_command = f"cd ~ && sudo yum localinstall {filename} -y"
+    elif "debian" in distribution:
+        # Use DEB package for Debian-based systems
+        package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{arch}.deb"
+        filename = f"observe-agent_{arch}.deb"
+        install_command = f"cd ~ && sudo dpkg -i {filename}"
     else:
-        # Try with observe-agent subdirectory
-        install_command = "cd /tmp && sudo bash ./observe-agent/install_linux.sh"
+        u.die(f"❌ Unsupported distribution for package installation: {distribution}")
 
+    # Download package locally, then upload (same pattern as test_install.py)
+    import tempfile
+    import requests
+
+    # Download to local temp file first
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pkg') as temp_file:
+        print(f"Downloading {package_url}...")
+        response = requests.get(package_url)
+        if response.status_code != 200:
+            u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
+        temp_file.write(response.content)
+        local_package_path = temp_file.name
+
+    # Upload the package to remote host (same as test_install.py)
+    remote_host.put_file(local_path=local_package_path, remote_path=home_dir)
+
+    # Install the package using the appropriate package manager (same as test_install.py)
     result = remote_host.run_command(install_command)
     u.print_remote_result(result)
     if result.exited != 0:
         u.die("❌ Error installing older version of observe-agent")
+    else:
+        print("✅ Old version installation completed")
+
+    # Cleanup local temp file
+    import os
+    os.unlink(local_package_path)
     _start_service(remote_host, start_command, "linux")
 
     # Verify old version is running
