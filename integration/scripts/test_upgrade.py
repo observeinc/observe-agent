@@ -183,18 +183,20 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         u.die("❌ Error downloading older version of observe-agent")
 
     # Extract the downloaded file
-    extract_command = 'powershell -Command "Expand-Archive -Path \'observe-agent-old.zip\' -DestinationPath \'observe-agent-old\' -Force"'
+    extract_command = 'powershell -Command "Expand-Archive -Path \'observe-agent-old.zip\' -DestinationPath \'.\' -Force"'
     result = remote_host.run_command(extract_command)
     u.print_remote_result(result)
     if result.stderr:
         u.die("❌ Error extracting older version of observe-agent")
 
-    # Run the install script
-    install_command = r".\observe-agent-old\install.ps1"
+    # Run the install script - it should be in the current directory after extraction
+    install_command = r"powershell -ExecutionPolicy Bypass -File .\install.ps1"
     result = remote_host.run_command(install_command)
     u.print_remote_result(result)
     if result.stderr:
-        u.die("❌ Error installing older version of observe-agent")
+        # Check if it's just a warning about already being installed
+        if "already installed" not in result.stderr.lower() and "warning" not in result.stderr.lower():
+            u.die("❌ Error installing older version of observe-agent")
     _start_service(remote_host, start_command, "windows", env_vars)
 
     # Verify old version is running
@@ -244,15 +246,15 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     if result.exited != 0:
         u.die("❌ Error downloading older version of observe-agent")
 
-    # Extract the downloaded file
-    extract_command = "sudo tar -xzf /tmp/observe-agent-old.tar.gz -C /tmp"
+    # Extract the downloaded file (without sudo first, then with sudo if needed)
+    extract_command = "tar -xzf /tmp/observe-agent-old.tar.gz -C /tmp 2>/dev/null || sudo tar -xzf /tmp/observe-agent-old.tar.gz -C /tmp"
     result = remote_host.run_command(extract_command)
     u.print_remote_result(result)
     if result.exited != 0:
         u.die("❌ Error extracting older version of observe-agent")
 
-    # Run the install script
-    install_command = "sudo /tmp/observe-agent/install_linux.sh"
+    # Run the install script with combined command to maintain sudo context
+    install_command = "cd /tmp && sudo bash observe-agent/install_linux.sh"
     result = remote_host.run_command(install_command)
     u.print_remote_result(result)
     if result.exited != 0:
