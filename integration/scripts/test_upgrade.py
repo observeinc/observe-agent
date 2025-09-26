@@ -182,15 +182,38 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     if result.stderr:
         u.die("❌ Error downloading older version of observe-agent")
 
-    # Extract the downloaded file
-    extract_command = 'powershell -Command "Expand-Archive -Path \'observe-agent-old.zip\' -DestinationPath \'.\' -Force"'
+    # Extract the downloaded file to a subdirectory to avoid conflicts
+    extract_command = 'powershell -Command "Expand-Archive -Path \'observe-agent-old.zip\' -DestinationPath \'observe-agent-old\' -Force"'
     result = remote_host.run_command(extract_command)
     u.print_remote_result(result)
     if result.stderr:
         u.die("❌ Error extracting older version of observe-agent")
 
-    # Run the install script - it should be in the current directory after extraction
-    install_command = r"powershell -ExecutionPolicy Bypass -File .\install.ps1"
+    # Check what was extracted
+    ls_result = remote_host.run_command("dir observe-agent-old")
+    print("Contents of observe-agent-old directory:")
+    u.print_remote_result(ls_result)
+
+    # Find the install script - it might be in a subdirectory
+    find_result = remote_host.run_command('powershell -Command "Get-ChildItem -Path observe-agent-old -Filter install*.ps1 -Recurse | Select-Object -First 1 | ForEach-Object { $_.FullName }"')
+    print("Looking for install script:")
+    u.print_remote_result(find_result)
+
+    # Determine the correct install path
+    if find_result.stdout and find_result.stdout.strip():
+        # Use the found path, converting to relative path
+        install_script_path = find_result.stdout.strip()
+        # Convert to relative path from current directory
+        if "\\" in install_script_path:
+            # Extract just the relative path part
+            relative_path = install_script_path.split("Administrator\\")[-1] if "Administrator" in install_script_path else install_script_path
+            install_command = f'powershell -ExecutionPolicy Bypass -File ".\\{relative_path}"'
+        else:
+            install_command = f'powershell -ExecutionPolicy Bypass -File "{install_script_path}"'
+    else:
+        # Try default locations
+        install_command = r"powershell -ExecutionPolicy Bypass -File .\observe-agent-old\install.ps1"
+
     result = remote_host.run_command(install_command)
     u.print_remote_result(result)
     if result.stderr:
@@ -253,8 +276,25 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     if result.exited != 0:
         u.die("❌ Error extracting older version of observe-agent")
 
-    # Run the install script with combined command to maintain sudo context
-    install_command = "cd /tmp && sudo bash observe-agent/install_linux.sh"
+    # Check what was extracted to find the correct path
+    ls_result = remote_host.run_command("ls -la /tmp/ | grep -i observe")
+    print("Found observe-agent files/dirs in /tmp:")
+    u.print_remote_result(ls_result)
+
+    # Try to find the install script
+    find_result = remote_host.run_command("find /tmp -name 'install_linux.sh' -type f 2>/dev/null | head -5")
+    print("Found install scripts:")
+    u.print_remote_result(find_result)
+
+    # The v2.5.0 release might extract files directly without a subdirectory
+    # Try running the install script if it exists at the root of /tmp
+    check_result = remote_host.run_command("test -f /tmp/install_linux.sh && echo 'found at /tmp' || echo 'not at /tmp'")
+    if "found at /tmp" in check_result.stdout:
+        install_command = "cd /tmp && sudo bash ./install_linux.sh"
+    else:
+        # Try with observe-agent subdirectory
+        install_command = "cd /tmp && sudo bash ./observe-agent/install_linux.sh"
+
     result = remote_host.run_command(install_command)
     u.print_remote_result(result)
     if result.exited != 0:
