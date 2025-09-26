@@ -2,6 +2,8 @@
 import os
 import sys
 import time
+import tempfile
+import requests
 import utils as u
 
 
@@ -178,8 +180,6 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     home_dir_powershell = r"C:\Users\{}".format(env_vars["user"])  # for use in powershell script
 
     # Download the old version Windows package locally, then upload (same as test_install.py)
-    import tempfile
-    import requests
 
     download_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip"
     old_filename = "observe-agent-old.zip"
@@ -187,14 +187,18 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     # Download to local temp file first
     with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
         print(f"Downloading {download_url}...")
-        response = requests.get(download_url)
-        if response.status_code != 200:
-            u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
-        temp_file.write(response.content)
-        local_package_path = temp_file.name
+        try:
+            response = requests.get(download_url, timeout=60)
+            if response.status_code != 200:
+                u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
+            temp_file.write(response.content)
+            local_package_path = temp_file.name
+        except requests.RequestException as e:
+            u.die(f"❌ Error downloading old version: {e}")
 
-    # Upload the package to remote host (same as test_install.py)
-    remote_host.put_file(local_path=local_package_path, remote_path=home_dir)
+    # Upload the package to remote host with correct filename (same as test_install.py)
+    remote_path_with_filename = f"{home_dir}/{old_filename}"
+    remote_host.put_file(local_path=local_package_path, remote_path=remote_path_with_filename)
 
     # Copy the install script from the scripts directory (same as test_install.py)
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -216,7 +220,6 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         print("✅ Old version installation completed")
 
     # Cleanup local temp file
-    import os
     os.unlink(local_package_path)
     _start_service(remote_host, start_command, "windows", env_vars)
 
@@ -276,20 +279,22 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
         u.die(f"❌ Unsupported distribution for package installation: {distribution}")
 
     # Download package locally, then upload (same pattern as test_install.py)
-    import tempfile
-    import requests
 
     # Download to local temp file first
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pkg') as temp_file:
         print(f"Downloading {package_url}...")
-        response = requests.get(package_url)
-        if response.status_code != 200:
-            u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
-        temp_file.write(response.content)
-        local_package_path = temp_file.name
+        try:
+            response = requests.get(package_url, timeout=60)
+            if response.status_code != 200:
+                u.die(f"❌ Error downloading old version: HTTP {response.status_code}")
+            temp_file.write(response.content)
+            local_package_path = temp_file.name
+        except requests.RequestException as e:
+            u.die(f"❌ Error downloading old version: {e}")
 
-    # Upload the package to remote host (same as test_install.py)
-    remote_host.put_file(local_path=local_package_path, remote_path=home_dir)
+    # Upload the package to remote host with correct filename (same as test_install.py)
+    remote_path_with_filename = f"{home_dir}/{filename}"
+    remote_host.put_file(local_path=local_package_path, remote_path=remote_path_with_filename)
 
     # Install the package using the appropriate package manager (same as test_install.py)
     result = remote_host.run_command(install_command)
@@ -300,7 +305,6 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
         print("✅ Old version installation completed")
 
     # Cleanup local temp file
-    import os
     os.unlink(local_package_path)
     _start_service(remote_host, start_command, "linux")
 
