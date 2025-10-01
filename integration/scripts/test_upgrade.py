@@ -158,7 +158,7 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
         filename (str): name of the package file
         full_path (str): full path to the package file
         platform (str): platform name (windows, linux)
-        env_vars (dict): environment variables for Windows-specific operations
+        env_vars (dict): environment variables (required for all platforms)
     """
     if platform == "windows":
         home_dir = r"/C:/Users/{}".format(env_vars["user"])
@@ -176,11 +176,21 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
             home_dir_powershell, filename
         )
     else:  # Linux
-        # Copy new package to remote host
-        remote_host.put_file(local_path=full_path, remote_path="/tmp/observe-agent-new.tar.gz")
+        # Copy new package to remote host home directory
+        home_dir = f"/home/{env_vars['user']}"
+        remote_path_with_filename = f"{home_dir}/{filename}"
+        remote_host.put_file(local_path=full_path, remote_path=remote_path_with_filename)
 
-        # Extract and run upgrade installation
-        upgrade_command = "sudo tar -xzf /tmp/observe-agent-new.tar.gz -C /tmp && sudo /tmp/observe-agent/install_linux.sh"
+        # Determine upgrade command based on distribution
+        distribution = env_vars["machine_config"]["distribution"].lower()
+        if "redhat" in distribution:
+            # Use RPM package manager for RedHat-based systems
+            upgrade_command = f"cd ~ && sudo yum localinstall {filename} -y"
+        elif "debian" in distribution:
+            # Use DEB package manager for Debian-based systems
+            upgrade_command = f"cd ~ && sudo dpkg -i {filename}"
+        else:
+            u.die(f"❌ Unsupported distribution for package upgrade: {distribution}")
 
     result = remote_host.run_command(upgrade_command)
     u.print_remote_result(result)
@@ -389,7 +399,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     # Find and perform upgrade
     print("⬆️ Upgrading to new version...")
     filename, full_path = _get_installation_package(env_vars)
-    _perform_upgrade(remote_host, filename, full_path, "linux")
+    _perform_upgrade(remote_host, filename, full_path, "linux", env_vars)
 
     # Verify upgrade was successful
     _verify_upgrade(remote_host, status_command, version_command, old_version_actual, "linux")
