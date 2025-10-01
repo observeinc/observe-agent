@@ -142,7 +142,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict):
     remote_host.put_file(full_path, home_dir)
     if "redhat" in env_vars["machine_config"]["distribution"]:
         result = remote_host.run_command(
-            "cd ~ && sudo yum localinstall {} -y".format(filename)
+            "cd ~ && sudo dnf install -y {}".format(filename)
         )
     elif "debian" in env_vars["machine_config"]["distribution"]:
         result = remote_host.run_command("cd ~ && sudo dpkg -i {}".format(filename))
