@@ -199,6 +199,18 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
     if (platform == "windows" and result.stderr) or (platform == "linux" and result.exited != 0):
         u.die("❌ Error upgrading observe-agent")
 
+    # TODO: Remove this workaround after 2.9.0 is released and OLD_VERSION is updated to v2.9.0+
+    # For RPM-based systems, the old package's %postun cleanup script unconditionally
+    # removes the service symlink, even during upgrades. This affects versions prior to 2.9.0.
+    # Once we're upgrading FROM 2.9.0 (which has the fixed %postun), this won't be needed.
+    if platform == "linux":
+        distribution = env_vars["machine_config"]["distribution"].lower()
+        if "redhat" in distribution:
+            print("Re-enabling and restarting service after RPM upgrade...")
+            restart_result = remote_host.run_command("sudo systemctl enable --now observe-agent")
+            if restart_result.exited != 0:
+                print(f"Warning: Failed to restart service: {restart_result.stderr}")
+
 
 def _verify_upgrade(remote_host: u.Host, status_command: str, version_command: str,
                    old_version: str, platform: str = None) -> None:

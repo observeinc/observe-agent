@@ -311,9 +311,9 @@ def get_agent_version(remote_host: Host, version_command: str) -> str:
     try:
         result = remote_host.run_command(version_command)
         if result.exited == 0:
-            # Extract version from output - format is usually "observe-agent version X.Y.Z"
+            # Extract version from output - format is "observe-agent version: X.Y.Z" or "observe-agent version X.Y.Z"
             version_line = result.stdout.strip()
-            version_match = re.search(r'version\s+(\S+)', version_line)
+            version_match = re.search(r'version:?\s+(\S+)', version_line)
             if version_match:
                 return version_match.group(1)
         return "unknown"
