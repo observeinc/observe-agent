@@ -25,8 +25,15 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
 }
 else{
     Write-Output "ObserveAgent Service already exists, restarting service..."
-    Stop-Service ObserveAgent
-    Start-Service ObserveAgent
+    Stop-Service ObserveAgent -ErrorAction SilentlyContinue
+    try {
+        Start-Service ObserveAgent -ErrorAction Stop
+    } catch {
+        Write-Output "Error starting ObserveAgent service!"
+        $_ | Select-Object *
+        # Print the agent config to help debug
+        &"${observeagent_install_dir}\observe-agent.exe" --observe-config "${observeagent_install_dir}\observe-agent.yaml" config
+    }
 }
 
 ## Placeholder below for future use 
