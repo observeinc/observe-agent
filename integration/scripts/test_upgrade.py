@@ -184,11 +184,12 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
         # Determine upgrade command based on distribution
         distribution = env_vars["machine_config"]["distribution"].lower()
         if "redhat" in distribution:
-            # Use RPM package manager for RedHat-based systems
-            upgrade_command = f"cd ~ && sudo yum localinstall {filename} -y"
+            # Use dnf for RedHat-based systems (Amazon Linux 2023, RHEL 8+, etc.)
+            upgrade_command = f"cd ~ && sudo dnf install -y {filename}"
         elif "debian" in distribution:
-            # Use DEB package manager for Debian-based systems
-            upgrade_command = f"cd ~ && sudo dpkg -i {filename}"
+            # Use dpkg with DEBIAN_FRONTEND=noninteractive and confold option
+            # This keeps the old config file (selects 'N') and prevents interactive prompts
+            upgrade_command = f"cd ~ && sudo DEBIAN_FRONTEND=noninteractive dpkg -i --force-confdef --force-confold {filename}"
         else:
             u.die(f"❌ Unsupported distribution for package upgrade: {distribution}")
 
@@ -341,12 +342,12 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     home_dir = f"/home/{env_vars['user']}"
 
     if "redhat" in distribution:
-        # Use RPM package for RedHat-based systems
+        # Use RPM package for RedHat-based systems (Amazon Linux, RHEL, etc.)
         # v2.5.0 uses format: observe-agent-2.5.0-1.x86_64.rpm
         version_number = old_version.lstrip('v')  # Remove 'v' prefix
         package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent-{version_number}-1.{arch}.rpm"
         filename = f"observe-agent-{version_number}-1.{arch}.rpm"
-        install_command = f"cd ~ && sudo yum localinstall {filename} -y"
+        install_command = f"cd ~ && sudo dnf install -y {filename}"
     elif "debian" in distribution:
         # Use DEB package for Debian-based systems
         # v2.5.0 uses format: observe-agent_2.5.0_amd64.deb (note: amd64 not x86_64)

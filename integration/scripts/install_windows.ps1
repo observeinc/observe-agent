@@ -44,3 +44,9 @@ if (Test-Path "$temp_dir\observe-agent_extract\connections") {
 }
 
 Get-ChildItem -Path $observeagent_install_dir -Recurse
+
+# Restart the service if it was running before the upgrade
+if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
+    Write-Output "Restarting ObserveAgent service after upgrade..."
+    Start-Service ObserveAgent
+}
