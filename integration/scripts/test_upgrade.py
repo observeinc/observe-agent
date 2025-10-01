@@ -19,9 +19,12 @@ def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None
     """
     print("🔧 Configuring observe-agent...")
 
-    # Use dummy values if observe credentials aren't provided
-    observe_url = env_vars.get("observe_url", "https://dummy.observe.com")
-    observe_token = env_vars.get("observe_token", "dummy_token")
+    # Get observe credentials from env vars
+    observe_url = env_vars.get("observe_url")
+    observe_token = env_vars.get("observe_token")
+
+    if not observe_url or not observe_token:
+        u.die("❌ OBSERVE_URL and OBSERVE_TOKEN are required for upgrade test")
 
     if platform == "windows":
         config_command = (
@@ -80,8 +83,14 @@ def _start_service(remote_host: u.Host, start_command: str, platform: str, env_v
     result = remote_host.run_command(start_command)
     u.print_remote_result(result)
 
-    if result.stderr:
-        raise RuntimeError("❌ Error starting observe-agent service")
+    if platform == "windows":
+        # Windows PowerShell: check for stderr (script handles errors)
+        if result.stderr:
+            raise RuntimeError("❌ Error starting observe-agent service")
+    else:
+        # Linux: check exit code (systemd writes to stderr even on success)
+        if result.exited != 0:
+            raise RuntimeError("❌ Error starting observe-agent service")
 
 
 def _verify_running(remote_host: u.Host, status_command: str, version_command: str,

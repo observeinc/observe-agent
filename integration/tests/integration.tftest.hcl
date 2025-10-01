@@ -53,6 +53,8 @@ run "test_upgrade" {
   variables {
     command = "python3 ./scripts/test_upgrade.py"
     env_vars = {
+      OBSERVE_URL    = run.setup_observe_variables.OBSERVE_URL
+      OBSERVE_TOKEN  = run.setup_observe_variables.OBSERVE_TOKEN
       HOST           = run.setup_ec2.public_ip
       USER           = run.setup_ec2.user_name
       KEY_FILENAME   = run.setup_ec2.private_key_path
