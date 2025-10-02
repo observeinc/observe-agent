@@ -233,7 +233,7 @@ def _verify_upgrade(remote_host: u.Host, status_command: str, version_command: s
     print(f"✅ New version {new_version} is running")
 
     if old_version == new_version:
-        print("⚠️ Warning: Version appears unchanged after upgrade")
+        u.die(f"❌ Upgrade failed: Version unchanged ({old_version})")
     else:
         print(f"✅ Successfully upgraded from {old_version} to {new_version}")
 
@@ -247,8 +247,10 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         remote_host (Host): instance to ssh into
         env_vars (dict): environment variables passed into for testing
     """
-    # Get old version from env var, default to v2.5.0
-    old_version = os.environ.get("OLD_VERSION", "v2.5.0")
+    # Get old version from env var (required - defaulted at terraform level)
+    old_version = os.environ.get("OLD_VERSION")
+    if not old_version:
+        u.die("❌ OLD_VERSION environment variable is required")
 
     # Commands for Windows
     start_command = r".\start_agent_windows.ps1"
@@ -271,7 +273,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
         print(f"Downloading {download_url}...")
         try:
-            with urllib.request.urlopen(download_url, timeout=60) as response:
+            with urllib.request.urlopen(f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip", timeout=60) as response:
                 temp_file.write(response.read())
             local_package_path = temp_file.name
         except urllib.error.URLError as e:
@@ -332,8 +334,10 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
         remote_host (Host): instance to ssh into
         env_vars (dict): environment variables passed into for testing
     """
-    # Get old version from env var, default to v2.5.0
-    old_version = os.environ.get("OLD_VERSION", "v2.5.0")
+    # Get old version from env var (required - defaulted at terraform level)
+    old_version = os.environ.get("OLD_VERSION")
+    if not old_version:
+        u.die("❌ OLD_VERSION environment variable is required")
 
     # Commands for Linux
     start_command = "sudo systemctl enable --now observe-agent"
