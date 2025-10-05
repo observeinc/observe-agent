@@ -3,6 +3,7 @@ package status
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -110,12 +111,16 @@ func getMetricsSum(metrics []*io_prometheus_client.Metric) float64 {
 
 func GetAgentMetrics(conf *config.AgentConfig) (*AgentMetrics, error) {
 	host := util.ReplaceEnvString(conf.InternalTelemetry.Metrics.Host)
-	if !strings.Contains(host, "://") {
-		host = "http://" + host
+	scheme, host, found := strings.Cut(host, "://")
+	if !found {
+		// If there is no scheme, default to http and put the host back to the original value
+		host = scheme
+		scheme = "http"
 	}
 	host = strings.TrimRight(host, ":/")
 	port := conf.InternalTelemetry.Metrics.Port
-	baseURL := fmt.Sprintf("%s:%d", host, port)
+	baseURL := net.JoinHostPort(host, strconv.Itoa(port))
+	baseURL = scheme + "://" + baseURL
 	return GetAgentMetricsFromEndpoint(baseURL)
 }
 

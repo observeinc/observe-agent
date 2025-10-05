@@ -25,6 +25,7 @@ jobs:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           path: "."
+          exclude_paths: "vendor"
 
       - name: Run Orca FS Scan
         uses: orcasecurity/shiftleft-fs-action@v1
@@ -32,6 +33,7 @@ jobs:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           path: "."
+          exclude_paths: "vendor,components/processors/observek8sattributesprocessor/testdata"
 
   orca-container-scan:
     name: Orca Container Image Scan
@@ -52,6 +54,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.24.6
+          cache: false
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
