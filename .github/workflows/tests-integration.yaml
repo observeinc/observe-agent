@@ -2,6 +2,12 @@ name: Observe Agent Integration Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      old_version:
+        description: 'Old version of observe-agent to test upgrade from (e.g., v2.5.0)'
+        required: false
+        default: 'v2.5.0'
+        type: string
   pull_request:
   push:
     branches:
@@ -21,6 +27,7 @@ env:
   TF_VAR_PRIVATE_KEY_PATH: "./test_key.pem"
   TF_VAR_OBSERVE_URL: ${{secrets.OBSERVE_URL}}
   TF_VAR_OBSERVE_TOKEN: ${{secrets.OBSERVE_TOKEN}}
+  TF_VAR_old_version: ${{ github.event.inputs.old_version || 'v2.5.0' }}
 
 jobs:
   build:

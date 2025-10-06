@@ -19,14 +19,29 @@ if(-not (Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
     } catch {
         Write-Output "Error starting ObserveAgent service!"
         $_ | Select-Object *
-        # Print the agent config to help debug
-        &"${observeagent_install_dir}\observe-agent.exe" --observe-config "${observeagent_install_dir}\observe-agent.yaml" config
+        # Try to print the agent config to help debug (may not work on older versions)
+        try {
+            &"${observeagent_install_dir}\observe-agent.exe" --observe-config "${observeagent_install_dir}\observe-agent.yaml" config 2>&1
+        } catch {
+            Write-Output "Could not print agent config (this is normal for older versions)"
+        }
     }
 }
 else{
     Write-Output "ObserveAgent Service already exists, restarting service..."
-    Stop-Service ObserveAgent
-    Start-Service ObserveAgent
+    Stop-Service ObserveAgent -ErrorAction SilentlyContinue
+    try {
+        Start-Service ObserveAgent -ErrorAction Stop
+    } catch {
+        Write-Output "Error starting ObserveAgent service!"
+        $_ | Select-Object *
+        # Try to print the agent config to help debug (may not work on older versions)
+        try {
+            &"${observeagent_install_dir}\observe-agent.exe" --observe-config "${observeagent_install_dir}\observe-agent.yaml" config 2>&1
+        } catch {
+            Write-Output "Could not print agent config (this is normal for older versions)"
+        }
+    }
 }
 
 ## Placeholder below for future use 

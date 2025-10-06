@@ -1,10 +1,12 @@
 from typing import Any, Dict
 from socket import error as socket_error
+from collections import defaultdict
 
 from fabric import Connection, Result
 from paramiko.ssh_exception import AuthenticationException, NoValidConnectionsError
 
 import os
+import re
 import sys
 import time
 
@@ -250,6 +252,74 @@ class Host(object):
                 print(f"❌ SSH connection failed: {exc}")
             time.sleep(1)
         raise RuntimeError(" ❌ The SSH connection failed")
+
+
+def check_status_loop(
+    remote_host: "Host", status_command: str, num_retries: int = 10, sleep_seconds: float = 1.5
+) -> bool:
+    """Run Check Status Command in a loop to wait for observe-agent to start
+
+    Args:
+        remote_host (Host): instance to ssh into
+        status_command (str): windows/linux status command to run
+        num_retries (int): number of times to check for the running agent before giving up
+        sleep_seconds (float): number of seconds to sleep between each retry
+
+    Returns:
+        bool: agent_status
+    """
+    agent_status = False
+    time.sleep(sleep_seconds)
+    for _ in range(num_retries):
+        metrics_dict = defaultdict(list)
+        try:
+            result = remote_host.run_command(status_command)
+        except Exception as e:
+            print("Ignoring exception: ", e)
+            time.sleep(sleep_seconds)
+            continue
+        for line in result.stdout.splitlines():
+            if ":" in line:
+                metric, value = line.split(":", 1)
+                metric = metric.strip()
+                value = value.strip()
+                metrics_dict[metric].append(value)
+            print(line)
+        if metrics_dict["Status"] and metrics_dict["Status"][0] == "Running":
+            print("✅ Observe Agent is active and running without errors!")
+            agent_status = True
+            break
+        print(
+            "❌ Observe Agent is not running. Retry Count is {}/{}...".format(
+                _ + 1, num_retries
+            )
+        )
+        time.sleep(sleep_seconds)
+    return agent_status
+
+
+def get_agent_version(remote_host: Host, version_command: str) -> str:
+    """Get the current version of the observe-agent
+
+    Args:
+        remote_host (Host): instance to ssh into
+        version_command (str): command to get version
+
+    Returns:
+        str: version string
+    """
+    try:
+        result = remote_host.run_command(version_command)
+        if result.exited == 0:
+            # Extract version from output - format is "observe-agent version: X.Y.Z" or "observe-agent version X.Y.Z"
+            version_line = result.stdout.strip()
+            version_match = re.search(r'version:?\s+(\S+)', version_line)
+            if version_match:
+                return version_match.group(1)
+        return "unknown"
+    except Exception as e:
+        print(f"Error getting version: {e}")
+        return "unknown"
 
 
 def get_docker_image(remote_host: Host) -> str:

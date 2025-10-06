@@ -5,51 +5,6 @@ import re
 import time
 import pprint
 import utils as u
-from collections import defaultdict
-
-
-def _check_status_loop(
-    remote_host: u.Host,  status_command: str, num_retries: int = 10, sleep_seconds: float = 1.5
-) -> bool:
-    """Run Check Status Command in a loop to wait for observe-agent to start
-
-    Args:
-        remote_host (Host): instance to ssh into
-        status_command (str): windows/linux status command to run
-        num_retries (int): number of times to check for the running agent before giving up
-        sleep_seconds (float): number of seconds to sleep between each retry
-
-    Returns:
-        bool: agent_status
-    """
-    agent_status = False
-    time.sleep(sleep_seconds)
-    for _ in range(num_retries):
-        metrics_dict = defaultdict(list)
-        try:
-            result = remote_host.run_command(status_command)
-        except Exception as e:
-            print("Ignoring exception: ", e)
-            time.sleep(sleep_seconds)
-            continue
-        for line in result.stdout.splitlines():
-            if ":" in line:
-                metric, value = line.split(":", 1)
-                metric = metric.strip()
-                value = value.strip()
-                metrics_dict[metric].append(value)
-            print(line)
-        if metrics_dict["Status"] and metrics_dict["Status"][0] == "Running":
-            print("✅ Observe Agent is active and running without errors!")
-            agent_status = True
-            break
-        print(
-            "❌ Observe Agent is not running. Retry Count is {}/{}...".format(
-                _ + 1, num_retries
-            )
-        )
-        time.sleep(sleep_seconds)
-    return agent_status
 
 
 @u.print_test_decorator
@@ -90,7 +45,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
         raise RuntimeError("❌ Error in start_agent_windows.ps1 powershell script")
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, status_command)
+    agent_status = u.check_status_loop(remote_host, status_command)
     if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
 
@@ -113,7 +68,7 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     status_command = f"sudo docker exec {container_id} ./observe-agent status"
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, status_command)
+    agent_status = u.check_status_loop(remote_host, status_command)
     if not agent_status:
         u.die("❌ Error in Observe Agent Status Test ")
 
@@ -137,7 +92,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     u.print_remote_result(result)
 
     # Check Agent Status
-    agent_status = _check_status_loop(remote_host, status_command)
+    agent_status = u.check_status_loop(remote_host, status_command)
     if not agent_status:
         # If the agent never started up, try running start to see what the error is. Use unsafe because we expect a non-zero exit code.
         u.print_remote_result(

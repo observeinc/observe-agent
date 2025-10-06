@@ -36,4 +36,17 @@ Expand-Archive -Force -LiteralPath $local_installer  -DestinationPath "$temp_dir
 Write-Output "Copying files from $temp_dir\observe-agent_extract to $observeagent_install_dir"
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.exe -Destination $observeagent_install_dir
 Copy-Item -Force -Path $temp_dir\observe-agent_extract\observe-agent.yaml -Destination $observeagent_install_dir
+
+# Copy connections directory if it exists (needed for older versions like v2.5.0)
+if (Test-Path "$temp_dir\observe-agent_extract\connections") {
+    Write-Output "Copying connections directory..."
+    Copy-Item -Force -Recurse -Path $temp_dir\observe-agent_extract\connections\* -Destination $observeagent_install_dir\connections\
+}
+
 Get-ChildItem -Path $observeagent_install_dir -Recurse
+
+# Restart the service if it was running before the upgrade
+if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
+    Write-Output "Restarting ObserveAgent service after upgrade..."
+    Start-Service ObserveAgent
+}
