@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
+	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
 	"github.com/observeinc/observe-agent/internal/root"
@@ -85,7 +86,7 @@ var allSnapshotTests = []snapshotTest{
 	{
 		agentConfigPath: "test/snap2-empty-agent-config.yaml",
 		otelConfigPath:  "test/snap2-otel-config.yaml",
-		outputPath:      "test/snap2-with-otel-output.yaml",
+		outputPath:      "test/snap2-macos-output.yaml",
 		packageType:     MacOS,
 	},
 	{
@@ -185,6 +186,9 @@ func setupConfig(t *testing.T, test snapshotTest) {
 	root.InitConfig()
 
 	setEnvVars(t, test.packageType)
+	cfg, err := config.AgentConfigFromViper(viper.GetViper())
+	assert.NoError(t, err)
+	assert.NoError(t, cfg.Validate())
 }
 
 func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embed.FS {

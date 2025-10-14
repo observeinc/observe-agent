@@ -2,6 +2,7 @@ package connections
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -13,6 +14,11 @@ var TemplateFuncMap = template.FuncMap{
 	"inlineArrayStr": TplInlineArray[string],
 	"valToYaml":      TplValueToYaml,
 	"objToYaml":      TplToYaml,
+	"join":           TplJoin,
+	"flatten":        TplFlatten,
+	"concat":         TplConcat,
+	"list":           TmplList,
+	"uniq":           TplUniq,
 	"add": func(values ...int) int {
 		sum := 0
 		for _, i := range values {
@@ -53,4 +59,75 @@ func TplToYaml(data any, tabSize int, numTabs int) string {
 		yamlStr, _ = strings.CutSuffix(yamlStr, indentStr)
 	}
 	return yamlStr
+}
+
+func TplJoin(sep string, values any) string {
+	if strs, ok := values.([]string); ok {
+		return strings.Join(strs, sep)
+	}
+	valuesArr, ok := values.([]any)
+	if !ok {
+		return ""
+	}
+	strs := make([]string, len(valuesArr))
+	for i, v := range valuesArr {
+		if str, ok := v.(string); ok {
+			// If the value is a string, use it directly.
+			strs[i] = str
+		} else {
+			// Otherwise convert via yaml.
+			strs[i] = TplValueToYaml(v)
+		}
+	}
+	return strings.Join(strs, sep)
+}
+
+func TplFlatten(sep string, values ...any) []any {
+	result := make([]any, 0, len(values))
+	var appendValues func(reflect.Value)
+	appendValues = func(v reflect.Value) {
+		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			for i := 0; i < v.Len(); i++ {
+				appendValues(reflect.ValueOf(v.Index(i).Interface()))
+			}
+		} else {
+			result = append(result, v.Interface())
+		}
+	}
+	appendValues(reflect.ValueOf(values))
+	return result
+}
+
+func TplConcat(values ...any) []any {
+	result := make([]any, 0, len(values))
+	for _, v := range values {
+		t := reflect.TypeOf(v)
+		if t.Kind() == reflect.Slice {
+			reflectVal := reflect.ValueOf(v)
+			for i := 0; i < reflectVal.Len(); i++ {
+				result = append(result, reflectVal.Index(i).Interface())
+			}
+			continue
+		}
+		// If the value is not a slice, append it to the concatenation result
+		result = append(result, v)
+	}
+	return result
+}
+
+func TmplList(values ...any) []any {
+	return values
+}
+
+func TplUniq(values []any) []any {
+	seen := make(map[any]struct{})
+	result := make([]any, 0, len(values))
+	for _, v := range values {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		result = append(result, v)
+	}
+	return result
 }
