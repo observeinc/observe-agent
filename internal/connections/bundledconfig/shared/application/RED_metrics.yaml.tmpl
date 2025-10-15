@@ -87,6 +87,7 @@ service:
         - transform/shape_spans_for_red_metrics
         - transform/add_span_status_code
         - resource/add_empty_service_attributes
+        - resource/agent_instance
       exporters:
         - spanmetrics
 
@@ -101,6 +102,7 @@ service:
         - transform/fix_red_metrics_resource_attributes
         - resourcedetection
         - resourcedetection/cloud
+        - resource/agent_instance
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}

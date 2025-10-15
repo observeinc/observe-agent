@@ -71,6 +71,7 @@ service:
         - memory_limiter
         - resourcedetection
         - resourcedetection/cloud
+        - resource/agent_instance
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
@@ -95,6 +96,7 @@ service:
         - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
+        - resource/agent_instance
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
@@ -114,6 +116,7 @@ service:
         - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
+        - resource/agent_instance
         - transform/add_span_status_code
         - resource/add_empty_service_attributes
         {{- if .HasAttributes }}

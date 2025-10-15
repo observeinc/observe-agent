@@ -39,6 +39,7 @@ service:
         - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
+        - resource/agent_instance
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
