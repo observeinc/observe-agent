@@ -373,6 +373,7 @@ service:
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
+                - resource/agent_instance
                 - batch
             receivers:
                 - journald/agent
@@ -411,6 +412,7 @@ service:
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
+                - resource/agent_instance
                 - batch
             receivers:
                 - filelog/host_monitoring
@@ -425,6 +427,7 @@ service:
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
+                - resource/agent_instance
                 - batch
             receivers:
                 - journald/host_monitoring
@@ -450,6 +453,7 @@ service:
                 - resourcedetection/cloud
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
+                - resource/agent_instance
                 - deltatocumulative
                 - batch
             receivers:
