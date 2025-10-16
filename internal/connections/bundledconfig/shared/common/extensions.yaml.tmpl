@@ -1,0 +1,10 @@
+extensions:
+  file_storage:
+    directory: ${env:FILESTORAGE_PATH}
+
+service:
+  extensions:
+    {{- if .HealthCheck.Enabled }}
+    - health_check
+    {{- end }}
+    - file_storage

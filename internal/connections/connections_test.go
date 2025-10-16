@@ -50,8 +50,6 @@ func (suite *ConnectionsTestSuite) TearDownSuite() {
 	os.RemoveAll(suite.tempDir)
 }
 
-var alwaysEnabled EnabledCheckFn = func(_ *config.AgentConfig) bool { return true }
-
 func (suite *ConnectionsTestSuite) MakeConnectionType(configFields []BundledConfigFragment, enableCheck EnabledCheckFn) *ConnectionType {
 	return MakeConnectionType(
 		"test",

@@ -11,8 +11,12 @@ var (
 	HealthCheckTemplateFS embed.FS
 	//go:embed common/base.yaml.tmpl
 	BaseTemplateFS embed.FS
+	//go:embed common/extensions.yaml.tmpl
+	ExtensionsTemplateFS embed.FS
 	//go:embed common/forward.yaml.tmpl
 	ForwardTemplateFS embed.FS
+	//go:embed common/resource_detection.yaml.tmpl
+	ResourceDetectionTemplateFS embed.FS
 	//go:embed host_monitoring/logs.yaml.tmpl
 	LogsTemplateFS embed.FS
 	//go:embed host_monitoring/host_metrics.yaml.tmpl

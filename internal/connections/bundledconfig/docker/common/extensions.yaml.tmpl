@@ -1,0 +1,14 @@
+extensions:
+  file_storage:
+    directory: ${env:FILESTORAGE_PATH}
+  cgroupruntime:
+    gomaxprocs:
+      enabled: true
+
+service:
+  extensions:
+    {{- if .HealthCheck.Enabled }}
+    - health_check
+    {{- end }}
+    - file_storage
+    - cgroupruntime

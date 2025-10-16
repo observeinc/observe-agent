@@ -2,14 +2,13 @@
 receivers:
   # TODO: Add observe-agent.yaml once we can obfuscate sensitive config fields
 
-  {{- /* TODO update this to pull from the internal telemetry config */}}
   prometheus/agent:
     config:
       scrape_configs:
         - job_name: 'otelcol'
           scrape_interval: 10s
           static_configs:
-            - targets: ['0.0.0.0:8888']
+            - targets: ['{{ .InternalTelemetry.Metrics.Host }}:{{ .InternalTelemetry.Metrics.Port }}']
           metric_relabel_configs:
             - source_labels: [__name__]
               regex: '.*grpc_io.*'
