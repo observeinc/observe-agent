@@ -113,6 +113,10 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 				body.PutStr("agent_instance_id", r.state.AgentInstanceId)
 				body.PutInt("agent_start_time", r.state.AgentStartTime)
 
+				// Add config values
+				body.PutStr("observe_agent_config", os.Getenv("OBSERVE_AGENT_CONFIG"))
+				body.PutStr("observe_agent_otel_config", os.Getenv("OBSERVE_AGENT_OTEL_CONFIG"))
+
 				// Add auth check results to the log body under a nested object
 				authCheck := body.PutEmptyMap("auth_check")
 				authCheck.PutBool("passed", authResult.Passed)
