@@ -123,24 +123,6 @@ Failures are logged but do not impact the agent:
 - YAML parsing fails → Return original content (fail-safe)
 - Timer errors → Log but continue running
 
-## Usage
-
-### Decoding Config Data
-
-To decode the base64-encoded configurations:
-
-```go
-import "encoding/base64"
-
-// Decode observe-agent config
-agentConfigBytes, _ := base64.StdEncoding.DecodeString(event.ObserveAgentConfig)
-agentConfig := string(agentConfigBytes)  // YAML with obfuscated sensitive fields
-
-// Decode OTEL config
-otelConfigBytes, _ := base64.StdEncoding.DecodeString(event.OtelConfig)
-otelConfig := string(otelConfigBytes)  // Fully rendered OTEL YAML
-```
-
 ### Security Note
 
 The `observeAgentConfig` field contains obfuscated sensitive values. For example:

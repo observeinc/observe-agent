@@ -258,7 +258,7 @@ func TestObfuscateSensitiveFields(t *testing.T) {
 `,
 		},
 		{
-			name:  "handles short token (8 chars or less)",
+			name:  "fully obfuscates short values (less than prefix length)",
 			input: "token: short\n",
 			expected: `token: '*****'
 `,
@@ -304,7 +304,7 @@ self_monitoring:
 }
 
 func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
-	// Test with custom patterns to demonstrate extensibility
+	// Tests extensibility: custom paths, prefix lengths, and multiple patterns
 	tests := []struct {
 		name     string
 		patterns []SensitiveFieldPattern
@@ -312,7 +312,7 @@ func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "obfuscates nested field using dot notation",
+			name: "nested field with custom prefix length",
 			patterns: []SensitiveFieldPattern{
 				{Path: "database.password", PrefixLength: 4},
 			},
@@ -328,7 +328,7 @@ func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
 `,
 		},
 		{
-			name: "obfuscates multiple different fields",
+			name: "multiple fields with different prefix lengths",
 			patterns: []SensitiveFieldPattern{
 				{Path: "token", PrefixLength: 8},
 				{Path: "api_key", PrefixLength: 6},
@@ -343,34 +343,25 @@ observe_url: https://example.com
 `,
 		},
 		{
-			name: "handles different prefix lengths",
+			name: "deeply nested field (real-world: otel_config_overrides)",
 			patterns: []SensitiveFieldPattern{
-				{Path: "short", PrefixLength: 2},
-				{Path: "long", PrefixLength: 12},
+				{Path: "otel_config_overrides.exporters.otel.headers.authorization", PrefixLength: 8},
 			},
-			input: `short: abcdefgh
-long: abcdefghijklmnop
-`,
-			expected: `short: ab******
-long: abcdefghijkl****
-`,
-		},
-		{
-			name: "obfuscates deeply nested field",
-			patterns: []SensitiveFieldPattern{
-				{Path: "auth_check.headers.authorization", PrefixLength: 8},
-			},
-			input: `auth_check:
-  url: https://example.com
-  headers:
-    authorization: Bearer secrettoken123456789
-    content-type: application/json
-`,
-			expected: `auth_check:
-    url: https://example.com
-    headers:
-        authorization: Bearer s*******************
+			input: `otel_config_overrides:
+  exporters:
+    otel:
+      endpoint: https://example.com
+      headers:
+        authorization: Bearer mytoken123456789abcdef
         content-type: application/json
+`,
+			expected: `otel_config_overrides:
+    exporters:
+        otel:
+            endpoint: https://example.com
+            headers:
+                authorization: Bearer m*********************
+                content-type: application/json
 `,
 		},
 	}
