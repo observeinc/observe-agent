@@ -28,6 +28,9 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        {{- if .SelfMonitoring.Fleet.Enabled }}
+        - resource/agent_instance
+        {{- end }}
         - deltatocumulative
         - batch
       exporters: [prometheusremotewrite/observe]
