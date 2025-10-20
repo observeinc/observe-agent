@@ -1,0 +1,17 @@
+processors:
+  resourcedetection:
+    detectors: [env, system]
+    system:
+      hostname_sources: ["os"]
+      resource_attributes:
+        host.id:
+          enabled: true
+
+  resourcedetection/cloud:
+    detectors:
+    {{- if .CloudResourceDetectors }}
+    {{- " " }}{{ inlineArrayStr .CloudResourceDetectors }}
+    {{- else }} ["gcp", "ecs", "ec2", "azure"]
+    {{- end }}
+    timeout: 2s
+    override: false

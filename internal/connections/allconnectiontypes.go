@@ -12,18 +12,23 @@ var AllConnectionTypes = []*ConnectionType{
 	FleetConnectionType,
 }
 
+var alwaysEnabled EnabledCheckFn = func(_ *config.AgentConfig) bool { return true }
+
 var CommonConnectionType = MakeConnectionType(
 	"common",
-	func(_ *config.AgentConfig) bool {
-		return true
-	},
+	alwaysEnabled,
 	[]BundledConfigFragment{
 		{
-			enabledCheck: func(_ *config.AgentConfig) bool {
-				// Always include the base connection.
-				return true
-			},
+			enabledCheck:      alwaysEnabled,
+			colConfigFilePath: "extensions.yaml.tmpl",
+		},
+		{
+			enabledCheck:      alwaysEnabled,
 			colConfigFilePath: "base.yaml.tmpl",
+		},
+		{
+			enabledCheck:      alwaysEnabled,
+			colConfigFilePath: "resource_detection.yaml.tmpl",
 		},
 		{
 			enabledCheck: func(agentConfig *config.AgentConfig) bool {

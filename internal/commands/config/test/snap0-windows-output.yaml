@@ -165,7 +165,7 @@ receivers:
                   scrape_interval: 10s
                   static_configs:
                     - targets:
-                        - 0.0.0.0:8888
+                        - localhost:8888
     windowseventlog/host_monitoring-application:
         channel: Application
         retry_on_failure:

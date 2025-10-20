@@ -19,7 +19,9 @@ var SharedTemplateFS = ConfigTemplates{
 	"common/internal_telemetry.yaml.tmpl":        shared.InternalTelemetryTemplateFS,
 	"common/health_check.yaml.tmpl":              shared.HealthCheckTemplateFS,
 	"common/base.yaml.tmpl":                      shared.BaseTemplateFS,
+	"common/extensions.yaml.tmpl":                shared.ExtensionsTemplateFS,
 	"common/forward.yaml.tmpl":                   shared.ForwardTemplateFS,
+	"common/resource_detection.yaml.tmpl":        shared.ResourceDetectionTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":             shared.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl":     shared.HostMetricsTemplateFS,
 	"host_monitoring/host.yaml.tmpl":             shared.HostTemplateFS,
@@ -29,7 +31,7 @@ var SharedTemplateFS = ConfigTemplates{
 }
 
 var DockerTemplateFS = ConfigTemplates{
-	"common/base.yaml.tmpl":                      docker.BaseTemplateFS,
+	"common/extensions.yaml.tmpl":                docker.ExtensionsTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":             docker.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl":     docker.HostMetricsTemplateFS,
 	"host_monitoring/process_metrics.yaml.tmpl":  docker.ProcessMetricsTemplateFS,
@@ -49,7 +51,7 @@ var MacOSTemplateFS = ConfigTemplates{
 }
 
 var WindowsTemplateFS = ConfigTemplates{
-	"common/base.yaml.tmpl":                  windows.BaseTemplateFS,
+	"common/resource_detection.yaml.tmpl":    windows.ResourceDetectionTemplateFS,
 	"host_monitoring/logs.yaml.tmpl":         windows.LogsTemplateFS,
 	"host_monitoring/host_metrics.yaml.tmpl": windows.HostMetricsTemplateFS,
 	"fleet/heartbeat_receiver.yaml.tmpl":     windows.HeartbeatTemplateFS,
