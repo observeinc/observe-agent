@@ -68,5 +68,18 @@ self_monitoring:
 application:
     RED_metrics:
         enabled: true
+        only_generate_for_service_entrypoint_spans: true
+        resource_dimensions:
+            - service.name
+            - service.namespace
+            - service.version
+            - deployment.environment.name
+            - team.name
+        span_dimensions:
+            - peer.db.name
+            - peer.messaging.system
+            - otel.status_description
+            - observe.status_code
+            - customer_id
 
 otel_config_overrides: {}

@@ -98,6 +98,13 @@ type InternalTelemetryConfig struct {
 
 type REDMetricsConfig struct {
 	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"false"`
+	// If enabled, this will skip generating RED metrics for spans that are not service entrypoint spans
+	// (which are spans with kind Server, kind Consumer, or calls to DB or messaging system clients).
+	// This will limit the metrics created to only those directly used in Observe APM.
+	OnlyGenerateForServiceEntrypointSpans bool `yaml:"only_generate_for_service_entrypoint_spans" mapstructure:"only_generate_for_service_entrypoint_spans" default:"false"`
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector#overview
+	ResourceDimensions []string `yaml:"resource_dimensions" mapstructure:"resource_dimensions" default:"[service.namespace,service.version,deployment.environment]"`
+	SpanDimensions     []string `yaml:"span_dimensions" mapstructure:"span_dimensions" default:"[peer.db.name,peer.messaging.system,otel.status_description,observe.status_code]"`
 }
 
 type ApplicationConfig struct {

@@ -5,11 +5,13 @@ connectors:
         dimensions:
             - name: service.namespace
             - name: service.version
-            - name: deployment.environment
+            - name: deployment.environment.name
+            - name: team.name
             - name: peer.db.name
             - name: peer.messaging.system
             - name: otel.status_description
             - name: observe.status_code
+            - name: customer_id
         histogram:
             exponential:
                 max_size: 100
@@ -197,8 +199,8 @@ processors:
     transform/fix_red_metrics_resource_attributes:
         error_mode: ignore
         metric_statements:
-            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
-            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|team.name)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|team.name)")
             - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
             - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
             - delete_key(datapoint.attributes, "status.code")

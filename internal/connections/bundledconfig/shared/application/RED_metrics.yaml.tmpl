@@ -7,13 +7,15 @@ connectors:
     dimensions:
       # This connector implicitly adds: service.name, span.name, span.kind, and status.code (which we rename to response_status)
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/spanmetricsconnector/connector.go#L528-L540
-      - name: service.namespace
-      - name: service.version
-      - name: deployment.environment
-      - name: peer.db.name
-      - name: peer.messaging.system
-      - name: otel.status_description
-      - name: observe.status_code
+      {{- range .Application.REDMetrics.ResourceDimensions }}
+      {{/* explicitly filter out service.name since the connector errors if it is provided */}}
+      {{- if not (eq . "service.name") }}
+      - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      {{- range .Application.REDMetrics.SpanDimensions }}
+      - name: {{ . }}
+      {{- end }}
 
 processors:
   # This handles schema normalization as well as moving status to attributes so it can be a dimension in spanmetrics
@@ -48,7 +50,8 @@ processors:
     metric_statements:
       - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
 
-  # This drops spans that are not relevant for Service Explorer RED metrics.
+  {{- if .Application.REDMetrics.OnlyGenerateForServiceEntrypointSpans }}
+  # This is used in the RED metrics generation pipeline to drop data that is not used in Observe APM.
   filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client:
     error_mode: ignore
     traces:
@@ -57,16 +60,17 @@ processors:
         - span.kind == SPAN_KIND_UNSPECIFIED
         - span.kind == SPAN_KIND_INTERNAL
         - span.kind == SPAN_KIND_PRODUCER
+  {{- end }}
 
   # The spanmetrics connector puts all dimensions as attributes on the datapoint, and copies the resource attributes from an arbitrary span's resource. This cleans that up as well as handling any other renaming.
   transform/fix_red_metrics_resource_attributes:
     error_mode: ignore
     metric_statements:
       # Drop all resource attributes that aren't dimensions in the spanmetrics connector.
-      - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
+      - keep_matching_keys(resource.attributes, "^({{ join "|" (concat "service.name" .Application.REDMetrics.ResourceDimensions | uniq) }})")
 
       # Drop all datapoint attributes that are resource attributes in the spans.
-      - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment)")
+      - delete_matching_keys(datapoint.attributes, "^({{ join "|" (concat "service.name" .Application.REDMetrics.ResourceDimensions | uniq) }})")
 
       # Rename status.code to response_status to be consistent with Trace Explorer and disambiguate from status_code (with an underscore).
       - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
@@ -83,7 +87,9 @@ service:
         {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
         - filter/drop_long_spans
         {{- end }}
+        {{- if .Application.REDMetrics.OnlyGenerateForServiceEntrypointSpans }}
         - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
+        {{- end }}
         - transform/shape_spans_for_red_metrics
         - transform/add_span_status_code
         - resource/add_empty_service_attributes

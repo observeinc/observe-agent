@@ -3,6 +3,9 @@
     "AgentConfig": {
       "additionalProperties": false,
       "properties": {
+        "agent_local_file_path": {
+          "type": "string"
+        },
         "application": {
           "$ref": "#/$defs/ApplicationConfig"
         },
@@ -267,6 +270,21 @@
       "properties": {
         "enabled": {
           "type": "boolean"
+        },
+        "only_generate_for_service_entrypoint_spans": {
+          "type": "boolean"
+        },
+        "resource_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "span_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -277,7 +295,7 @@
         "enabled": {
           "type": "boolean"
         },
-        "heartbeat": {
+        "fleet": {
           "$ref": "#/$defs/FleetHeartbeatConfig"
         }
       },
