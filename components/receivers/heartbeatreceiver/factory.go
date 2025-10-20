@@ -16,14 +16,16 @@ func (ReceiverType) Type() component.Type {
 }
 
 const (
-	defaultIntervalString = "10m"
-	defaultEnvironment    = "linux"
+	defaultIntervalString       = "10m"
+	defaultConfigIntervalString = "24h"
+	defaultEnvironment          = "linux"
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Interval:    defaultIntervalString,
-		Environment: defaultEnvironment,
+		Interval:       defaultIntervalString,
+		ConfigInterval: defaultConfigIntervalString,
+		Environment:    defaultEnvironment,
 	}
 }
 

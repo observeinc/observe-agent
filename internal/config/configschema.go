@@ -39,8 +39,9 @@ type HostMonitoringConfig struct {
 }
 
 type FleetHeartbeatConfig struct {
-	Enabled  bool   `yaml:"enabled" mapstructure:"enabled"`
-	Interval string `yaml:"interval" mapstructure:"interval" default:"10m"`
+	Enabled        bool   `yaml:"enabled" mapstructure:"enabled"`
+	Interval       string `yaml:"interval" mapstructure:"interval" default:"10m"`
+	ConfigInterval string `yaml:"config_interval" mapstructure:"config_interval" default:"24h"`
 }
 type SelfMonitoringConfig struct {
 	Enabled bool                 `yaml:"enabled" mapstructure:"enabled"`

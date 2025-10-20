@@ -13,9 +13,10 @@ var validEnvironments = map[string]bool{
 }
 
 type Config struct {
-	Interval    string          `mapstructure:"interval"`
-	Environment string          `mapstructure:"environment"`
-	AuthCheck   AuthCheckConfig `mapstructure:"auth_check"`
+	Interval       string          `mapstructure:"interval"`
+	ConfigInterval string          `mapstructure:"config_interval"`
+	Environment    string          `mapstructure:"environment"`
+	AuthCheck      AuthCheckConfig `mapstructure:"auth_check"`
 }
 
 type AuthCheckConfig struct {
@@ -31,6 +32,17 @@ func (cfg *Config) Validate() error {
 	interval, _ := time.ParseDuration(cfg.Interval)
 	if interval.Seconds() < 5 {
 		return fmt.Errorf("when defined, the interval has to be set to at least 1 minute (1m)")
+	}
+
+	// Validate config heartbeat interval if set
+	if cfg.ConfigInterval != "" {
+		configInterval, err := time.ParseDuration(cfg.ConfigInterval)
+		if err != nil {
+			return fmt.Errorf("invalid config_interval: %w", err)
+		}
+		if configInterval.Seconds() < 5 {
+			return fmt.Errorf("config_interval must be at least 1 hour")
+		}
 	}
 
 	// Validate environment field is required
