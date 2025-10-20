@@ -1,7 +1,6 @@
 package heartbeatreceiver
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -14,6 +13,12 @@ import (
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -379,40 +384,59 @@ func (r *HeartbeatReceiver) getObserveAgentConfigBytes(ctx context.Context) (str
 	return encoded, nil
 }
 
-// getOtelConfigBytes generates the rendered OTEL config files and returns them as base64 encoded string
+// getOtelConfigBytes generates the fully merged OTEL config and returns it as base64 encoded string
 func (r *HeartbeatReceiver) getOtelConfigBytes(ctx context.Context) (string, error) {
-	// Get rendered OTEL config file paths
-	configFilePaths, cleanup, err := connections.SetupAndGetConfigFiles(ctx)
+	// Get config files and setup collector settings
+	// We replicate the logic from PrintFullOtelConfig here to avoid import cycle
+	configFiles, cleanup, err := connections.SetupAndGetConfigFiles(ctx)
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
-		r.settings.Logger.Error("failed to get OTEL config files", zap.Error(err))
+		r.settings.Logger.Error("failed to setup and get config files", zap.Error(err))
 		return "", err
 	}
 
-	// Read and concatenate all config files
-	var combinedConfig bytes.Buffer
-	for i, filePath := range configFilePaths {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			r.settings.Logger.Error("failed to read OTEL config file",
-				zap.String("filePath", filePath), zap.Error(err))
-			return "", fmt.Errorf("failed to read config file %s: %w", filePath, err)
-		}
-
-		if i > 0 {
-			combinedConfig.WriteString("\n---\n")
-		}
-		combinedConfig.WriteString(fmt.Sprintf("# Config file: %s\n", filePath))
-		combinedConfig.Write(content)
+	// Get the config provider settings using the same approach as GetOtelCollectorSettings
+	URIs := configFiles
+	if len(URIs) == 0 {
+		return "", fmt.Errorf("no config URIs available")
 	}
 
-	// Trim trailing whitespace
-	configStr := strings.TrimSpace(combinedConfig.String())
+	// Create a resolver to get the merged config
+	resolverSettings := confmap.ResolverSettings{
+		URIs:          URIs,
+		DefaultScheme: "env",
+		ProviderFactories: []confmap.ProviderFactory{
+			fileprovider.NewFactory(),
+			envprovider.NewFactory(),
+			yamlprovider.NewFactory(),
+			httpprovider.NewFactory(),
+			httpsprovider.NewFactory(),
+		},
+	}
+
+	resolver, err := confmap.NewResolver(resolverSettings)
+	if err != nil {
+		r.settings.Logger.Error("failed to create resolver", zap.Error(err))
+		return "", err
+	}
+
+	conf, err := resolver.Resolve(ctx)
+	if err != nil {
+		r.settings.Logger.Error("failed to resolve config", zap.Error(err))
+		return "", err
+	}
+
+	// Convert to YAML
+	cfgYaml, err := yaml.Marshal(conf.ToStringMap())
+	if err != nil {
+		r.settings.Logger.Error("failed to marshal config to YAML", zap.Error(err))
+		return "", err
+	}
 
 	// Base64 encode
-	encoded := base64.StdEncoding.EncodeToString([]byte(configStr))
+	encoded := base64.StdEncoding.EncodeToString(cfgYaml)
 	return encoded, nil
 }
 
