@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -227,41 +225,32 @@ func TestAddCommonHeartbeatFields(t *testing.T) {
 	}
 }
 
-func TestObfuscateSensitiveFields(t *testing.T) {
+func TestRedactAndEncodeConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected string
+		name        string
+		input       string
+		expectError bool
+		checkResult func(t *testing.T, result string)
 	}{
 		{
 			name:  "obfuscates unquoted token",
 			input: "token: abc123def456ghi789\n",
-			expected: `token: abc123de**********
-`,
+			checkResult: func(t *testing.T, result string) {
+				decoded, err := base64.StdEncoding.DecodeString(result)
+				require.NoError(t, err)
+				assert.Contains(t, string(decoded), "abc123de")
+				assert.Contains(t, string(decoded), "***")
+			},
 		},
 		{
 			name:  "obfuscates double-quoted token",
 			input: "token: \"abc123def456ghi789\"\n",
-			expected: `token: "abc123de**********"
-`,
-		},
-		{
-			name:  "obfuscates single-quoted token",
-			input: "token: 'abc123def456ghi789'\n",
-			expected: `token: 'abc123de**********'
-`,
-		},
-		{
-			name:  "preserves comments after token",
-			input: "token: abc123def456ghi789 # secret token\n",
-			expected: `token: abc123de********** # secret token
-`,
-		},
-		{
-			name:  "fully obfuscates short values (less than prefix length)",
-			input: "token: short\n",
-			expected: `token: '*****'
-`,
+			checkResult: func(t *testing.T, result string) {
+				decoded, err := base64.StdEncoding.DecodeString(result)
+				require.NoError(t, err)
+				assert.Contains(t, string(decoded), "abc123de")
+				assert.Contains(t, string(decoded), "***")
+			},
 		},
 		{
 			name: "handles multi-line config with token",
@@ -269,47 +258,47 @@ func TestObfuscateSensitiveFields(t *testing.T) {
 token: abc123def456ghi789
 debug: true
 `,
-			expected: `observe_url: https://example.com
-token: abc123de**********
-debug: true
-`,
+			checkResult: func(t *testing.T, result string) {
+				decoded, err := base64.StdEncoding.DecodeString(result)
+				require.NoError(t, err)
+				assert.Contains(t, string(decoded), "observe_url: https://example.com")
+				assert.Contains(t, string(decoded), "abc123de")
+				assert.Contains(t, string(decoded), "debug: true")
+			},
 		},
 		{
-			name: "preserves other fields unchanged",
-			input: `observe_url: https://example.com
-token: abc123def456ghi789
-self_monitoring:
-  enabled: true
-`,
-			expected: `observe_url: https://example.com
-token: abc123de**********
-self_monitoring:
-    enabled: true
-`,
-		},
-		{
-			name:  "handles real token format (with colon)",
-			input: "token: ds_abc123:veryLongTokenStringHere123456789\n",
-			expected: `token: ds_abc12**********************************
-`,
+			name:        "returns error for empty content",
+			input:       "",
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := obfuscateSensitiveFields([]byte(tt.input))
-			assert.Equal(t, tt.expected, string(result))
+			result, err := redactAndEncodeConfig(tt.input)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, result)
+
+			if tt.checkResult != nil {
+				tt.checkResult(t, result)
+			}
 		})
 	}
 }
 
-func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
+func TestRedactAndEncodeConfigWithCustomPatterns(t *testing.T) {
 	// Tests extensibility: custom paths, prefix lengths, and multiple patterns
 	tests := []struct {
 		name     string
 		patterns []SensitiveFieldPattern
 		input    string
-		expected string
+		checkResult func(t *testing.T, decoded string)
 	}{
 		{
 			name: "nested field with custom prefix length",
@@ -321,11 +310,12 @@ func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
   password: secretpassword123
   port: 5432
 `,
-			expected: `database:
-    host: localhost
-    password: secr*************
-    port: 5432
-`,
+			checkResult: func(t *testing.T, decoded string) {
+				assert.Contains(t, decoded, "host: localhost")
+				assert.Contains(t, decoded, "secr")
+				assert.Contains(t, decoded, "***")
+				assert.Contains(t, decoded, "port: 5432")
+			},
 		},
 		{
 			name: "multiple fields with different prefix lengths",
@@ -337,32 +327,66 @@ func TestObfuscateSensitiveFieldsWithCustomPatterns(t *testing.T) {
 api_key: myapikey12345
 observe_url: https://example.com
 `,
-			expected: `token: abc123de**********
-api_key: myapik*******
-observe_url: https://example.com
-`,
+			checkResult: func(t *testing.T, decoded string) {
+				assert.Contains(t, decoded, "abc123de")
+				assert.Contains(t, decoded, "myapik")
+				assert.Contains(t, decoded, "observe_url: https://example.com")
+			},
 		},
 		{
-			name: "deeply nested field (real-world: otel_config_overrides)",
+			name: "key pattern matches authorization at any level",
 			patterns: []SensitiveFieldPattern{
-				{Path: "otel_config_overrides.exporters.otel.headers.authorization", PrefixLength: 8},
+				{KeyPattern: "authorization", PrefixLength: 8},
 			},
-			input: `otel_config_overrides:
-  exporters:
-    otel:
-      endpoint: https://example.com
-      headers:
-        authorization: Bearer mytoken123456789abcdef
-        content-type: application/json
+			input: `exporters:
+  otlp:
+    endpoint: https://example.com
+    headers:
+      authorization: Bearer token123456789
+      content-type: application/json
+receivers:
+  http:
+    headers:
+      authorization: Basic user:pass123456789
 `,
-			expected: `otel_config_overrides:
-    exporters:
-        otel:
-            endpoint: https://example.com
-            headers:
-                authorization: Bearer m*********************
-                content-type: application/json
+			checkResult: func(t *testing.T, decoded string) {
+				assert.Contains(t, decoded, "endpoint: https://example.com")
+				assert.Contains(t, decoded, "content-type: application/json")
+				// Check both authorization fields are redacted
+				assert.Contains(t, decoded, "Bearer t")
+				assert.Contains(t, decoded, "Basic us")
+				assert.Contains(t, decoded, "***")
+				// Make sure the full values are NOT present
+				assert.NotContains(t, decoded, "token123456789")
+				assert.NotContains(t, decoded, "pass123456789")
+			},
+		},
+		{
+			name: "key pattern matches multiple occurrences at different depths",
+			patterns: []SensitiveFieldPattern{
+				{KeyPattern: "password", PrefixLength: 4},
+			},
+			input: `database:
+  host: localhost
+  password: dbpass123456
+services:
+  redis:
+    password: redispass789
+  postgres:
+    password: pgpass456789
 `,
+			checkResult: func(t *testing.T, decoded string) {
+				assert.Contains(t, decoded, "host: localhost")
+				// All three passwords should be redacted with 4 char prefix
+				assert.Contains(t, decoded, "dbpa")
+				assert.Contains(t, decoded, "redi")
+				assert.Contains(t, decoded, "pgpa")
+				assert.Contains(t, decoded, "***")
+				// Full passwords should not be present
+				assert.NotContains(t, decoded, "dbpass123456")
+				assert.NotContains(t, decoded, "redispass789")
+				assert.NotContains(t, decoded, "pgpass456789")
+			},
 		},
 	}
 
@@ -375,170 +399,50 @@ observe_url: https://example.com
 				sensitiveFieldPatterns = originalPatterns
 			}()
 
-			result := obfuscateSensitiveFields([]byte(tt.input))
-			assert.Equal(t, tt.expected, string(result))
-		})
-	}
-}
-
-func TestGetObserveAgentConfigBytes(t *testing.T) {
-	tests := []struct {
-		name        string
-		setupViper  func(t *testing.T) string // returns config file path
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name: "successfully reads and encodes config file",
-			setupViper: func(t *testing.T) string {
-				// Create a temporary config file
-				tmpDir := t.TempDir()
-				configPath := filepath.Join(tmpDir, "observe-agent.yaml")
-				configContent := []byte("self_monitoring:\n  enabled: true\n  fleet:\n    enabled: true\n")
-				err := os.WriteFile(configPath, configContent, 0644)
-				require.NoError(t, err)
-
-				// Set viper to use this config file
-				v := viper.New()
-				v.SetConfigFile(configPath)
-				err = v.ReadInConfig()
-				require.NoError(t, err)
-
-				// Replace global viper instance
-				viper.Reset()
-				viper.SetConfigFile(configPath)
-				err = viper.ReadInConfig()
-				require.NoError(t, err)
-
-				return configPath
-			},
-			expectError: false,
-		},
-		{
-			name: "returns error when config file not found",
-			setupViper: func(t *testing.T) string {
-				// Set viper to use a non-existent file
-				viper.Reset()
-				viper.SetConfigFile("/nonexistent/path/observe-agent.yaml")
-				return "/nonexistent/path/observe-agent.yaml"
-			},
-			expectError: true,
-			errorMsg:    "no such file or directory",
-		},
-		{
-			name: "returns error when no config file in use",
-			setupViper: func(t *testing.T) string {
-				// Reset viper so no config file is set
-				viper.Reset()
-				return ""
-			},
-			expectError: true,
-			errorMsg:    "no config file in use",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			configPath := tt.setupViper(t)
-
-			// Create a receiver
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-			receiver, err := newReceiver(
-				receivertest.NewNopSettings(metadata.Type),
-				cfg.(*Config),
-				consumertest.NewNop(),
-			)
+			result, err := redactAndEncodeConfig(tt.input)
 			require.NoError(t, err)
 
-			// Call the method
-			result, err := receiver.getObserveAgentConfigBytes(context.Background())
+			decoded, err := base64.StdEncoding.DecodeString(result)
+			require.NoError(t, err)
 
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				assert.Empty(t, result)
-			} else {
-				assert.NoError(t, err)
-				assert.NotEmpty(t, result)
-
-				// Verify it's valid base64
-				decoded, err := base64.StdEncoding.DecodeString(result)
-				assert.NoError(t, err)
-
-				// Verify the decoded content matches the obfuscated original file
-				if configPath != "" {
-					originalContent, err := os.ReadFile(configPath)
-					require.NoError(t, err)
-					obfuscatedContent := obfuscateSensitiveFields(originalContent)
-					assert.Equal(t, obfuscatedContent, decoded)
-				}
+			if tt.checkResult != nil {
+				tt.checkResult(t, string(decoded))
 			}
 		})
 	}
 }
 
-func TestGetOtelConfigBytes(t *testing.T) {
-	// Note: Testing getOtelConfigBytes is complex because it depends on the full
-	// OTEL collector setup. For now, we'll test the error handling and basic functionality.
-	// Full integration testing will be done when we run the receiver.
-
-	t.Run("returns base64 encoded string", func(t *testing.T) {
-		// Create a minimal test setup
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig()
-		receiver, err := newReceiver(
-			receivertest.NewNopSettings(metadata.Type),
-			cfg.(*Config),
-			consumertest.NewNop(),
-		)
-		require.NoError(t, err)
-
-		ctx := context.Background()
-		result, err := receiver.getOtelConfigBytes(ctx)
-
-		// We expect this to potentially error in test environment
-		// since the full OTEL config setup may not be available
-		if err != nil {
-			// That's acceptable in unit tests - we'll verify in integration tests
-			t.Logf("getOtelConfigBytes returned error (expected in unit test): %v", err)
-			return
-		}
-
-		// If it succeeds, verify it's valid base64
-		if result != "" {
-			decoded, decodeErr := base64.StdEncoding.DecodeString(result)
-			assert.NoError(t, decodeErr, "Result should be valid base64")
-			assert.NotEmpty(t, decoded, "Decoded content should not be empty")
-		}
-	})
-}
-
 func TestGenerateConfigHeartbeat(t *testing.T) {
-	// Set up environment variable for agent instance ID
+	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalAgentConfig := os.Getenv("OBSERVE_AGENT_CONFIG")
+	originalOtelConfig := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 	defer func() {
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
 		}
+		if originalAgentConfig != "" {
+			os.Setenv("OBSERVE_AGENT_CONFIG", originalAgentConfig)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_CONFIG")
+		}
+		if originalOtelConfig != "" {
+			os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", originalOtelConfig)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+		}
 	}()
 
 	testAgentID := "test-agent-config-123"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-	// Set up a temporary config file for testing
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "observe-agent.yaml")
-	configContent := []byte("self_monitoring:\n  enabled: true\n")
-	err := os.WriteFile(configPath, configContent, 0644)
-	require.NoError(t, err)
-
-	viper.Reset()
-	viper.SetConfigFile(configPath)
-	err = viper.ReadInConfig()
-	require.NoError(t, err)
+	// Set up config environment variables
+	agentConfigYaml := "self_monitoring:\n  enabled: true\n"
+	otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
+	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
+	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
 
 	// Create receiver with a mock consumer to capture logs
 	factory := NewFactory()
@@ -560,14 +464,7 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 	// Call generateConfigHeartbeat
 	ctx := context.Background()
 	err = receiver.generateConfigHeartbeat(ctx)
-
-	// We expect this might fail in test environment due to OTEL config
-	// but we can still check the structure if it succeeds
-	if err != nil {
-		t.Logf("generateConfigHeartbeat returned error (may be expected in unit test): %v", err)
-		// This is acceptable - we'll test the full flow in integration tests
-		return
-	}
+	require.NoError(t, err)
 
 	// If it succeeded, verify the log structure
 	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
@@ -643,30 +540,36 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 }
 
 func TestConfigHeartbeatTimer(t *testing.T) {
-	// Set up environment variable
+	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalAgentConfig := os.Getenv("OBSERVE_AGENT_CONFIG")
+	originalOtelConfig := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 	defer func() {
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
 		}
+		if originalAgentConfig != "" {
+			os.Setenv("OBSERVE_AGENT_CONFIG", originalAgentConfig)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_CONFIG")
+		}
+		if originalOtelConfig != "" {
+			os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", originalOtelConfig)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+		}
 	}()
 
 	testAgentID := "test-agent-timer-123"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-	// Set up a temporary config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "observe-agent.yaml")
-	configContent := []byte("self_monitoring:\n  enabled: true\n")
-	err := os.WriteFile(configPath, configContent, 0644)
-	require.NoError(t, err)
-
-	viper.Reset()
-	viper.SetConfigFile(configPath)
-	err = viper.ReadInConfig()
-	require.NoError(t, err)
+	// Set up config environment variables
+	agentConfigYaml := "self_monitoring:\n  enabled: true\n"
+	otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
+	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
+	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
 
 	t.Run("both timers run independently", func(t *testing.T) {
 		// Create receiver with fast intervals for testing

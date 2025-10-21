@@ -10,15 +10,7 @@ import (
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
-	"github.com/observeinc/observe-agent/internal/connections"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -229,7 +221,13 @@ func (r *HeartbeatReceiver) generateLifecycleHeartbeat(ctx context.Context) erro
 type SensitiveFieldPattern struct {
 	// Path is the YAML path to the field using dot notation
 	// Examples: "token", "auth_check.headers.authorization", "database.password"
+	// Leave empty if using KeyPattern
 	Path string
+
+	// KeyPattern matches any key at any depth that matches this string
+	// Example: "authorization" will match any field named "authorization" at any level
+	// If both Path and KeyPattern are set, Path takes precedence
+	KeyPattern string
 
 	// PrefixLength is the number of characters to show before obfuscating (default: 8)
 	PrefixLength int
@@ -241,11 +239,10 @@ var sensitiveFieldPatterns = []SensitiveFieldPattern{
 		Path:         "token",
 		PrefixLength: 8,
 	},
-	// Add more patterns here as needed, e.g.:
-	// {
-	//     Path:         "auth_check.headers.authorization",
-	//     PrefixLength: 8,
-	// },
+	{
+		KeyPattern:   "authorization",
+		PrefixLength: 16,
+	},
 }
 
 // obfuscateValue obfuscates a value by showing a prefix and replacing the rest with asterisks
@@ -285,18 +282,28 @@ func traverseAndObfuscate(node *yaml.Node, currentPath []string, patterns []Sens
 
 			// Check if this path matches any sensitive field pattern
 			for _, pattern := range patterns {
-				// Split the pattern path by dots
-				patternPath := strings.Split(pattern.Path, ".")
+				shouldObfuscate := false
 
-				if pathsMatch(newPath, patternPath) {
-					// Obfuscate the value
-					if valueNode.Kind == yaml.ScalarNode {
-						prefixLen := pattern.PrefixLength
-						if prefixLen == 0 {
-							prefixLen = 8
-						}
-						valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
+				if pattern.Path != "" {
+					// Exact path matching
+					patternPath := strings.Split(pattern.Path, ".")
+					if pathsMatch(newPath, patternPath) {
+						shouldObfuscate = true
 					}
+				} else if pattern.KeyPattern != "" {
+					// Key pattern matching - match if the current key matches the pattern
+					if keyNode.Value == pattern.KeyPattern {
+						shouldObfuscate = true
+					}
+				}
+
+				if shouldObfuscate && valueNode.Kind == yaml.ScalarNode {
+					prefixLen := pattern.PrefixLength
+					if prefixLen == 0 {
+						prefixLen = 8
+					}
+					valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
+					// Don't break - continue checking other patterns in case of multiple matches
 				}
 			}
 
@@ -329,114 +336,30 @@ func pathsMatch(current []string, pattern []string) bool {
 	return true
 }
 
-// obfuscateSensitiveFields replaces sensitive field values in YAML content with obfuscated versions
-// This implementation preserves the original YAML formatting
-func obfuscateSensitiveFields(content []byte) []byte {
-	result := content
-
-	// Apply each sensitive field pattern
-	for _, pattern := range sensitiveFieldPatterns {
-		prefixLen := pattern.PrefixLength
-		if prefixLen == 0 {
-			prefixLen = 8
-		}
-
-		// Use YAML parsing for accuracy
-		var node yaml.Node
-		err := yaml.Unmarshal(result, &node)
-		if err != nil {
-			continue
-		}
-
-		// Find and obfuscate the value at the path
-		traverseAndObfuscate(&node, []string{}, []SensitiveFieldPattern{pattern})
-
-		// Marshal back
-		obfuscated, err := yaml.Marshal(&node)
-		if err != nil {
-			continue
-		}
-
-		result = obfuscated
+// redactAndEncodeConfig parses YAML config from env var, redacts sensitive fields, and returns base64 encoded string
+func redactAndEncodeConfig(yamlContent string) (string, error) {
+	if yamlContent == "" {
+		return "", fmt.Errorf("empty config content")
 	}
 
-	return result
-}
-
-// getObserveAgentConfigBytes reads the observe-agent.yaml config file and returns it as base64 encoded string
-func (r *HeartbeatReceiver) getObserveAgentConfigBytes(ctx context.Context) (string, error) {
-	configFile := viper.ConfigFileUsed()
-	if configFile == "" {
-		return "", fmt.Errorf("no config file in use")
-	}
-
-	content, err := os.ReadFile(configFile)
+	// Parse the YAML content
+	var node yaml.Node
+	err := yaml.Unmarshal([]byte(yamlContent), &node)
 	if err != nil {
-		r.settings.Logger.Error("failed to read observe-agent config",
-			zap.String("configFile", configFile), zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
-	// Obfuscate sensitive fields before encoding
-	obfuscatedContent := obfuscateSensitiveFields(content)
+	// Redact sensitive fields
+	traverseAndObfuscate(&node, []string{}, sensitiveFieldPatterns)
 
-	encoded := base64.StdEncoding.EncodeToString(obfuscatedContent)
-	return encoded, nil
-}
-
-// getOtelConfigBytes generates the fully merged OTEL config and returns it as base64 encoded string
-func (r *HeartbeatReceiver) getOtelConfigBytes(ctx context.Context) (string, error) {
-	// Get config files and setup collector settings
-	// We replicate the logic from PrintFullOtelConfig here to avoid import cycle
-	configFiles, cleanup, err := connections.SetupAndGetConfigFiles(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	// Marshal back to YAML
+	redactedYaml, err := yaml.Marshal(&node)
 	if err != nil {
-		r.settings.Logger.Error("failed to setup and get config files", zap.Error(err))
-		return "", err
-	}
-
-	// Get the config provider settings using the same approach as GetOtelCollectorSettings
-	URIs := configFiles
-	if len(URIs) == 0 {
-		return "", fmt.Errorf("no config URIs available")
-	}
-
-	// Create a resolver to get the merged config
-	resolverSettings := confmap.ResolverSettings{
-		URIs:          URIs,
-		DefaultScheme: "env",
-		ProviderFactories: []confmap.ProviderFactory{
-			fileprovider.NewFactory(),
-			envprovider.NewFactory(),
-			yamlprovider.NewFactory(),
-			httpprovider.NewFactory(),
-			httpsprovider.NewFactory(),
-		},
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings)
-	if err != nil {
-		r.settings.Logger.Error("failed to create resolver", zap.Error(err))
-		return "", err
-	}
-
-	conf, err := resolver.Resolve(ctx)
-	if err != nil {
-		r.settings.Logger.Error("failed to resolve config", zap.Error(err))
-		return "", err
-	}
-
-	// Convert to YAML
-	cfgYaml, err := yaml.Marshal(conf.ToStringMap())
-	if err != nil {
-		r.settings.Logger.Error("failed to marshal config to YAML", zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("failed to marshal redacted YAML: %w", err)
 	}
 
 	// Base64 encode
-	encoded := base64.StdEncoding.EncodeToString(cfgYaml)
+	encoded := base64.StdEncoding.EncodeToString(redactedYaml)
 	return encoded, nil
 }
 
@@ -445,16 +368,30 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	r.settings.Logger.Debug("Generating config heartbeat",
 		zap.String("agent_instance_id", r.state.AgentInstanceId))
 
-	// Get base64 encoded configs
-	agentConfig, err := r.getObserveAgentConfigBytes(ctx)
+	// Get configs from environment variables
+	agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
+	otelConfigYaml := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
+
+	if agentConfigYaml == "" {
+		r.settings.Logger.Error("OBSERVE_AGENT_CONFIG environment variable is not set")
+		return fmt.Errorf("OBSERVE_AGENT_CONFIG environment variable is not set")
+	}
+
+	if otelConfigYaml == "" {
+		r.settings.Logger.Error("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set")
+		return fmt.Errorf("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set")
+	}
+
+	// Redact and encode configs
+	agentConfig, err := redactAndEncodeConfig(agentConfigYaml)
 	if err != nil {
-		r.settings.Logger.Error("failed to get observe-agent config bytes", zap.Error(err))
+		r.settings.Logger.Error("failed to redact and encode observe-agent config", zap.Error(err))
 		return err
 	}
 
-	otelConfig, err := r.getOtelConfigBytes(ctx)
+	otelConfig, err := redactAndEncodeConfig(otelConfigYaml)
 	if err != nil {
-		r.settings.Logger.Error("failed to get OTEL config bytes", zap.Error(err))
+		r.settings.Logger.Error("failed to redact and encode OTEL config", zap.Error(err))
 		return err
 	}
 
