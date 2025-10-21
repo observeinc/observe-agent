@@ -373,26 +373,26 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	otelConfigYaml := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 
 	if agentConfigYaml == "" {
-		r.settings.Logger.Error("OBSERVE_AGENT_CONFIG environment variable is not set")
-		return fmt.Errorf("OBSERVE_AGENT_CONFIG environment variable is not set")
+		r.settings.Logger.Error("OBSERVE_AGENT_CONFIG environment variable is not set, skipping config heartbeat")
+		return nil // Don't crash, just skip this heartbeat
 	}
 
 	if otelConfigYaml == "" {
-		r.settings.Logger.Error("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set")
-		return fmt.Errorf("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set")
+		r.settings.Logger.Error("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set, skipping config heartbeat")
+		return nil // Don't crash, just skip this heartbeat
 	}
 
 	// Redact and encode configs
 	agentConfig, err := redactAndEncodeConfig(agentConfigYaml)
 	if err != nil {
-		r.settings.Logger.Error("failed to redact and encode observe-agent config", zap.Error(err))
-		return err
+		r.settings.Logger.Error("failed to redact and encode observe-agent config, skipping config heartbeat", zap.Error(err))
+		return nil // Don't crash, just skip this heartbeat
 	}
 
 	otelConfig, err := redactAndEncodeConfig(otelConfigYaml)
 	if err != nil {
-		r.settings.Logger.Error("failed to redact and encode OTEL config", zap.Error(err))
-		return err
+		r.settings.Logger.Error("failed to redact and encode OTEL config, skipping config heartbeat", zap.Error(err))
+		return nil // Don't crash, just skip this heartbeat
 	}
 
 	// Create log entry

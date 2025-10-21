@@ -435,36 +435,37 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		}
 	}()
 
-	testAgentID := "test-agent-config-123"
-	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	t.Run("successfully generates heartbeat with valid env vars", func(t *testing.T) {
+		testAgentID := "test-agent-config-123"
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-	// Set up config environment variables
-	agentConfigYaml := "self_monitoring:\n  enabled: true\n"
-	otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
-	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
-	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
+		// Set up config environment variables
+		agentConfigYaml := "self_monitoring:\n  enabled: true\n"
+		otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
+		os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
 
-	// Create receiver with a mock consumer to capture logs
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Environment = "linux"
+		// Create receiver with a mock consumer to capture logs
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Environment = "linux"
 
-	sink := &consumertest.LogsSink{}
-	receiver, err := newReceiver(
-		receivertest.NewNopSettings(metadata.Type),
-		cfg,
-		sink,
-	)
-	require.NoError(t, err)
+		sink := &consumertest.LogsSink{}
+		receiver, err := newReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			cfg,
+			sink,
+		)
+		require.NoError(t, err)
 
-	// Initialize receiver state
-	err = receiver.InitializeReceiverState(context.Background())
-	require.NoError(t, err)
+		// Initialize receiver state
+		err = receiver.InitializeReceiverState(context.Background())
+		require.NoError(t, err)
 
-	// Call generateConfigHeartbeat
-	ctx := context.Background()
-	err = receiver.generateConfigHeartbeat(ctx)
-	require.NoError(t, err)
+		// Call generateConfigHeartbeat
+		ctx := context.Background()
+		err = receiver.generateConfigHeartbeat(ctx)
+		require.NoError(t, err)
 
 	// If it succeeded, verify the log structure
 	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
@@ -512,31 +513,122 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 	assert.True(t, ok, "Should have control map")
 	assert.Equal(t, false, control["isDelete"])
 
-	// Check timestamps
-	assert.Contains(t, observeTransform.Map().AsRaw(), "process_start_time")
-	assert.Contains(t, observeTransform.Map().AsRaw(), "valid_from")
-	assert.Contains(t, observeTransform.Map().AsRaw(), "valid_to")
+		// Check timestamps
+		assert.Contains(t, observeTransform.Map().AsRaw(), "process_start_time")
+		assert.Contains(t, observeTransform.Map().AsRaw(), "valid_from")
+		assert.Contains(t, observeTransform.Map().AsRaw(), "valid_to")
 
-	// Check body
-	body := logRecord.Body().Map()
-	observeAgentConfig, found := body.Get("observeAgentConfig")
-	assert.True(t, found, "Body should have observeAgentConfig field")
+		// Check body
+		body := logRecord.Body().Map()
+		observeAgentConfig, found := body.Get("observeAgentConfig")
+		assert.True(t, found, "Body should have observeAgentConfig field")
 
-	// Verify it's valid base64
-	decoded, err := base64.StdEncoding.DecodeString(observeAgentConfig.Str())
-	assert.NoError(t, err, "observeAgentConfig should be valid base64")
+		// Verify it's valid base64
+		decoded, err := base64.StdEncoding.DecodeString(observeAgentConfig.Str())
+		assert.NoError(t, err, "observeAgentConfig should be valid base64")
 
-	// The decoded config will be obfuscated and normalized (4-space indentation)
-	// Just verify it's valid YAML and contains expected fields
-	assert.Contains(t, string(decoded), "self_monitoring", "Decoded config should contain self_monitoring")
-	assert.Contains(t, string(decoded), "enabled: true", "Decoded config should contain enabled: true")
+		// The decoded config will be obfuscated and normalized (4-space indentation)
+		// Just verify it's valid YAML and contains expected fields
+		assert.Contains(t, string(decoded), "self_monitoring", "Decoded config should contain self_monitoring")
+		assert.Contains(t, string(decoded), "enabled: true", "Decoded config should contain enabled: true")
 
-	otelConfig, found := body.Get("otelConfig")
-	assert.True(t, found, "Body should have otelConfig field")
+		otelConfig, found := body.Get("otelConfig")
+		assert.True(t, found, "Body should have otelConfig field")
 
-	// Verify it's valid base64
-	_, err = base64.StdEncoding.DecodeString(otelConfig.Str())
-	assert.NoError(t, err, "otelConfig should be valid base64")
+		// Verify it's valid base64
+		_, err = base64.StdEncoding.DecodeString(otelConfig.Str())
+		assert.NoError(t, err, "otelConfig should be valid base64")
+	})
+
+	t.Run("gracefully handles missing OBSERVE_AGENT_CONFIG env var", func(t *testing.T) {
+		testAgentID := "test-agent-missing-config"
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+
+		// Only set OTEL config, not agent config
+		os.Unsetenv("OBSERVE_AGENT_CONFIG")
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "receivers:\n  heartbeat:\n")
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		sink := &consumertest.LogsSink{}
+		receiver, err := newReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			cfg,
+			sink,
+		)
+		require.NoError(t, err)
+
+		err = receiver.InitializeReceiverState(context.Background())
+		require.NoError(t, err)
+
+		// Should not crash, should return nil and log error
+		ctx := context.Background()
+		err = receiver.generateConfigHeartbeat(ctx)
+		assert.NoError(t, err, "Should not return error when env var is missing")
+
+		// No logs should be sent
+		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when config is missing")
+	})
+
+	t.Run("gracefully handles missing OBSERVE_AGENT_OTEL_CONFIG env var", func(t *testing.T) {
+		testAgentID := "test-agent-missing-otel"
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+
+		// Only set agent config, not OTEL config
+		os.Setenv("OBSERVE_AGENT_CONFIG", "self_monitoring:\n  enabled: true\n")
+		os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		sink := &consumertest.LogsSink{}
+		receiver, err := newReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			cfg,
+			sink,
+		)
+		require.NoError(t, err)
+
+		err = receiver.InitializeReceiverState(context.Background())
+		require.NoError(t, err)
+
+		// Should not crash, should return nil and log error
+		ctx := context.Background()
+		err = receiver.generateConfigHeartbeat(ctx)
+		assert.NoError(t, err, "Should not return error when env var is missing")
+
+		// No logs should be sent
+		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when config is missing")
+	})
+
+	t.Run("gracefully handles invalid YAML in env vars", func(t *testing.T) {
+		testAgentID := "test-agent-invalid-yaml"
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+
+		// Set invalid YAML
+		os.Setenv("OBSERVE_AGENT_CONFIG", "invalid: yaml: content: [[[")
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "also: invalid: {{")
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		sink := &consumertest.LogsSink{}
+		receiver, err := newReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			cfg,
+			sink,
+		)
+		require.NoError(t, err)
+
+		err = receiver.InitializeReceiverState(context.Background())
+		require.NoError(t, err)
+
+		// Should not crash, should return nil and log error
+		ctx := context.Background()
+		err = receiver.generateConfigHeartbeat(ctx)
+		assert.NoError(t, err, "Should not return error when YAML is invalid")
+
+		// No logs should be sent
+		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when YAML is invalid")
+	})
 }
 
 func TestConfigHeartbeatTimer(t *testing.T) {

@@ -40,8 +40,8 @@ func (cfg *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid config_interval: %w", err)
 		}
-		if configInterval.Seconds() < 5 {
-			return fmt.Errorf("config_interval must be at least 1 hour")
+		if configInterval.Minutes() < 10 {
+			return fmt.Errorf("config_interval must be at least 10 minutes")
 		}
 	}
 
