@@ -2,11 +2,9 @@ package heartbeatreceiver
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
@@ -16,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 type HeartbeatReceiver struct {
@@ -83,20 +80,6 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 	interval, _ := time.ParseDuration(r.cfg.Interval)
 	r.ticker = time.NewTicker(interval)
 
-	go func() {
-		for {
-			select {
-			case <-r.ticker.C:
-				if err := r.generateLifecycleHeartbeat(ctx); err != nil {
-					r.settings.Logger.Error("failed to generate lifecycle heartbeat", zap.Error(err))
-					// Continue - don't stop timer on error
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	// Start config heartbeat timer
 	configInterval, _ := time.ParseDuration(r.cfg.ConfigInterval)
 	r.configTicker = time.NewTicker(configInterval)
@@ -106,6 +89,11 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 	go func() {
 		for {
 			select {
+			case <-r.ticker.C:
+				if err := r.generateLifecycleHeartbeat(ctx); err != nil {
+					r.settings.Logger.Error("failed to generate lifecycle heartbeat", zap.Error(err))
+					// Continue - don't stop timer on error
+				}
 			case <-r.configTicker.C:
 				if err := r.generateConfigHeartbeat(ctx); err != nil {
 					r.settings.Logger.Error("failed to generate config heartbeat", zap.Error(err))
@@ -217,152 +205,6 @@ func (r *HeartbeatReceiver) generateLifecycleHeartbeat(ctx context.Context) erro
 	return nil
 }
 
-// SensitiveFieldPattern defines a pattern for matching and obfuscating sensitive fields in YAML
-type SensitiveFieldPattern struct {
-	// Path is the YAML path to the field using dot notation
-	// Examples: "token", "auth_check.headers.authorization", "database.password"
-	// Leave empty if using KeyPattern
-	Path string
-
-	// KeyPattern matches any key at any depth that matches this string
-	// Example: "authorization" will match any field named "authorization" at any level
-	// If both Path and KeyPattern are set, Path takes precedence
-	KeyPattern string
-
-	// PrefixLength is the number of characters to show before obfuscating (default: 8)
-	PrefixLength int
-}
-
-// sensitiveFieldPatterns defines all the sensitive fields that should be obfuscated
-var sensitiveFieldPatterns = []SensitiveFieldPattern{
-	{
-		Path:         "token",
-		PrefixLength: 8,
-	},
-	{
-		KeyPattern:   "authorization",
-		PrefixLength: 16,
-	},
-}
-
-// obfuscateValue obfuscates a value by showing a prefix and replacing the rest with asterisks
-func obfuscateValue(value string, prefixLength int) string {
-	if len(value) > prefixLength {
-		return value[:prefixLength] + strings.Repeat("*", len(value)-prefixLength)
-	}
-	return strings.Repeat("*", len(value))
-}
-
-// traverseAndObfuscate recursively traverses a YAML node and obfuscates sensitive fields
-func traverseAndObfuscate(node *yaml.Node, currentPath []string, patterns []SensitiveFieldPattern) {
-	if node == nil {
-		return
-	}
-
-	switch node.Kind {
-	case yaml.DocumentNode:
-		// Document node contains a single content node
-		if len(node.Content) > 0 {
-			traverseAndObfuscate(node.Content[0], currentPath, patterns)
-		}
-
-	case yaml.MappingNode:
-		// Mapping nodes have key-value pairs in Content
-		// Content is a flat list: [key1, value1, key2, value2, ...]
-		for i := 0; i < len(node.Content); i += 2 {
-			if i+1 >= len(node.Content) {
-				break
-			}
-
-			keyNode := node.Content[i]
-			valueNode := node.Content[i+1]
-
-			// Build the path for this key
-			newPath := append(currentPath, keyNode.Value)
-
-			// Check if this path matches any sensitive field pattern
-			for _, pattern := range patterns {
-				shouldObfuscate := false
-
-				if pattern.Path != "" {
-					// Exact path matching
-					patternPath := strings.Split(pattern.Path, ".")
-					if pathsMatch(newPath, patternPath) {
-						shouldObfuscate = true
-					}
-				} else if pattern.KeyPattern != "" {
-					// Key pattern matching - match if the current key matches the pattern
-					if keyNode.Value == pattern.KeyPattern {
-						shouldObfuscate = true
-					}
-				}
-
-				if shouldObfuscate && valueNode.Kind == yaml.ScalarNode {
-					prefixLen := pattern.PrefixLength
-					if prefixLen == 0 {
-						prefixLen = 8
-					}
-					valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
-					// Don't break - continue checking other patterns in case of multiple matches
-				}
-			}
-
-			// Recurse into the value node
-			traverseAndObfuscate(valueNode, newPath, patterns)
-		}
-
-	case yaml.SequenceNode:
-		// Sequence nodes contain list items
-		for _, item := range node.Content {
-			traverseAndObfuscate(item, currentPath, patterns)
-		}
-
-	case yaml.ScalarNode:
-		// Scalar nodes are leaf values - nothing to traverse
-		return
-	}
-}
-
-// pathsMatch checks if the current path matches the pattern path
-func pathsMatch(current []string, pattern []string) bool {
-	if len(current) != len(pattern) {
-		return false
-	}
-	for i := range pattern {
-		if current[i] != pattern[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// redactAndEncodeConfig parses YAML config from env var, redacts sensitive fields, and returns base64 encoded string
-func redactAndEncodeConfig(yamlContent string) (string, error) {
-	if yamlContent == "" {
-		return "", fmt.Errorf("empty config content")
-	}
-
-	// Parse the YAML content
-	var node yaml.Node
-	err := yaml.Unmarshal([]byte(yamlContent), &node)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse YAML: %w", err)
-	}
-
-	// Redact sensitive fields
-	traverseAndObfuscate(&node, []string{}, sensitiveFieldPatterns)
-
-	// Marshal back to YAML
-	redactedYaml, err := yaml.Marshal(&node)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal redacted YAML: %w", err)
-	}
-
-	// Base64 encode
-	encoded := base64.StdEncoding.EncodeToString(redactedYaml)
-	return encoded, nil
-}
-
 // generateConfigHeartbeat creates and sends a config heartbeat event
 func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	r.settings.Logger.Debug("Generating config heartbeat",
@@ -374,11 +216,13 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 
 	if agentConfigYaml == "" {
 		r.settings.Logger.Error("OBSERVE_AGENT_CONFIG environment variable is not set, skipping config heartbeat")
-		return nil // Don't crash, just skip this heartbeat
 	}
 
 	if otelConfigYaml == "" {
 		r.settings.Logger.Error("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set, skipping config heartbeat")
+	}
+
+	if agentConfigYaml == "" && otelConfigYaml == "" {
 		return nil // Don't crash, just skip this heartbeat
 	}
 
@@ -386,12 +230,14 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	agentConfig, err := redactAndEncodeConfig(agentConfigYaml)
 	if err != nil {
 		r.settings.Logger.Error("failed to redact and encode observe-agent config, skipping config heartbeat", zap.Error(err))
-		return nil // Don't crash, just skip this heartbeat
 	}
 
 	otelConfig, err := redactAndEncodeConfig(otelConfigYaml)
 	if err != nil {
 		r.settings.Logger.Error("failed to redact and encode OTEL config, skipping config heartbeat", zap.Error(err))
+	}
+
+	if agentConfig == "" && otelConfig == "" {
 		return nil // Don't crash, just skip this heartbeat
 	}
 

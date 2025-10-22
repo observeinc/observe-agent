@@ -225,193 +225,6 @@ func TestAddCommonHeartbeatFields(t *testing.T) {
 	}
 }
 
-func TestRedactAndEncodeConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		input       string
-		expectError bool
-		checkResult func(t *testing.T, result string)
-	}{
-		{
-			name:  "obfuscates unquoted token",
-			input: "token: abc123def456ghi789\n",
-			checkResult: func(t *testing.T, result string) {
-				decoded, err := base64.StdEncoding.DecodeString(result)
-				require.NoError(t, err)
-				assert.Contains(t, string(decoded), "abc123de")
-				assert.Contains(t, string(decoded), "***")
-			},
-		},
-		{
-			name:  "obfuscates double-quoted token",
-			input: "token: \"abc123def456ghi789\"\n",
-			checkResult: func(t *testing.T, result string) {
-				decoded, err := base64.StdEncoding.DecodeString(result)
-				require.NoError(t, err)
-				assert.Contains(t, string(decoded), "abc123de")
-				assert.Contains(t, string(decoded), "***")
-			},
-		},
-		{
-			name: "handles multi-line config with token",
-			input: `observe_url: https://example.com
-token: abc123def456ghi789
-debug: true
-`,
-			checkResult: func(t *testing.T, result string) {
-				decoded, err := base64.StdEncoding.DecodeString(result)
-				require.NoError(t, err)
-				assert.Contains(t, string(decoded), "observe_url: https://example.com")
-				assert.Contains(t, string(decoded), "abc123de")
-				assert.Contains(t, string(decoded), "debug: true")
-			},
-		},
-		{
-			name:        "returns error for empty content",
-			input:       "",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := redactAndEncodeConfig(tt.input)
-
-			if tt.expectError {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.NotEmpty(t, result)
-
-			if tt.checkResult != nil {
-				tt.checkResult(t, result)
-			}
-		})
-	}
-}
-
-func TestRedactAndEncodeConfigWithCustomPatterns(t *testing.T) {
-	// Tests extensibility: custom paths, prefix lengths, and multiple patterns
-	tests := []struct {
-		name     string
-		patterns []SensitiveFieldPattern
-		input    string
-		checkResult func(t *testing.T, decoded string)
-	}{
-		{
-			name: "nested field with custom prefix length",
-			patterns: []SensitiveFieldPattern{
-				{Path: "database.password", PrefixLength: 4},
-			},
-			input: `database:
-  host: localhost
-  password: secretpassword123
-  port: 5432
-`,
-			checkResult: func(t *testing.T, decoded string) {
-				assert.Contains(t, decoded, "host: localhost")
-				assert.Contains(t, decoded, "secr")
-				assert.Contains(t, decoded, "***")
-				assert.Contains(t, decoded, "port: 5432")
-			},
-		},
-		{
-			name: "multiple fields with different prefix lengths",
-			patterns: []SensitiveFieldPattern{
-				{Path: "token", PrefixLength: 8},
-				{Path: "api_key", PrefixLength: 6},
-			},
-			input: `token: abc123def456ghi789
-api_key: myapikey12345
-observe_url: https://example.com
-`,
-			checkResult: func(t *testing.T, decoded string) {
-				assert.Contains(t, decoded, "abc123de")
-				assert.Contains(t, decoded, "myapik")
-				assert.Contains(t, decoded, "observe_url: https://example.com")
-			},
-		},
-		{
-			name: "key pattern matches authorization at any level",
-			patterns: []SensitiveFieldPattern{
-				{KeyPattern: "authorization", PrefixLength: 8},
-			},
-			input: `exporters:
-  otlp:
-    endpoint: https://example.com
-    headers:
-      authorization: Bearer token123456789
-      content-type: application/json
-receivers:
-  http:
-    headers:
-      authorization: Basic user:pass123456789
-`,
-			checkResult: func(t *testing.T, decoded string) {
-				assert.Contains(t, decoded, "endpoint: https://example.com")
-				assert.Contains(t, decoded, "content-type: application/json")
-				// Check both authorization fields are redacted
-				assert.Contains(t, decoded, "Bearer t")
-				assert.Contains(t, decoded, "Basic us")
-				assert.Contains(t, decoded, "***")
-				// Make sure the full values are NOT present
-				assert.NotContains(t, decoded, "token123456789")
-				assert.NotContains(t, decoded, "pass123456789")
-			},
-		},
-		{
-			name: "key pattern matches multiple occurrences at different depths",
-			patterns: []SensitiveFieldPattern{
-				{KeyPattern: "password", PrefixLength: 4},
-			},
-			input: `database:
-  host: localhost
-  password: dbpass123456
-services:
-  redis:
-    password: redispass789
-  postgres:
-    password: pgpass456789
-`,
-			checkResult: func(t *testing.T, decoded string) {
-				assert.Contains(t, decoded, "host: localhost")
-				// All three passwords should be redacted with 4 char prefix
-				assert.Contains(t, decoded, "dbpa")
-				assert.Contains(t, decoded, "redi")
-				assert.Contains(t, decoded, "pgpa")
-				assert.Contains(t, decoded, "***")
-				// Full passwords should not be present
-				assert.NotContains(t, decoded, "dbpass123456")
-				assert.NotContains(t, decoded, "redispass789")
-				assert.NotContains(t, decoded, "pgpass456789")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Temporarily replace the global patterns
-			originalPatterns := sensitiveFieldPatterns
-			sensitiveFieldPatterns = tt.patterns
-			defer func() {
-				sensitiveFieldPatterns = originalPatterns
-			}()
-
-			result, err := redactAndEncodeConfig(tt.input)
-			require.NoError(t, err)
-
-			decoded, err := base64.StdEncoding.DecodeString(result)
-			require.NoError(t, err)
-
-			if tt.checkResult != nil {
-				tt.checkResult(t, string(decoded))
-			}
-		})
-	}
-}
-
 func TestGenerateConfigHeartbeat(t *testing.T) {
 	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
@@ -540,13 +353,13 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		assert.NoError(t, err, "otelConfig should be valid base64")
 	})
 
-	t.Run("gracefully handles missing OBSERVE_AGENT_CONFIG env var", func(t *testing.T) {
+	t.Run("sends partial heartbeat when OBSERVE_AGENT_CONFIG env var is missing", func(t *testing.T) {
 		testAgentID := "test-agent-missing-config"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
 		// Only set OTEL config, not agent config
 		os.Unsetenv("OBSERVE_AGENT_CONFIG")
-		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "receivers:\n  heartbeat:\n")
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "receivers:\n  heartbeat:\n    interval: 5m\n")
 
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
@@ -564,13 +377,27 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		// Should not crash, should return nil and log error
 		ctx := context.Background()
 		err = receiver.generateConfigHeartbeat(ctx)
-		assert.NoError(t, err, "Should not return error when env var is missing")
+		assert.NoError(t, err, "Should not return error when one env var is missing")
 
-		// No logs should be sent
-		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when config is missing")
+		// Should still send heartbeat with OTEL config only
+		assert.Equal(t, 1, sink.LogRecordCount(), "Should send partial heartbeat with available config")
+
+		// Verify the heartbeat has OTEL config but empty agent config
+		logs := sink.AllLogs()
+		require.Equal(t, 1, len(logs))
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		body := logRecord.Body().Map()
+
+		agentConfig, found := body.Get("observeAgentConfig")
+		assert.True(t, found)
+		assert.Empty(t, agentConfig.Str(), "Agent config should be empty")
+
+		otelConfig, found := body.Get("otelConfig")
+		assert.True(t, found)
+		assert.NotEmpty(t, otelConfig.Str(), "OTEL config should be present")
 	})
 
-	t.Run("gracefully handles missing OBSERVE_AGENT_OTEL_CONFIG env var", func(t *testing.T) {
+	t.Run("sends partial heartbeat when OBSERVE_AGENT_OTEL_CONFIG env var is missing", func(t *testing.T) {
 		testAgentID := "test-agent-missing-otel"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
@@ -594,10 +421,54 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		// Should not crash, should return nil and log error
 		ctx := context.Background()
 		err = receiver.generateConfigHeartbeat(ctx)
-		assert.NoError(t, err, "Should not return error when env var is missing")
+		assert.NoError(t, err, "Should not return error when one env var is missing")
 
-		// No logs should be sent
-		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when config is missing")
+		// Should still send heartbeat with agent config only
+		assert.Equal(t, 1, sink.LogRecordCount(), "Should send partial heartbeat with available config")
+
+		// Verify the heartbeat has agent config but empty OTEL config
+		logs := sink.AllLogs()
+		require.Equal(t, 1, len(logs))
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		body := logRecord.Body().Map()
+
+		agentConfig, found := body.Get("observeAgentConfig")
+		assert.True(t, found)
+		assert.NotEmpty(t, agentConfig.Str(), "Agent config should be present")
+
+		otelConfig, found := body.Get("otelConfig")
+		assert.True(t, found)
+		assert.Empty(t, otelConfig.Str(), "OTEL config should be empty")
+	})
+
+	t.Run("skips heartbeat when both env vars are missing", func(t *testing.T) {
+		testAgentID := "test-agent-both-missing"
+		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+
+		// Unset both configs
+		os.Unsetenv("OBSERVE_AGENT_CONFIG")
+		os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		sink := &consumertest.LogsSink{}
+		receiver, err := newReceiver(
+			receivertest.NewNopSettings(metadata.Type),
+			cfg,
+			sink,
+		)
+		require.NoError(t, err)
+
+		err = receiver.InitializeReceiverState(context.Background())
+		require.NoError(t, err)
+
+		// Should not crash
+		ctx := context.Background()
+		err = receiver.generateConfigHeartbeat(ctx)
+		assert.NoError(t, err, "Should not return error when both env vars are missing")
+
+		// No logs should be sent when both are missing
+		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when both configs are missing")
 	})
 
 	t.Run("gracefully handles invalid YAML in env vars", func(t *testing.T) {

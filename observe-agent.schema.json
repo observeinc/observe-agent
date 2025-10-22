@@ -73,6 +73,9 @@
     "FleetHeartbeatConfig": {
       "additionalProperties": false,
       "properties": {
+        "config_interval": {
+          "type": "string"
+        },
         "enabled": {
           "type": "boolean"
         },

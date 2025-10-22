@@ -45,7 +45,11 @@ func setConfigEnvVars(ctx context.Context) error {
 
 func MakeStartCommand() *cobra.Command {
 	otleCmd := &cobra.Command{
-		Use:          "start",
+		Use:   "start",
+		Short: "Start the Observe agent process.",
+		Long: `The Observe agent is based on the OpenTelemetry Collector.
+This command reads in the local config and env vars and starts the
+collector on the current host.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			col, cleanup, err := observecol.GetOtelCollector(DefaultLoggerCtx())
@@ -65,6 +69,7 @@ func MakeStartCommand() *cobra.Command {
 	}
 	return otleCmd
 }
+
 func init() {
 	startCmd := MakeStartCommand()
 	root.RootCmd.AddCommand(startCmd)

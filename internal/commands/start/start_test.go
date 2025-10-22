@@ -72,8 +72,8 @@ func TestSetConfigEnvVars(t *testing.T) {
 				assert.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
 
 				// Verify it contains expected fields
-				assert.Contains(t, agentConfigYaml, "token:")
-				assert.Contains(t, agentConfigYaml, "observe_url:")
+				assert.Contains(t, agentConfigYaml, "token: test:token123456789")
+				assert.Contains(t, agentConfigYaml, "observe_url: https://example.observeinc.com")
 			}
 			return
 		}
@@ -134,12 +134,6 @@ func TestSetConfigEnvVars(t *testing.T) {
 }
 
 func TestSetConfigEnvVarsIntegration(t *testing.T) {
-	// This is a more comprehensive integration test
-	// Skip if running in CI without full setup
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
 	t.Run("validates agent config before setting env vars", func(t *testing.T) {
 		// Create a valid config
 		validConfig := config.AgentConfig{
