@@ -58,44 +58,26 @@ func TestSetConfigEnvVars(t *testing.T) {
 		// Call the function
 		ctx := context.Background()
 		err := setConfigEnvVars(ctx)
+		require.NoError(t, err, "setConfigEnvVars should succeed in unit test")
 
-		// For this test, we expect it might fail because PrintShortOtelConfig
-		// requires full OTEL setup, but we can at least verify the agent config part
-		if err != nil {
-			// If it fails, it should be from the OTEL config part
-			// Check that OBSERVE_AGENT_CONFIG was still set
-			agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-			if agentConfigYaml != "" {
-				// Verify it's valid YAML
-				var parsed map[string]interface{}
-				err := yaml.Unmarshal([]byte(agentConfigYaml), &parsed)
-				assert.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
-
-				// Verify it contains expected fields
-				assert.Contains(t, agentConfigYaml, "token: test:token123456789")
-				assert.Contains(t, agentConfigYaml, "observe_url: https://example.observeinc.com")
-			}
-			return
-		}
-
-		// If it succeeds, verify both env vars are set
+		// Both env vars must be set
 		agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-		require.NotEmpty(t, agentConfigYaml, "OBSERVE_AGENT_CONFIG should be set")
+		require.NotEmpty(t, agentConfigYaml, "OBSERVE_AGENT_CONFIG must be set")
 
 		otelConfigYaml := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
-		require.NotEmpty(t, otelConfigYaml, "OBSERVE_AGENT_OTEL_CONFIG should be set")
+		require.NotEmpty(t, otelConfigYaml, "OBSERVE_AGENT_OTEL_CONFIG must be set")
 
-		// Verify the agent config is valid YAML
+		// Verify the agent config is valid YAML and contains expected values
 		var agentConfigParsed config.AgentConfig
 		err = yaml.Unmarshal([]byte(agentConfigYaml), &agentConfigParsed)
-		assert.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
+		require.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
 		assert.Equal(t, "test:token123456789", agentConfigParsed.Token)
 		assert.Equal(t, "https://example.observeinc.com", agentConfigParsed.ObserveURL)
 
 		// Verify the OTEL config is valid YAML
 		var otelConfigParsed map[string]interface{}
 		err = yaml.Unmarshal([]byte(otelConfigYaml), &otelConfigParsed)
-		assert.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid YAML")
+		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid YAML")
 	})
 
 	t.Run("returns error with invalid config", func(t *testing.T) {
