@@ -39,8 +39,8 @@ go-test: build
 	go list -f '{{.Dir}}' -m | xargs go test -v ./...
 	
 ## release: Releases current tag through goreleaser
-release:
-	goreleaser release --clean
+release-snapshot:
+	goreleaser release --snapshot --clean --verbose
 
 ## install-ocb: Installs correct version of ocb binary
 install-ocb:
@@ -70,4 +70,4 @@ install-tools:
 generate-jsonschema:
 	go run ./scripts/generate_jsonschema.go
 
-.PHONY: all vendor build go-test release install-ocb build-ocb install-tools
+.PHONY: all vendor build go-test release-snapshot install-ocb build-ocb install-tools

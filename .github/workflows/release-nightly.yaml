@@ -65,7 +65,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.9.0
+          version: 2.12.6
           args: release --clean --skip=validate --verbose --nightly --parallelism 6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
