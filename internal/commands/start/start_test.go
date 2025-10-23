@@ -31,12 +31,7 @@ func TestSetConfigEnvVars(t *testing.T) {
 	}()
 
 	t.Run("successfully sets environment variables with valid config", func(t *testing.T) {
-		// Reset viper and set up a valid config
-		v := viper.New()
-		v.Set("token", "test:token123456789")
-		v.Set("observe_url", "https://example.observeinc.com")
-
-		// Create a temporary viper instance for testing
+		// Save original viper state for cleanup
 		originalViper := viper.GetViper()
 		defer func() {
 			// Restore original viper settings

@@ -29,6 +29,57 @@ type SensitiveFieldPattern struct {
 	keyRegex *regexp.Regexp
 }
 
+// Init compiles the KeyPattern regex if needed. Safe to call multiple times (noop if already initialized).
+func (p *SensitiveFieldPattern) Init() error {
+	// If already initialized or no pattern to compile, nothing to do
+	if p.keyRegex != nil || p.KeyPattern == "" {
+		return nil
+	}
+
+	// Compile the regex pattern
+	re, err := regexp.Compile(p.KeyPattern)
+	if err != nil {
+		// If the pattern is invalid, treat it as a literal string match
+		p.keyRegex = regexp.MustCompile("^" + regexp.QuoteMeta(p.KeyPattern) + "$")
+		return fmt.Errorf("invalid regex pattern %q, treating as literal: %w", p.KeyPattern, err)
+	}
+
+	p.keyRegex = re
+	return nil
+}
+
+// Matches checks if the pattern matches the given path and key.
+// Returns true if this pattern should be applied to the field.
+func (p *SensitiveFieldPattern) Matches(currentPath []string, key string) bool {
+	if p.Path != "" {
+		// Exact path matching
+		patternPath := strings.Split(p.Path, ".")
+		return pathsMatch(currentPath, patternPath)
+	}
+
+	if p.keyRegex != nil {
+		// Regex pattern matching - match if the current key matches the regex
+		return p.keyRegex.MatchString(key)
+	}
+
+	return false
+}
+
+// ApplyObfuscation applies obfuscation to the given value node if it's a scalar.
+// Returns true if obfuscation was applied.
+func (p *SensitiveFieldPattern) ApplyObfuscation(valueNode *yaml.Node) bool {
+	if valueNode.Kind != yaml.ScalarNode {
+		return false
+	}
+
+	prefixLen := p.PrefixLength
+	if prefixLen == 0 {
+		prefixLen = 8
+	}
+	valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
+	return true
+}
+
 // sensitiveFieldPatterns defines all the sensitive fields that should be obfuscated
 var sensitiveFieldPatterns = []SensitiveFieldPattern{
 	{
@@ -44,16 +95,8 @@ var sensitiveFieldPatterns = []SensitiveFieldPattern{
 // init compiles all regex patterns
 func init() {
 	for i := range sensitiveFieldPatterns {
-		if sensitiveFieldPatterns[i].KeyPattern != "" {
-			// Compile the regex pattern
-			re, err := regexp.Compile(sensitiveFieldPatterns[i].KeyPattern)
-			if err != nil {
-				// If the pattern is invalid, treat it as a literal string match
-				sensitiveFieldPatterns[i].keyRegex = regexp.MustCompile("^" + regexp.QuoteMeta(sensitiveFieldPatterns[i].KeyPattern) + "$")
-			} else {
-				sensitiveFieldPatterns[i].keyRegex = re
-			}
-		}
+		// Init is a noop if keyRegex is already set or KeyPattern is empty
+		_ = sensitiveFieldPatterns[i].Init()
 	}
 }
 
@@ -92,29 +135,10 @@ func traverseAndObfuscate(node *yaml.Node, currentPath []string, patterns []Sens
 			// Build the path for this key
 			newPath := append(currentPath, keyNode.Value)
 
-			// Check if this path matches any sensitive field pattern
+			// Check if this path matches any sensitive field pattern and apply obfuscation
 			for _, pattern := range patterns {
-				shouldObfuscate := false
-
-				if pattern.Path != "" {
-					// Exact path matching
-					patternPath := strings.Split(pattern.Path, ".")
-					if pathsMatch(newPath, patternPath) {
-						shouldObfuscate = true
-					}
-				} else if pattern.keyRegex != nil {
-					// Regex pattern matching - match if the current key matches the regex
-					if pattern.keyRegex.MatchString(keyNode.Value) {
-						shouldObfuscate = true
-					}
-				}
-
-				if shouldObfuscate && valueNode.Kind == yaml.ScalarNode {
-					prefixLen := pattern.PrefixLength
-					if prefixLen == 0 {
-						prefixLen = 8
-					}
-					valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
+				if pattern.Matches(newPath, keyNode.Value) {
+					pattern.ApplyObfuscation(valueNode)
 					// Don't break - continue checking other patterns in case of multiple matches
 				}
 			}
