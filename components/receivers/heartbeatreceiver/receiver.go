@@ -51,6 +51,9 @@ type ConfigHeartbeatLogRecord struct {
 }
 
 func newReceiver(set receiver.Settings, cfg *Config, consumer consumer.Logs) (*HeartbeatReceiver, error) {
+	// Initialize sensitive field patterns for redaction
+	initSensitiveFieldPatterns()
+
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		LongLivedCtx:           true,
 		ReceiverID:             set.ID,

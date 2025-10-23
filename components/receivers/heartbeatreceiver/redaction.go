@@ -92,8 +92,8 @@ var sensitiveFieldPatterns = []SensitiveFieldPattern{
 	},
 }
 
-// init compiles all regex patterns
-func init() {
+// initSensitiveFieldPatterns compiles all regex patterns
+func initSensitiveFieldPatterns() {
 	for i := range sensitiveFieldPatterns {
 		// Init is a noop if keyRegex is already set or KeyPattern is empty
 		_ = sensitiveFieldPatterns[i].Init()
