@@ -177,6 +177,18 @@ func pathsMatch(current []string, pattern []string) bool {
 	return true
 }
 
+// decodeBase64Config decodes a base64-encoded config string
+func decodeBase64Config(encoded string) (string, error) {
+	if encoded == "" {
+		return "", nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode base64 config: %w", err)
+	}
+	return string(decoded), nil
+}
+
 // redactAndEncodeConfig parses YAML config from env var, redacts sensitive fields, and returns base64 encoded string
 func redactAndEncodeConfig(yamlContent string) (string, error) {
 	if yamlContent == "" {

@@ -3,6 +3,7 @@ package start
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -32,14 +33,18 @@ func setConfigEnvVars(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	os.Setenv("OBSERVE_AGENT_CONFIG", string(yamlBytes))
+	// Base64 encode to avoid shell escaping issues
+	agentConfigEncoded := base64.StdEncoding.EncodeToString(yamlBytes)
+	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigEncoded)
 
 	// Set the full OTel config
 	var output bytes.Buffer
 	if err := configcmd.PrintShortOtelConfig(ctx, &output); err != nil {
 		return err
 	}
-	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", output.String())
+	// Base64 encode to avoid shell escaping issues
+	otelConfigEncoded := base64.StdEncoding.EncodeToString(output.Bytes())
+	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigEncoded)
 	return nil
 }
 

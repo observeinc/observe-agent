@@ -213,21 +213,34 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	r.settings.Logger.Debug("Generating config heartbeat",
 		zap.String("agent_instance_id", r.state.AgentInstanceId))
 
-	// Get configs from environment variables
-	agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-	otelConfigYaml := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
+	// Get configs from environment variables (base64 encoded)
+	agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
+	otelConfigEncoded := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 
-	if agentConfigYaml == "" {
+	if agentConfigEncoded == "" {
 		r.settings.Logger.Error("OBSERVE_AGENT_CONFIG environment variable is not set")
 	}
 
-	if otelConfigYaml == "" {
+	if otelConfigEncoded == "" {
 		r.settings.Logger.Error("OBSERVE_AGENT_OTEL_CONFIG environment variable is not set")
 	}
 
-	if agentConfigYaml == "" && otelConfigYaml == "" {
+	if agentConfigEncoded == "" && otelConfigEncoded == "" {
 		r.settings.Logger.Error("Both OBSERVE_AGENT_CONFIG and OBSERVE_AGENT_OTEL_CONFIG were not set, skipping heartbeat")
 		return nil // Don't crash, just skip this heartbeat
+	}
+
+	// Decode from base64
+	agentConfigYaml, err := decodeBase64Config(agentConfigEncoded)
+	if err != nil {
+		r.settings.Logger.Error("failed to decode OBSERVE_AGENT_CONFIG from base64", zap.Error(err))
+		agentConfigYaml = "" // Continue with empty config
+	}
+
+	otelConfigYaml, err := decodeBase64Config(otelConfigEncoded)
+	if err != nil {
+		r.settings.Logger.Error("failed to decode OBSERVE_AGENT_OTEL_CONFIG from base64", zap.Error(err))
+		otelConfigYaml = "" // Continue with empty config
 	}
 
 	// Redact and encode configs

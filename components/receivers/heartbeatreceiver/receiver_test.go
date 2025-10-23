@@ -252,11 +252,11 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		testAgentID := "test-agent-config-123"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-		// Set up config environment variables
+		// Set up config environment variables (base64 encoded)
 		agentConfigYaml := "self_monitoring:\n  enabled: true\n"
 		otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
-		os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
-		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
+		os.Setenv("OBSERVE_AGENT_CONFIG", base64.StdEncoding.EncodeToString([]byte(agentConfigYaml)))
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", base64.StdEncoding.EncodeToString([]byte(otelConfigYaml)))
 
 		// Create receiver with a mock consumer to capture logs
 		factory := NewFactory()
@@ -357,9 +357,10 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		testAgentID := "test-agent-missing-config"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-		// Only set OTEL config, not agent config
+		// Only set OTEL config, not agent config (base64 encoded)
 		os.Unsetenv("OBSERVE_AGENT_CONFIG")
-		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "receivers:\n  heartbeat:\n    interval: 5m\n")
+		otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", base64.StdEncoding.EncodeToString([]byte(otelConfigYaml)))
 
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
@@ -401,8 +402,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		testAgentID := "test-agent-missing-otel"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-		// Only set agent config, not OTEL config
-		os.Setenv("OBSERVE_AGENT_CONFIG", "self_monitoring:\n  enabled: true\n")
+		// Only set agent config, not OTEL config (base64 encoded)
+		agentConfigYaml := "self_monitoring:\n  enabled: true\n"
+		os.Setenv("OBSERVE_AGENT_CONFIG", base64.StdEncoding.EncodeToString([]byte(agentConfigYaml)))
 		os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
 
 		factory := NewFactory()
@@ -475,9 +477,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		testAgentID := "test-agent-invalid-yaml"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-		// Set invalid YAML
-		os.Setenv("OBSERVE_AGENT_CONFIG", "invalid: yaml: content: [[[")
-		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "also: invalid: {{")
+		// Set invalid YAML (base64 encoded)
+		os.Setenv("OBSERVE_AGENT_CONFIG", base64.StdEncoding.EncodeToString([]byte("invalid: yaml: content: [[[}")))
+		os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", base64.StdEncoding.EncodeToString([]byte("also: invalid: {{")))
 
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
@@ -528,11 +530,11 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 	testAgentID := "test-agent-timer-123"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
 
-	// Set up config environment variables
+	// Set up config environment variables (base64 encoded)
 	agentConfigYaml := "self_monitoring:\n  enabled: true\n"
 	otelConfigYaml := "receivers:\n  heartbeat:\n    interval: 5m\n"
-	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigYaml)
-	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigYaml)
+	os.Setenv("OBSERVE_AGENT_CONFIG", base64.StdEncoding.EncodeToString([]byte(agentConfigYaml)))
+	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", base64.StdEncoding.EncodeToString([]byte(otelConfigYaml)))
 
 	t.Run("both timers run independently", func(t *testing.T) {
 		// Create receiver with fast intervals for testing

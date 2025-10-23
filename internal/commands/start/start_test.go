@@ -2,6 +2,7 @@ package start
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"testing"
 
@@ -55,23 +56,30 @@ func TestSetConfigEnvVars(t *testing.T) {
 		err := setConfigEnvVars(ctx)
 		require.NoError(t, err, "setConfigEnvVars should succeed in unit test")
 
-		// Both env vars must be set
-		agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-		require.NotEmpty(t, agentConfigYaml, "OBSERVE_AGENT_CONFIG must be set")
+		// Both env vars must be set (base64 encoded)
+		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
+		require.NotEmpty(t, agentConfigEncoded, "OBSERVE_AGENT_CONFIG must be set")
 
-		otelConfigYaml := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
-		require.NotEmpty(t, otelConfigYaml, "OBSERVE_AGENT_OTEL_CONFIG must be set")
+		otelConfigEncoded := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
+		require.NotEmpty(t, otelConfigEncoded, "OBSERVE_AGENT_OTEL_CONFIG must be set")
+
+		// Decode from base64
+		agentConfigBytes, err := base64.StdEncoding.DecodeString(agentConfigEncoded)
+		require.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid base64")
+
+		otelConfigBytes, err := base64.StdEncoding.DecodeString(otelConfigEncoded)
+		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid base64")
 
 		// Verify the agent config is valid YAML and contains expected values
 		var agentConfigParsed config.AgentConfig
-		err = yaml.Unmarshal([]byte(agentConfigYaml), &agentConfigParsed)
+		err = yaml.Unmarshal(agentConfigBytes, &agentConfigParsed)
 		require.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
 		assert.Equal(t, "test:token123456789", agentConfigParsed.Token)
 		assert.Equal(t, "https://example.observeinc.com", agentConfigParsed.ObserveURL)
 
 		// Verify the OTEL config is valid YAML
 		var otelConfigParsed map[string]interface{}
-		err = yaml.Unmarshal([]byte(otelConfigYaml), &otelConfigParsed)
+		err = yaml.Unmarshal(otelConfigBytes, &otelConfigParsed)
 		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid YAML")
 	})
 
@@ -87,7 +95,7 @@ func TestSetConfigEnvVars(t *testing.T) {
 	})
 
 	t.Run("preserves token and other sensitive fields in env var", func(t *testing.T) {
-		// This test verifies that the raw config is stored in the env var
+		// This test verifies that the raw config is stored in the env var (base64 encoded)
 		// (redaction happens in the heartbeat receiver when reading the env var)
 		viper.Reset()
 		viper.Set("token", "sensitive:token12345678901234567890")
@@ -97,10 +105,14 @@ func TestSetConfigEnvVars(t *testing.T) {
 		err := setConfigEnvVars(ctx)
 
 		// May fail on OTEL config part, but we can still check agent config
-		agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-		if agentConfigYaml != "" {
-			// Verify the full token is in the env var (not redacted)
-			assert.Contains(t, agentConfigYaml, "sensitive:token12345678901234567890",
+		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
+		if agentConfigEncoded != "" {
+			// Decode from base64
+			agentConfigBytes, decodeErr := base64.StdEncoding.DecodeString(agentConfigEncoded)
+			require.NoError(t, decodeErr, "Should be valid base64")
+
+			// Verify the full token is in the decoded YAML (not redacted)
+			assert.Contains(t, string(agentConfigBytes), "sensitive:token12345678901234567890",
 				"Token should be stored unredacted in env var")
 		}
 
@@ -133,11 +145,15 @@ func TestSetConfigEnvVarsIntegration(t *testing.T) {
 		ctx := context.Background()
 		_ = setConfigEnvVars(ctx)
 
-		// At minimum, the agent config should be set
-		agentConfigYaml := os.Getenv("OBSERVE_AGENT_CONFIG")
-		if agentConfigYaml != "" {
+		// At minimum, the agent config should be set (base64 encoded)
+		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
+		if agentConfigEncoded != "" {
+			// Decode from base64
+			agentConfigBytes, decodeErr := base64.StdEncoding.DecodeString(agentConfigEncoded)
+			assert.NoError(t, decodeErr, "Should be valid base64")
+
 			var parsed config.AgentConfig
-			err := yaml.Unmarshal([]byte(agentConfigYaml), &parsed)
+			err := yaml.Unmarshal(agentConfigBytes, &parsed)
 			assert.NoError(t, err)
 			assert.Equal(t, validConfig.Token, parsed.Token)
 			assert.Equal(t, validConfig.ObserveURL, parsed.ObserveURL)
