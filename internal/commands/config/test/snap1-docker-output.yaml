@@ -255,6 +255,7 @@ receivers:
             headers:
                 authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
             url: https://123456789.collect.observe-eng.com
+        config_interval: 24h
         environment: docker
         interval: 30s
     hostmetrics/host-monitoring-host:

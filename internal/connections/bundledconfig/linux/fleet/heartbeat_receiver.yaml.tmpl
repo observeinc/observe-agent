@@ -1,6 +1,7 @@
 receivers:
   heartbeat:
     interval: {{.SelfMonitoring.Fleet.Interval}}
+    config_interval: {{.SelfMonitoring.Fleet.ConfigInterval}}
     environment: linux
     auth_check:
       url: ${env:OBSERVE_COLLECTOR_URL}
