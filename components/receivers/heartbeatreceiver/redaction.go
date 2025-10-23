@@ -9,6 +9,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// DefaultPrefixLength is the default number of characters to show before obfuscating
+	DefaultPrefixLength = 8
+)
+
 // SensitiveFieldPattern defines a pattern for matching and obfuscating sensitive fields in YAML
 type SensitiveFieldPattern struct {
 	// Path is the YAML path to the field using dot notation
@@ -74,7 +79,7 @@ func (p *SensitiveFieldPattern) ApplyObfuscation(valueNode *yaml.Node) bool {
 
 	prefixLen := p.PrefixLength
 	if prefixLen == 0 {
-		prefixLen = 8
+		prefixLen = DefaultPrefixLength
 	}
 	valueNode.Value = obfuscateValue(valueNode.Value, prefixLen)
 	return true
