@@ -106,6 +106,9 @@
     "ForwardingMetricsConfig": {
       "additionalProperties": false,
       "properties": {
+        "convert_cumulative_to_delta": {
+          "type": "boolean"
+        },
         "output_format": {
           "pattern": "^(prometheus|otel)$",
           "type": "string"

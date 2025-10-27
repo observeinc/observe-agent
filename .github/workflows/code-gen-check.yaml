@@ -1,0 +1,36 @@
+name: code-gen-check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  code-gen-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generated the jsonschema file
+        run: |
+          make generate-jsonschema
+          git diff > diff.txt
+          if [ -s diff.txt ]; then
+            echo "jsonschema file needs to be updated, run \`make generate-jsonschema\` to update it." > formatted_diff.txt
+            echo "\`\`\`" >> formatted_diff.txt
+            cat diff.txt >> formatted_diff.txt
+            echo "\`\`\`" >> formatted_diff.txt
+            exit 1
+          fi
+
+      - name: Comment PR with needed changes
+        if: failure()
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file-path: ./formatted_diff.txt
+          comment-tag: jsonschema-changes
+          reactions: eyes

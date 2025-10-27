@@ -55,7 +55,8 @@ type HealthCheckConfig struct {
 }
 
 type ForwardingMetricsConfig struct {
-	OutputFormat string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus" jsonschema:"pattern=^(prometheus|otel)$"`
+	OutputFormat             string `yaml:"output_format,omitempty" mapstructure:"output_format" default:"prometheus" jsonschema:"pattern=^(prometheus|otel)$"`
+	ConvertCumulativeToDelta bool   `yaml:"convert_cumulative_to_delta,omitempty" mapstructure:"convert_cumulative_to_delta"`
 }
 
 func (config *ForwardingMetricsConfig) OtlpMetrics() bool {
@@ -194,6 +195,10 @@ func (config *AgentConfig) Validate() error {
 
 	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otel" {
 		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
+	}
+
+	if config.Forwarding.Metrics.OutputFormat == "prometheus" && config.Forwarding.Metrics.ConvertCumulativeToDelta {
+		return errors.New("invalid metrics config -- cannot convert prometheus metrics to delta, they must be cumulative")
 	}
 
 	if config.Forwarding.Traces.MaxSpanDuration != "none" {
