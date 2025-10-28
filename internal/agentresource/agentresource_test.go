@@ -31,6 +31,9 @@ func TestAgentResource(t *testing.T) {
 	// Verify agent start time was set
 	assert.NotZero(t, agent1.GetAgentStartTime(), "Agent start time should not be zero")
 
+	// Verify agent version was set
+	assert.NotEmpty(t, agent1.GetAgentVersion(), "Agent version should not be empty")
+
 	// Store the first agent's ID and start time
 	firstAgentId := agent1.GetAgentInstanceId()
 	firstStartTime := agent1.GetAgentStartTime()
@@ -74,4 +77,7 @@ func TestAgentResourceWithConfig(t *testing.T) {
 
 	// Verify agent instance ID was generated
 	assert.NotEmpty(t, agent.GetAgentInstanceId(), "Agent instance ID should not be empty")
+
+	// Verify agent version was set
+	assert.NotEmpty(t, agent.GetAgentVersion(), "Agent version should not be empty")
 }

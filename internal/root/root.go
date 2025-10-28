@@ -130,6 +130,7 @@ func setEnvVars() error {
 	} else {
 		// Set agent instance ID as environment variable
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
+		os.Setenv("OBSERVE_AGENT_VERSION", agentRes.GetAgentVersion())
 	}
 
 	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
