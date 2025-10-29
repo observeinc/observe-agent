@@ -43,6 +43,7 @@ forwarding:
         grpc: 0.0.0.0:6789
     metrics:
         output_format: otel
+        convert_cumulative_to_delta: true
     traces:
         max_span_duration: 30m
 
