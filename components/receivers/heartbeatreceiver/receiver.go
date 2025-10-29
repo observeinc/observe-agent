@@ -10,6 +10,7 @@ import (
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -30,6 +31,8 @@ type HeartbeatReceiver struct {
 type HeartbeatReceiverState struct {
 	AgentInstanceId string `json:"agent_instance_id"`
 	AgentStartTime  int64
+	AgentVersion    string `json:"agent_version"`
+	Hostname        string `json:"hostname"`
 }
 
 type AuthCheckData struct {
@@ -133,6 +136,16 @@ func (r *HeartbeatReceiver) InitializeReceiverState(ctx context.Context) error {
 	if r.state.AgentInstanceId == "" {
 		return fmt.Errorf("OBSERVE_AGENT_INSTANCE_ID environment variable must be set")
 	}
+	r.state.AgentVersion = os.Getenv("OBSERVE_AGENT_VERSION")
+	if r.state.AgentVersion == "" {
+		r.settings.Logger.Error("OBSERVE_AGENT_VERSION environment variable is not set")
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		r.settings.Logger.Error("failed to get hostname", zap.Error(err))
+	} else {
+		r.state.Hostname = hostname
+	}
 	return nil
 }
 
@@ -149,10 +162,12 @@ func (r *HeartbeatReceiver) addCommonHeartbeatFields(resourceLogs plog.ResourceL
 	// Identifiers subobject
 	identifiers := observe_transform.PutEmptyMap("identifiers")
 	identifiers.PutStr("observe.agent.instance.id", r.state.AgentInstanceId)
+	identifiers.PutStr("host.name", r.state.Hostname)
+	identifiers.PutStr("observe.agent.environment", r.cfg.Environment)
 
-	// Control subobject
-	control := observe_transform.PutEmptyMap("control")
-	control.PutBool("isDelete", false)
+	// facets subobject
+	facets := observe_transform.PutEmptyMap("facets")
+	facets.PutStr("observe.agent.version", r.state.AgentVersion)
 
 	// observe_transform fields
 	observe_transform.PutInt("process_start_time", r.state.AgentStartTime)
@@ -181,6 +196,21 @@ func (r *HeartbeatReceiver) generateLifecycleHeartbeat(ctx context.Context) erro
 
 	// Add common heartbeat fields
 	r.addCommonHeartbeatFields(resourceLogs, logRecord, "AgentLifecycleEvent")
+
+	// Add control subobject to observe_transform which should have been added by addCommonHeartbeatFields
+	var observe_transform pcommon.Map
+	observeTransformValue, exists := logRecord.Attributes().Get("observe_transform")
+	if !exists {
+		observe_transform = logRecord.Attributes().PutEmptyMap("observe_transform")
+	} else {
+		if observeTransformValue.Type() != pcommon.ValueTypeMap {
+			return fmt.Errorf("observe_transform attribute is not a map")
+		}
+		observe_transform = observeTransformValue.Map()
+	}
+	controlMap := observe_transform.PutEmptyMap("control")
+	controlMap.PutStr("eventType", "HEARTBEAT")
+	controlMap.PutBool("isDelete", false)
 
 	// Add lifecycle-specific body fields
 	body := logRecord.Body().SetEmptyMap()
@@ -267,6 +297,21 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 
 	// Add common heartbeat fields
 	r.addCommonHeartbeatFields(resourceLogs, logRecord, "AgentConfig")
+
+	// Add control subobject to observe_transform which should have been added by addCommonHeartbeatFields
+	var observe_transform pcommon.Map
+	observeTransformValue, exists := logRecord.Attributes().Get("observe_transform")
+	if !exists {
+		observe_transform = logRecord.Attributes().PutEmptyMap("observe_transform")
+	} else {
+		if observeTransformValue.Type() != pcommon.ValueTypeMap {
+			return fmt.Errorf("observe_transform attribute is not a map")
+		}
+		observe_transform = observeTransformValue.Map()
+	}
+	controlMap := observe_transform.PutEmptyMap("control")
+	controlMap.PutStr("eventType", "CONFIG")
+	controlMap.PutBool("isDelete", false)
 
 	// Add config-specific body fields
 	body := logRecord.Body().SetEmptyMap()

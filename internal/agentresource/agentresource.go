@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/observeinc/observe-agent/build"
 	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/viper"
 )
@@ -15,6 +16,7 @@ import (
 type AgentLocalData struct {
 	AgentInstanceId string `json:"agent_instance_id"`
 	AgentStartTime  int64  `json:"agent_start_time"`
+	AgentVersion    string `json:"agent_version"`
 }
 
 type AgentResource struct {
@@ -58,6 +60,7 @@ func New() (*AgentResource, error) {
 
 func (a *AgentResource) initialize() error {
 	a.data.AgentStartTime = time.Now().UnixNano()
+	a.data.AgentVersion = getAgentVersion()
 
 	err := a.parseLocalFile()
 
@@ -83,6 +86,10 @@ func (a *AgentResource) GetAgentInstanceId() string {
 
 func (a *AgentResource) GetAgentStartTime() int64 {
 	return a.data.AgentStartTime
+}
+
+func (a *AgentResource) GetAgentVersion() string {
+	return a.data.AgentVersion
 }
 
 func (a *AgentResource) GetAgentData() AgentLocalData {
@@ -126,4 +133,11 @@ func (a *AgentResource) parseLocalFile() error {
 	}
 
 	return json.Unmarshal(jsonData, a.data)
+}
+
+func getAgentVersion() string {
+	if build.Version == "" {
+		return "dev"
+	}
+	return build.Version
 }

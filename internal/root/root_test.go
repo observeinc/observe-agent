@@ -16,14 +16,17 @@ func TestSetEnvVars(t *testing.T) {
 	// Save original viper config and env var if they exist
 	originalPath := viper.GetString("agent_local_file_path")
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 
 	// Set up cleanup to restore original state
 	t.Cleanup(func() {
 		viper.Set("agent_local_file_path", originalPath)
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
 		}
 	})
 
@@ -38,8 +41,12 @@ func TestSetEnvVars(t *testing.T) {
 
 	// Check that OBSERVE_AGENT_INSTANCE_ID was set
 	agentID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	agentVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 	if agentID == "" {
 		t.Error("OBSERVE_AGENT_INSTANCE_ID environment variable was not set")
+	}
+	if agentVersion == "" {
+		t.Error("OBSERVE_AGENT_VERSION environment variable was not set")
 	}
 
 	// Verify the format of the agent ID (should be "agent-<hostname>-<random>")

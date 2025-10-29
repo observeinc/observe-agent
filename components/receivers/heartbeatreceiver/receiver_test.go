@@ -16,18 +16,26 @@ import (
 )
 
 func TestHeartbeatReceiverWithEnvVar(t *testing.T) {
-	// Set up environment variable
+	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 	defer func() {
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
 		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
 	}()
 
 	testAgentID := "test-agent-123"
+	testAgentVersion := "1.2.3"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 	// Create receiver
 	factory := NewFactory()
@@ -96,18 +104,26 @@ func TestHeartbeatReceiverMissingEnvVar(t *testing.T) {
 }
 
 func TestAddCommonHeartbeatFields(t *testing.T) {
-	// Set up environment variable for agent instance ID
+	// Set up environment variables for agent instance ID and version
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 	defer func() {
 		if originalID != "" {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
 		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
 	}()
 
 	testAgentID := "test-agent-common-123"
+	testAgentVersion := "1.2.3"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 	tests := []struct {
 		name        string
@@ -194,14 +210,27 @@ func TestAddCommonHeartbeatFields(t *testing.T) {
 			assert.True(t, found, "Should have agent instance ID in identifiers")
 			assert.Equal(t, testAgentID, idInIdentifiers.Str())
 
-			// Check control
-			control, found := transformMap.Get("control")
-			assert.True(t, found, "Should have control map")
-			controlMap := control.Map()
+			hostname, found := identifiersMap.Get("host.name")
+			assert.True(t, found, "Should have host.name in identifiers")
+			assert.NotEmpty(t, hostname.Str(), "Hostname should not be empty")
 
-			isDelete, found := controlMap.Get("isDelete")
-			assert.True(t, found, "Should have isDelete in control")
-			assert.False(t, isDelete.Bool(), "isDelete should be false")
+			envInIdentifiers, found := identifiersMap.Get("observe.agent.environment")
+			assert.True(t, found, "Should have observe.agent.environment in identifiers")
+			assert.Equal(t, tt.environment, envInIdentifiers.Str())
+
+			// Check control - should NOT be added by addCommonHeartbeatFields
+			// (control is added separately in each heartbeat type)
+			_, found = transformMap.Get("control")
+			assert.False(t, found, "Control map should NOT be added by addCommonHeartbeatFields")
+
+			// Check facets
+			facets, found := transformMap.Get("facets")
+			assert.True(t, found, "Should have facets map")
+			facetsMap := facets.Map()
+
+			agentVersion, found := facetsMap.Get("observe.agent.version")
+			assert.True(t, found, "Should have observe.agent.version in facets")
+			assert.Equal(t, testAgentVersion, agentVersion.Str())
 
 			// Check timestamps
 			processStartTime, found := transformMap.Get("process_start_time")
@@ -225,9 +254,95 @@ func TestAddCommonHeartbeatFields(t *testing.T) {
 	}
 }
 
+func TestGenerateLifecycleHeartbeat(t *testing.T) {
+	// Set up environment variables
+	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
+	defer func() {
+		if originalID != "" {
+			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
+	}()
+
+	testAgentID := "test-agent-lifecycle-123"
+	testAgentVersion := "1.2.3"
+	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
+
+	// Create receiver with a mock consumer to capture logs
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+
+	sink := &consumertest.LogsSink{}
+	receiver, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+
+	// Initialize receiver state
+	err = receiver.InitializeReceiverState(context.Background())
+	require.NoError(t, err)
+
+	// Call generateLifecycleHeartbeat
+	ctx := context.Background()
+	err = receiver.generateLifecycleHeartbeat(ctx)
+	require.NoError(t, err)
+
+	// Verify the log structure
+	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
+
+	logs := sink.AllLogs()
+	require.Equal(t, 1, len(logs), "Should have one log batch")
+
+	resourceLogs := logs[0].ResourceLogs()
+	require.Equal(t, 1, resourceLogs.Len(), "Should have one resource log")
+
+	logRecord := resourceLogs.At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	// Check observe_transform
+	observeTransform, found := logRecord.Attributes().Get("observe_transform")
+	assert.True(t, found, "Should have observe_transform attribute")
+	transformMap := observeTransform.Map()
+
+	// Check kind
+	kind, found := transformMap.Get("kind")
+	assert.True(t, found, "Should have kind field")
+	assert.Equal(t, "AgentLifecycleEvent", kind.Str())
+
+	// Check control fields specific to lifecycle heartbeat
+	control, found := transformMap.Get("control")
+	assert.True(t, found, "Should have control map")
+	controlMap := control.Map()
+
+	eventType, found := controlMap.Get("eventType")
+	assert.True(t, found, "Should have eventType in control")
+	assert.Equal(t, "HEARTBEAT", eventType.Str(), "eventType should be HEARTBEAT for lifecycle events")
+
+	isDelete, found := controlMap.Get("isDelete")
+	assert.True(t, found, "Should have isDelete in control")
+	assert.False(t, isDelete.Bool(), "isDelete should be false")
+
+	// Verify body contains auth_check
+	body := logRecord.Body().Map()
+	authCheck, found := body.Get("auth_check")
+	assert.True(t, found, "Body should have auth_check field")
+	assert.NotNil(t, authCheck)
+}
+
 func TestGenerateConfigHeartbeat(t *testing.T) {
 	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 	originalAgentConfig := os.Getenv("OBSERVE_AGENT_CONFIG")
 	originalOtelConfig := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 	defer func() {
@@ -235,6 +350,11 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
 		}
 		if originalAgentConfig != "" {
 			os.Setenv("OBSERVE_AGENT_CONFIG", originalAgentConfig)
@@ -250,7 +370,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 
 	t.Run("successfully generates heartbeat with valid env vars", func(t *testing.T) {
 		testAgentID := "test-agent-config-123"
+		testAgentVersion := "1.2.3"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+		os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 		// Set up config environment variables (base64 encoded)
 		agentConfigYaml := "self_monitoring:\n  enabled: true\n"
@@ -321,10 +443,11 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 	assert.True(t, ok, "Should have identifiers map")
 	assert.Equal(t, testAgentID, identifiers["observe.agent.instance.id"])
 
-	// Check control
+	// Check control fields specific to config heartbeat
 	control, ok := observeTransform.Map().AsRaw()["control"].(map[string]interface{})
 	assert.True(t, ok, "Should have control map")
 	assert.Equal(t, false, control["isDelete"])
+	assert.Equal(t, "CONFIG", control["eventType"], "eventType should be CONFIG for config heartbeats")
 
 		// Check timestamps
 		assert.Contains(t, observeTransform.Map().AsRaw(), "process_start_time")
@@ -355,7 +478,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 
 	t.Run("sends partial heartbeat when OBSERVE_AGENT_CONFIG env var is missing", func(t *testing.T) {
 		testAgentID := "test-agent-missing-config"
+		testAgentVersion := "1.2.3"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+		os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 		// Only set OTEL config, not agent config (base64 encoded)
 		os.Unsetenv("OBSERVE_AGENT_CONFIG")
@@ -400,7 +525,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 
 	t.Run("sends partial heartbeat when OBSERVE_AGENT_OTEL_CONFIG env var is missing", func(t *testing.T) {
 		testAgentID := "test-agent-missing-otel"
+		testAgentVersion := "1.2.3"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+		os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 		// Only set agent config, not OTEL config (base64 encoded)
 		agentConfigYaml := "self_monitoring:\n  enabled: true\n"
@@ -445,7 +572,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 
 	t.Run("skips heartbeat when both env vars are missing", func(t *testing.T) {
 		testAgentID := "test-agent-both-missing"
+		testAgentVersion := "1.2.3"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+		os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 		// Unset both configs
 		os.Unsetenv("OBSERVE_AGENT_CONFIG")
@@ -475,7 +604,9 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 
 	t.Run("gracefully handles invalid YAML in env vars", func(t *testing.T) {
 		testAgentID := "test-agent-invalid-yaml"
+		testAgentVersion := "1.2.3"
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+		os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 		// Set invalid YAML (base64 encoded)
 		os.Setenv("OBSERVE_AGENT_CONFIG", base64.StdEncoding.EncodeToString([]byte("invalid: yaml: content: [[[}")))
@@ -507,6 +638,7 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 func TestConfigHeartbeatTimer(t *testing.T) {
 	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
 	originalAgentConfig := os.Getenv("OBSERVE_AGENT_CONFIG")
 	originalOtelConfig := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
 	defer func() {
@@ -514,6 +646,11 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
 		} else {
 			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
 		}
 		if originalAgentConfig != "" {
 			os.Setenv("OBSERVE_AGENT_CONFIG", originalAgentConfig)
@@ -528,7 +665,9 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 	}()
 
 	testAgentID := "test-agent-timer-123"
+	testAgentVersion := "1.2.3"
 	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
 
 	// Set up config environment variables (base64 encoded)
 	agentConfigYaml := "self_monitoring:\n  enabled: true\n"
