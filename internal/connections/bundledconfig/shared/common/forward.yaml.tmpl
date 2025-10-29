@@ -38,6 +38,11 @@ processors:
         - (span.end_time - span.start_time) > Duration("{{ .Forwarding.Traces.MaxSpanDuration }}")
 {{- end }}
 
+{{- if .Forwarding.Metrics.ConvertCumulativeToDelta }}
+  cumulativetodelta/observe:
+    max_staleness: 5m
+{{- end }}
+
 exporters:
   otlphttp/observetracing:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
@@ -79,6 +84,9 @@ service:
         {{- end }}
         {{- if not .Forwarding.Metrics.OtlpMetrics }}
         - deltatocumulative
+        {{- end }}
+        {{- if .Forwarding.Metrics.ConvertCumulativeToDelta }}
+        - cumulativetodelta/observe
         {{- end }}
         - batch
       exporters:
