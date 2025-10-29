@@ -63,6 +63,15 @@ b:
 	assert.Equal(t, expectedWithIndents, TplToYaml(obj2, 2, 1))
 }
 
+func TestTplToJSON(t *testing.T) {
+	testData := map[string]any{
+		"a": 1,
+		"b": []int{1, 2, 3},
+		"c": "quote' \"",
+	}
+	assert.Equal(t, `{"a":1,"b":[1,2,3],"c":"quote' \""}`, TplToJSON(testData))
+}
+
 func TestTplJoin(t *testing.T) {
 	assert.Equal(t, "a, b, c", TplJoin(", ", []string{"a", "b", "c"}))
 	assert.Equal(t, "12", TplJoin("", []any{"1", 2}))
@@ -79,12 +88,19 @@ func TestTplConcat(t *testing.T) {
 	assert.Equal(t, []any{"a", "b", "c", "d", "e", 123}, TplConcat([]string{"a", "b", "c"}, "d", "e", 123))
 }
 
-func TestTmplList(t *testing.T) {
-	assert.Equal(t, []any{"a", "b", "c"}, TmplList("a", "b", "c"))
-	assert.Equal(t, []any{1}, TmplList(1))
-	assert.Equal(t, []any{[]any{1, 2}}, TmplList([]any{1, 2}))
+func TestTplList(t *testing.T) {
+	assert.Equal(t, []any{"a", "b", "c"}, TplList("a", "b", "c"))
+	assert.Equal(t, []any{1}, TplList(1))
+	assert.Equal(t, []any{[]any{1, 2}}, TplList([]any{1, 2}))
 }
 
 func TestTplUniq(t *testing.T) {
 	assert.Equal(t, []any{"a", 1, "b", 2}, TplUniq([]any{"a", "a", 1, "b", 2, "a", 1, "b", 2, 1}))
+}
+
+func TestTplDict(t *testing.T) {
+	assert.Equal(t, map[string]any{}, TplDict())
+	assert.Equal(t, map[string]any{"a": 1, "b": 2}, TplDict("a", 1, "b", 2))
+	assert.Equal(t, map[string]any{"a": 1, "b": 2, "c": map[string]any{"d": 3}}, TplDict("a", 1, "b", 2, "c", TplDict("d", 3)))
+	assert.Equal(t, map[string]any{"1": 1}, TplDict(1, 1))
 }

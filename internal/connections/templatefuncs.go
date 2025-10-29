@@ -2,6 +2,8 @@ package connections
 
 import (
 	"bytes"
+	"encoding/json"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -17,8 +19,11 @@ var TemplateFuncMap = template.FuncMap{
 	"join":           TplJoin,
 	"flatten":        TplFlatten,
 	"concat":         TplConcat,
-	"list":           TmplList,
+	"list":           TplList,
+	"dict":           TplDict,
 	"uniq":           TplUniq,
+	"json":           TplToJSON,
+	"getenv":         os.Getenv,
 	"add": func(values ...int) int {
 		sum := 0
 		for _, i := range values {
@@ -59,6 +64,14 @@ func TplToYaml(data any, tabSize int, numTabs int) string {
 		yamlStr, _ = strings.CutSuffix(yamlStr, indentStr)
 	}
 	return yamlStr
+}
+
+func TplToJSON(data any) string {
+	strB, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	return string(strB)
 }
 
 func TplJoin(sep string, values any) string {
@@ -115,7 +128,7 @@ func TplConcat(values ...any) []any {
 	return result
 }
 
-func TmplList(values ...any) []any {
+func TplList(values ...any) []any {
 	return values
 }
 
@@ -130,4 +143,23 @@ func TplUniq(values []any) []any {
 		result = append(result, v)
 	}
 	return result
+}
+
+func keyToString(key any) string {
+	if str, ok := key.(string); ok {
+		return str
+	}
+	return TplValueToYaml(key)
+}
+
+func TplDict(values ...any) map[string]any {
+	dict := map[string]any{}
+	n := len(values)
+	if n%2 != 0 {
+		panic("dict: odd number of arguments")
+	}
+	for i := 0; i < n; i += 2 {
+		dict[keyToString(values[i])] = values[i+1]
+	}
+	return dict
 }
