@@ -342,16 +342,16 @@ func nullHashInit(actionInit initAction) exec.KernelInitFn {
 func newMemoTable(mem memory.Allocator, dt arrow.Type) (hashing.MemoTable, error) {
 	switch dt {
 	case arrow.INT8, arrow.UINT8:
-		return hashing.NewUint8MemoTable(0), nil
+		return hashing.NewMemoTable[uint8](0), nil
 	case arrow.INT16, arrow.UINT16:
-		return hashing.NewUint16MemoTable(0), nil
-	case arrow.INT32, arrow.UINT32, arrow.FLOAT32,
+		return hashing.NewMemoTable[uint16](0), nil
+	case arrow.INT32, arrow.UINT32, arrow.FLOAT32, arrow.DECIMAL32,
 		arrow.DATE32, arrow.TIME32, arrow.INTERVAL_MONTHS:
-		return hashing.NewUint32MemoTable(0), nil
-	case arrow.INT64, arrow.UINT64, arrow.FLOAT64,
+		return hashing.NewMemoTable[uint32](0), nil
+	case arrow.INT64, arrow.UINT64, arrow.FLOAT64, arrow.DECIMAL64,
 		arrow.DATE64, arrow.TIME64, arrow.TIMESTAMP,
 		arrow.DURATION, arrow.INTERVAL_DAY_TIME:
-		return hashing.NewUint64MemoTable(0), nil
+		return hashing.NewMemoTable[uint64](0), nil
 	case arrow.BINARY, arrow.STRING, arrow.FIXED_SIZE_BINARY, arrow.DECIMAL128,
 		arrow.DECIMAL256, arrow.INTERVAL_MONTH_DAY_NANO:
 		return hashing.NewBinaryMemoTable(0, 0,
@@ -481,7 +481,7 @@ func uniqueFinalize(ctx *exec.KernelCtx, results []*exec.ArraySpan) ([]*exec.Arr
 	return []*exec.ArraySpan{&out}, nil
 }
 
-func ensureHashDictionary(ctx *exec.KernelCtx, hash *dictionaryHashState) (*exec.ArraySpan, error) {
+func ensureHashDictionary(_ *exec.KernelCtx, hash *dictionaryHashState) (*exec.ArraySpan, error) {
 	out := &exec.ArraySpan{}
 
 	if hash.dictionary != nil {

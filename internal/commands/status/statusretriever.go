@@ -14,6 +14,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/config"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/shirou/gopsutil/v3/host"
 )
 
@@ -138,7 +139,7 @@ func GetAgentMetricsFromEndpoint(baseURL string) (*AgentMetrics, error) {
 	if err != nil || resp.StatusCode != 200 {
 		return nil, err
 	}
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 	mf, err := parser.TextToMetricFamilies(resp.Body)
 	if err != nil {
 		return nil, err
