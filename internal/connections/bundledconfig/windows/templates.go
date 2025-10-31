@@ -9,6 +9,4 @@ var (
 	LogsTemplateFS embed.FS
 	//go:embed host_monitoring/host_metrics.yaml.tmpl
 	HostMetricsTemplateFS embed.FS
-	//go:embed fleet/heartbeat_receiver.yaml.tmpl
-	HeartbeatTemplateFS embed.FS
 )

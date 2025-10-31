@@ -7,3 +7,4 @@ import (
 )
 
 var OverrideTemplates map[string]embed.FS = DockerTemplateFS
+var ConfigEnvironment = "docker"
