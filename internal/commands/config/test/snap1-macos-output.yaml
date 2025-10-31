@@ -21,8 +21,11 @@ exporters:
     otlphttp/agentheartbeat:
         compression: zstd
         headers:
-            authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
-            x-observe-target-package: Observe Agent
+            Authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            X-Observe-Agent-Instance-Id: test-agent-instance-id
+            X-Observe-Context: '{"environment":"macos","version":"dev"}'
+            X-Observe-Enable-Auth-Error-Reporting: "true"
+            X-Observe-Target-Package: Observe Agent
         logs_endpoint: https://123456789.collect.observe-eng.com/v1/kubernetes/v1/entity
         retry_on_failure:
             enabled: true
