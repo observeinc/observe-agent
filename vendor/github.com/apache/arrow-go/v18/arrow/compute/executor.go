@@ -20,6 +20,7 @@ package compute
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
@@ -248,7 +249,7 @@ func propagateNulls(ctx *exec.KernelCtx, batch *exec.ExecSpan, out *exec.ArraySp
 	var (
 		arrsWithNulls = make([]*exec.ArraySpan, 0, len(batch.Values))
 		isAllNull     bool
-		prealloc      bool = out.Buffers[0].Buf != nil
+		prealloc      = out.Buffers[0].Buf != nil
 	)
 
 	for i := range batch.Values {
@@ -439,7 +440,7 @@ func (e *nonAggExecImpl) Init(ctx *exec.KernelCtx, args exec.KernelInitArgs) (er
 }
 
 func (e *nonAggExecImpl) prepareOutput(length int) *exec.ExecResult {
-	var nullCount int = array.UnknownNullCount
+	var nullCount = array.UnknownNullCount
 
 	if e.kernel.GetNullHandling() == exec.NullNoOutput {
 		nullCount = 0
@@ -579,6 +580,10 @@ func (s *scalarExecutor) WrapResults(ctx context.Context, out <-chan Datum, hasC
 }
 
 func (s *scalarExecutor) executeSpans(data chan<- Datum) (err error) {
+	defer func() {
+		err = errors.Join(err, s.kernel.Cleanup())
+	}()
+
 	var (
 		input  exec.ExecSpan
 		output exec.ExecResult
@@ -587,8 +592,7 @@ func (s *scalarExecutor) executeSpans(data chan<- Datum) (err error) {
 
 	if s.preallocContiguous {
 		// make one big output alloc
-		prealloc := s.prepareOutput(int(s.iterLen))
-		output = *prealloc
+		output := s.prepareOutput(int(s.iterLen))
 
 		output.Offset = 0
 		var resultOffset int64
@@ -598,15 +602,19 @@ func (s *scalarExecutor) executeSpans(data chan<- Datum) (err error) {
 				break
 			}
 			output.SetSlice(resultOffset, input.Len)
-			err = s.executeSingleSpan(&input, &output)
+			err = s.executeSingleSpan(&input, output)
 			resultOffset = nextOffset
 		}
 		if err != nil {
-			prealloc.Release()
+			output.Release()
 			return
 		}
 
-		return s.emitResult(prealloc, data)
+		if output.Offset != 0 {
+			output.SetSlice(0, s.iterLen)
+		}
+
+		return s.emitResult(output, data)
 	}
 
 	// fully preallocating, but not contiguously
@@ -642,7 +650,7 @@ func (s *scalarExecutor) executeSingleSpan(input *exec.ExecSpan, out *exec.ExecR
 	return s.kernel.Exec(s.ctx, input, out)
 }
 
-func (s *scalarExecutor) setupPrealloc(totalLen int64, args []Datum) error {
+func (s *scalarExecutor) setupPrealloc(_ int64, args []Datum) error {
 	s.numOutBuf = len(s.outType.Layout().Buffers)
 	outTypeID := s.outType.ID()
 	// default to no validity pre-allocation for the following cases:
@@ -753,7 +761,7 @@ func iterateExecSpans(batch *ExecBatch, maxChunkSize int64, promoteIfAllScalar b
 	}
 
 	var (
-		args           []Datum = batch.Values
+		args           = batch.Values
 		haveChunked    bool
 		chunkIdxes           = make([]int, len(args))
 		valuePositions       = make([]int64, len(args))

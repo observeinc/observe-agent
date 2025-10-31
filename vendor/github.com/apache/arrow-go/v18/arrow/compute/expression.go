@@ -490,6 +490,7 @@ func Cast(ex Expression, dt arrow.DataType) Expression {
 	return NewCall("cast", []Expression{ex}, opts)
 }
 
+// Deprecated: Use SetOptions instead
 type SetLookupOptions struct {
 	ValueSet  Datum `compute:"value_set"`
 	SkipNulls bool  `compute:"skip_nulls"`
@@ -821,8 +822,8 @@ func DeserializeExpr(mem memory.Allocator, buf *memory.Buffer) (Expression, erro
 
 	var (
 		getone   func() (Expression, error)
-		index    int = 0
-		metadata     = batch.Schema().Metadata()
+		index    = 0
+		metadata = batch.Schema().Metadata()
 	)
 
 	getscalar := func(i string) (scalar.Scalar, error) {
