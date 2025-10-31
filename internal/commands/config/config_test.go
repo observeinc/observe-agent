@@ -208,9 +208,10 @@ func getTemplateOverrides(t *testing.T, packageType PackageType) map[string]embe
 }
 
 func setEnvVars(t *testing.T, packageType PackageType) {
-	os.Setenv("TEST_ENV_VAR", "test-value")
+	assert.NoError(t, os.Setenv("TEST_ENV_VAR", "test-value"))
 	// Set a predictable agent instance ID for tests
 	assert.NoError(t, os.Setenv("OBSERVE_AGENT_INSTANCE_ID", "test-agent-instance-id"))
+	assert.NoError(t, os.Setenv("OBSERVE_AGENT_ENVIRONMENT", string(packageType)))
 	switch packageType {
 	case MacOS:
 		assert.NoError(t, os.Setenv("FILESTORAGE_PATH", "/var/lib/observe-agent/filestorage"))

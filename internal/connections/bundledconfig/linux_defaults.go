@@ -7,3 +7,4 @@ import (
 )
 
 var OverrideTemplates map[string]embed.FS = LinuxTemplateFS
+var ConfigEnvironment = "linux"
