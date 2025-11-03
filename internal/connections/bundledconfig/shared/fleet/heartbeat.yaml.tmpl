@@ -18,8 +18,11 @@ exporters:
       compression: zstd
       logs_endpoint: ${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity
       headers:
-          authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
-          x-observe-target-package: Observe Agent
+          Authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
+          X-Observe-Target-Package: Observe Agent
+          X-Observe-Agent-Instance-Id: ${env:OBSERVE_AGENT_INSTANCE_ID}
+          X-Observe-Context: {{ json (dict "version" (getenv "OBSERVE_AGENT_VERSION") "environment" (getenv "OBSERVE_AGENT_ENVIRONMENT")) | valToYaml }}
+          X-Observe-Enable-Auth-Error-Reporting: "true"
       retry_on_failure:
           enabled: true
       sending_queue:
