@@ -15,9 +15,12 @@ receivers:
               action: drop
 
   windowseventlog/agent:
-    channel: Application
-    providers:
-      - name: ObserveAgent
+    query: |
+      <QueryList>
+        <Query Id="0">
+          <Select Path="Application">*[System[Provider[@Name='ObserveAgent']]]</Select>
+        </Query>
+      </QueryList>
     retry_on_failure:
       enabled: true
 

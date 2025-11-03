@@ -307,9 +307,12 @@ receivers:
                     - targets:
                         - 0.0.0.0:12346
     windowseventlog/agent:
-        channel: Application
-        providers:
-            - name: ObserveAgent
+        query: |
+            <QueryList>
+              <Query Id="0">
+                <Select Path="Application">*[System[Provider[@Name='ObserveAgent']]]</Select>
+              </Query>
+            </QueryList>
         retry_on_failure:
             enabled: true
     windowseventlog/host_monitoring-application:
