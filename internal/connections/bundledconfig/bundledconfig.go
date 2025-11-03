@@ -46,7 +46,8 @@ var LinuxTemplateFS = ConfigTemplates{
 var MacOSTemplateFS = ConfigTemplates{}
 
 var WindowsTemplateFS = ConfigTemplates{
-	"common/resource_detection.yaml.tmpl":    windows.ResourceDetectionTemplateFS,
-	"host_monitoring/logs.yaml.tmpl":         windows.LogsTemplateFS,
-	"host_monitoring/host_metrics.yaml.tmpl": windows.HostMetricsTemplateFS,
+	"common/resource_detection.yaml.tmpl":        windows.ResourceDetectionTemplateFS,
+	"host_monitoring/logs.yaml.tmpl":             windows.LogsTemplateFS,
+	"host_monitoring/host_metrics.yaml.tmpl":     windows.HostMetricsTemplateFS,
+	"self_monitoring/logs_and_metrics.yaml.tmpl": windows.LogsAndMetricsTemplateFS,
 }

@@ -306,10 +306,18 @@ receivers:
                   static_configs:
                     - targets:
                         - 0.0.0.0:12346
+    windowseventlog/agent:
+        channel: Application
+        providers:
+            - name: ObserveAgent
+        retry_on_failure:
+            enabled: true
     windowseventlog/host_monitoring-application:
         channel: Application
         retry_on_failure:
             enabled: true
+        suppress_providers:
+            - ObserveAgent
     windowseventlog/host_monitoring-security:
         channel: Security
         retry_on_failure:
@@ -328,6 +336,21 @@ service:
                 - nop
             receivers:
                 - nop
+        logs/agent-windowseventlog:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - attributes/observe_global_attributes
+                - resource/observe_global_resource_attributes
+                - resource/agent_instance
+                - batch
+            receivers:
+                - windowseventlog/agent
         logs/forward:
             exporters:
                 - otlphttp/observe
