@@ -48,7 +48,7 @@ func init() {
 
 	flags := RootCmd.PersistentFlags()
 	flags.StringVar(&CfgFile, "observe-config", "", "observe-agent config file path")
-	flags.StringVar(&configMode, "config-mode", "", "The mode to use for bundled config. Valid values are Linux, Docker, Mac, and Windows.")
+	flags.StringVar(&configMode, "config-mode", "", "The mode to use for bundled config. Valid values are Linux, Docker, MacOS, and Windows.")
 	flags.MarkHidden("config-mode")
 	observecol.AddConfigFlags(flags)
 	observecol.AddFeatureGateFlag(flags)
@@ -63,12 +63,12 @@ func setConfigMode() {
 		overrides = bundledconfig.LinuxTemplateFS
 	case "docker":
 		overrides = bundledconfig.DockerTemplateFS
-	case "mac":
+	case "macos":
 		overrides = bundledconfig.MacOSTemplateFS
 	case "windows":
 		overrides = bundledconfig.WindowsTemplateFS
 	default:
-		fmt.Fprintf(os.Stderr, "Invalid config mode specified: %s. Valid values are Linux, Docker, Mac, and Windows.\n", configMode)
+		fmt.Fprintf(os.Stderr, "Invalid config mode specified: %s. Valid values are Linux, Docker, MacOS, and Windows.\n", configMode)
 		os.Exit(1)
 	}
 	// Set the template overrides for all connections
@@ -123,6 +123,13 @@ func InitConfig() {
 }
 
 func setEnvVars() error {
+	// Set the agent environment
+	if configMode != "" {
+		os.Setenv("OBSERVE_AGENT_ENVIRONMENT", strings.ToLower(configMode))
+	} else {
+		os.Setenv("OBSERVE_AGENT_ENVIRONMENT", bundledconfig.ConfigEnvironment)
+	}
+
 	// Initialize agent resource to get/generate agent instance ID
 	agentRes, err := agentresource.New()
 	if err != nil {

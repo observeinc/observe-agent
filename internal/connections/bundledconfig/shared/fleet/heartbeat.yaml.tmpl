@@ -1,3 +1,12 @@
+receivers:
+  heartbeat:
+    interval: {{.SelfMonitoring.Fleet.Interval}}
+    config_interval: {{.SelfMonitoring.Fleet.ConfigInterval}}
+    environment: ${env:OBSERVE_AGENT_ENVIRONMENT}
+    auth_check:
+      url: ${env:OBSERVE_COLLECTOR_URL}
+      headers:
+        authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
 processors:
   resource/heartbeat:
     attributes:
