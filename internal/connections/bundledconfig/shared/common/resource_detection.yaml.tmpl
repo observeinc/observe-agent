@@ -30,7 +30,9 @@ processors:
   resourcedetection/cloud:
     detectors:
     {{- if .CloudResourceDetectors }}
-    {{- " " }}{{ inlineArrayStr .CloudResourceDetectors }}
+    {{- range $detector := .CloudResourceDetectors }}
+      - {{ $detector }}
+    {{- end }}
     {{- else }} ["gcp", "ecs", "ec2", "azure"]
     {{- end }}
     timeout: 2s

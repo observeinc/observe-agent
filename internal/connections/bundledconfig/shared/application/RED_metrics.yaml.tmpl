@@ -67,10 +67,10 @@ processors:
     error_mode: ignore
     metric_statements:
       # Drop all resource attributes that aren't dimensions in the spanmetrics connector.
-      - keep_matching_keys(resource.attributes, "^({{ join "|" (concat "service.name" .Application.REDMetrics.ResourceDimensions | uniq) }})")
+      - keep_matching_keys(resource.attributes, "^({{ join "|" (concat (list "service.name") .Application.REDMetrics.ResourceDimensions | uniq) }})")
 
       # Drop all datapoint attributes that are resource attributes in the spans.
-      - delete_matching_keys(datapoint.attributes, "^({{ join "|" (concat "service.name" .Application.REDMetrics.ResourceDimensions | uniq) }})")
+      - delete_matching_keys(datapoint.attributes, "^({{ join "|" (concat (list "service.name") .Application.REDMetrics.ResourceDimensions | uniq) }})")
 
       # Rename status.code to response_status to be consistent with Trace Explorer and disambiguate from status_code (with an underscore).
       - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
