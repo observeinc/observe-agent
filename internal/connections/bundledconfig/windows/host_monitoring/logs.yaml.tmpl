@@ -2,7 +2,7 @@
 receivers:
   windowseventlog/host_monitoring-application:
     channel: Application
-    suppress_providers:
+    exclude_providers:
       - ObserveAgent
     retry_on_failure:
       enabled: true

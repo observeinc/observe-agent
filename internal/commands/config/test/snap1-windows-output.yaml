@@ -314,10 +314,10 @@ receivers:
             enabled: true
     windowseventlog/host_monitoring-application:
         channel: Application
+        exclude_providers:
+            - ObserveAgent
         retry_on_failure:
             enabled: true
-        suppress_providers:
-            - ObserveAgent
     windowseventlog/host_monitoring-security:
         channel: Security
         retry_on_failure:
