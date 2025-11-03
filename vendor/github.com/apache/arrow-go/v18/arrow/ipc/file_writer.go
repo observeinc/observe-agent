@@ -41,8 +41,8 @@ type fileWriter struct {
 	streamWriter
 
 	schema *arrow.Schema
-	dicts  []fileBlock
-	recs   []fileBlock
+	dicts  []dataBlock
+	recs   []dataBlock
 }
 
 func (w *fileWriter) Start() error {
@@ -63,13 +63,13 @@ func (w *fileWriter) Start() error {
 }
 
 func (w *fileWriter) WritePayload(p Payload) error {
-	blk := fileBlock{Offset: w.pos, Meta: 0, Body: p.size}
+	blk := fileBlock{offset: w.pos, meta: 0, body: p.size}
 	n, err := writeIPCPayload(w, p)
 	if err != nil {
 		return err
 	}
 
-	blk.Meta = int32(n)
+	blk.meta = int32(n)
 
 	switch flatbuf.MessageHeader(p.msg) {
 	case flatbuf.MessageHeaderDictionaryBatch:
@@ -201,6 +201,12 @@ func (p *Payload) SerializeBody(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// WritePayload serializes the payload in IPC format
+// into the provided writer.
+func (p *Payload) WritePayload(w io.Writer) (int, error) {
+	return writeIPCPayload(w, *p)
 }
 
 func (p *Payload) Release() {

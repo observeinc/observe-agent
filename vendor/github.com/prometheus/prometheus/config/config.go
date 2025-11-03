@@ -31,6 +31,7 @@ import (
 	"github.com/grafana/regexp"
 	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/sigv4"
 	"gopkg.in/yaml.v2"
 
@@ -66,11 +67,6 @@ var (
 		"x-amz-security-token": {},
 		"x-amz-content-sha256": {},
 	}
-)
-
-const (
-	LegacyValidationConfig = "legacy"
-	UTF8ValidationConfig   = "utf8"
 )
 
 // Load parses the YAML input s into a Config.
@@ -109,10 +105,10 @@ func Load(s string, logger *slog.Logger) (*Config, error) {
 	}
 
 	switch cfg.OTLPConfig.TranslationStrategy {
-	case UnderscoreEscapingWithSuffixes:
+	case otlptranslator.UnderscoreEscapingWithSuffixes, otlptranslator.UnderscoreEscapingWithoutSuffixes:
 	case "":
-	case NoTranslation, NoUTF8EscapingWithSuffixes:
-		if cfg.GlobalConfig.MetricNameValidationScheme == LegacyValidationConfig {
+	case otlptranslator.NoTranslation, otlptranslator.NoUTF8EscapingWithSuffixes:
+		if cfg.GlobalConfig.MetricNameValidationScheme == model.LegacyValidation {
 			return nil, fmt.Errorf("OTLP translation strategy %q is not allowed when UTF8 is disabled", cfg.OTLPConfig.TranslationStrategy)
 		}
 	default:
@@ -172,7 +168,7 @@ var (
 		ScrapeProtocols:                DefaultScrapeProtocols,
 		ConvertClassicHistogramsToNHCB: false,
 		AlwaysScrapeClassicHistograms:  false,
-		MetricNameValidationScheme:     UTF8ValidationConfig,
+		MetricNameValidationScheme:     model.UTF8Validation,
 		MetricNameEscapingScheme:       model.AllowUTF8,
 	}
 
@@ -262,7 +258,7 @@ var (
 
 	// DefaultOTLPConfig is the default OTLP configuration.
 	DefaultOTLPConfig = OTLPConfig{
-		TranslationStrategy: UnderscoreEscapingWithSuffixes,
+		TranslationStrategy: otlptranslator.UnderscoreEscapingWithSuffixes,
 	}
 )
 
@@ -486,8 +482,8 @@ type GlobalConfig struct {
 	// 0 means no limit.
 	KeepDroppedTargets uint `yaml:"keep_dropped_targets,omitempty"`
 	// Allow UTF8 Metric and Label Names. Can be blank in config files but must
-	// have a value if a ScrapeConfig is created programmatically.
-	MetricNameValidationScheme string `yaml:"metric_name_validation_scheme,omitempty"`
+	// have a value if a GlobalConfig is created programmatically.
+	MetricNameValidationScheme model.ValidationScheme `yaml:"metric_name_validation_scheme,omitempty"`
 	// Metric name escaping mode to request through content negotiation. Can be
 	// blank in config files but must have a value if a ScrapeConfig is created
 	// programmatically.
@@ -755,7 +751,7 @@ type ScrapeConfig struct {
 	KeepDroppedTargets uint `yaml:"keep_dropped_targets,omitempty"`
 	// Allow UTF8 Metric and Label Names. Can be blank in config files but must
 	// have a value if a ScrapeConfig is created programmatically.
-	MetricNameValidationScheme string `yaml:"metric_name_validation_scheme,omitempty"`
+	MetricNameValidationScheme model.ValidationScheme `yaml:"metric_name_validation_scheme,omitempty"`
 	// Metric name escaping mode to request through content negotiation. Can be
 	// blank in config files but must have a value if a ScrapeConfig is created
 	// programmatically.
@@ -882,25 +878,27 @@ func (c *ScrapeConfig) Validate(globalConfig GlobalConfig) error {
 	}
 
 	switch globalConfig.MetricNameValidationScheme {
-	case "":
-		globalConfig.MetricNameValidationScheme = UTF8ValidationConfig
-	case LegacyValidationConfig, UTF8ValidationConfig:
+	case model.UnsetValidation:
+		globalConfig.MetricNameValidationScheme = model.UTF8Validation
+	case model.LegacyValidation, model.UTF8Validation:
 	default:
-		return fmt.Errorf("unknown global name validation method specified, must be either 'legacy' or 'utf8', got %s", globalConfig.MetricNameValidationScheme)
+		return fmt.Errorf("unknown global name validation method specified, must be either '', 'legacy' or 'utf8', got %s", globalConfig.MetricNameValidationScheme)
 	}
 	// Scrapeconfig validation scheme matches global if left blank.
+	localValidationUnset := false
 	switch c.MetricNameValidationScheme {
-	case "":
+	case model.UnsetValidation:
+		localValidationUnset = true
 		c.MetricNameValidationScheme = globalConfig.MetricNameValidationScheme
-	case LegacyValidationConfig, UTF8ValidationConfig:
+	case model.LegacyValidation, model.UTF8Validation:
 	default:
-		return fmt.Errorf("unknown scrape config name validation method specified, must be either 'legacy' or 'utf8', got %s", c.MetricNameValidationScheme)
+		return fmt.Errorf("unknown scrape config name validation method specified, must be either '', 'legacy' or 'utf8', got %s", c.MetricNameValidationScheme)
 	}
 
 	// Escaping scheme is based on the validation scheme if left blank.
 	switch globalConfig.MetricNameEscapingScheme {
 	case "":
-		if globalConfig.MetricNameValidationScheme == LegacyValidationConfig {
+		if globalConfig.MetricNameValidationScheme == model.LegacyValidation {
 			globalConfig.MetricNameEscapingScheme = model.EscapeUnderscores
 		} else {
 			globalConfig.MetricNameEscapingScheme = model.AllowUTF8
@@ -910,13 +908,25 @@ func (c *ScrapeConfig) Validate(globalConfig GlobalConfig) error {
 		return fmt.Errorf("unknown global name escaping method specified, must be one of '%s', '%s', '%s', or '%s', got %q", model.AllowUTF8, model.EscapeUnderscores, model.EscapeDots, model.EscapeValues, globalConfig.MetricNameEscapingScheme)
 	}
 
+	// Similarly, if ScrapeConfig escaping scheme is blank, infer it from the
+	// ScrapeConfig validation scheme if that was set, or the Global validation
+	// scheme if the ScrapeConfig validation scheme was also not set. This ensures
+	// that local ScrapeConfigs that only specify Legacy validation do not inherit
+	// the global AllowUTF8 escaping setting, which is an error.
 	if c.MetricNameEscapingScheme == "" {
-		c.MetricNameEscapingScheme = globalConfig.MetricNameEscapingScheme
+		//nolint:gocritic
+		if localValidationUnset {
+			c.MetricNameEscapingScheme = globalConfig.MetricNameEscapingScheme
+		} else if c.MetricNameValidationScheme == model.LegacyValidation {
+			c.MetricNameEscapingScheme = model.EscapeUnderscores
+		} else {
+			c.MetricNameEscapingScheme = model.AllowUTF8
+		}
 	}
 
 	switch c.MetricNameEscapingScheme {
 	case model.AllowUTF8:
-		if c.MetricNameValidationScheme != UTF8ValidationConfig {
+		if c.MetricNameValidationScheme != model.UTF8Validation {
 			return errors.New("utf8 metric names requested but validation scheme is not set to UTF8")
 		}
 	case model.EscapeUnderscores, model.EscapeDots, model.EscapeValues:
@@ -942,26 +952,6 @@ func (c *ScrapeConfig) MarshalYAML() (interface{}, error) {
 	return discovery.MarshalYAMLWithInlineConfigs(c)
 }
 
-// ToValidationScheme returns the validation scheme for the given string config value.
-func ToValidationScheme(s string) (validationScheme model.ValidationScheme, err error) {
-	switch s {
-	case "":
-		// This is a workaround for third party exporters that don't set the validation scheme.
-		if DefaultGlobalConfig.MetricNameValidationScheme == "" {
-			return model.UTF8Validation, errors.New("global metric name validation scheme is not set")
-		}
-		return ToValidationScheme(DefaultGlobalConfig.MetricNameValidationScheme)
-	case UTF8ValidationConfig:
-		validationScheme = model.UTF8Validation
-	case LegacyValidationConfig:
-		validationScheme = model.LegacyValidation
-	default:
-		return model.UTF8Validation, fmt.Errorf("invalid metric name validation scheme, %s", s)
-	}
-
-	return validationScheme, nil
-}
-
 // ToEscapingScheme wraps the equivalent common library function with the
 // desired default behavior based on the given validation scheme. This is a
 // workaround for third party exporters that don't set the escaping scheme.
@@ -972,6 +962,10 @@ func ToEscapingScheme(s string, v model.ValidationScheme) (model.EscapingScheme,
 			return model.NoEscaping, nil
 		case model.LegacyValidation:
 			return model.UnderscoreEscaping, nil
+		case model.UnsetValidation:
+			return model.NoEscaping, fmt.Errorf("v is unset: %s", v)
+		default:
+			panic(fmt.Errorf("unhandled validation scheme: %s", v))
 		}
 	}
 	return model.ToEscapingScheme(s)
@@ -1552,42 +1546,14 @@ func getGoGC() int {
 	return DefaultGoGCPercentage
 }
 
-type translationStrategyOption string
-
-var (
-	// NoUTF8EscapingWithSuffixes will accept metric/label names as they are.
-	// Unit and type suffixes may be added to metric names, according to certain rules.
-	NoUTF8EscapingWithSuffixes translationStrategyOption = "NoUTF8EscapingWithSuffixes"
-	// UnderscoreEscapingWithSuffixes is the default option for translating OTLP to Prometheus.
-	// This option will translate metric name characters that are not alphanumerics/underscores/colons to underscores,
-	// and label name characters that are not alphanumerics/underscores to underscores.
-	// Unit and type suffixes may be appended to metric names, according to certain rules.
-	UnderscoreEscapingWithSuffixes translationStrategyOption = "UnderscoreEscapingWithSuffixes"
-	// NoTranslation (EXPERIMENTAL): disables all translation of incoming metric
-	// and label names. This offers a way for the OTLP users to use native metric names, reducing confusion.
-	//
-	// WARNING: This setting has significant known risks and limitations (see
-	// https://prometheus.io/docs/practices/naming/  for details):
-	// * Impaired UX when using PromQL in plain YAML (e.g. alerts, rules, dashboard, autoscaling configuration).
-	// * Series collisions which in the best case may result in OOO errors, in the worst case a silently malformed
-	// time series. For instance, you may end up in situation of ingesting `foo.bar` series with unit
-	// `seconds` and a separate series `foo.bar` with unit `milliseconds`.
-	//
-	// As a result, this setting is experimental and currently, should not be used in
-	// production systems.
-	//
-	// TODO(ArthurSens): Mention `type-and-unit-labels` feature (https://github.com/prometheus/proposals/pull/39) once released, as potential mitigation of the above risks.
-	NoTranslation translationStrategyOption = "NoTranslation"
-)
-
 // OTLPConfig is the configuration for writing to the OTLP endpoint.
 type OTLPConfig struct {
-	PromoteAllResourceAttributes      bool                      `yaml:"promote_all_resource_attributes,omitempty"`
-	PromoteResourceAttributes         []string                  `yaml:"promote_resource_attributes,omitempty"`
-	IgnoreResourceAttributes          []string                  `yaml:"ignore_resource_attributes,omitempty"`
-	TranslationStrategy               translationStrategyOption `yaml:"translation_strategy,omitempty"`
-	KeepIdentifyingResourceAttributes bool                      `yaml:"keep_identifying_resource_attributes,omitempty"`
-	ConvertHistogramsToNHCB           bool                      `yaml:"convert_histograms_to_nhcb,omitempty"`
+	PromoteAllResourceAttributes      bool                                     `yaml:"promote_all_resource_attributes,omitempty"`
+	PromoteResourceAttributes         []string                                 `yaml:"promote_resource_attributes,omitempty"`
+	IgnoreResourceAttributes          []string                                 `yaml:"ignore_resource_attributes,omitempty"`
+	TranslationStrategy               otlptranslator.TranslationStrategyOption `yaml:"translation_strategy,omitempty"`
+	KeepIdentifyingResourceAttributes bool                                     `yaml:"keep_identifying_resource_attributes,omitempty"`
+	ConvertHistogramsToNHCB           bool                                     `yaml:"convert_histograms_to_nhcb,omitempty"`
 	// PromoteScopeMetadata controls whether to promote OTel scope metadata (i.e. name, version, schema URL, and attributes) to metric labels.
 	// As per OTel spec, the aforementioned scope metadata should be identifying, i.e. made into metric labels.
 	PromoteScopeMetadata bool `yaml:"promote_scope_metadata,omitempty"`

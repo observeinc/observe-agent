@@ -20,6 +20,8 @@ var featureGates []string
 
 var internalFeatureFlagDefaults = map[string]bool{
 	"exporter.prometheusremotewritexporter.EnableMultipleWorkers": true,
+	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
+	"connector.spanmetrics.excludeResourceMetrics":                false,
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {

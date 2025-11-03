@@ -29,6 +29,7 @@ vendor:
 ## build: Build all Go packages
 build:
 	go build ./...
+	go build -o observe-agent .
 
 docker-image:
 	env GOOS=linux GOARCH=arm64 go build -tags docker -o observe-agent
