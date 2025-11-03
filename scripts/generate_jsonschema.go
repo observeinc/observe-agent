@@ -25,6 +25,9 @@ func main() {
 
 	s := r.Reflect(&config.AgentConfig{})
 
+	// Set deprecation for `debug` field; currently the library has no way to do this with struct tags.
+	s.Definitions["AgentConfig"].Properties.Value("debug").Deprecated = true
+
 	schema, err := s.MarshalJSON()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling schema: %v\n", err)

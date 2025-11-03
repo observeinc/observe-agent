@@ -82,7 +82,7 @@ var allSnapshotTests = []snapshotTest{
 		outputPath:      "test/snap1-windows-output.yaml",
 		packageType:     Windows,
 	},
-	// Tests with minimal agent config
+	// Tests with minimal agent config and OTel overrides
 	{
 		agentConfigPath: "test/snap2-empty-agent-config.yaml",
 		otelConfigPath:  "test/snap2-otel-config.yaml",
@@ -91,6 +91,7 @@ var allSnapshotTests = []snapshotTest{
 	},
 	{
 		agentConfigPath: "test/snap2-empty-agent-config.yaml",
+		otelConfigPath:  "test/snap2-otel-config.yaml",
 		outputPath:      "test/snap2-windows-output.yaml",
 		packageType:     Windows,
 	},

@@ -23,11 +23,15 @@ var CommonConnectionType = MakeConnectionType(
 			colConfigFilePath: "extensions.yaml.tmpl",
 		},
 		{
-			enabledCheck:      alwaysEnabled,
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return !agentConfig.OmitBaseComponents
+			},
 			colConfigFilePath: "base.yaml.tmpl",
 		},
 		{
-			enabledCheck:      alwaysEnabled,
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return !agentConfig.OmitBaseComponents
+			},
 			colConfigFilePath: "resource_detection.yaml.tmpl",
 		},
 		{

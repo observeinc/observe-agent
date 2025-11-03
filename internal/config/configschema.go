@@ -117,7 +117,8 @@ type AgentConfig struct {
 	Token                  string                  `yaml:"token" mapstructure:"token" jsonschema:"required"`
 	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url" jsonschema:"required"`
 	CloudResourceDetectors []string                `yaml:"cloud_resource_detectors,omitempty" mapstructure:"cloud_resource_detectors"`
-	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"`
+	Debug                  bool                    `yaml:"debug,omitempty" mapstructure:"debug"` // Deprecated
+	OmitBaseComponents     bool                    `yaml:"omit_base_components,omitempty" mapstructure:"omit_base_components"`
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
 	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
 	AgentLocalFilePath     string                  `yaml:"agent_local_file_path,omitempty" mapstructure:"agent_local_file_path"`
