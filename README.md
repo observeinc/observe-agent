@@ -8,7 +8,7 @@ See <https://docs.observeinc.com/en/latest/content/observe-agent/configuration.h
 
 ## Build
 
-To run the code you need to have `golang v1.24.6` installed. Then you can run the following command to compile the binary.
+To run the code you need to have `golang v1.24.8` installed. Then you can run the following command to compile the binary.
 
 ```sh
 go build -o observe-agent

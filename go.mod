@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.24.6
+go 1.24.8
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0

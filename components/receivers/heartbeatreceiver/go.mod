@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver
 
-go 1.24.6
+go 1.24.8
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.131.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -58,5 +59,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
