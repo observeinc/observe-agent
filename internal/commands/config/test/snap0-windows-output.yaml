@@ -166,8 +166,19 @@ receivers:
                   static_configs:
                     - targets:
                         - localhost:8888
+    windowseventlog/agent:
+        query: |
+            <QueryList>
+              <Query Id="0">
+                <Select Path="Application">*[System[Provider[@Name='ObserveAgent']]]</Select>
+              </Query>
+            </QueryList>
+        retry_on_failure:
+            enabled: true
     windowseventlog/host_monitoring-application:
         channel: Application
+        exclude_providers:
+            - ObserveAgent
         retry_on_failure:
             enabled: true
     windowseventlog/host_monitoring-security:
@@ -188,6 +199,18 @@ service:
                 - nop
             receivers:
                 - nop
+        logs/agent-windowseventlog:
+            exporters:
+                - otlphttp/observe
+                - count
+            processors:
+                - memory_limiter
+                - transform/truncate
+                - resourcedetection
+                - resourcedetection/cloud
+                - batch
+            receivers:
+                - windowseventlog/agent
         logs/forward:
             exporters:
                 - otlphttp/observe
