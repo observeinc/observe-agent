@@ -12,6 +12,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
+	"github.com/observeinc/observe-agent/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +42,7 @@ func (c *ConnectionType) getTemplate(tplName string) (*template.Template, error)
 			return nil, fmt.Errorf("template %s not found", tplName)
 		}
 	}
-	return template.New(path.Base(tplName)).Funcs(TemplateFuncMap).ParseFS(fs, tplName)
+	return template.New(path.Base(tplName)).Funcs(utils.TemplateFuncs()).ParseFS(fs, tplName)
 }
 
 func renderBundledConfigTemplate(ctx context.Context, tmpDir string, outFileName string, tmpl *template.Template, confValues any) (string, error) {

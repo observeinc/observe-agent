@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"github.com/observeinc/observe-agent/internal/config"
-	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/root"
+	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,7 +49,7 @@ func getStatusFromTemplate(v *viper.Viper) error {
 		return err
 	}
 	t := template.Must(template.New(statusTemplate).
-		Funcs(connections.TemplateFuncMap).
+		Funcs(utils.TemplateFuncs()).
 		ParseFS(statusTemplateFS, statusTemplate))
 	if err := t.ExecuteTemplate(os.Stdout, statusTemplate, data); err != nil {
 		return err

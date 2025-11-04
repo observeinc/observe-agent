@@ -21,7 +21,7 @@ exporters:
           Authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
           X-Observe-Target-Package: Observe Agent
           X-Observe-Agent-Instance-Id: ${env:OBSERVE_AGENT_INSTANCE_ID}
-          X-Observe-Context: {{ json (dict "version" (getenv "OBSERVE_AGENT_VERSION") "environment" (getenv "OBSERVE_AGENT_ENVIRONMENT")) | valToYaml }}
+          X-Observe-Context: {{ mustToJson (dict "version" (env "OBSERVE_AGENT_VERSION") "environment" (env "OBSERVE_AGENT_ENVIRONMENT")) | mustToYaml }}
           X-Observe-Enable-Auth-Error-Reporting: "true"
       retry_on_failure:
           enabled: true
