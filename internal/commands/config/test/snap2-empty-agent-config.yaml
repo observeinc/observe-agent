@@ -5,7 +5,7 @@ observe_url: https://test.collect.observeinc.com/
 # Observe data token
 token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
 
-debug: false
+omit_base_components: true
 
 forwarding:
     enabled: false

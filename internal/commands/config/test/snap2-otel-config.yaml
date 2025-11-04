@@ -12,17 +12,15 @@ processors:
         key: test-env-attr2
         value: ${env:TEST_ENV_VAR}
 
+exporters:
+  nop/custom: null
+
 service:
     pipelines:
         logs/test:
             receivers:
                 - filelog/test
             processors:
-                - memory_limiter
-                - transform/truncate
-                - resourcedetection
-                - resourcedetection/cloud
                 - attributes/test
-                - batch
             exporters:
-                - otlphttp/observe
+                - nop/custom

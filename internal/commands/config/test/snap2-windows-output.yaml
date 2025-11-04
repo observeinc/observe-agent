@@ -1,93 +1,29 @@
-connectors:
-    count: null
 exporters:
-    debug: null
-    nop: null
-    otlphttp/observe:
-        compression: zstd
-        endpoint: https://test.collect.observeinc.com/v2/otel
-        headers:
-            authorization: Bearer 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
-            x-observe-target-package: Host Explorer
-        retry_on_failure:
-            enabled: true
-        sending_queue:
-            num_consumers: 4
-            queue_size: 100
-    prometheusremotewrite/observe:
-        endpoint: https://test.collect.observeinc.com/v1/prometheus
-        headers:
-            authorization: Bearer 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
-            x-observe-target-package: Host Explorer
-        max_batch_request_parallelism: 5
-        remote_write_queue:
-            num_consumers: 5
-        resource_to_telemetry_conversion:
-            enabled: true
-        send_metadata: true
+    nop/custom: null
 extensions:
     file_storage:
         directory: C:\ProgramData\Observe\observe-agent\filestorage
 processors:
-    batch:
-        timeout: 5s
-    deltatocumulative: null
-    filter/count:
-        error_mode: ignore
-        metrics:
-            metric:
-                - IsMatch(name, ".*")
-    memory_limiter:
-        check_interval: 1s
-        limit_percentage: 80
-        spike_limit_percentage: 20
-    resource/agent_instance:
-        attributes:
-            - action: upsert
-              key: observe.agent.instance.id
-              value: test-agent-instance-id
-    resourcedetection:
-        detectors:
-            - env
-            - system
-        system:
-            hostname_sources:
-                - os
-            resource_attributes:
-                host.id:
-                    enabled: true
-    resourcedetection/cloud:
-        detectors:
-            - gcp
-            - ecs
-            - ec2
-            - azure
-        override: false
-        timeout: 2s
-    transform/truncate:
-        log_statements:
-            - context: log
-              statements:
-                - truncate_all(attributes, 4095)
-                - truncate_all(resource.attributes, 4095)
-        trace_statements:
-            - context: span
-              statements:
-                - truncate_all(attributes, 4095)
-                - truncate_all(resource.attributes, 4095)
+    attributes/test:
+        actions:
+            - action: insert
+              key: test-env-attr1
+              value: test-value
+            - action: insert
+              key: test-env-attr2
+              value: test-value
 receivers:
-    nop: null
+    filelog/test:
+        include:
+            - ./test.log
 service:
     extensions:
         - file_storage
     pipelines:
-        metrics/count-nop-in:
+        logs/test:
             exporters:
-                - count
+                - nop/custom
+            processors:
+                - attributes/test
             receivers:
-                - nop
-        metrics/count-nop-out:
-            exporters:
-                - nop
-            receivers:
-                - count
+                - filelog/test
