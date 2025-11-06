@@ -3,7 +3,7 @@ import utils as u
 
 
 def init_config_command(env_vars: dict) -> str:
-    return "init-config --token {} --observe_url {} --cloud_resource_detectors ec2 --resource_attributes deployment.environment=test".format(
+    return "init-config --token {} --observe_url {} --cloud_resource_detectors ec2 --resource_attributes deployment.environment=test --self_monitoring::fleet::enabled=true".format(
         env_vars["observe_token"], env_vars["observe_url"]
     )
 
