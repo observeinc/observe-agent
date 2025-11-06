@@ -95,8 +95,9 @@ fi
 
 # Create the needed directories
 echo "Creating system install folders. This may ask for your password..."
-sudo mkdir -p $observeagent_install_dir /usr/local/libexec /usr/local/bin /var/lib/observe-agent/filestorage
-sudo chmod +rw /var/lib/observe-agent/filestorage
+sudo mkdir -p $observeagent_install_dir /usr/local/libexec /usr/local/bin /var/lib/observe-agent/filestorage /var/lib/observe-agent/data
+sudo chmod 1777 /var/lib/observe-agent/filestorage
+sudo chmod 1777 /var/lib/observe-agent/data
 
 # Copy all files to the install dir.
 sudo rm -rf $observeagent_install_dir/config $observeagent_install_dir/connections $observeagent_install_dir/observe-agent
