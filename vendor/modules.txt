@@ -1170,6 +1170,14 @@ github.com/oklog/ulid/v2
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.138.0
+## explicit; go 1.24.0
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutil
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutil
 # github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.138.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector

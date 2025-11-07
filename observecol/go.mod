@@ -9,6 +9,7 @@ require (
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.138.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.138.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.138.0
