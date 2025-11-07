@@ -145,6 +145,11 @@ func TestAddCommonHeartbeatFields(t *testing.T) {
 			environment: "macos",
 			kind:        "AgentConfig",
 		},
+		{
+			name:        "lifecycle event with docker environment",
+			environment: "docker",
+			kind:        "AgentLifecycleEvent",
+		},
 	}
 
 	for _, tt := range tests {
@@ -698,16 +703,17 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 		require.NoError(t, err)
 
 		// Wait for some heartbeats to be generated
+		// Note: With the new implementation, initial heartbeats are generated immediately on start
 		time.Sleep(500 * time.Millisecond)
 
 		// Shutdown the receiver
 		err = receiver.Shutdown(context.Background())
 		require.NoError(t, err)
 
-		// Note: In a real test, we would verify that both types of heartbeats
-		// were generated. However, this requires the full OTEL setup.
-		// For now, we just verify the receiver starts and stops cleanly.
-		// Integration tests will verify the actual heartbeat generation.
+		// Verify we received heartbeats
+		// We should have at least 2 initial heartbeats (lifecycle + config) plus timer-generated ones
+		logCount := sink.LogRecordCount()
+		assert.GreaterOrEqual(t, logCount, 2, "Should have at least 2 heartbeats (initial lifecycle + config)")
 	})
 
 	t.Run("graceful shutdown stops both timers", func(t *testing.T) {

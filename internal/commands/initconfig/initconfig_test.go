@@ -101,6 +101,33 @@ func Test_InitConfigCommand(t *testing.T) {
 			}),
 			expectErr: "",
 		},
+		{
+			args: []string{"--config_path=./test-config.yaml", "--token=test-token", "--observe_url=test-url", "--self_monitoring::fleet::enabled=true", "--self_monitoring::fleet::interval=5m", "--self_monitoring::fleet::config_interval=30m"},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				SelfMonitoring: config.SelfMonitoringConfig{
+					Enabled: true,
+					Fleet: config.FleetHeartbeatConfig{
+						Enabled:        true,
+						Interval:       "5m",
+						ConfigInterval: "30m",
+					},
+				},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs: config.HostMonitoringLogsConfig{
+						Enabled: true,
+					},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{
+							Enabled: true,
+						},
+					},
+				},
+			}),
+			expectErr: "",
+		},
 	}
 	for _, tc := range testcases {
 		v := viper.NewWithOptions(viper.KeyDelimiter("::"))
