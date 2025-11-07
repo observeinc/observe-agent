@@ -2,7 +2,9 @@ package agentresource
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -75,7 +77,7 @@ func (a *AgentResource) initialize() error {
 
 	if err != nil {
 		// Provide more specific error message for permission issues
-		if os.IsPermission(err) {
+		if errors.Is(err, fs.ErrPermission) {
 			return fmt.Errorf("failed to parse local file: permission denied reading %s (check file permissions and ownership)", a.filePath)
 		}
 		return fmt.Errorf("failed to parse local file: %w", err)

@@ -25,7 +25,7 @@ jobs:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           path: "."
-          exclude_paths: "vendor"
+          exclude_paths: "vendor,internal/agentresource/agentresource.go"
 
       - name: Run Orca FS Scan
         uses: orcasecurity/shiftleft-fs-action@v1

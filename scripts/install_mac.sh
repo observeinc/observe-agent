@@ -131,7 +131,7 @@ else
         fi
     fi
     # Add default args
-    INIT_FLAGS="$INIT_FLAGS --forwarding::metrics::output_format=true"
+    INIT_FLAGS="$INIT_FLAGS --forwarding::metrics::output_format=otel"
     sudo $observeagent_install_dir/observe-agent init-config $INIT_FLAGS
     sudo chown root:wheel $observeagent_install_dir/observe-agent.yaml
 fi
