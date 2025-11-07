@@ -92,19 +92,29 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 	r.settings.Logger.Info("Config heartbeat enabled",
 		zap.String("interval", r.cfg.ConfigInterval))
 
+	swallowGenerateLifecycleHeartbeat := func() {
+		if err := r.generateLifecycleHeartbeat(ctx); err != nil {
+			r.settings.Logger.Error("failed to generate lifecycle heartbeat", zap.Error(err))
+			// Continue to start the timer
+		}
+	}
+	swallowGenerateConfigHeartbeat := func() {
+		if err := r.generateConfigHeartbeat(ctx); err != nil {
+			r.settings.Logger.Error("failed to generate config heartbeat", zap.Error(err))
+			// Continue to start the timer
+		}
+	}
 	go func() {
+		// Generate initial heartbeats
+		swallowGenerateLifecycleHeartbeat()
+		swallowGenerateConfigHeartbeat()
+
 		for {
 			select {
 			case <-r.ticker.C:
-				if err := r.generateLifecycleHeartbeat(ctx); err != nil {
-					r.settings.Logger.Error("failed to generate lifecycle heartbeat", zap.Error(err))
-					// Continue - don't stop timer on error
-				}
+				swallowGenerateLifecycleHeartbeat()
 			case <-r.configTicker.C:
-				if err := r.generateConfigHeartbeat(ctx); err != nil {
-					r.settings.Logger.Error("failed to generate config heartbeat", zap.Error(err))
-					// Continue - don't stop timer on error
-				}
+				swallowGenerateConfigHeartbeat()
 			case <-ctx.Done():
 				return
 			}

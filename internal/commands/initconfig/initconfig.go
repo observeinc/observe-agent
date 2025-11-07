@@ -28,6 +28,9 @@ var (
 	host_monitoring_logs_auto_multiline_detection bool
 	host_monitoring_metrics_host_enabled          bool
 	host_monitoring_metrics_process_enabled       bool
+	self_monitoring_fleet_enabled                 bool
+	self_monitoring_fleet_interval                string
+	self_monitoring_fleet_config_interval         string
 )
 
 func NewConfigureCmd(v *viper.Viper) *cobra.Command {
@@ -99,6 +102,15 @@ func RegisterConfigFlags(cmd *cobra.Command, v *viper.Viper) {
 	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
 	v.BindPFlag("self_monitoring::enabled", cmd.PersistentFlags().Lookup("self_monitoring::enabled"))
 	v.SetDefault("self_monitoring::enabled", true)
+
+	cmd.PersistentFlags().BoolVar(&self_monitoring_fleet_enabled, "self_monitoring::fleet::enabled", true, "Enable fleet heartbeat")
+	v.BindPFlag("self_monitoring::fleet::enabled", cmd.PersistentFlags().Lookup("self_monitoring::fleet::enabled"))
+
+	cmd.PersistentFlags().StringVar(&self_monitoring_fleet_interval, "self_monitoring::fleet::interval", "", "Fleet heartbeat interval (e.g., '5m', '1h')")
+	v.BindPFlag("self_monitoring::fleet::interval", cmd.PersistentFlags().Lookup("self_monitoring::fleet::interval"))
+
+	cmd.PersistentFlags().StringVar(&self_monitoring_fleet_config_interval, "self_monitoring::fleet::config_interval", "", "Fleet config heartbeat interval (e.g., '30m', '24h')")
+	v.BindPFlag("self_monitoring::fleet::config_interval", cmd.PersistentFlags().Lookup("self_monitoring::fleet::config_interval"))
 
 	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring::enabled", true, "Enable host monitoring")
 	v.BindPFlag("host_monitoring::enabled", cmd.PersistentFlags().Lookup("host_monitoring::enabled"))

@@ -10,6 +10,7 @@ var validEnvironments = map[string]bool{
 	"macos":      true,
 	"windows":    true,
 	"kubernetes": true,
+	"docker":     true,
 }
 
 type Config struct {
@@ -47,11 +48,11 @@ func (cfg *Config) Validate() error {
 
 	// Validate environment field is required
 	if cfg.Environment == "" {
-		return fmt.Errorf("environment is required and must be one of: linux, macos, windows, kubernetes")
+		return fmt.Errorf("environment is required and must be one of: linux, macos, windows, docker, kubernetes")
 	}
 
 	if !validEnvironments[cfg.Environment] {
-		return fmt.Errorf("environment must be one of: linux, macos, windows, kubernetes")
+		return fmt.Errorf("environment must be one of: linux, macos, windows, docker, kubernetes")
 	}
 
 	return nil
