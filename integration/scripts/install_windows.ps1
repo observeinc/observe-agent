@@ -12,6 +12,7 @@ param (
 Write-Output "Local installer path is located at: $local_installer"
 
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
+$program_data_agentdata="C:\ProgramData\Observe\observe-agent\data"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
 $temp_dir="C:\temp"
 
@@ -20,6 +21,7 @@ New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\connections
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
+New-Item -ItemType Directory -Force -Path $program_data_agentdata
 
 # Stop the observe agent if its running so that we can copy the new .exe
 if((Get-Service ObserveAgent -ErrorAction SilentlyContinue)){
