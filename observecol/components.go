@@ -13,6 +13,7 @@ import (
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
+	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -219,6 +220,7 @@ func components() (otelcol.Factories, error) {
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
+		routingconnector.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -227,6 +229,7 @@ func components() (otelcol.Factories, error) {
 	factories.ConnectorModules[forwardconnector.NewFactory().Type()] = "go.opentelemetry.io/collector/connector/forwardconnector v0.138.0"
 	factories.ConnectorModules[countconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.138.0"
 	factories.ConnectorModules[spanmetricsconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.138.0"
+	factories.ConnectorModules[routingconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.138.0"
 
 	return factories, nil
 }
