@@ -2,7 +2,9 @@ package agentresource
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -26,7 +28,7 @@ type AgentResource struct {
 
 const nameSuffixCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-var defaultLocalFilePath = filepath.Join(utils.GetDefaultAgentPath(), "agent_local_data.json")
+var defaultLocalFilePath = filepath.Join(utils.GetDefaultAgentDataPath(), "agent_local_data.json")
 
 func generateRandomString(length int) string {
 	b := make([]byte, length)
@@ -74,6 +76,10 @@ func (a *AgentResource) initialize() error {
 	}
 
 	if err != nil {
+		// Provide more specific error message for permission issues
+		if errors.Is(err, fs.ErrPermission) {
+			return fmt.Errorf("failed to parse local file: permission denied reading %s (check file permissions and ownership)", a.filePath)
+		}
 		return fmt.Errorf("failed to parse local file: %w", err)
 	}
 
@@ -115,11 +121,11 @@ func (a *AgentResource) persistToLocalFile() error {
 	}
 
 	dir := filepath.Dir(a.filePath)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
-	return os.WriteFile(a.filePath, jsonData, 0600)
+	return os.WriteFile(a.filePath, jsonData, 0644)
 }
 
 func (a *AgentResource) parseLocalFile() error {

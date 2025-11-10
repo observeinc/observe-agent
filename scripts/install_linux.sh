@@ -86,8 +86,9 @@ tar -xzf $ZIP_DIR -C $tmp_dir
 
 # Create the needed directories.
 echo "Creating system install folders. This may ask for your password..."
-sudo mkdir -p $observeagent_config_dir /var/lib/observe-agent/filestorage
-sudo chmod +rw /var/lib/observe-agent/filestorage
+sudo mkdir -p $observeagent_config_dir /var/lib/observe-agent/filestorage /var/lib/observe-agent/data
+sudo chmod 1777 /var/lib/observe-agent/filestorage
+sudo chmod 1777 /var/lib/observe-agent/data
 
 # Move the binary to the proper path.
 sudo cp -f $tmp_dir/observe-agent $agent_binary_path
@@ -137,8 +138,10 @@ if [[ -d /run/systemd/system ]]; then
         # Set up user and permissions (copied from preinstall.sh)
         sudo getent passwd observe-agent >/dev/null || sudo useradd --system --user-group --no-create-home --shell /sbin/nologin observe-agent
         sudo usermod -a -G systemd-journal observe-agent
-        sudo mkdir -p /var/lib/observe-agent/filestorage
-        sudo chown -R observe-agent:observe-agent /var/lib/observe-agent/filestorage
+        sudo mkdir -p /var/lib/observe-agent/filestorage /var/lib/observe-agent/data
+        sudo chown -R observe-agent:observe-agent /var/lib/observe-agent
+        sudo chmod 1777 /var/lib/observe-agent/filestorage
+        sudo chmod 1777 /var/lib/observe-agent/data
 
         # Copy the service file and start the service.
         sudo cp -f $tmp_dir/observe-agent.service /etc/systemd/system/observe-agent.service

@@ -18,6 +18,7 @@ if ($PSBoundParameters.ContainsKey('version')){
 }
 $local_installer="C:\temp\observe-agent_Windows_x86_64.zip"
 $program_data_filestorage="C:\ProgramData\Observe\observe-agent\filestorage"
+$program_data_agentdata="C:\ProgramData\Observe\observe-agent\data"
 $observeagent_install_dir="$env:ProgramFiles\Observe\observe-agent"
 $temp_dir="C:\temp"
 
@@ -25,6 +26,7 @@ New-Item -ItemType Directory -Force -Path $temp_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir
 New-Item -ItemType Directory -Force -Path $observeagent_install_dir\config
 New-Item -ItemType Directory -Force -Path $program_data_filestorage
+New-Item -ItemType Directory -Force -Path $program_data_agentdata
 
 if ($PSBoundParameters.ContainsKey('zip_dir')){
     Write-Output "Installing from provided zip file: $zip_dir..."

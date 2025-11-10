@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/observeinc/observe-agent/build"
@@ -17,6 +16,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/connections"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig"
+	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -152,7 +152,7 @@ func setEnvVars() error {
 	os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint)
 	os.Setenv("OBSERVE_PROMETHEUS_ENDPOINT", promEndpoint)
 	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
-	os.Setenv("FILESTORAGE_PATH", getDefaultFilestoragePath())
+	os.Setenv("FILESTORAGE_PATH", utils.GetDefaultFilestoragePath())
 
 	configFile := viper.ConfigFileUsed()
 	if configFile != "" {
@@ -174,17 +174,4 @@ func setEnvVars() error {
 		}
 	}
 	return nil
-}
-
-func getDefaultFilestoragePath() string {
-	switch currOS := runtime.GOOS; currOS {
-	case "darwin":
-		return "/var/lib/observe-agent/filestorage"
-	case "windows":
-		return os.ExpandEnv("$ProgramData\\Observe\\observe-agent\\filestorage")
-	case "linux":
-		return "/var/lib/observe-agent/filestorage"
-	default:
-		return "/var/lib/observe-agent/filestorage"
-	}
 }
