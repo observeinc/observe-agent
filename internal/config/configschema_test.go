@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 
 	"github.com/mcuadros/go-defaults"
@@ -97,6 +98,13 @@ func TestAgentConfigValidate(t *testing.T) {
 	defaults.SetDefaults(&invalidMaxSpanDurationFormat)
 	assert.ErrorContains(t, invalidMaxSpanDurationFormat.Validate(), "invalid max span duration 'five months' - Expected a number with a valid time unit: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration")
 
+	os.Setenv("OBSERVE_AGENT_TEST_ID", "123")
+	testEnvVarConfig := AgentConfig{
+		Token:      "some:token",
+		ObserveURL: "https://${env:OBSERVE_AGENT_TEST_ID}.collect.observeinc.com",
+	}
+	defaults.SetDefaults(&testEnvVarConfig)
+	assert.NoError(t, testEnvVarConfig.Validate())
 }
 
 func TestAgentConfigFromViper(t *testing.T) {
