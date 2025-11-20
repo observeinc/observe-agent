@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/mcuadros/go-defaults"
+	"github.com/observeinc/observe-agent/internal/commands/util"
 	"github.com/spf13/viper"
 )
 
@@ -176,35 +177,35 @@ func (config *AgentConfig) Validate() error {
 	if config.ObserveURL == "" {
 		return errors.New("missing ObserveURL")
 	}
-	u, err := url.Parse(config.ObserveURL)
+	u, err := url.Parse(util.ReplaceEnvString(config.ObserveURL))
 	if err != nil {
-		return err
+		return fmt.Errorf("could not parse observe-agent config ObserveURL %s: %w", config.ObserveURL, err)
 	}
 	if u.Scheme == "" {
-		return fmt.Errorf("missing scheme for ObserveURL %s", config.ObserveURL)
+		return fmt.Errorf("observe-agent config missing scheme for ObserveURL %s", config.ObserveURL)
 	}
 	if u.Host == "" {
-		return fmt.Errorf("missing host for ObserveURL %s", config.ObserveURL)
+		return fmt.Errorf("observe-agent config missing host for ObserveURL %s", config.ObserveURL)
 	}
 
 	if config.Token == "" {
-		return errors.New("missing Token")
+		return errors.New("observe-agent config missing Token")
 	}
-	if !strings.Contains(config.Token, ":") {
-		return errors.New("invalid Token, the provided value may be the token ID instead of the token itself")
-	}
-
-	if config.Forwarding.Metrics.OutputFormat != "prometheus" && config.Forwarding.Metrics.OutputFormat != "otel" {
-		return fmt.Errorf("invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
+	if !strings.Contains(util.ReplaceEnvString(config.Token), ":") {
+		return errors.New("observe-agent config invalid Token, the provided value may be the token ID instead of the token itself")
 	}
 
-	if config.Forwarding.Metrics.OutputFormat == "prometheus" && config.Forwarding.Metrics.ConvertCumulativeToDelta {
-		return errors.New("invalid metrics config -- cannot convert prometheus metrics to delta, they must be cumulative")
+	if util.ReplaceEnvString(config.Forwarding.Metrics.OutputFormat) != "prometheus" && util.ReplaceEnvString(config.Forwarding.Metrics.OutputFormat) != "otel" {
+		return fmt.Errorf("observe-agent config invalid metrics forwarding output format '%s' - valid options are 'prometheus' and 'otel'", config.Forwarding.Metrics.OutputFormat)
 	}
 
-	if config.Forwarding.Traces.MaxSpanDuration != "none" {
-		if _, err := time.ParseDuration(config.Forwarding.Traces.MaxSpanDuration); err != nil {
-			return fmt.Errorf("invalid max span duration '%s' - Expected a number with a valid time unit: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration", config.Forwarding.Traces.MaxSpanDuration)
+	if util.ReplaceEnvString(config.Forwarding.Metrics.OutputFormat) == "prometheus" && config.Forwarding.Metrics.ConvertCumulativeToDelta {
+		return errors.New("observe-agent config invalid metrics config -- cannot convert prometheus metrics to delta, they must be cumulative")
+	}
+
+	if util.ReplaceEnvString(config.Forwarding.Traces.MaxSpanDuration) != "none" {
+		if _, err := time.ParseDuration(util.ReplaceEnvString(config.Forwarding.Traces.MaxSpanDuration)); err != nil {
+			return fmt.Errorf("observe-agent config invalid max span duration '%s' - Expected a number with a valid time unit: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration", config.Forwarding.Traces.MaxSpanDuration)
 		}
 	}
 

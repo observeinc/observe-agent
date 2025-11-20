@@ -18,7 +18,7 @@ func JoinUrl(baseURL string, path string) string {
 	return strings.TrimRight(result, "/")
 }
 
-var envRe *regexp.Regexp = regexp.MustCompile(`\${env:\w*}`)
+var envRe *regexp.Regexp = regexp.MustCompile(`\${env:\w*?}`)
 
 // ReplaceEnvString replaces all ${env:ENV_VAR} strings in the input string with the value of the environment variable.
 func ReplaceEnvString(input string) string {
