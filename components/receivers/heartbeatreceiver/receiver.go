@@ -127,12 +127,7 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	r.settings.Logger.Info("Shutting down heartbeat receiver")
 
-	// Send shutdown heartbeat before stopping tickers
-	if err := r.generateShutdownHeartbeat(ctx); err != nil {
-		r.settings.Logger.Error("failed to generate shutdown heartbeat", zap.Error(err))
-		// Continue with shutdown even if heartbeat fails
-	}
-
+	// Stop tickers and cancel context first to prevent regular heartbeats during shutdown
 	if r.ticker != nil {
 		r.ticker.Stop()
 	}
@@ -141,6 +136,26 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	}
 	if r.cancel != nil {
 		r.cancel()
+	}
+
+	// Send shutdown heartbeat with one retry
+	if err := r.generateShutdownHeartbeat(ctx); err != nil {
+		r.settings.Logger.Warn("failed to generate shutdown heartbeat, retrying once", zap.Error(err))
+
+		// Check if context is still valid before retrying
+		select {
+		case <-ctx.Done():
+			r.settings.Logger.Error("context cancelled, skipping retry", zap.Error(ctx.Err()))
+		default:
+			// Wait 1 second and retry once
+			time.Sleep(1 * time.Second)
+			if err := r.generateShutdownHeartbeat(ctx); err != nil {
+				r.settings.Logger.Error("failed to generate shutdown heartbeat after retry", zap.Error(err))
+				// Continue with shutdown even if heartbeat fails
+			} else {
+				r.settings.Logger.Info("successfully sent shutdown heartbeat on retry")
+			}
+		}
 	}
 
 	return nil

@@ -15,6 +15,108 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      Config
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid config with all fields",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "1h",
+				Environment:    "linux",
+			},
+			expectError: false,
+		},
+		{
+			name: "interval too short (less than 5 seconds)",
+			config: Config{
+				Interval:    "1s",
+				Environment: "linux",
+			},
+			expectError: true,
+			errorMsg:    "when defined, the interval has to be set to at least 1 minute (1m)",
+		},
+		{
+			name: "interval too long (more than 8 hours)",
+			config: Config{
+				Interval:    "9h",
+				Environment: "linux",
+			},
+			expectError: true,
+			errorMsg:    "when defined, the interval must be set to a maximum of 8 hours (8h)",
+		},
+		{
+			name: "interval exactly 8 hours (valid boundary)",
+			config: Config{
+				Interval:    "8h",
+				Environment: "linux",
+			},
+			expectError: false,
+		},
+		{
+			name: "config_interval too short (less than 10 minutes)",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "5m",
+				Environment:    "linux",
+			},
+			expectError: true,
+			errorMsg:    "config_interval must be at least 10 minutes",
+		},
+		{
+			name: "config_interval invalid format",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "invalid",
+				Environment:    "linux",
+			},
+			expectError: true,
+			errorMsg:    "invalid config_interval",
+		},
+		{
+			name: "missing environment",
+			config: Config{
+				Interval: "5m",
+			},
+			expectError: true,
+			errorMsg:    "environment is required",
+		},
+		{
+			name: "invalid environment",
+			config: Config{
+				Interval:    "5m",
+				Environment: "invalid",
+			},
+			expectError: true,
+			errorMsg:    "environment must be one of",
+		},
+		{
+			name: "valid environment options",
+			config: Config{
+				Interval:    "5m",
+				Environment: "kubernetes",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestHeartbeatReceiverWithEnvVar(t *testing.T) {
 	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
@@ -854,6 +956,7 @@ func TestShutdownRespectsContext(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Shutdown should complete even with expired context, just log the error
+	// Note: With expired context, retry should be skipped
 	err = receiver.Shutdown(ctx)
 	require.NoError(t, err, "Shutdown should not return error even if heartbeat fails")
 }
