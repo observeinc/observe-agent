@@ -142,13 +142,14 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	if err := r.generateShutdownHeartbeat(ctx); err != nil {
 		r.settings.Logger.Warn("failed to generate shutdown heartbeat, retrying once", zap.Error(err))
 
-		// Check if context is still valid before retrying
+		// wait 1 second before retrying
+		time.Sleep(1 * time.Second)
 		select {
+		// Check if context is still valid before retrying
 		case <-ctx.Done():
 			r.settings.Logger.Error("context cancelled, skipping retry", zap.Error(ctx.Err()))
 		default:
-			// Wait 1 second and retry once
-			time.Sleep(1 * time.Second)
+			// if context isn't done, retry
 			if err := r.generateShutdownHeartbeat(ctx); err != nil {
 				r.settings.Logger.Error("failed to generate shutdown heartbeat after retry", zap.Error(err))
 				// Continue with shutdown even if heartbeat fails
