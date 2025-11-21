@@ -14,6 +14,7 @@ import (
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func DefaultLoggerCtx() context.Context {
@@ -27,7 +28,7 @@ func setConfigEnvVars(ctx context.Context) error {
 		return err
 	}
 	if err := agentConfig.Validate(); err != nil {
-		return err
+		logger.FromCtx(ctx).Error("failed to set validate observe-agent config, attempting to start anyway", zap.Error(err))
 	}
 	yamlBytes, err := yaml.Marshal(agentConfig)
 	if err != nil {
@@ -57,12 +58,11 @@ This command reads in the local config and env vars and starts the
 collector on the current host.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			col, cleanup, err := observecol.GetOtelCollector(DefaultLoggerCtx())
 			ctx := DefaultLoggerCtx()
 			if err := setConfigEnvVars(ctx); err != nil {
-				return err
+				logger.FromCtx(ctx).Error("failed to set observe-agent config env vars, attempting to start anyway", zap.Error(err))
 			}
-			col, cleanup, err = observecol.GetOtelCollector(ctx)
+			col, cleanup, err := observecol.GetOtelCollector(ctx)
 			if cleanup != nil {
 				defer cleanup()
 			}

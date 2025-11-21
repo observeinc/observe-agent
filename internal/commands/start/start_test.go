@@ -83,17 +83,6 @@ func TestSetConfigEnvVars(t *testing.T) {
 		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid YAML")
 	})
 
-	t.Run("returns error with invalid config", func(t *testing.T) {
-		// Reset viper and set up an invalid config (missing required fields)
-		viper.Reset()
-		viper.Set("token", "test:token")
-		// Missing observe_url - should fail validation
-
-		ctx := context.Background()
-		err := setConfigEnvVars(ctx)
-		assert.Error(t, err, "Should return error for invalid config")
-	})
-
 	t.Run("preserves token and other sensitive fields in env var", func(t *testing.T) {
 		// This test verifies that the raw config is stored in the env var (base64 encoded)
 		// (redaction happens in the heartbeat receiver when reading the env var)
