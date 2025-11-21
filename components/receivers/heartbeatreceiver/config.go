@@ -34,6 +34,9 @@ func (cfg *Config) Validate() error {
 	if interval.Seconds() < 5 {
 		return fmt.Errorf("when defined, the interval has to be set to at least 1 minute (1m)")
 	}
+	if interval.Hours() > 8 {
+		return fmt.Errorf(("when defined, the interval must be set to a maximum of 8 hours (8h)"))
+	}
 
 	// Validate config heartbeat interval if set
 	if cfg.ConfigInterval != "" {

@@ -15,6 +15,108 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      Config
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid config with all fields",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "1h",
+				Environment:    "linux",
+			},
+			expectError: false,
+		},
+		{
+			name: "interval too short (less than 5 seconds)",
+			config: Config{
+				Interval:    "1s",
+				Environment: "linux",
+			},
+			expectError: true,
+			errorMsg:    "when defined, the interval has to be set to at least 1 minute (1m)",
+		},
+		{
+			name: "interval too long (more than 8 hours)",
+			config: Config{
+				Interval:    "9h",
+				Environment: "linux",
+			},
+			expectError: true,
+			errorMsg:    "when defined, the interval must be set to a maximum of 8 hours (8h)",
+		},
+		{
+			name: "interval exactly 8 hours (valid boundary)",
+			config: Config{
+				Interval:    "8h",
+				Environment: "linux",
+			},
+			expectError: false,
+		},
+		{
+			name: "config_interval too short (less than 10 minutes)",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "5m",
+				Environment:    "linux",
+			},
+			expectError: true,
+			errorMsg:    "config_interval must be at least 10 minutes",
+		},
+		{
+			name: "config_interval invalid format",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "invalid",
+				Environment:    "linux",
+			},
+			expectError: true,
+			errorMsg:    "invalid config_interval",
+		},
+		{
+			name: "missing environment",
+			config: Config{
+				Interval: "5m",
+			},
+			expectError: true,
+			errorMsg:    "environment is required",
+		},
+		{
+			name: "invalid environment",
+			config: Config{
+				Interval:    "5m",
+				Environment: "invalid",
+			},
+			expectError: true,
+			errorMsg:    "environment must be one of",
+		},
+		{
+			name: "valid environment options",
+			config: Config{
+				Interval:    "5m",
+				Environment: "kubernetes",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestHeartbeatReceiverWithEnvVar(t *testing.T) {
 	// Set up environment variables
 	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
@@ -40,7 +142,7 @@ func TestHeartbeatReceiverWithEnvVar(t *testing.T) {
 	// Create receiver
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	
+
 	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(metadata.Type),
@@ -80,7 +182,7 @@ func TestHeartbeatReceiverMissingEnvVar(t *testing.T) {
 	// Create receiver
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	
+
 	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(metadata.Type),
@@ -337,10 +439,10 @@ func TestGenerateLifecycleHeartbeat(t *testing.T) {
 	assert.True(t, found, "Should have isDelete in control")
 	assert.False(t, isDelete.Bool(), "isDelete should be false")
 
-	// Verify body contains auth_check
+	// Verify body contains authCheck
 	body := logRecord.Body().Map()
-	authCheck, found := body.Get("auth_check")
-	assert.True(t, found, "Body should have auth_check field")
+	authCheck, found := body.Get("authCheck")
+	assert.True(t, found, "Body should have authCheck field")
 	assert.NotNil(t, authCheck)
 }
 
@@ -407,52 +509,52 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		err = receiver.generateConfigHeartbeat(ctx)
 		require.NoError(t, err)
 
-	// If it succeeded, verify the log structure
-	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
+		// If it succeeded, verify the log structure
+		require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
 
-	logs := sink.AllLogs()
-	require.Equal(t, 1, len(logs), "Should have one log batch")
+		logs := sink.AllLogs()
+		require.Equal(t, 1, len(logs), "Should have one log batch")
 
-	resourceLogs := logs[0].ResourceLogs()
-	require.Equal(t, 1, resourceLogs.Len(), "Should have one resource log")
+		resourceLogs := logs[0].ResourceLogs()
+		require.Equal(t, 1, resourceLogs.Len(), "Should have one resource log")
 
-	// Check resource attributes
-	attrs := resourceLogs.At(0).Resource().Attributes()
-	agentID, found := attrs.Get("observe.agent.instance.id")
-	assert.True(t, found, "Should have agent instance ID attribute")
-	assert.Equal(t, testAgentID, agentID.Str())
+		// Check resource attributes
+		attrs := resourceLogs.At(0).Resource().Attributes()
+		agentID, found := attrs.Get("observe.agent.instance.id")
+		assert.True(t, found, "Should have agent instance ID attribute")
+		assert.Equal(t, testAgentID, agentID.Str())
 
-	env, found := attrs.Get("observe.agent.environment")
-	assert.True(t, found, "Should have environment attribute")
-	assert.Equal(t, "linux", env.Str())
+		env, found := attrs.Get("observe.agent.environment")
+		assert.True(t, found, "Should have environment attribute")
+		assert.Equal(t, "linux", env.Str())
 
-	_, found = attrs.Get("observe.agent.processId")
-	assert.True(t, found, "Should have process ID attribute")
+		_, found = attrs.Get("observe.agent.processId")
+		assert.True(t, found, "Should have process ID attribute")
 
-	// Check log record
-	scopeLogs := resourceLogs.At(0).ScopeLogs()
-	require.Equal(t, 1, scopeLogs.Len(), "Should have one scope log")
+		// Check log record
+		scopeLogs := resourceLogs.At(0).ScopeLogs()
+		require.Equal(t, 1, scopeLogs.Len(), "Should have one scope log")
 
-	logRecords := scopeLogs.At(0).LogRecords()
-	require.Equal(t, 1, logRecords.Len(), "Should have one log record")
+		logRecords := scopeLogs.At(0).LogRecords()
+		require.Equal(t, 1, logRecords.Len(), "Should have one log record")
 
-	logRecord := logRecords.At(0)
+		logRecord := logRecords.At(0)
 
-	// Check observe_transform
-	observeTransform, found := logRecord.Attributes().Get("observe_transform")
-	assert.True(t, found, "Should have observe_transform attribute")
-	assert.Equal(t, "AgentConfig", observeTransform.Map().AsRaw()["kind"], "Kind should be AgentConfig")
+		// Check observe_transform
+		observeTransform, found := logRecord.Attributes().Get("observe_transform")
+		assert.True(t, found, "Should have observe_transform attribute")
+		assert.Equal(t, "AgentConfig", observeTransform.Map().AsRaw()["kind"], "Kind should be AgentConfig")
 
-	// Check identifiers
-	identifiers, ok := observeTransform.Map().AsRaw()["identifiers"].(map[string]interface{})
-	assert.True(t, ok, "Should have identifiers map")
-	assert.Equal(t, testAgentID, identifiers["observe.agent.instance.id"])
+		// Check identifiers
+		identifiers, ok := observeTransform.Map().AsRaw()["identifiers"].(map[string]interface{})
+		assert.True(t, ok, "Should have identifiers map")
+		assert.Equal(t, testAgentID, identifiers["observe.agent.instance.id"])
 
-	// Check control fields specific to config heartbeat
-	control, ok := observeTransform.Map().AsRaw()["control"].(map[string]interface{})
-	assert.True(t, ok, "Should have control map")
-	assert.Equal(t, false, control["isDelete"])
-	assert.Equal(t, "CONFIG", control["eventType"], "eventType should be CONFIG for config heartbeats")
+		// Check control fields specific to config heartbeat
+		control, ok := observeTransform.Map().AsRaw()["control"].(map[string]interface{})
+		assert.True(t, ok, "Should have control map")
+		assert.Equal(t, false, control["isDelete"])
+		assert.Equal(t, "CONFIG", control["eventType"], "eventType should be CONFIG for config heartbeats")
 
 		// Check timestamps
 		assert.Contains(t, observeTransform.Map().AsRaw(), "process_start_time")
@@ -638,6 +740,225 @@ func TestGenerateConfigHeartbeat(t *testing.T) {
 		// No logs should be sent
 		assert.Equal(t, 0, sink.LogRecordCount(), "Should not send heartbeat when YAML is invalid")
 	})
+}
+
+func TestGenerateShutdownHeartbeat(t *testing.T) {
+	// Set up environment variables
+	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
+	defer func() {
+		if originalID != "" {
+			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
+	}()
+
+	testAgentID := "test-agent-shutdown-123"
+	testAgentVersion := "1.2.3"
+	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
+
+	// Create receiver with a mock consumer to capture logs
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+
+	sink := &consumertest.LogsSink{}
+	receiver, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+
+	// Initialize receiver state
+	err = receiver.InitializeReceiverState(context.Background())
+	require.NoError(t, err)
+
+	// Call generateShutdownHeartbeat
+	ctx := context.Background()
+	err = receiver.generateShutdownHeartbeat(ctx)
+	require.NoError(t, err)
+
+	// Verify the log structure
+	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
+
+	logs := sink.AllLogs()
+	require.Equal(t, 1, len(logs), "Should have one log batch")
+
+	resourceLogs := logs[0].ResourceLogs()
+	require.Equal(t, 1, resourceLogs.Len(), "Should have one resource log")
+
+	logRecord := resourceLogs.At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	// Check observe_transform
+	observeTransform, found := logRecord.Attributes().Get("observe_transform")
+	assert.True(t, found, "Should have observe_transform attribute")
+	transformMap := observeTransform.Map()
+
+	// Check kind
+	kind, found := transformMap.Get("kind")
+	assert.True(t, found, "Should have kind field")
+	assert.Equal(t, "AgentLifecycleEvent", kind.Str(), "Kind should be AgentLifecycleEvent for shutdown events")
+
+	// Check control fields specific to shutdown heartbeat
+	control, found := transformMap.Get("control")
+	assert.True(t, found, "Should have control map")
+	controlMap := control.Map()
+
+	eventType, found := controlMap.Get("eventType")
+	assert.True(t, found, "Should have eventType in control")
+	assert.Equal(t, "SHUTDOWN", eventType.Str(), "eventType should be SHUTDOWN for shutdown events")
+
+	isDelete, found := controlMap.Get("isDelete")
+	assert.True(t, found, "Should have isDelete in control")
+	assert.True(t, isDelete.Bool(), "isDelete should be true for shutdown events")
+
+	// Verify body contains basic fields (no auth_check for shutdown)
+	body := logRecord.Body().Map()
+	agentInstanceId, found := body.Get("agentInstanceId")
+	assert.True(t, found, "Body should have agentInstanceId field")
+	assert.Equal(t, testAgentID, agentInstanceId.Str())
+
+	agentStartTime, found := body.Get("agentStartTime")
+	assert.True(t, found, "Body should have agentStartTime field")
+	assert.Greater(t, agentStartTime.Int(), int64(0), "agentStartTime should be positive")
+
+	// Verify authCheck is NOT present (shutdown heartbeat doesn't include it)
+	_, found = body.Get("authCheck")
+	assert.False(t, found, "Body should NOT have authCheck field for shutdown events")
+}
+
+func TestShutdownSendsHeartbeat(t *testing.T) {
+	// Set up environment variables
+	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
+	defer func() {
+		if originalID != "" {
+			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
+	}()
+
+	testAgentID := "test-agent-shutdown-integration"
+	testAgentVersion := "1.2.3"
+	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
+
+	// Create receiver
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+
+	sink := &consumertest.LogsSink{}
+	receiver, err := factory.CreateLogs(
+		context.Background(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+
+	// Start the receiver
+	err = receiver.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	// Clear initial heartbeats from start
+	sink.Reset()
+
+	// Shutdown the receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Verify shutdown heartbeat was sent
+	require.Equal(t, 1, sink.LogRecordCount(), "Should have sent one shutdown heartbeat")
+
+	logs := sink.AllLogs()
+	require.Equal(t, 1, len(logs), "Should have one log batch")
+
+	logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	// Verify it's a shutdown event
+	observeTransform, found := logRecord.Attributes().Get("observe_transform")
+	assert.True(t, found)
+	transformMap := observeTransform.Map()
+
+	control, found := transformMap.Get("control")
+	assert.True(t, found)
+	controlMap := control.Map()
+
+	eventType, found := controlMap.Get("eventType")
+	assert.True(t, found)
+	assert.Equal(t, "SHUTDOWN", eventType.Str())
+
+	isDelete, found := controlMap.Get("isDelete")
+	assert.True(t, found)
+	assert.True(t, isDelete.Bool())
+}
+
+func TestShutdownRespectsContext(t *testing.T) {
+	// Set up environment variables
+	originalID := os.Getenv("OBSERVE_AGENT_INSTANCE_ID")
+	originalVersion := os.Getenv("OBSERVE_AGENT_VERSION")
+	defer func() {
+		if originalID != "" {
+			os.Setenv("OBSERVE_AGENT_INSTANCE_ID", originalID)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_INSTANCE_ID")
+		}
+		if originalVersion != "" {
+			os.Setenv("OBSERVE_AGENT_VERSION", originalVersion)
+		} else {
+			os.Unsetenv("OBSERVE_AGENT_VERSION")
+		}
+	}()
+
+	testAgentID := "test-agent-context-timeout"
+	testAgentVersion := "1.2.3"
+	os.Setenv("OBSERVE_AGENT_INSTANCE_ID", testAgentID)
+	os.Setenv("OBSERVE_AGENT_VERSION", testAgentVersion)
+
+	// Create receiver
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+
+	sink := &consumertest.LogsSink{}
+	receiver, err := factory.CreateLogs(
+		context.Background(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+
+	// Start the receiver
+	err = receiver.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	// Create a context with a very short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	// Wait for context to expire
+	time.Sleep(10 * time.Millisecond)
+
+	// Shutdown should complete even with expired context, just log the error
+	// Note: With expired context, retry should be skipped
+	err = receiver.Shutdown(ctx)
+	require.NoError(t, err, "Shutdown should not return error even if heartbeat fails")
 }
 
 func TestConfigHeartbeatTimer(t *testing.T) {
