@@ -126,6 +126,8 @@ func (r *HeartbeatReceiver) Start(ctx context.Context, host component.Host) erro
 
 func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	r.settings.Logger.Info("Shutting down heartbeat receiver")
+
+	// Stop tickers and cancel context first to prevent regular heartbeats during shutdown
 	if r.ticker != nil {
 		r.ticker.Stop()
 	}
@@ -134,6 +136,27 @@ func (r *HeartbeatReceiver) Shutdown(ctx context.Context) error {
 	}
 	if r.cancel != nil {
 		r.cancel()
+	}
+
+	// Send shutdown heartbeat with one retry
+	if err := r.generateShutdownHeartbeat(ctx); err != nil {
+		r.settings.Logger.Warn("failed to generate shutdown heartbeat, retrying once", zap.Error(err))
+
+		// wait 1 second before retrying
+		time.Sleep(1 * time.Second)
+		select {
+		// Check if context is still valid before retrying
+		case <-ctx.Done():
+			r.settings.Logger.Error("context cancelled, skipping retry", zap.Error(ctx.Err()))
+		default:
+			// if context isn't done, retry
+			if err := r.generateShutdownHeartbeat(ctx); err != nil {
+				r.settings.Logger.Error("failed to generate shutdown heartbeat after retry", zap.Error(err))
+				// Continue with shutdown even if heartbeat fails
+			} else {
+				r.settings.Logger.Info("successfully sent shutdown heartbeat on retry")
+			}
+		}
 	}
 
 	return nil
@@ -224,14 +247,14 @@ func (r *HeartbeatReceiver) generateLifecycleHeartbeat(ctx context.Context) erro
 
 	// Add lifecycle-specific body fields
 	body := logRecord.Body().SetEmptyMap()
-	body.PutStr("agent_instance_id", r.state.AgentInstanceId)
-	body.PutInt("agent_start_time", r.state.AgentStartTime)
+	body.PutStr("agentInstanceId", r.state.AgentInstanceId)
+	body.PutInt("agentStartTime", r.state.AgentStartTime)
 
 	// Add auth check results to the log body under a nested object
-	authCheck := body.PutEmptyMap("auth_check")
+	authCheck := body.PutEmptyMap("authCheck")
 	authCheck.PutBool("passed", authResult.Passed)
 	authCheck.PutStr("url", authResult.URL)
-	authCheck.PutInt("response_code", int64(authResult.ResponseCode))
+	authCheck.PutInt("responseCode", int64(authResult.ResponseCode))
 	if authResult.Error != "" {
 		authCheck.PutStr("error", authResult.Error)
 	}
@@ -337,6 +360,52 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 	r.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
 	if err != nil {
 		r.settings.Logger.Error("failed to send config heartbeat logs", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+// generateShutdownHeartbeat creates and sends a shutdown heartbeat event
+func (r *HeartbeatReceiver) generateShutdownHeartbeat(ctx context.Context) error {
+	r.settings.Logger.Info("Sending shutdown heartbeat",
+		zap.String("agent_instance_id", r.state.AgentInstanceId))
+
+	// Create log entry
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+
+	// Add common heartbeat fields
+	r.addCommonHeartbeatFields(resourceLogs, logRecord, "AgentLifecycleEvent")
+
+	// Add control subobject to observe_transform
+	var observe_transform pcommon.Map
+	observeTransformValue, exists := logRecord.Attributes().Get("observe_transform")
+	if !exists {
+		observe_transform = logRecord.Attributes().PutEmptyMap("observe_transform")
+	} else {
+		if observeTransformValue.Type() != pcommon.ValueTypeMap {
+			return fmt.Errorf("observe_transform attribute is not a map")
+		}
+		observe_transform = observeTransformValue.Map()
+	}
+	controlMap := observe_transform.PutEmptyMap("control")
+	controlMap.PutStr("eventType", "SHUTDOWN")
+	controlMap.PutBool("isDelete", true)
+
+	// Add shutdown-specific body fields
+	body := logRecord.Body().SetEmptyMap()
+	body.PutStr("agentInstanceId", r.state.AgentInstanceId)
+	body.PutInt("agentStartTime", r.state.AgentStartTime)
+
+	// Send the log
+	obsCtx := r.obsrecv.StartLogsOp(ctx)
+	err := r.nextConsumer.ConsumeLogs(ctx, logs)
+	r.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
+	if err != nil {
+		r.settings.Logger.Error("failed to send shutdown heartbeat logs", zap.Error(err))
 		return err
 	}
 
