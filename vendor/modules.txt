@@ -1372,6 +1372,7 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows
@@ -1696,6 +1697,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceive
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/parser
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.138.0
+## explicit; go 1.24.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.138.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
