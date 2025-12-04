@@ -95,6 +95,7 @@ This section lists the components that are included in the Observe Distribution 
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                         |                                     |
 | [sqlquery][sqlqueryreceiver]                             |                                                       |                                                        |                                         |                                     |
 | [statsd][statsdreceiver]                                 |                                                       |                                                        |                                         |                                     |
+| [syslog][syslogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [tcplog][tcplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [windowseventlog][windowseventlogreceiver]               |                                                       |                                                        |                                         |                                     |
@@ -122,6 +123,7 @@ This section lists the components that are included in the Observe Distribution 
 [snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/snmpreceiver
 [sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/sqlqueryreceiver
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/statsdreceiver
+[syslogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/syslogreceiver
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/tcplogreceiver
 [udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/udplogreceiver
 [windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/windowseventlogreceiver
