@@ -90,6 +90,7 @@ This section lists the components that are included in the Observe Distribution 
 | [mongodb][mongodbreceiver]                               | [tailsampling][tailsamplingprocessor]                 |                                                        |                                         |                                     |
 | [nop][nopreceiver]                                       | [transform][transformprocessor]                       |                                                        |                                         |                                     |
 | [otlp][otlpreceiver]                                     |                                                       |                                                        |                                         |                                     |
+| [postgresql][postgresqlreceiver]                         |                                                       |                                                        |                                         |                                     |
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                         |                                     |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                         |                                     |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                         |                                     |
@@ -119,6 +120,7 @@ This section lists the components that are included in the Observe Distribution 
 [nopreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.138.0/receiver/nopreceiver
 [otlpreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.138.0/receiver/otlpreceiver
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/prometheusreceiver
+[postgresqlreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.138.0/receiver/postgresqlreceiver
 [redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/redisreceiver
 [snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/snmpreceiver
 [sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.138.0/receiver/sqlqueryreceiver

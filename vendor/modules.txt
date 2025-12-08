@@ -874,6 +874,7 @@ github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/golang-lru/v2 v2.0.7
 ## explicit; go 1.18
 github.com/hashicorp/golang-lru/v2
+github.com/hashicorp/golang-lru/v2/expirable
 github.com/hashicorp/golang-lru/v2/internal
 github.com/hashicorp/golang-lru/v2/simplelru
 # github.com/hashicorp/nomad/api v0.0.0-20241218080744-e3ac00f30eec
@@ -1061,8 +1062,8 @@ github.com/linode/go-metadata
 github.com/linode/linodego
 github.com/linode/linodego/internal/duration
 github.com/linode/linodego/internal/parseabletime
-# github.com/lufia/plan9stats v0.0.0-20240513124658-fba389f38bae
-## explicit; go 1.16
+# github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35
+## explicit; go 1.21
 github.com/lufia/plan9stats
 # github.com/magefile/mage v1.15.0
 ## explicit; go 1.12
@@ -1225,6 +1226,7 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/e
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil
 # github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.138.0
@@ -1671,6 +1673,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsr
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.138.0
+## explicit; go 1.24.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.138.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
