@@ -145,6 +145,8 @@ The following connection parameters are supported:
 
   - crlOnDiskCacheDisabled: set to disable on-disk caching of CRLs (on-disk cache may help with cold starts).
 
+  - crlDownloadMaxSize: maximum size (in bytes) of a CRL to download. Default is 200MB.
+
   - SNOWFLAKE_CRL_ON_DISK_CACHE_DIR (environment variable): set to customize the directory for on-disk caching of CRLs.
 
   - SNOWFLAKE_CRL_ON_DISK_CACHE_REMOVAL_DELAY (environment variable): set the delay (in seconds) for removing the on-disk cache (for debuggability).
@@ -163,6 +165,10 @@ The following connection parameters are supported:
 
   - tracing: Specifies the logging level to be used. Set to error by default.
     Valid values are trace, debug, info, print, warning, error, fatal, panic.
+
+  - logQueryText: when set to true, the full query text will be logged. Be aware that it may include sensitive information. Default value is false.
+
+  - logQueryParameters: when set to true, the parameters will be logged. Requires logQueryText to be enabled first. Be aware that it may include sensitive information. Default value is false.
 
   - disableQueryContextCache: disables parsing of query context returned from server and resending it to server as well.
     Default value is false.

@@ -305,6 +305,7 @@ func (util *snowflakeGcsClient) nativeDownloadFile(
 			gcsHeaders["Authorization"] = "Bearer " + accessToken
 		}
 	}
+	logger.Debugf("GCS Client: Send Get Request to %v", downloadURL.String())
 
 	// First, get file size with a HEAD request to determine if multi-part download is needed
 	// Also extract metadata during this request
@@ -803,7 +804,7 @@ func (util *snowflakeGcsClient) isTokenExpired(resp *http.Response) bool {
 }
 
 func newGcsClient(cfg *Config, telemetry *snowflakeTelemetry) (gcsAPI, error) {
-	transport, err := newTransportFactory(cfg, telemetry).createTransport()
+	transport, err := newTransportFactory(cfg, telemetry).createTransport(cfg.transportConfigFor(transportTypeCloudProvider))
 	if err != nil {
 		return nil, err
 	}
