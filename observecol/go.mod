@@ -2,7 +2,7 @@
 
 module github.com/observeinc/observe-agent/observecol
 
-go 1.24.9
+go 1.24.11
 
 toolchain go1.24.11
 
