@@ -45,7 +45,7 @@ func (util *snowflakeAzureClient) createClient(info *execResponseStageInfo, _ bo
 	if err != nil {
 		return nil, err
 	}
-	transport, err := newTransportFactory(util.cfg, telemetry).createTransport()
+	transport, err := newTransportFactory(util.cfg, telemetry).createTransport(util.cfg.transportConfigFor(transportTypeCloudProvider))
 	if err != nil {
 		return nil, err
 	}
@@ -216,11 +216,11 @@ func (util *snowflakeAzureClient) uploadFile(
 		var f *os.File
 		f, err = os.Open(dataFile)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer func() {
 			if err = f.Close(); err != nil {
-				logger.Warnf("failed to close the %v file: %v", dataFile, err)
+				logger.Warnf("Failed to close the %v file: %v", dataFile, err)
 			}
 		}()
 
@@ -272,6 +272,7 @@ func (util *snowflakeAzureClient) nativeDownloadFile(
 		return err
 	}
 	path := azureLoc.path + strings.TrimLeft(meta.srcFileName, "/")
+	logger.Debugf("AZURE CLIENT: Send Get Request to the bucket: %v, file: %v", meta.stageInfo.Location, meta.srcFileName)
 	client, ok := meta.client.(*azblob.Client)
 	if !ok {
 		return &SnowflakeError{
@@ -310,7 +311,7 @@ func (util *snowflakeAzureClient) nativeDownloadFile(
 	} else {
 		f, err := os.OpenFile(fullDstFileName, os.O_CREATE|os.O_WRONLY, readWriteFileMode)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer func() {
 			if err = f.Close(); err != nil {
@@ -364,7 +365,7 @@ func (util *snowflakeAzureClient) detectAzureTokenExpireError(resp *http.Respons
 }
 
 func createContainerClient(clientURL string, cfg *Config, telemetry *snowflakeTelemetry) (*container.Client, error) {
-	transport, err := newTransportFactory(cfg, telemetry).createTransport()
+	transport, err := newTransportFactory(cfg, telemetry).createTransport(cfg.transportConfigFor(transportTypeCloudProvider))
 	if err != nil {
 		return nil, err
 	}

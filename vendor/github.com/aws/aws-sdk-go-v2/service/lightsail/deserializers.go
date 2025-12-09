@@ -19,16 +19,7 @@ import (
 	"io"
 	"math"
 	"strings"
-	"time"
 )
-
-func deserializeS3Expires(v string) (*time.Time, error) {
-	t, err := smithytime.ParseHTTPDate(v)
-	if err != nil {
-		return nil, nil
-	}
-	return &t, nil
-}
 
 type awsAwsjson11_deserializeOpAllocateStaticIp struct {
 }
@@ -142,6 +133,9 @@ func awsAwsjson11_deserializeOpErrorAllocateStaticIp(response *smithyhttp.Respon
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -398,6 +392,9 @@ func awsAwsjson11_deserializeOpErrorAttachDisk(response *smithyhttp.Response, me
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -526,6 +523,9 @@ func awsAwsjson11_deserializeOpErrorAttachInstancesToLoadBalancer(response *smit
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -656,6 +656,9 @@ func awsAwsjson11_deserializeOpErrorAttachLoadBalancerTlsCertificate(response *s
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -784,6 +787,9 @@ func awsAwsjson11_deserializeOpErrorAttachStaticIp(response *smithyhttp.Response
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -914,6 +920,9 @@ func awsAwsjson11_deserializeOpErrorCloseInstancePublicPorts(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -1043,6 +1052,9 @@ func awsAwsjson11_deserializeOpErrorCopySnapshot(response *smithyhttp.Response, 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -1162,6 +1174,9 @@ func awsAwsjson11_deserializeOpErrorCreateBucket(response *smithyhttp.Response, 
 
 	case strings.EqualFold("InvalidInputException", errorCode):
 		return awsAwsjson11_deserializeErrorInvalidInputException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -1286,6 +1301,9 @@ func awsAwsjson11_deserializeOpErrorCreateBucketAccessKey(response *smithyhttp.R
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -1408,6 +1426,9 @@ func awsAwsjson11_deserializeOpErrorCreateCertificate(response *smithyhttp.Respo
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -1538,6 +1559,9 @@ func awsAwsjson11_deserializeOpErrorCreateCloudFormationStack(response *smithyht
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -1664,6 +1688,9 @@ func awsAwsjson11_deserializeOpErrorCreateContactMethod(response *smithyhttp.Res
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -1786,6 +1813,9 @@ func awsAwsjson11_deserializeOpErrorCreateContainerService(response *smithyhttp.
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -1910,6 +1940,9 @@ func awsAwsjson11_deserializeOpErrorCreateContainerServiceDeployment(response *s
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -2032,6 +2065,9 @@ func awsAwsjson11_deserializeOpErrorCreateContainerServiceRegistryLogin(response
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -2162,6 +2198,9 @@ func awsAwsjson11_deserializeOpErrorCreateDisk(response *smithyhttp.Response, me
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -2291,6 +2330,9 @@ func awsAwsjson11_deserializeOpErrorCreateDiskFromSnapshot(response *smithyhttp.
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -2419,6 +2461,9 @@ func awsAwsjson11_deserializeOpErrorCreateDiskSnapshot(response *smithyhttp.Resp
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -2675,6 +2720,9 @@ func awsAwsjson11_deserializeOpErrorCreateDomain(response *smithyhttp.Response, 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -2804,6 +2852,9 @@ func awsAwsjson11_deserializeOpErrorCreateDomainEntry(response *smithyhttp.Respo
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -2926,6 +2977,9 @@ func awsAwsjson11_deserializeOpErrorCreateGUISessionAccessDetails(response *smit
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -3056,6 +3110,9 @@ func awsAwsjson11_deserializeOpErrorCreateInstances(response *smithyhttp.Respons
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -3184,6 +3241,9 @@ func awsAwsjson11_deserializeOpErrorCreateInstancesFromSnapshot(response *smithy
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -3314,6 +3374,9 @@ func awsAwsjson11_deserializeOpErrorCreateInstanceSnapshot(response *smithyhttp.
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -3442,6 +3505,9 @@ func awsAwsjson11_deserializeOpErrorCreateKeyPair(response *smithyhttp.Response,
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -3572,6 +3638,9 @@ func awsAwsjson11_deserializeOpErrorCreateLoadBalancer(response *smithyhttp.Resp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -3700,6 +3769,9 @@ func awsAwsjson11_deserializeOpErrorCreateLoadBalancerTlsCertificate(response *s
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -3830,6 +3902,9 @@ func awsAwsjson11_deserializeOpErrorCreateRelationalDatabase(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -3958,6 +4033,9 @@ func awsAwsjson11_deserializeOpErrorCreateRelationalDatabaseFromSnapshot(respons
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -4088,6 +4166,9 @@ func awsAwsjson11_deserializeOpErrorCreateRelationalDatabaseSnapshot(response *s
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -4213,6 +4294,9 @@ func awsAwsjson11_deserializeOpErrorDeleteAlarm(response *smithyhttp.Response, m
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -4340,6 +4424,9 @@ func awsAwsjson11_deserializeOpErrorDeleteAutoSnapshot(response *smithyhttp.Resp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -4462,6 +4549,9 @@ func awsAwsjson11_deserializeOpErrorDeleteBucket(response *smithyhttp.Response, 
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -4586,6 +4676,9 @@ func awsAwsjson11_deserializeOpErrorDeleteBucketAccessKey(response *smithyhttp.R
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -4708,6 +4801,9 @@ func awsAwsjson11_deserializeOpErrorDeleteCertificate(response *smithyhttp.Respo
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -4835,6 +4931,9 @@ func awsAwsjson11_deserializeOpErrorDeleteContactMethod(response *smithyhttp.Res
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -4958,6 +5057,9 @@ func awsAwsjson11_deserializeOpErrorDeleteContainerImage(response *smithyhttp.Re
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -5080,6 +5182,9 @@ func awsAwsjson11_deserializeOpErrorDeleteContainerService(response *smithyhttp.
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -5210,6 +5315,9 @@ func awsAwsjson11_deserializeOpErrorDeleteDisk(response *smithyhttp.Response, me
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -5338,6 +5446,9 @@ func awsAwsjson11_deserializeOpErrorDeleteDiskSnapshot(response *smithyhttp.Resp
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -5594,6 +5705,9 @@ func awsAwsjson11_deserializeOpErrorDeleteDomain(response *smithyhttp.Response, 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -5722,6 +5836,9 @@ func awsAwsjson11_deserializeOpErrorDeleteDomainEntry(response *smithyhttp.Respo
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -5852,6 +5969,9 @@ func awsAwsjson11_deserializeOpErrorDeleteInstance(response *smithyhttp.Response
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -5980,6 +6100,9 @@ func awsAwsjson11_deserializeOpErrorDeleteInstanceSnapshot(response *smithyhttp.
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -6110,6 +6233,9 @@ func awsAwsjson11_deserializeOpErrorDeleteKeyPair(response *smithyhttp.Response,
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -6238,6 +6364,9 @@ func awsAwsjson11_deserializeOpErrorDeleteKnownHostKeys(response *smithyhttp.Res
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -6368,6 +6497,9 @@ func awsAwsjson11_deserializeOpErrorDeleteLoadBalancer(response *smithyhttp.Resp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -6496,6 +6628,9 @@ func awsAwsjson11_deserializeOpErrorDeleteLoadBalancerTlsCertificate(response *s
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -6626,6 +6761,9 @@ func awsAwsjson11_deserializeOpErrorDeleteRelationalDatabase(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -6754,6 +6892,9 @@ func awsAwsjson11_deserializeOpErrorDeleteRelationalDatabaseSnapshot(response *s
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -7010,6 +7151,9 @@ func awsAwsjson11_deserializeOpErrorDetachDisk(response *smithyhttp.Response, me
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -7138,6 +7282,9 @@ func awsAwsjson11_deserializeOpErrorDetachInstancesFromLoadBalancer(response *sm
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -7268,6 +7415,9 @@ func awsAwsjson11_deserializeOpErrorDetachStaticIp(response *smithyhttp.Response
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -7393,6 +7543,9 @@ func awsAwsjson11_deserializeOpErrorDisableAddOn(response *smithyhttp.Response, 
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -7523,6 +7676,9 @@ func awsAwsjson11_deserializeOpErrorDownloadDefaultKeyPair(response *smithyhttp.
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -7648,6 +7804,9 @@ func awsAwsjson11_deserializeOpErrorEnableAddOn(response *smithyhttp.Response, m
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -7778,6 +7937,9 @@ func awsAwsjson11_deserializeOpErrorExportSnapshot(response *smithyhttp.Response
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -7907,6 +8069,9 @@ func awsAwsjson11_deserializeOpErrorGetActiveNames(response *smithyhttp.Response
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -8033,6 +8198,9 @@ func awsAwsjson11_deserializeOpErrorGetAlarms(response *smithyhttp.Response, met
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -8158,6 +8326,9 @@ func awsAwsjson11_deserializeOpErrorGetAutoSnapshots(response *smithyhttp.Respon
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -8288,6 +8459,9 @@ func awsAwsjson11_deserializeOpErrorGetBlueprints(response *smithyhttp.Response,
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -8411,6 +8585,9 @@ func awsAwsjson11_deserializeOpErrorGetBucketAccessKeys(response *smithyhttp.Res
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -8530,6 +8707,9 @@ func awsAwsjson11_deserializeOpErrorGetBucketBundles(response *smithyhttp.Respon
 
 	case strings.EqualFold("InvalidInputException", errorCode):
 		return awsAwsjson11_deserializeErrorInvalidInputException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -8654,6 +8834,9 @@ func awsAwsjson11_deserializeOpErrorGetBucketMetricData(response *smithyhttp.Res
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -8776,6 +8959,9 @@ func awsAwsjson11_deserializeOpErrorGetBuckets(response *smithyhttp.Response, me
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -8906,6 +9092,9 @@ func awsAwsjson11_deserializeOpErrorGetBundles(response *smithyhttp.Response, me
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -9028,6 +9217,9 @@ func awsAwsjson11_deserializeOpErrorGetCertificates(response *smithyhttp.Respons
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -9158,6 +9350,9 @@ func awsAwsjson11_deserializeOpErrorGetCloudFormationStackRecords(response *smit
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -9284,6 +9479,9 @@ func awsAwsjson11_deserializeOpErrorGetContactMethods(response *smithyhttp.Respo
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -9400,6 +9598,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerAPIMetadata(response *smithyhttp
 	switch {
 	case strings.EqualFold("AccessDeniedException", errorCode):
 		return awsAwsjson11_deserializeErrorAccessDeniedException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -9524,6 +9725,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerImages(response *smithyhttp.Resp
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -9646,6 +9850,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerLog(response *smithyhttp.Respons
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -9770,6 +9977,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerServiceDeployments(response *smi
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -9892,6 +10102,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerServiceMetricData(response *smit
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -10016,6 +10229,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerServicePowers(response *smithyht
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -10139,6 +10355,9 @@ func awsAwsjson11_deserializeOpErrorGetContainerServices(response *smithyhttp.Re
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -10261,6 +10480,9 @@ func awsAwsjson11_deserializeOpErrorGetCostEstimate(response *smithyhttp.Respons
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -10391,6 +10613,9 @@ func awsAwsjson11_deserializeOpErrorGetDisk(response *smithyhttp.Response, metad
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -10519,6 +10744,9 @@ func awsAwsjson11_deserializeOpErrorGetDisks(response *smithyhttp.Response, meta
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -10649,6 +10877,9 @@ func awsAwsjson11_deserializeOpErrorGetDiskSnapshot(response *smithyhttp.Respons
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -10777,6 +11008,9 @@ func awsAwsjson11_deserializeOpErrorGetDiskSnapshots(response *smithyhttp.Respon
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -11411,6 +11645,9 @@ func awsAwsjson11_deserializeOpErrorGetDomain(response *smithyhttp.Response, met
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -11539,6 +11776,9 @@ func awsAwsjson11_deserializeOpErrorGetDomains(response *smithyhttp.Response, me
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -11669,6 +11909,9 @@ func awsAwsjson11_deserializeOpErrorGetExportSnapshotRecords(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -11797,6 +12040,9 @@ func awsAwsjson11_deserializeOpErrorGetInstance(response *smithyhttp.Response, m
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -11927,6 +12173,9 @@ func awsAwsjson11_deserializeOpErrorGetInstanceAccessDetails(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -12055,6 +12304,9 @@ func awsAwsjson11_deserializeOpErrorGetInstanceMetricData(response *smithyhttp.R
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -12185,6 +12437,9 @@ func awsAwsjson11_deserializeOpErrorGetInstancePortStates(response *smithyhttp.R
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -12313,6 +12568,9 @@ func awsAwsjson11_deserializeOpErrorGetInstances(response *smithyhttp.Response, 
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -12443,6 +12701,9 @@ func awsAwsjson11_deserializeOpErrorGetInstanceSnapshot(response *smithyhttp.Res
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -12571,6 +12832,9 @@ func awsAwsjson11_deserializeOpErrorGetInstanceSnapshots(response *smithyhttp.Re
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -12701,6 +12965,9 @@ func awsAwsjson11_deserializeOpErrorGetInstanceState(response *smithyhttp.Respon
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -12829,6 +13096,9 @@ func awsAwsjson11_deserializeOpErrorGetKeyPair(response *smithyhttp.Response, me
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -12959,6 +13229,9 @@ func awsAwsjson11_deserializeOpErrorGetKeyPairs(response *smithyhttp.Response, m
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -13087,6 +13360,9 @@ func awsAwsjson11_deserializeOpErrorGetLoadBalancer(response *smithyhttp.Respons
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -13217,6 +13493,9 @@ func awsAwsjson11_deserializeOpErrorGetLoadBalancerMetricData(response *smithyht
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -13345,6 +13624,9 @@ func awsAwsjson11_deserializeOpErrorGetLoadBalancers(response *smithyhttp.Respon
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -13475,6 +13757,9 @@ func awsAwsjson11_deserializeOpErrorGetLoadBalancerTlsCertificates(response *smi
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -13597,6 +13882,9 @@ func awsAwsjson11_deserializeOpErrorGetLoadBalancerTlsPolicies(response *smithyh
 
 	case strings.EqualFold("InvalidInputException", errorCode):
 		return awsAwsjson11_deserializeErrorInvalidInputException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -13727,6 +14015,9 @@ func awsAwsjson11_deserializeOpErrorGetOperation(response *smithyhttp.Response, 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -13855,6 +14146,9 @@ func awsAwsjson11_deserializeOpErrorGetOperations(response *smithyhttp.Response,
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -13985,6 +14279,9 @@ func awsAwsjson11_deserializeOpErrorGetOperationsForResource(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -14113,6 +14410,9 @@ func awsAwsjson11_deserializeOpErrorGetRegions(response *smithyhttp.Response, me
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -14243,6 +14543,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabase(response *smithyhttp.R
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -14371,6 +14674,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseBlueprints(response *sm
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -14501,6 +14807,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseBundles(response *smith
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -14629,6 +14938,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseEvents(response *smithy
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -14759,6 +15071,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseLogEvents(response *smi
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -14887,6 +15202,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseLogStreams(response *sm
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -15017,6 +15335,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseMasterUserPassword(resp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -15145,6 +15466,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseMetricData(response *sm
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -15275,6 +15599,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseParameters(response *sm
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -15403,6 +15730,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabases(response *smithyhttp.
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -15533,6 +15863,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseSnapshot(response *smit
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -15662,6 +15995,9 @@ func awsAwsjson11_deserializeOpErrorGetRelationalDatabaseSnapshots(response *smi
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -15784,6 +16120,9 @@ func awsAwsjson11_deserializeOpErrorGetSetupHistory(response *smithyhttp.Respons
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -15914,6 +16253,9 @@ func awsAwsjson11_deserializeOpErrorGetStaticIp(response *smithyhttp.Response, m
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -16042,6 +16384,9 @@ func awsAwsjson11_deserializeOpErrorGetStaticIps(response *smithyhttp.Response, 
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -16172,6 +16517,9 @@ func awsAwsjson11_deserializeOpErrorImportKeyPair(response *smithyhttp.Response,
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -16300,6 +16648,9 @@ func awsAwsjson11_deserializeOpErrorIsVpcPeered(response *smithyhttp.Response, m
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -16430,6 +16781,9 @@ func awsAwsjson11_deserializeOpErrorOpenInstancePublicPorts(response *smithyhttp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -16559,6 +16913,9 @@ func awsAwsjson11_deserializeOpErrorPeerVpc(response *smithyhttp.Response, metad
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -16684,6 +17041,9 @@ func awsAwsjson11_deserializeOpErrorPutAlarm(response *smithyhttp.Response, meta
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -16814,6 +17174,9 @@ func awsAwsjson11_deserializeOpErrorPutInstancePublicPorts(response *smithyhttp.
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -16942,6 +17305,9 @@ func awsAwsjson11_deserializeOpErrorRebootInstance(response *smithyhttp.Response
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -17072,6 +17438,9 @@ func awsAwsjson11_deserializeOpErrorRebootRelationalDatabase(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -17194,6 +17563,9 @@ func awsAwsjson11_deserializeOpErrorRegisterContainerImage(response *smithyhttp.
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -17323,6 +17695,9 @@ func awsAwsjson11_deserializeOpErrorReleaseStaticIp(response *smithyhttp.Respons
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -17576,6 +17951,9 @@ func awsAwsjson11_deserializeOpErrorSendContactMethodVerification(response *smit
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -17705,6 +18083,9 @@ func awsAwsjson11_deserializeOpErrorSetIpAddressType(response *smithyhttp.Respon
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -17827,6 +18208,9 @@ func awsAwsjson11_deserializeOpErrorSetResourceAccessForBucket(response *smithyh
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -17951,6 +18335,9 @@ func awsAwsjson11_deserializeOpErrorSetupInstanceHttps(response *smithyhttp.Resp
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -18073,6 +18460,9 @@ func awsAwsjson11_deserializeOpErrorStartGUISession(response *smithyhttp.Respons
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -18203,6 +18593,9 @@ func awsAwsjson11_deserializeOpErrorStartInstance(response *smithyhttp.Response,
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -18332,6 +18725,9 @@ func awsAwsjson11_deserializeOpErrorStartRelationalDatabase(response *smithyhttp
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -18454,6 +18850,9 @@ func awsAwsjson11_deserializeOpErrorStopGUISession(response *smithyhttp.Response
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -18584,6 +18983,9 @@ func awsAwsjson11_deserializeOpErrorStopInstance(response *smithyhttp.Response, 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -18712,6 +19114,9 @@ func awsAwsjson11_deserializeOpErrorStopRelationalDatabase(response *smithyhttp.
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -18842,6 +19247,9 @@ func awsAwsjson11_deserializeOpErrorTagResource(response *smithyhttp.Response, m
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -18967,6 +19375,9 @@ func awsAwsjson11_deserializeOpErrorTestAlarm(response *smithyhttp.Response, met
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -19097,6 +19508,9 @@ func awsAwsjson11_deserializeOpErrorUnpeerVpc(response *smithyhttp.Response, met
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -19226,6 +19640,9 @@ func awsAwsjson11_deserializeOpErrorUntagResource(response *smithyhttp.Response,
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -19348,6 +19765,9 @@ func awsAwsjson11_deserializeOpErrorUpdateBucket(response *smithyhttp.Response, 
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -19472,6 +19892,9 @@ func awsAwsjson11_deserializeOpErrorUpdateBucketBundle(response *smithyhttp.Resp
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -19594,6 +20017,9 @@ func awsAwsjson11_deserializeOpErrorUpdateContainerService(response *smithyhttp.
 
 	case strings.EqualFold("NotFoundException", errorCode):
 		return awsAwsjson11_deserializeErrorNotFoundException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -19976,6 +20402,9 @@ func awsAwsjson11_deserializeOpErrorUpdateDomainEntry(response *smithyhttp.Respo
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -20104,6 +20533,9 @@ func awsAwsjson11_deserializeOpErrorUpdateInstanceMetadataOptions(response *smit
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -20234,6 +20666,9 @@ func awsAwsjson11_deserializeOpErrorUpdateLoadBalancerAttribute(response *smithy
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -20363,6 +20798,9 @@ func awsAwsjson11_deserializeOpErrorUpdateRelationalDatabase(response *smithyhtt
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
 
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
+
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
 
@@ -20491,6 +20929,9 @@ func awsAwsjson11_deserializeOpErrorUpdateRelationalDatabaseParameters(response 
 
 	case strings.EqualFold("OperationFailureException", errorCode):
 		return awsAwsjson11_deserializeErrorOperationFailureException(response, errorBody)
+
+	case strings.EqualFold("RegionSetupInProgressException", errorCode):
+		return awsAwsjson11_deserializeErrorRegionSetupInProgressException(response, errorBody)
 
 	case strings.EqualFold("ServiceException", errorCode):
 		return awsAwsjson11_deserializeErrorServiceException(response, errorBody)
@@ -20668,6 +21109,41 @@ func awsAwsjson11_deserializeErrorOperationFailureException(response *smithyhttp
 
 	output := &types.OperationFailureException{}
 	err := awsAwsjson11_deserializeDocumentOperationFailureException(&output, shape)
+
+	if err != nil {
+		var snapshot bytes.Buffer
+		io.Copy(&snapshot, ringBuffer)
+		err = &smithy.DeserializationError{
+			Err:      fmt.Errorf("failed to decode response body, %w", err),
+			Snapshot: snapshot.Bytes(),
+		}
+		return err
+	}
+
+	errorBody.Seek(0, io.SeekStart)
+	return output
+}
+
+func awsAwsjson11_deserializeErrorRegionSetupInProgressException(response *smithyhttp.Response, errorBody *bytes.Reader) error {
+	var buff [1024]byte
+	ringBuffer := smithyio.NewRingBuffer(buff[:])
+
+	body := io.TeeReader(errorBody, ringBuffer)
+	decoder := json.NewDecoder(body)
+	decoder.UseNumber()
+	var shape interface{}
+	if err := decoder.Decode(&shape); err != nil && err != io.EOF {
+		var snapshot bytes.Buffer
+		io.Copy(&snapshot, ringBuffer)
+		err = &smithy.DeserializationError{
+			Err:      fmt.Errorf("failed to decode response body, %w", err),
+			Snapshot: snapshot.Bytes(),
+		}
+		return err
+	}
+
+	output := &types.RegionSetupInProgressException{}
+	err := awsAwsjson11_deserializeDocumentRegionSetupInProgressException(&output, shape)
 
 	if err != nil {
 		var snapshot bytes.Buffer
@@ -31327,6 +31803,73 @@ func awsAwsjson11_deserializeDocumentRegionList(v *[]types.Region, value interfa
 
 	}
 	*v = cv
+	return nil
+}
+
+func awsAwsjson11_deserializeDocumentRegionSetupInProgressException(v **types.RegionSetupInProgressException, value interface{}) error {
+	if v == nil {
+		return fmt.Errorf("unexpected nil of type %T", v)
+	}
+	if value == nil {
+		return nil
+	}
+
+	shape, ok := value.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected JSON type %v", value)
+	}
+
+	var sv *types.RegionSetupInProgressException
+	if *v == nil {
+		sv = &types.RegionSetupInProgressException{}
+	} else {
+		sv = *v
+	}
+
+	for key, value := range shape {
+		switch key {
+		case "code":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected string to be of type string, got %T instead", value)
+				}
+				sv.Code = ptr.String(jtv)
+			}
+
+		case "docs":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected string to be of type string, got %T instead", value)
+				}
+				sv.Docs = ptr.String(jtv)
+			}
+
+		case "message", "Message":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected string to be of type string, got %T instead", value)
+				}
+				sv.Message = ptr.String(jtv)
+			}
+
+		case "tip":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected string to be of type string, got %T instead", value)
+				}
+				sv.Tip = ptr.String(jtv)
+			}
+
+		default:
+			_, _ = key, value
+
+		}
+	}
+	*v = sv
 	return nil
 }
 
