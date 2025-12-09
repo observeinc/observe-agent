@@ -4,6 +4,8 @@ module github.com/observeinc/observe-agent/observecol
 
 go 1.24.11
 
+toolchain go1.24.11
+
 require (
 	github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
@@ -14,6 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.141.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.141.0

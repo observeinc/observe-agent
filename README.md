@@ -79,7 +79,7 @@ This section lists the components that are included in the Observe Distribution 
 | [filestats][filestatsreceiver]                           | [filter][filterprocessor]                             | [otlp][otlpexporter]                                   | [zpages][zpagesextension]               |                                     |
 | [hostmetrics][hostmetricsreceiver]                       | [groupbyattrs][groupbyattrsprocessor]                 | [otlphttp][otlphttpexporter]                           |                                         |                                     |
 | [httpcheck][httpcheckreceiver]                           | [k8sattributes][k8sattributesprocessor]               | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
-| [iis][iisreceiver]                                       | [memory_limiter][memorylimiterprocessor]              |                                                        |                                         |                                     |
+| [iis][iisreceiver]                                       | [memory_limiter][memorylimiterprocessor]              | [syslog][syslogexporter]                               |                                         |                                     |
 | [jmx][jmxreceiver]                                       | [metricstransform][metricstransformprocessor]         |                                                        |                                         |                                     |
 | [journald][journaldreceiver]                             | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                         |                                     |
 | [k8s_cluster][k8sclusterreceiver]                        | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                         |                                     |
@@ -153,6 +153,7 @@ This section lists the components that are included in the Observe Distribution 
 [otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.141.0/exporter/otlpexporter
 [otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.141.0/exporter/otlphttpexporter
 [prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.141.0/exporter/prometheusremotewriteexporter
+[syslogexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.141.0/exporter/syslogexporter
 [countconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.141.0/connector/countconnector
 [forwardconnector]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.141.0/connector/forwardconnector
 [routingconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.141.0/connector/routingconnector
