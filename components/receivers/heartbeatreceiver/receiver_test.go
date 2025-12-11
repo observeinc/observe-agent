@@ -78,6 +78,25 @@ func TestConfigValidation(t *testing.T) {
 			errorMsg:    "invalid config_interval",
 		},
 		{
+			name: "config_interval too long (more than 24 hours)",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "25h",
+				Environment:    "linux",
+			},
+			expectError: true,
+			errorMsg:    "config_interval must be at most 24 hours",
+		},
+		{
+			name: "config_interval exactly 24 hours (valid boundary)",
+			config: Config{
+				Interval:       "5m",
+				ConfigInterval: "24h",
+				Environment:    "linux",
+			},
+			expectError: false,
+		},
+		{
 			name: "missing environment",
 			config: Config{
 				Interval: "5m",

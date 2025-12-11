@@ -47,6 +47,9 @@ func (cfg *Config) Validate() error {
 		if configInterval.Minutes() < 10 {
 			return fmt.Errorf("config_interval must be at least 10 minutes")
 		}
+		if configInterval.Hours() > 24 {
+			return fmt.Errorf("config_interval must be at most 24 hours")
+		}
 	}
 
 	// Validate environment field is required
