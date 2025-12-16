@@ -6,8 +6,8 @@ package version
 import (
 	"fmt"
 
-	"github.com/observeinc/observe-agent/build"
 	"github.com/observeinc/observe-agent/internal/root"
+	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,7 +19,7 @@ var versionCmd = &cobra.Command{
 	Long: `Display the currently installed version of the observe-agent. This version
 is based on the package release.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("observe-agent version: %s\n", getVersion())
+		fmt.Printf("observe-agent version: %s\n", utils.GetAgentVersion())
 		fmt.Printf("observe-agent config file: %s\n", getConfigFile())
 	},
 }
@@ -36,13 +36,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func getVersion() string {
-	if build.Version == "" {
-		return "dev"
-	}
-	return build.Version
 }
 
 func getConfigFile() string {

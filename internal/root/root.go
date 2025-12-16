@@ -137,8 +137,10 @@ func setEnvVars() error {
 	} else {
 		// Set agent instance ID as environment variable
 		os.Setenv("OBSERVE_AGENT_INSTANCE_ID", agentRes.GetAgentInstanceId())
-		os.Setenv("OBSERVE_AGENT_VERSION", agentRes.GetAgentVersion())
 	}
+
+	// Set agent version as environment variable
+	os.Setenv("OBSERVE_AGENT_VERSION", utils.GetAgentVersion())
 
 	collector_url, token, debug := viper.GetString("observe_url"), viper.GetString("token"), viper.GetBool("debug")
 	// Ensure the collector url does not end with a slash for consistency. This will allow endpoints to be configured like:

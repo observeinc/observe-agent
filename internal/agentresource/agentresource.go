@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/observeinc/observe-agent/build"
 	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/viper"
 )
@@ -92,10 +91,6 @@ func (a *AgentResource) GetAgentStartTime() int64 {
 	return a.data.AgentStartTime
 }
 
-func (a *AgentResource) GetAgentVersion() string {
-	return getAgentVersion()
-}
-
 func (a *AgentResource) GetAgentData() AgentLocalData {
 	return *a.data
 }
@@ -137,11 +132,4 @@ func (a *AgentResource) parseLocalFile() error {
 	}
 
 	return json.Unmarshal(jsonData, a.data)
-}
-
-func getAgentVersion() string {
-	if build.Version == "" {
-		return "dev"
-	}
-	return build.Version
 }
