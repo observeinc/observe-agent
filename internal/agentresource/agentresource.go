@@ -18,7 +18,6 @@ import (
 type AgentLocalData struct {
 	AgentInstanceId string `json:"agent_instance_id"`
 	AgentStartTime  int64  `json:"agent_start_time"`
-	AgentVersion    string `json:"agent_version"`
 }
 
 type AgentResource struct {
@@ -62,7 +61,6 @@ func New() (*AgentResource, error) {
 
 func (a *AgentResource) initialize() error {
 	a.data.AgentStartTime = time.Now().UnixNano()
-	a.data.AgentVersion = getAgentVersion()
 
 	err := a.parseLocalFile()
 
@@ -95,7 +93,7 @@ func (a *AgentResource) GetAgentStartTime() int64 {
 }
 
 func (a *AgentResource) GetAgentVersion() string {
-	return a.data.AgentVersion
+	return getAgentVersion()
 }
 
 func (a *AgentResource) GetAgentData() AgentLocalData {
