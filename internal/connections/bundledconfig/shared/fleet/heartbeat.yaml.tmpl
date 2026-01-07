@@ -13,6 +13,16 @@ processors:
     - key: observe.agent.hostname
       from_attribute: host.name
       action: insert
+  transform/heartbeat:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+        {{- if .HasResourceAttributes }}
+        - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
+        {{- end }}
+        - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
+        - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
 exporters:
   otlphttp/agentheartbeat:
       compression: zstd
@@ -31,6 +41,19 @@ exporters:
 service:
   pipelines:
     logs/heartbeat:
-      receivers: [heartbeat]
-      processors: [resourcedetection, resourcedetection/cloud, resource/agent_instance, resource/heartbeat]
-      exporters: [otlphttp/agentheartbeat]  
+      receivers: 
+        - heartbeat
+      processors:
+        - resourcedetection
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        - resourcedetection/cloud
+        - resource/agent_instance
+        - resource/heartbeat
+        - transform/heartbeat
+      exporters:
+        - otlphttp/agentheartbeat
