@@ -206,6 +206,14 @@ processors:
             - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
             - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
             - delete_key(datapoint.attributes, "status.code")
+    transform/heartbeat:
+        error_mode: ignore
+        log_statements:
+            - context: log
+              statements:
+                - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
+                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
+                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
     transform/remove_service_name_for_peer_metrics:
         error_mode: ignore
         metric_statements:
@@ -368,9 +376,12 @@ service:
                 - otlphttp/agentheartbeat
             processors:
                 - resourcedetection
+                - resource/observe_global_resource_attributes
+                - attributes/observe_global_attributes
                 - resourcedetection/cloud
                 - resource/agent_instance
                 - resource/heartbeat
+                - transform/heartbeat
             receivers:
                 - heartbeat
         logs/host_monitoring-file:

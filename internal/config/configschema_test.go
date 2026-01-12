@@ -112,11 +112,13 @@ func TestAgentConfigFromViper(t *testing.T) {
 	v.Set("token", "some:token")
 	v.Set("observe_url", "https://observeinc.com")
 	v.Set("host_monitoring::enabled", true)
+	v.Set("resource_attributes", map[string]string{"deployment.environment.name": "test"})
 	config, err := AgentConfigFromViper(v)
 	assert.NoError(t, err)
 	assert.Equal(t, "some:token", config.Token)
 	assert.Equal(t, "https://observeinc.com", config.ObserveURL)
 	assert.Equal(t, true, config.HostMonitoring.Enabled)
+	assert.Equal(t, "test", config.ResourceAttributes["deployment.environment.name"])
 
 	// Validate that defaults are set when the value is not in the viper config
 	assert.Equal(t, true, config.HealthCheck.Enabled)
