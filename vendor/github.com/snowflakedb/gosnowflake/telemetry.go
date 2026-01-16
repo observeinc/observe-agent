@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -49,7 +50,8 @@ type snowflakeTelemetry struct {
 
 func (st *snowflakeTelemetry) addLog(data *telemetryData) error {
 	if !st.enabled {
-		return fmt.Errorf("telemetry disabled; not adding log")
+		logger.Debug("telemetry disabled; not adding log")
+		return nil
 	}
 	st.mutex.Lock()
 	st.logs = append(st.logs, data)
@@ -65,9 +67,8 @@ func (st *snowflakeTelemetry) addLog(data *telemetryData) error {
 
 func (st *snowflakeTelemetry) sendBatch() error {
 	if !st.enabled {
-		err := fmt.Errorf("telemetry disabled; not sending log")
-		logger.Debug(err)
-		return err
+		logger.Debug("telemetry disabled; not sending log")
+		return nil
 	}
 	type telemetry struct {
 		Logs []*telemetryData `json:"logs"`
@@ -75,6 +76,17 @@ func (st *snowflakeTelemetry) sendBatch() error {
 
 	st.mutex.Lock()
 	logsToSend := st.logs
+	minicoreLoadLogs.mu.Lock()
+	if mcLogs := minicoreLoadLogs.logs; len(mcLogs) > 0 {
+		logsToSend = append(logsToSend, &telemetryData{
+			Timestamp: time.Now().UnixMilli(),
+			Message: map[string]string{
+				"minicoreLogs": strings.Join(mcLogs, "; "),
+			},
+		})
+		minicoreLoadLogs.logs = make([]string, 0)
+	}
+	minicoreLoadLogs.mu.Unlock()
 	st.logs = make([]*telemetryData, 0)
 	st.mutex.Unlock()
 
