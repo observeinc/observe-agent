@@ -1,4 +1,4 @@
-// Copyright 2017 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/prometheus/common/model"
@@ -23,7 +24,6 @@ import (
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 )
 
 type fanout struct {
@@ -82,11 +82,14 @@ func (f *fanout) Querier(mint, maxt int64) (Querier, error) {
 		querier, err := storage.Querier(mint, maxt)
 		if err != nil {
 			// Close already open Queriers, append potential errors to returned error.
-			errs := tsdb_errors.NewMulti(err, primary.Close())
-			for _, q := range secondaries {
-				errs.Add(q.Close())
+			errs := []error{
+				err,
+				primary.Close(),
 			}
-			return nil, errs.Err()
+			for _, q := range secondaries {
+				errs = append(errs, q.Close())
+			}
+			return nil, errors.Join(errs...)
 		}
 		if _, ok := querier.(noopQuerier); !ok {
 			secondaries = append(secondaries, querier)
@@ -106,11 +109,14 @@ func (f *fanout) ChunkQuerier(mint, maxt int64) (ChunkQuerier, error) {
 		querier, err := storage.ChunkQuerier(mint, maxt)
 		if err != nil {
 			// Close already open Queriers, append potential errors to returned error.
-			errs := tsdb_errors.NewMulti(err, primary.Close())
-			for _, q := range secondaries {
-				errs.Add(q.Close())
+			errs := []error{
+				err,
+				primary.Close(),
 			}
-			return nil, errs.Err()
+			for _, q := range secondaries {
+				errs = append(errs, q.Close())
+			}
+			return nil, errors.Join(errs...)
 		}
 		secondaries = append(secondaries, querier)
 	}
@@ -132,11 +138,13 @@ func (f *fanout) Appender(ctx context.Context) Appender {
 
 // Close closes the storage and all its underlying resources.
 func (f *fanout) Close() error {
-	errs := tsdb_errors.NewMulti(f.primary.Close())
-	for _, s := range f.secondaries {
-		errs.Add(s.Close())
+	errs := []error{
+		f.primary.Close(),
 	}
-	return errs.Err()
+	for _, s := range f.secondaries {
+		errs = append(errs, s.Close())
+	}
+	return errors.Join(errs...)
 }
 
 // fanoutAppender implements Appender.
@@ -199,14 +207,14 @@ func (f *fanoutAppender) AppendHistogram(ref SeriesRef, l labels.Labels, t int64
 	return ref, nil
 }
 
-func (f *fanoutAppender) AppendHistogramCTZeroSample(ref SeriesRef, l labels.Labels, t, ct int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (SeriesRef, error) {
-	ref, err := f.primary.AppendHistogramCTZeroSample(ref, l, t, ct, h, fh)
+func (f *fanoutAppender) AppendHistogramSTZeroSample(ref SeriesRef, l labels.Labels, t, st int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (SeriesRef, error) {
+	ref, err := f.primary.AppendHistogramSTZeroSample(ref, l, t, st, h, fh)
 	if err != nil {
 		return ref, err
 	}
 
 	for _, appender := range f.secondaries {
-		if _, err := appender.AppendHistogramCTZeroSample(ref, l, t, ct, h, fh); err != nil {
+		if _, err := appender.AppendHistogramSTZeroSample(ref, l, t, st, h, fh); err != nil {
 			return 0, err
 		}
 	}
@@ -227,14 +235,14 @@ func (f *fanoutAppender) UpdateMetadata(ref SeriesRef, l labels.Labels, m metada
 	return ref, nil
 }
 
-func (f *fanoutAppender) AppendCTZeroSample(ref SeriesRef, l labels.Labels, t, ct int64) (SeriesRef, error) {
-	ref, err := f.primary.AppendCTZeroSample(ref, l, t, ct)
+func (f *fanoutAppender) AppendSTZeroSample(ref SeriesRef, l labels.Labels, t, st int64) (SeriesRef, error) {
+	ref, err := f.primary.AppendSTZeroSample(ref, l, t, st)
 	if err != nil {
 		return ref, err
 	}
 
 	for _, appender := range f.secondaries {
-		if _, err := appender.AppendCTZeroSample(ref, l, t, ct); err != nil {
+		if _, err := appender.AppendSTZeroSample(ref, l, t, st); err != nil {
 			return 0, err
 		}
 	}

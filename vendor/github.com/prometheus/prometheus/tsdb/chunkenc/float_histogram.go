@@ -1,4 +1,4 @@
-// Copyright 2022 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -884,7 +884,14 @@ func (it *floatHistogramIterator) AtFloatHistogram(fh *histogram.FloatHistogram)
 			// chunk is from a newer Prometheus version that supports higher
 			// resolution.
 			fh = fh.Copy()
-			fh.ReduceResolution(histogram.ExponentialSchemaMax)
+			if err := fh.ReduceResolution(histogram.ExponentialSchemaMax); err != nil {
+				// With the checks above, this can only happen
+				// with invalid data in a chunk. As this is a
+				// rare edge case of a rare edge case, we'd
+				// rather not create all the plumbing to handle
+				// this error gracefully.
+				panic(err)
+			}
 		}
 		return it.t, fh
 	}
@@ -915,7 +922,13 @@ func (it *floatHistogramIterator) AtFloatHistogram(fh *histogram.FloatHistogram)
 		// This is a very slow path, but it should only happen if the
 		// chunk is from a newer Prometheus version that supports higher
 		// resolution.
-		fh.ReduceResolution(histogram.ExponentialSchemaMax)
+		if err := fh.ReduceResolution(histogram.ExponentialSchemaMax); err != nil {
+			// With the checks above, this can only happen with
+			// invalid data in a chunk. As this is a rare edge case
+			// of a rare edge case, we'd rather not create all the
+			// plumbing to handle this error gracefully.
+			panic(err)
+		}
 	}
 
 	return it.t, fh

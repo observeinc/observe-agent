@@ -1,4 +1,4 @@
-// Copyright 2024 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -139,14 +139,6 @@ func (c *PrometheusConverter) FromMetrics(ctx context.Context, md pmetric.Metric
 	c.everyN = everyNTimes{n: 128}
 	c.seenTargetInfo = make(map[targetInfoKey]struct{})
 	resourceMetricsSlice := md.ResourceMetrics()
-
-	numMetrics := 0
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
-		scopeMetricsSlice := resourceMetricsSlice.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			numMetrics += scopeMetricsSlice.At(j).Metrics().Len()
-		}
-	}
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
