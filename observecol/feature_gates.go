@@ -23,6 +23,7 @@ var internalFeatureFlagDefaults = map[string]bool{
 	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
 	"connector.spanmetrics.excludeResourceMetrics":                false,
 	"processor.resourcedetection.propagateerrors":                 false,
+	"processor.tailsamplingprocessor.disableinvertdecisions":      false,
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {
