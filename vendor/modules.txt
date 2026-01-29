@@ -1252,11 +1252,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporte
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata
-# github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.144.0
+# github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension v0.144.0
 ## explicit; go 1.24.0
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.144.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
@@ -1279,7 +1278,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil
 # github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil
