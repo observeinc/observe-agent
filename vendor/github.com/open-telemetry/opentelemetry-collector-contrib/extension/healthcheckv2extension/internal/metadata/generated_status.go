@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("health_check")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	Type      = component.MustNewType("healthcheckv2")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
 )
 
 const (
-	ExtensionStability = component.StabilityLevelAlpha
+	ExtensionStability = component.StabilityLevelDevelopment
 )
