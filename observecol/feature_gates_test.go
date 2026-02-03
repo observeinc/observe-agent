@@ -55,8 +55,7 @@ func TestInternalFeatureFlagDefaultsExist(t *testing.T) {
 //
 // This test will fail if:
 //   - A feature flag cannot be set to its configured default value
-//   - A feature flag's lifecycle stage prevents it from being set as expected
-//     (e.g., trying to disable a Stable gate or enable a Deprecated gate)
+//   - The configured default value doesn't match the actual gate state after setting
 func TestInternalFeatureFlagDefaultsCanBeSet(t *testing.T) {
 	ctx := context.Background()
 	t.Cleanup(func() { resetFeatureGates(t, ctx) })
@@ -65,12 +64,10 @@ func TestInternalFeatureFlagDefaultsCanBeSet(t *testing.T) {
 		t.Run(flagID, func(t *testing.T) {
 			// Try to set the feature gate to its default value
 			err := featuregate.GlobalRegistry().Set(flagID, defaultValue)
-
-			// The error handling depends on the stage of the feature gate
 			gate, exists := getGate(flagID)
 			require.True(t, exists, "Feature gate %q should exist", flagID)
 
-			// For Alpha and Beta stages, setting should succeed
+			// Setting should succeed
 			assert.NoError(t, err, "Failed to set feature gate %q to %v", flagID, defaultValue)
 
 			// Verify the gate is set to the expected value
