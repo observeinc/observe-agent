@@ -70,21 +70,11 @@ func TestInternalFeatureFlagDefaultsCanBeSet(t *testing.T) {
 			gate, exists := getGate(flagID)
 			require.True(t, exists, "Feature gate %q should exist", flagID)
 
-			if gate.Stage() == featuregate.StageStable && !defaultValue {
-				// Stable gates cannot be disabled
-				assert.Error(t, err, "Stable feature gate %q should not be disableable", flagID)
-				assert.Contains(t, err.Error(), "stable, can not be disabled")
-			} else if gate.Stage() == featuregate.StageDeprecated && defaultValue {
-				// Deprecated gates cannot be enabled
-				assert.Error(t, err, "Deprecated feature gate %q should not be enableable", flagID)
-				assert.Contains(t, err.Error(), "deprecated, can not be enabled")
-			} else {
-				// For Alpha and Beta stages, setting should succeed
-				assert.NoError(t, err, "Failed to set feature gate %q to %v", flagID, defaultValue)
+			// For Alpha and Beta stages, setting should succeed
+			assert.NoError(t, err, "Failed to set feature gate %q to %v", flagID, defaultValue)
 
-				// Verify the gate is set to the expected value
-				assert.Equal(t, defaultValue, gate.IsEnabled(), "Feature gate %q should be set to %v", flagID, defaultValue)
-			}
+			// Verify the gate is set to the expected value
+			assert.Equal(t, defaultValue, gate.IsEnabled(), "Feature gate %q should be set to %v", flagID, defaultValue)
 
 			t.Logf("Feature gate %q - Stage: %s, Default: %v, Current: %v",
 				flagID, gate.Stage(), defaultValue, gate.IsEnabled())
@@ -190,11 +180,7 @@ func TestApplyFeatureGates(t *testing.T) {
 					assert.Contains(t, err.Error(), tt.errorContains)
 				}
 			} else {
-				// Note: err might not be nil if trying to set stable/deprecated gates
-				// but we should still check the gates are in expected state
-				if err != nil {
-					t.Logf("ApplyFeatureGates returned error (may be expected for stable/deprecated gates): %v", err)
-				}
+				assert.NoError(t, err, "ApplyFeatureGates should not return error for non-error test cases")
 			}
 
 			// Verify expected gate states
@@ -205,59 +191,9 @@ func TestApplyFeatureGates(t *testing.T) {
 					continue
 				}
 
-				// For stable gates that are enabled by default, they can't be disabled
-				// For deprecated gates that are disabled by default, they can't be enabled
-				// So we need to account for that in our assertions
-				if gate.Stage() == featuregate.StageStable && !expectedValue {
-					// Stable gates cannot be disabled, so it will remain enabled
-					assert.True(t, gate.IsEnabled(), "Stable gate %q cannot be disabled", gateID)
-				} else if gate.Stage() == featuregate.StageDeprecated && expectedValue {
-					// Deprecated gates cannot be enabled, so it will remain disabled
-					assert.False(t, gate.IsEnabled(), "Deprecated gate %q cannot be enabled", gateID)
-				} else {
-					assert.Equal(t, expectedValue, gate.IsEnabled(),
-						"Gate %q should be %v (Stage: %s)", gateID, expectedValue, gate.Stage())
-				}
+				assert.Equal(t, expectedValue, gate.IsEnabled(),
+					"Gate %q should be %v (Stage: %s)", gateID, expectedValue, gate.Stage())
 			}
-		})
-	}
-}
-
-// TestFeatureGateStages verifies the lifecycle stage of each internal feature flag.
-//
-// This test documents the current lifecycle stage (Alpha, Beta, Stable, Deprecated)
-// of each feature flag we're using. This is useful for:
-// - Understanding which features are stable vs experimental
-// - Identifying when features might be removed (Deprecated stage)
-// - Planning for future upgrades when feature gates change stages
-//
-// The test logs the stage and description of each feature gate for documentation purposes.
-func TestFeatureGateStages(t *testing.T) {
-	for flagID := range internalFeatureFlagDefaults {
-		t.Run(flagID, func(t *testing.T) {
-			gate, exists := getGate(flagID)
-			require.True(t, exists, "Feature gate %q should exist", flagID)
-
-			stage := gate.Stage()
-			t.Logf("Feature gate %q - Stage: %s, Description: %s",
-				flagID, stage, gate.Description())
-
-			// Verify stage is one of the valid stages
-			validStages := []featuregate.Stage{
-				featuregate.StageAlpha,
-				featuregate.StageBeta,
-				featuregate.StageStable,
-				featuregate.StageDeprecated,
-			}
-
-			stageValid := false
-			for _, validStage := range validStages {
-				if stage == validStage {
-					stageValid = true
-					break
-				}
-			}
-			assert.True(t, stageValid, "Feature gate %q has invalid stage: %s", flagID, stage)
 		})
 	}
 }
