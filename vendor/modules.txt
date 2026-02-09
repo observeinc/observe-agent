@@ -1240,6 +1240,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.144.0
+## explicit; go 1.24.0
+github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
+github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.144.0
 ## explicit; go 1.24.0
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
