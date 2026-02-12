@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent
 
-go 1.24.11
+go 1.24.13
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -257,6 +257,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.144.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.144.0 // indirect

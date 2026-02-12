@@ -8,7 +8,7 @@ See <https://docs.observeinc.com/en/latest/content/observe-agent/configuration.h
 
 ## Build
 
-To run the code you need to have `golang v1.24.11` installed. Then you can run the following command to compile the binary.
+To run the code you need to have `golang v1.24.13` installed. Then you can run the following command to compile the binary.
 
 ```sh
 go build -o observe-agent
@@ -78,9 +78,9 @@ This section lists the components that are included in the Observe Distribution 
 | [filelog][filelogreceiver]                               | [deltatocumulative][deltatocumulativeprocessor]       | [nop][nopexporter]                                     | [pprof][pprofextension]                 | [spanmetrics][spanmetricsconnector] |
 | [filestats][filestatsreceiver]                           | [filter][filterprocessor]                             | [otlp][otlpexporter]                                   | [zpages][zpagesextension]               |                                     |
 | [hostmetrics][hostmetricsreceiver]                       | [groupbyattrs][groupbyattrsprocessor]                 | [otlphttp][otlphttpexporter]                           |                                         |                                     |
-| [httpcheck][httpcheckreceiver]                           | [k8sattributes][k8sattributesprocessor]               | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
-| [iis][iisreceiver]                                       | [logdedup][logdedupprocessor]                         | [syslog][syslogexporter]                               |                                         |                                     |
-| [jmx][jmxreceiver]                                       | [memory_limiter][memorylimiterprocessor]              |                                                        |                                         |                                     |
+| [httpcheck][httpcheckreceiver]                           | [k8sattributes][k8sattributesprocessor]               | [prometheus][prometheusexporter]                       |                                         |                                     |
+| [iis][iisreceiver]                                       | [logdedup][logdedupprocessor]                         | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
+| [jmx][jmxreceiver]                                       | [memory_limiter][memorylimiterprocessor]              | [syslog][syslogexporter]                               |                                         |                                     |
 | [journald][journaldreceiver]                             | [metricstransform][metricstransformprocessor]         |                                                        |                                         |                                     |
 | [k8s_cluster][k8sclusterreceiver]                        | [observek8sattributes][observek8sattributesprocessor] |                                                        |                                         |                                     |
 | [k8sobjects][k8sobjectsreceiver]                         | [probabilisticsampler][probabilisticsamplerprocessor] |                                                        |                                         |                                     |
@@ -155,6 +155,7 @@ This section lists the components that are included in the Observe Distribution 
 [nopexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.144.0/exporter/nopexporter
 [otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.144.0/exporter/otlpexporter
 [otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.144.0/exporter/otlphttpexporter
+[prometheusexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.144.0/exporter/prometheusexporter
 [prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.144.0/exporter/prometheusremotewriteexporter
 [syslogexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.144.0/exporter/syslogexporter
 [countconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.144.0/connector/countconnector
