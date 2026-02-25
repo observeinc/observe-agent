@@ -164,6 +164,9 @@ func SetViperDefaults(v *viper.Viper, separator string) {
 }
 
 func AgentConfigFromViper(v *viper.Viper) (*AgentConfig, error) {
+	if v == nil {
+		return nil, errors.New("no viper instance provided")
+	}
 	var config AgentConfig
 	defaults.SetDefaults(&config)
 	err := v.Unmarshal(&config)

@@ -108,12 +108,15 @@ func TestAgentConfigValidate(t *testing.T) {
 }
 
 func TestAgentConfigFromViper(t *testing.T) {
+	config, err := AgentConfigFromViper(nil)
+	assert.Error(t, err, "no viper instance provided")
+
 	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
 	v.Set("token", "some:token")
 	v.Set("observe_url", "https://observeinc.com")
 	v.Set("host_monitoring::enabled", true)
 	v.Set("resource_attributes", map[string]string{"deployment.environment.name": "test"})
-	config, err := AgentConfigFromViper(v)
+	config, err = AgentConfigFromViper(v)
 	assert.NoError(t, err)
 	assert.Equal(t, "some:token", config.Token)
 	assert.Equal(t, "https://observeinc.com", config.ObserveURL)
