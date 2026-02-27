@@ -220,6 +220,8 @@ Alternatively, use OpenWithConfig() function to create a database handle with th
 
     When workloadIdentityProvider=AZURE, workloadIdentityEntraResource can be optionally set to customize entra resource used to fetch JWT token.
 
+    When workloadIdentityProvider=GCP or AWS, workloadIdentityImpersonationPath can be optionally set to customize impersonation path. This is a comma separated list. For GCP the last parameter is a target service account and the rest are chained delegation. For AWS this is the list of role ARNs to assume.
+
     For more details, refer to the usage guide: https://docs.snowflake.com/en/user-guide/workload-identity-federation
 
 # Connection Config
@@ -1355,6 +1357,24 @@ and before retrieving the results. For a more elaborative example please see cmd
 			...
 		}
 
+==> Some considerations related to the KeepSessionAlive configuration option in context of asynchronous query execution
+
+When SQL Go connection is being closed, it performs the following actions:
+
+* stops the scheduled heartbeats (CLIENT_SESSION_KEEP_ALIVE), if it was enabled
+
+* cleans up all the http connections which are already idle - doesn't touch the ones which are in active use currently
+
+* if Config.KeepSessionAlive is false (default), then actively logs out the current Snowflake session.
+
+!! Caveat: If there are any queries which are currently executing in the same Snowflake session (e.g. async queries sent with WithAsyncMode()), then those queries are automatically cancelled from the client side a couple minutes later after the Close() call, as a Snowflake session which has been actively logged out from, cannot sustain any queries.
+
+You can govern this behaviour with setting Config.KeepSessionAlive to true; when the corresponding Snowflake session will be kept alive for a long time (determined by the Snowflake engine) even after an explicit Connection.Close() call past the time when the last running query in the session finished executing.
+
+The behaviour is also dependent on ABORT_DETACHED_QUERY parameter, please see the detailed explanation in the parameter description at https://docs.snowflake.com/en/sql-reference/parameters#abort-detached-query.
+
+As a consequence, best practice would be to isolate all long-running async tasks (especially ones supposed to be continued after the connection is closed) into a separate connection.
+
 # Support For PUT and GET
 
 The Go Snowflake Driver supports the PUT and GET commands.
@@ -1453,6 +1473,43 @@ If you wish to ignore those errors instead, you can set `RaisePutGetError: false
 
 	ctx := WithFileTransferOptions(context.Background(), &SnowflakeFileTransferOptions{RaisePutGetError: false})
 	db.ExecContext(ctx, "PUT ...")
+
+# Minicore (Native Library)
+
+The Go Snowflake Driver includes an embedded native library called "minicore" that verifies loading of native Rust extensions on various platforms. By default, minicore is enabled and loaded dynamically at runtime.
+
+## Disabling Minicore
+
+There are two ways to disable minicore:
+
+1. **At runtime using environment variable:**
+
+	Set the SF_DISABLE_MINICORE environment variable to "true" to disable minicore loading:
+
+	  export SF_DISABLE_MINICORE=true
+
+	This is useful when you want to disable minicore for a specific run without recompiling.
+
+2. **At compile time using build tags:**
+
+	Build with the -tags minicore_disabled flag to completely exclude minicore from the binary:
+
+	  go build -tags minicore_disabled ./...
+
+	This is required for static linking (e.g., CGO_ENABLED=0) because minicore relies on
+	dynamic library loading (dlopen) which is incompatible with static binaries.
+
+	Benefits of compile-time disable:
+	  - Smaller binary size (no embedded native libraries)
+	  - No CGO dependency for POSIX systems
+	  - Compatible with static linking
+
+	Example for fully static build:
+
+	  CGO_ENABLED=0 go build -tags minicore_disabled ./...
+
+When minicore is disabled (either at runtime or compile time), the driver continues to work
+normally but without the additional functionality provided by the native library.
 
 # Connectivity diagnostics
 

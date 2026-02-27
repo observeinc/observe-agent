@@ -1,6 +1,7 @@
 package gosnowflake
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -17,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -26,10 +29,11 @@ const (
 	azureWif wifProviderType = "AZURE"
 	oidcWif  wifProviderType = "OIDC"
 
-	gcpMetadataFlavorHeaderName = "Metadata-Flavor"
-	gcpMetadataFlavor           = "Google"
-	defaultMetadataServiceBase  = "http://169.254.169.254"
-	snowflakeAudience           = "snowflakecomputing.com"
+	gcpMetadataFlavorHeaderName  = "Metadata-Flavor"
+	gcpMetadataFlavor            = "Google"
+	defaultMetadataServiceBase   = "http://169.254.169.254"
+	defaultGcpIamCredentialsBase = "https://iamcredentials.googleapis.com"
+	snowflakeAudience            = "snowflakecomputing.com"
 )
 
 type wifProviderType string
@@ -58,6 +62,7 @@ func createWifAttestationProvider(ctx context.Context, cfg *Config, telemetry *s
 		context: ctx,
 		cfg:     cfg,
 		awsCreator: &awsIdentityAttestationCreator{
+			cfg:                       cfg,
 			attestationServiceFactory: createDefaultAwsAttestationMetadataProvider,
 			ctx:                       ctx,
 		},
@@ -65,6 +70,7 @@ func createWifAttestationProvider(ctx context.Context, cfg *Config, telemetry *s
 			cfg:                    cfg,
 			telemetry:              telemetry,
 			metadataServiceBaseURL: defaultMetadataServiceBase,
+			iamCredentialsURL:      defaultGcpIamCredentialsBase,
 		},
 		azureCreator: &azureIdentityAttestationCreator{
 			azureAttestationMetadataProvider: &defaultAzureAttestationMetadataProvider{},
@@ -73,7 +79,7 @@ func createWifAttestationProvider(ctx context.Context, cfg *Config, telemetry *s
 			workloadIdentityEntraResource:    determineEntraResource(cfg),
 			azureMetadataServiceBaseURL:      defaultMetadataServiceBase,
 		},
-		oidcCreator: &oidcIdentityAttestationCreator{token: cfg.Token},
+		oidcCreator: &oidcIdentityAttestationCreator{token: cfg.getToken},
 	}
 }
 
@@ -92,9 +98,10 @@ func (p *wifAttestationProvider) getAttestation(identityProvider string) (*wifAt
 	}
 }
 
-type awsAttestastationMetadataProviderFactory func(ctx context.Context) awsAttestationMetadataProvider
+type awsAttestastationMetadataProviderFactory func(ctx context.Context, cfg *Config) awsAttestationMetadataProvider
 
 type awsIdentityAttestationCreator struct {
+	cfg                       *Config
 	attestationServiceFactory awsAttestastationMetadataProviderFactory
 	ctx                       context.Context
 }
@@ -103,41 +110,77 @@ type gcpIdentityAttestationCreator struct {
 	cfg                    *Config
 	telemetry              *snowflakeTelemetry
 	metadataServiceBaseURL string
+	iamCredentialsURL      string
 }
 
 type oidcIdentityAttestationCreator struct {
-	token string
+	token func() (string, error)
 }
 
 type awsAttestationMetadataProvider interface {
-	awsCredentials() aws.Credentials
+	awsCredentials() (aws.Credentials, error)
+	awsCredentialsViaRoleChaining() (aws.Credentials, error)
 	awsRegion() string
 }
 
 type defaultAwsAttestationMetadataProvider struct {
 	ctx    context.Context
+	cfg    *Config
 	awsCfg aws.Config
 }
 
-func createDefaultAwsAttestationMetadataProvider(ctx context.Context) awsAttestationMetadataProvider {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
+func createDefaultAwsAttestationMetadataProvider(ctx context.Context, cfg *Config) awsAttestationMetadataProvider {
+	awsCfg, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
 	if err != nil {
 		logger.Debugf("Unable to load AWS config: %v", err)
 		return nil
 	}
 	return &defaultAwsAttestationMetadataProvider{
-		awsCfg: cfg,
+		awsCfg: awsCfg,
+		cfg:    cfg,
 		ctx:    ctx,
 	}
 }
 
-func (s *defaultAwsAttestationMetadataProvider) awsCredentials() aws.Credentials {
-	creds, err := s.awsCfg.Credentials.Retrieve(s.ctx)
+func (s *defaultAwsAttestationMetadataProvider) awsCredentials() (aws.Credentials, error) {
+	return s.awsCfg.Credentials.Retrieve(s.ctx)
+}
+
+func (s *defaultAwsAttestationMetadataProvider) awsCredentialsViaRoleChaining() (aws.Credentials, error) {
+	creds, err := s.awsCredentials()
 	if err != nil {
-		logger.Debugf("Unable to retrieve AWS credentials provider: %v", err)
-		return aws.Credentials{}
+		return aws.Credentials{}, err
 	}
-	return creds
+	for _, roleArn := range s.cfg.WorkloadIdentityImpersonationPath {
+		if creds, err = s.assumeRole(creds, roleArn); err != nil {
+			return aws.Credentials{}, err
+		}
+	}
+	return creds, nil
+}
+
+func (s *defaultAwsAttestationMetadataProvider) assumeRole(creds aws.Credentials, roleArn string) (aws.Credentials, error) {
+	logger.Debugf("assuming role %v", roleArn)
+	awsCfg := s.awsCfg
+	awsCfg.Credentials = credentials.StaticCredentialsProvider{Value: creds}
+	awsCfg.Region = s.awsRegion()
+	stsClient := sts.NewFromConfig(awsCfg)
+
+	role, err := stsClient.AssumeRole(s.ctx, &sts.AssumeRoleInput{
+		RoleArn:         aws.String(roleArn),
+		RoleSessionName: aws.String("identity-federation-session"),
+	})
+	if err != nil {
+		logger.Debugf("failed to assume role %v: %v", roleArn, err)
+		return aws.Credentials{}, err
+	}
+
+	return aws.Credentials{
+		AccessKeyID:     *role.Credentials.AccessKeyId,
+		SecretAccessKey: *role.Credentials.SecretAccessKey,
+		SessionToken:    *role.Credentials.SessionToken,
+		Expires:         *role.Credentials.Expiration,
+	}, nil
 }
 
 func (s *defaultAwsAttestationMetadataProvider) awsRegion() string {
@@ -147,12 +190,26 @@ func (s *defaultAwsAttestationMetadataProvider) awsRegion() string {
 func (c *awsIdentityAttestationCreator) createAttestation() (*wifAttestation, error) {
 	logger.Debug("Creating AWS identity attestation...")
 
-	attestationService := c.attestationServiceFactory(c.ctx)
+	attestationService := c.attestationServiceFactory(c.ctx, c.cfg)
 	if attestationService == nil {
-		return nil, fmt.Errorf("AWS attestation service could not be created")
+		return nil, errors.New("AWS attestation service could not be created")
 	}
 
-	creds := attestationService.awsCredentials()
+	var creds aws.Credentials
+	var err error
+
+	if len(c.cfg.WorkloadIdentityImpersonationPath) == 0 {
+		if creds, err = attestationService.awsCredentials(); err != nil {
+			logger.Debugf("error while getting for aws credentials. %v", err)
+			return nil, err
+		}
+	} else {
+		if creds, err = attestationService.awsCredentialsViaRoleChaining(); err != nil {
+			logger.Debugf("error while getting for aws credentials via role chaining. %v", err)
+			return nil, err
+		}
+	}
+
 	if creds.AccessKeyID == "" || creds.SecretAccessKey == "" {
 		return nil, fmt.Errorf("no AWS credentials were found")
 	}
@@ -236,9 +293,16 @@ func (c *awsIdentityAttestationCreator) createBase64EncodedRequestCredential(req
 
 func (c *gcpIdentityAttestationCreator) createAttestation() (*wifAttestation, error) {
 	logger.Debugf("Creating GCP identity attestation...")
+	if len(c.cfg.WorkloadIdentityImpersonationPath) == 0 {
+		return c.createGcpIdentityTokenFromMetadataService()
+	}
+	return c.createGcpIdentityViaImpersonation()
+}
+
+func (c *gcpIdentityAttestationCreator) createGcpIdentityTokenFromMetadataService() (*wifAttestation, error) {
 	req, err := c.createTokenRequest()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GCP token request: %v", err)
+		return nil, fmt.Errorf("failed to create GCP token request: %w", err)
 	}
 	token := fetchTokenFromMetadataService(req, c.cfg, c.telemetry)
 	if token == "" {
@@ -264,6 +328,132 @@ func (c *gcpIdentityAttestationCreator) createTokenRequest() (*http.Request, err
 	}
 	req.Header.Set(gcpMetadataFlavorHeaderName, gcpMetadataFlavor)
 	return req, nil
+}
+
+func (c *gcpIdentityAttestationCreator) createGcpIdentityViaImpersonation() (*wifAttestation, error) {
+	// initialize transport
+	transport, err := newTransportFactory(c.cfg, c.telemetry).createTransport(c.cfg.transportConfigFor(transportTypeWIF))
+	if err != nil {
+		logger.Debugf("Failed to create HTTP transport: %v", err)
+		return nil, err
+	}
+	client := &http.Client{Transport: transport}
+
+	// fetch access token for impersonation
+	accessToken, err := c.fetchServiceToken(client)
+	if err != nil {
+		return nil, err
+	}
+
+	// map paths to full service account paths
+	var fullServiceAccountPaths []string
+	for _, path := range c.cfg.WorkloadIdentityImpersonationPath {
+		fullServiceAccountPaths = append(fullServiceAccountPaths, fmt.Sprintf("projects/-/serviceAccounts/%s", path))
+	}
+	targetServiceAccount := fullServiceAccountPaths[len(fullServiceAccountPaths)-1]
+	delegates := fullServiceAccountPaths[:len(fullServiceAccountPaths)-1]
+
+	// fetch impersonated token
+	impersonationToken, err := c.fetchImpersonatedToken(targetServiceAccount, delegates, accessToken, client)
+	if err != nil {
+		return nil, err
+	}
+
+	// create attestation
+	sub, _, err := extractSubIssWithoutVerifyingSignature(impersonationToken)
+	if err != nil {
+		return nil, fmt.Errorf("could not extract claims from token: %v", err)
+	}
+	return &wifAttestation{
+		ProviderType: string(gcpWif),
+		Credential:   impersonationToken,
+		Metadata:     map[string]string{"sub": sub},
+	}, nil
+}
+
+func (c *gcpIdentityAttestationCreator) fetchServiceToken(client *http.Client) (string, error) {
+	// initialize and do request
+	req, err := http.NewRequest("GET", c.metadataServiceBaseURL+"/computeMetadata/v1/instance/service-accounts/default/token", nil)
+	if err != nil {
+		logger.Debugf("cannot create token request for impersonation. %v", err)
+		return "", err
+	}
+	req.Header.Set(gcpMetadataFlavorHeaderName, gcpMetadataFlavor)
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Debugf("cannot fetch token for impersonation. %v", err)
+		return "", err
+	}
+	defer func(body io.ReadCloser) {
+		if err = body.Close(); err != nil {
+			logger.Debugf("cannot close token response body for impersonation. %v", err)
+		}
+	}(resp.Body)
+
+	// if it is not 200, do not parse the response
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("token response status is %v, not parsing", resp.StatusCode)
+	}
+
+	// parse response and extract access token
+	accessTokenResponse := struct {
+		AccessToken string `json:"access_token"`
+	}{}
+	if err = json.NewDecoder(resp.Body).Decode(&accessTokenResponse); err != nil {
+		logger.Debugf("cannot decode token for impersonation. %v", err)
+		return "", err
+	}
+	accessToken := accessTokenResponse.AccessToken
+	return accessToken, nil
+}
+
+func (c *gcpIdentityAttestationCreator) fetchImpersonatedToken(targetServiceAccount string, delegates []string, accessToken string, client *http.Client) (string, error) {
+	// prepare the request
+	url := fmt.Sprintf("%v/v1/%v:generateIdToken", c.iamCredentialsURL, targetServiceAccount)
+	body := struct {
+		Delegates []string `json:"delegates,omitempty"`
+		Audience  string   `json:"audience"`
+	}{
+		Delegates: delegates,
+		Audience:  snowflakeAudience,
+	}
+	payload := new(bytes.Buffer)
+	if err := json.NewEncoder(payload).Encode(body); err != nil {
+		logger.Debugf("cannot encode impersonation request body. %v", err)
+		return "", err
+	}
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		logger.Debugf("cannot create token request for impersonation. %v", err)
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	// send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Debugf("cannot call impersonation service. %v", err)
+		return "", err
+	}
+	defer func(body io.ReadCloser) {
+		if err = body.Close(); err != nil {
+			logger.Debugf("cannot close token response body for impersonation. %v", err)
+		}
+	}(resp.Body)
+
+	// handle the response
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("response status is %v, not parsing", resp.StatusCode)
+	}
+	tokenResponse := struct {
+		Token string `json:"token"`
+	}{}
+	if err = json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		logger.Debugf("cannot decode token response. %v", err)
+		return "", err
+	}
+	return tokenResponse.Token, nil
 }
 
 func fetchTokenFromMetadataService(req *http.Request, cfg *Config, telemetry *snowflakeTelemetry) string {
@@ -329,10 +519,14 @@ func extractClaimsMap(token string) (map[string]interface{}, error) {
 
 func (c *oidcIdentityAttestationCreator) createAttestation() (*wifAttestation, error) {
 	logger.Debugf("Creating OIDC identity attestation...")
-	if c.token == "" {
+	token, err := c.token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get OIDC token: %w", err)
+	}
+	if token == "" {
 		return nil, fmt.Errorf("no OIDC token was specified")
 	}
-	sub, iss, err := extractSubIssWithoutVerifyingSignature(c.token)
+	sub, iss, err := extractSubIssWithoutVerifyingSignature(token)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +535,7 @@ func (c *oidcIdentityAttestationCreator) createAttestation() (*wifAttestation, e
 	}
 	return &wifAttestation{
 		ProviderType: string(oidcWif),
-		Credential:   c.token,
+		Credential:   token,
 		Metadata:     map[string]string{"sub": sub},
 	}, nil
 }

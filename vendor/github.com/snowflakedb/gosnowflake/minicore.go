@@ -3,6 +3,7 @@ package gosnowflake
 import (
 	"bufio"
 	"fmt"
+	"github.com/snowflakedb/gosnowflake/internal/compilation"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,7 +18,6 @@ var miniCoreOnce sync.Once
 var miniCoreMutex sync.RWMutex
 
 var miniCoreInstance miniCore
-var miniCoreFileName string
 
 var minicoreLoadLogs = struct {
 	mu        sync.Mutex
@@ -46,7 +46,7 @@ func (m minicoreDirCandidate) String() string {
 func getMiniCoreFileName() string {
 	miniCoreMutex.RLock()
 	defer miniCoreMutex.RUnlock()
-	return miniCoreFileName
+	return corePlatformConfig.coreLibFileName
 }
 
 // miniCoreErrorType represents the category of minicore error that occurred.
@@ -287,6 +287,12 @@ func (l *miniCoreLoaderType) writeLibraryToFile() (minicoreDirCandidate, string,
 // getMiniCore returns the minicore instance, loading it asynchronously if needed.
 func getMiniCore() miniCore {
 	miniCoreOnce.Do(func() {
+		minicoreDebugf("minicore enabled at compile time: %v", compilation.MinicoreEnabled)
+		minicoreDebugf("cgo enabled: %v", compilation.CgoEnabled)
+		if !compilation.MinicoreEnabled {
+			logger.Debugf("minicore disabled at compile time (built with -tags minicore_disabled)")
+			return
+		}
 		if strings.EqualFold(os.Getenv(disableMinicoreEnv), "true") {
 			logger.Debugf("minicore loading disabled")
 			return

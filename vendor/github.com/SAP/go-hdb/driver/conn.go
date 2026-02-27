@@ -14,7 +14,6 @@ import (
 
 	p "github.com/SAP/go-hdb/driver/internal/protocol"
 	"github.com/SAP/go-hdb/driver/internal/protocol/auth"
-	"github.com/SAP/go-hdb/driver/wgroup"
 )
 
 // ErrUnsupportedIsolationLevel is the error raised if a transaction is started with a not supported isolation level.
@@ -23,12 +22,17 @@ var ErrUnsupportedIsolationLevel = errors.New("unsupported isolation level")
 // ErrNestedTransaction is the error raised if a transaction is created within a transaction as this is not supported by hdb.
 var ErrNestedTransaction = errors.New("nested transactions are not supported")
 
-// ErrNestedQuery is the error raised if a new sql statement is sent to the database server before the resultset
-// processing of a previous sql query statement is finalized.
-// Currently this only can happen if connections are used concurrently and if stream enabled fields (LOBs) are part
-// of the resultset.
-// This error can be avoided in whether using a transaction or a dedicated connection (sql.Tx or sql.Conn).
-var ErrNestedQuery = errors.New("nested sql queries are not supported")
+// ErrNestedQuery is deprecated, so currently not used (raised as an error) by the driver.
+var ErrNestedQuery = errors.New("nested sql queries are not supported") // deprecated
+
+// errInvalidLobLocatorID is the error raised if HANA DB returns error 1033 (invalid lob locator id).
+// Currently this only can happen if stream enabled fields (LOBs) are part of the resultset.
+// case 1:
+// - a new sql statement is sent to the database server before the resultset processing of a previous sql query statement is finalized.
+// case 2:
+// - procedure call with table result set (out parameter) and lob(s) part of resultset.
+// On cases 1 and 2 this error can be avoided in using a transaction (sql.Tx) on the query or exec statement.
+var errInvalidLobLocatorID = errors.New("invalid lob locator id - please use a transaction on the query or exec statement")
 
 // queries.
 const (
@@ -193,7 +197,7 @@ func (c *conn) IsValid() bool { return !c.session.isBad() }
 func (c *conn) Ping(ctx context.Context) error {
 	var sqlErr error
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		_, sqlErr = c.session.queryDirect(ctx, pingQuery, tracePing)
 	})
@@ -212,7 +216,7 @@ func (c *conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, e
 	var sqlErr error
 	var stmt driver.Stmt
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		if sqlErr = c.session.switchUser(ctx); sqlErr != nil {
 			return
@@ -264,7 +268,7 @@ func (c *conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, e
 	var sqlErr error
 	var tx driver.Tx
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		if sqlErr = c.session.switchUser(ctx); sqlErr != nil {
 			return
@@ -301,7 +305,7 @@ func (c *conn) QueryContext(ctx context.Context, query string, nvargs []driver.N
 	var sqlErr error
 	var rows driver.Rows
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		if sqlErr = c.session.switchUser(ctx); sqlErr != nil {
 			return
@@ -327,7 +331,7 @@ func (c *conn) ExecContext(ctx context.Context, query string, nvargs []driver.Na
 	var sqlErr error
 	var result driver.Result
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		if sqlErr = c.session.switchUser(ctx); sqlErr != nil {
 			return
@@ -368,7 +372,7 @@ func (c *conn) DBConnectInfo(ctx context.Context, databaseName string) (*DBConne
 	var sqlErr error
 	var ci *DBConnectInfo
 	done := make(chan struct{})
-	wgroup.Go(c.wg, func() {
+	c.wg.Go(func() {
 		defer close(done)
 		ci, sqlErr = c.session.dbConnectInfo(ctx, databaseName)
 	})

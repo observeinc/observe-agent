@@ -22,7 +22,6 @@ var internalFeatureFlagDefaults = map[string]bool{
 	"exporter.prometheusremotewritexporter.EnableMultipleWorkers": true,
 	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
 	"connector.spanmetrics.excludeResourceMetrics":                false,
-	"processor.resourcedetection.propagateerrors":                 false,
 	"processor.tailsamplingprocessor.disableinvertdecisions":      false,
 }
 
