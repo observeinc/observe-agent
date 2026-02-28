@@ -1,4 +1,8 @@
 extensions:
-  health_check:
-    endpoint: {{ .HealthCheck.Endpoint }}
-    path: {{ .HealthCheck.Path }}
+  healthcheckv2:
+    use_v2: true
+    http:
+      endpoint: {{ .HealthCheck.Endpoint }}
+      status:
+        enabled: true
+        path: {{ .HealthCheck.Path }}

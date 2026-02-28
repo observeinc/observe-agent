@@ -50,9 +50,13 @@ exporters:
 extensions:
     file_storage:
         directory: C:\ProgramData\Observe\observe-agent\filestorage
-    health_check:
-        endpoint: localhost:13133
-        path: /status
+    healthcheckv2:
+        http:
+            endpoint: localhost:13133
+            status:
+                enabled: true
+                path: /status
+        use_v2: true
 processors:
     batch:
         timeout: 5s
@@ -191,7 +195,7 @@ receivers:
             enabled: true
 service:
     extensions:
-        - health_check
+        - healthcheckv2
         - file_storage
     pipelines:
         logs/agent-config:
