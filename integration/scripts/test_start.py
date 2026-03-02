@@ -52,7 +52,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
-    docker_prefix = u.get_docker_prefix(remote_host, True)
+    docker_prefix = u.get_docker_prefix(remote_host, detach=True)
     start_command = "start"
 
     # Start Observe Agent
@@ -70,6 +70,8 @@ def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     # Check Agent Status
     agent_status = u.check_status_loop(remote_host, status_command)
     if not agent_status:
+        result = remote_host.run_command_unsafe(f"sudo docker container logs {container_id}")
+        u.print_remote_result(result)
         u.die("❌ Error in Observe Agent Status Test ")
 
 

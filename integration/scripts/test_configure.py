@@ -34,9 +34,17 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
-    docker_prefix = u.get_docker_prefix(remote_host, False)
-    init_command = docker_prefix + " " + init_config_command(env_vars)
-    run_init_config_common(remote_host, init_command)
+    docker_prefix = u.get_docker_prefix(remote_host, mount_config=False)
+    init_command = docker_prefix + " " + init_config_command(env_vars) + " --print"
+
+    # Use --print but write the output to the config file on the host instead of writing to the config file in the docker container.
+    # This more closely mirrors the expected customer flow (ie: mounting a pre-written config file from the host to the container)
+    result = remote_host.run_command(
+        init_command + " | sudo tee $(pwd)/observe-agent.yaml"
+    )
+    u.print_remote_result(result)
+    if result.exited != 0 or result.stderr:
+        raise ValueError("❌ Error in init-config")
 
 
 @u.print_test_decorator
