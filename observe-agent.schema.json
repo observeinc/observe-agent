@@ -25,6 +25,9 @@
           "deprecated": true,
           "type": "boolean"
         },
+        "exporters": {
+          "$ref": "#/$defs/ExportersConfig"
+        },
         "forwarding": {
           "$ref": "#/$defs/ForwardingConfig"
         },
@@ -70,6 +73,15 @@
       "properties": {
         "RED_metrics": {
           "$ref": "#/$defs/REDMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "ExportersConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "sending_queue_batch": {
+          "$ref": "#/$defs/SendingQueueBatchConfig"
         }
       },
       "type": "object"
@@ -307,6 +319,18 @@
         },
         "fleet": {
           "$ref": "#/$defs/FleetHeartbeatConfig"
+        }
+      },
+      "type": "object"
+    },
+    "SendingQueueBatchConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_size": {
+          "type": "integer"
         }
       },
       "type": "object"

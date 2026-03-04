@@ -48,6 +48,13 @@ exporters:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
       x-observe-target-package: "Host Explorer"
     sending_queue:
+      {{- if .Exporters.SendingQueueBatch.Enabled }}
+      batch:
+        flush_timeout: 5s
+        max_size: {{ .Exporters.SendingQueueBatch.MaxSize }}
+        min_size: 0
+        sizer: bytes
+      {{- end }}
       num_consumers: 4
       queue_size: 100
     retry_on_failure:

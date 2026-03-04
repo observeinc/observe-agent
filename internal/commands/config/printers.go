@@ -85,8 +85,8 @@ func PrintShortOtelConfig(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("error while marshaling to YAML: %w", err)
 	}
-	fmt.Fprintf(w, "%s\n", b)
-	return nil
+	_, err = w.Write(b)
+	return err
 }
 
 func PrintFullOtelConfig(ctx context.Context, w io.Writer) error {

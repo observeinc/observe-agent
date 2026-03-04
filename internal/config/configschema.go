@@ -114,6 +114,15 @@ type ApplicationConfig struct {
 	REDMetrics REDMetricsConfig `yaml:"RED_metrics,omitempty" mapstructure:"RED_metrics" json:"RED_metrics"`
 }
 
+type SendingQueueBatchConfig struct {
+	Enabled bool `yaml:"enabled" mapstructure:"enabled"`
+	MaxSize int  `yaml:"max_size" mapstructure:"max_size" default:"41943040"`
+}
+
+type ExportersConfig struct {
+	SendingQueueBatch SendingQueueBatchConfig `yaml:"sending_queue_batch,omitempty" mapstructure:"sending_queue_batch"`
+}
+
 type AgentConfig struct {
 	Token                  string                  `yaml:"token" mapstructure:"token" jsonschema:"required"`
 	ObserveURL             string                  `yaml:"observe_url" mapstructure:"observe_url" jsonschema:"required"`
@@ -129,6 +138,7 @@ type AgentConfig struct {
 	InternalTelemetry      InternalTelemetryConfig `yaml:"internal_telemetry" mapstructure:"internal_telemetry"`
 	SelfMonitoring         SelfMonitoringConfig    `yaml:"self_monitoring,omitempty" mapstructure:"self_monitoring"`
 	HostMonitoring         HostMonitoringConfig    `yaml:"host_monitoring,omitempty" mapstructure:"host_monitoring"`
+	Exporters              ExportersConfig         `yaml:"exporters,omitempty" mapstructure:"exporters"`
 	OtelConfigOverrides    map[string]any          `yaml:"otel_config_overrides,omitempty" mapstructure:"otel_config_overrides"`
 }
 
