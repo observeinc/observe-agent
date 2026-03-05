@@ -26,11 +26,11 @@ func (u *SessionUser) equal(cmp *SessionUser) bool {
 	if cmp == nil {
 		return false
 	}
-	return u.Username == cmp.Username && u.Password == cmp.Password
+	return *u == *cmp
 }
 
 func (u *SessionUser) clone() *SessionUser {
-	return &SessionUser{Username: u.Username, Password: u.Password}
+	return &SessionUser{Username: u.Username, Password: u.Password, Schema: u.Schema}
 }
 
 // use unexported type to avoid key collisions.
@@ -41,6 +41,9 @@ var switchUserCtxKey switchUserCtxKeyType
 // WithUserSwitch can be used to switch a user on a new or an existing connection
 // (see https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-sql-reference-guide/connect-statement-session-management).
 func WithUserSwitch(ctx context.Context, u *SessionUser) context.Context {
+	if u == nil {
+		panic("cannot create context from nil SessionUser")
+	}
 	return context.WithValue(ctx, switchUserCtxKey, u)
 }
 
@@ -247,7 +250,7 @@ func (s *session) switchUser(ctx context.Context) error {
 		return ErrSwitchUser
 	}
 	s.user = user.clone()
-	if _, err := s.execDirect(ctx, "connect "+user.Username+" password "+user.Password); err != nil {
+	if _, err := s.execDirect(ctx, "connect "+user.Username+" password \""+user.Password+"\""); err != nil {
 		return err
 	}
 	s.metrics.msgCh <- counterMsg{idx: counterSessionConnects, v: uint64(1)}

@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/snowflakedb/gosnowflake/internal/compilation"
+	internalos "github.com/snowflakedb/gosnowflake/internal/os"
 )
 
 const (
@@ -174,19 +176,21 @@ var userAgent = fmt.Sprintf("%v/%v (%v-%v) %v/%v",
 	runtime.Version())
 
 type authRequestClientEnvironment struct {
-	Application             string   `json:"APPLICATION"`
-	ApplicationPath         string   `json:"APPLICATION_PATH"`
-	Os                      string   `json:"OS"`
-	OsVersion               string   `json:"OS_VERSION"`
-	Isa                     string   `json:"ISA,omitempty"`
-	OCSPMode                string   `json:"OCSP_MODE"`
-	GoVersion               string   `json:"GO_VERSION"`
-	OAuthType               string   `json:"OAUTH_TYPE,omitempty"`
-	CertRevocationCheckMode string   `json:"CERT_REVOCATION_CHECK_MODE,omitempty"`
-	Platform                []string `json:"PLATFORM,omitempty"`
-	CoreVersion             string   `json:"CORE_VERSION,omitempty"`
-	CoreLoadError           string   `json:"CORE_LOAD_ERROR,omitempty"`
-	CoreFileName            string   `json:"CORE_FILE_NAME,omitempty"`
+	Application             string            `json:"APPLICATION"`
+	ApplicationPath         string            `json:"APPLICATION_PATH"`
+	Os                      string            `json:"OS"`
+	OsVersion               string            `json:"OS_VERSION"`
+	OsDetails               map[string]string `json:"OS_DETAILS,omitempty"`
+	Isa                     string            `json:"ISA,omitempty"`
+	OCSPMode                string            `json:"OCSP_MODE"`
+	GoVersion               string            `json:"GO_VERSION"`
+	OAuthType               string            `json:"OAUTH_TYPE,omitempty"`
+	CertRevocationCheckMode string            `json:"CERT_REVOCATION_CHECK_MODE,omitempty"`
+	Platform                []string          `json:"PLATFORM,omitempty"`
+	CoreVersion             string            `json:"CORE_VERSION,omitempty"`
+	CoreLoadError           string            `json:"CORE_LOAD_ERROR,omitempty"`
+	CoreFileName            string            `json:"CORE_FILE_NAME,omitempty"`
+	CgoEnabled              bool              `json:"CGO_ENABLED,omitempty"`
 }
 
 type authRequestData struct {
@@ -458,9 +462,12 @@ func newAuthRequestClientEnvironment() authRequestClientEnvironment {
 	var coreLoadError string
 
 	// Try to get minicore version, but don't block if it's not loaded yet
-	if strings.EqualFold(os.Getenv(disableMinicoreEnv), "true") {
+	if !compilation.MinicoreEnabled {
+		logger.Trace("minicore disabled at compile time")
+		coreLoadError = "Minicore is disabled at compile time (built with -tags minicore_disabled)"
+	} else if strings.EqualFold(os.Getenv(disableMinicoreEnv), "true") {
 		logger.Trace("minicore loading disabled")
-		coreLoadError = "Minicore is disabled with SNOWFLAKE_DISABLE_MINICORE env variable"
+		coreLoadError = "Minicore is disabled with SF_DISABLE_MINICORE env variable"
 	} else if mc := getMiniCore(); mc != nil {
 		var err error
 		coreVersion, err = mc.FullVersion()
@@ -477,11 +484,13 @@ func newAuthRequestClientEnvironment() authRequestClientEnvironment {
 	return authRequestClientEnvironment{
 		Os:            runtime.GOOS,
 		OsVersion:     osVersion,
+		OsDetails:     internalos.GetOsDetails(),
 		Isa:           runtime.GOARCH,
 		GoVersion:     runtime.Version(),
 		CoreVersion:   coreVersion,
 		CoreFileName:  getMiniCoreFileName(),
 		CoreLoadError: coreLoadError,
+		CgoEnabled:    compilation.CgoEnabled,
 	}
 }
 
@@ -511,7 +520,10 @@ func createRequestBody(sc *snowflakeConn, sessionParameters map[string]interface
 	case AuthTypeOAuth:
 		requestMain.LoginName = sc.cfg.User
 		requestMain.Authenticator = AuthTypeOAuth.String()
-		requestMain.Token = sc.cfg.Token
+		var err error
+		if requestMain.Token, err = sc.cfg.getToken(); err != nil {
+			return nil, fmt.Errorf("failed to get OAuth token: %w", err)
+		}
 	case AuthTypeOkta:
 		samlResponse, err := authenticateBySAML(
 			sc.ctx,
@@ -538,7 +550,10 @@ func createRequestBody(sc *snowflakeConn, sessionParameters map[string]interface
 		logger.WithContext(sc.ctx).Info("Programmatic access token")
 		requestMain.Authenticator = AuthTypePat.String()
 		requestMain.LoginName = sc.cfg.User
-		requestMain.Token = sc.cfg.Token
+		var err error
+		if requestMain.Token, err = sc.cfg.getToken(); err != nil {
+			return nil, fmt.Errorf("failed to get PAT token: %w", err)
+		}
 	case AuthTypeSnowflake:
 		logger.WithContext(sc.ctx).Debug("Username and password")
 		requestMain.LoginName = sc.cfg.User
