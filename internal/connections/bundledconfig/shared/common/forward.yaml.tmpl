@@ -123,12 +123,12 @@ service:
         - resourcedetection
         - resourcedetection/cloud
         - transform/add_span_status_code
-        - resource/add_empty_service_attributes
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        - resource/add_empty_service_attributes
         - batch
       exporters: [otlphttp/observetracing]

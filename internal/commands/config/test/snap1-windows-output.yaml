@@ -520,9 +520,9 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
-                - resource/add_empty_service_attributes
                 - attributes/observe_global_attributes
                 - resource/observe_global_resource_attributes
+                - resource/add_empty_service_attributes
                 - batch
             receivers:
                 - otlp
