@@ -170,6 +170,13 @@ dockers_v2:
     dockerfile: packaging/docker/Dockerfile
     extra_files:
       - packaging/docker
+    sbom: true
+
+sboms:
+  - id: archive
+    artifacts: archive
+  - id: package
+    artifacts: package
 
 git:
   ignore_tags:
