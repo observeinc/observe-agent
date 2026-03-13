@@ -8,7 +8,6 @@ import urllib.error
 import utils as u
 
 
-
 def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None:
     """Configure the observe-agent with minimal settings to allow it to start
 
@@ -29,13 +28,15 @@ def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None
     if platform == "windows":
         config_command = (
             r'Set-Location "C:\Program Files\Observe\observe-agent"; '
-            r'./observe-agent init-config --token {} --observe_url {} --print'.format(
+            r"./observe-agent init-config --token {} --observe_url {} --print".format(
                 observe_token, observe_url
             )
         )
     else:  # Linux
-        config_command = 'sudo observe-agent init-config --token {} --observe_url {} --print'.format(
-            observe_token, observe_url
+        config_command = (
+            "sudo observe-agent init-config --token {} --observe_url {} --print".format(
+                observe_token, observe_url
+            )
         )
 
     # First print what we're going to configure
@@ -46,13 +47,15 @@ def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None
     if platform == "windows":
         config_command = (
             r'Set-Location "C:\Program Files\Observe\observe-agent"; '
-            r'./observe-agent init-config --token {} --observe_url {}'.format(
+            r"./observe-agent init-config --token {} --observe_url {}".format(
                 observe_token, observe_url
             )
         )
     else:  # Linux
-        config_command = 'sudo observe-agent init-config --token {} --observe_url {}'.format(
-            observe_token, observe_url
+        config_command = (
+            "sudo observe-agent init-config --token {} --observe_url {}".format(
+                observe_token, observe_url
+            )
         )
 
     result = remote_host.run_command(config_command)
@@ -62,7 +65,9 @@ def _configure_agent(remote_host: u.Host, platform: str, env_vars: dict) -> None
         print("✅ Agent configured successfully")
 
 
-def _start_service(remote_host: u.Host, start_command: str, platform: str, env_vars: dict = None):
+def _start_service(
+    remote_host: u.Host, start_command: str, platform: str, env_vars: dict = None
+):
     """Start the observe-agent service
 
     Args:
@@ -77,7 +82,9 @@ def _start_service(remote_host: u.Host, start_command: str, platform: str, env_v
     if platform == "windows" and env_vars:
         home_dir = r"/C:/Users/{}".format(env_vars["user"])
         current_script_dir = os.path.dirname(os.path.abspath(__file__))
-        ps_start_script_path = os.path.join(current_script_dir, "start_agent_windows.ps1")
+        ps_start_script_path = os.path.join(
+            current_script_dir, "start_agent_windows.ps1"
+        )
         remote_host.put_file(local_path=ps_start_script_path, remote_path=home_dir)
 
     result = remote_host.run_command(start_command)
@@ -93,8 +100,13 @@ def _start_service(remote_host: u.Host, start_command: str, platform: str, env_v
             raise RuntimeError("❌ Error starting observe-agent service")
 
 
-def _verify_running(remote_host: u.Host, status_command: str, version_command: str,
-                   version_name: str, num_retries: int = 10) -> str:
+def _verify_running(
+    remote_host: u.Host,
+    status_command: str,
+    version_command: str,
+    version_name: str,
+    num_retries: int = 10,
+) -> str:
     """Verify agent is running and get its version
 
     Args:
@@ -108,7 +120,9 @@ def _verify_running(remote_host: u.Host, status_command: str, version_command: s
         str: version string
     """
     print(f"🔍 Verifying {version_name} version is running...")
-    agent_status = u.check_status_loop(remote_host, status_command, num_retries=num_retries)
+    agent_status = u.check_status_loop(
+        remote_host, status_command, num_retries=num_retries
+    )
     if not agent_status:
         u.die(f"❌ {version_name.capitalize()} version failed to start")
 
@@ -149,8 +163,13 @@ def _get_installation_package(env_vars: dict) -> tuple:
     )
 
 
-def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
-                    platform: str, env_vars: dict = None):
+def _perform_upgrade(
+    remote_host: u.Host,
+    filename: str,
+    full_path: str,
+    platform: str,
+    env_vars: dict = None,
+):
     """Perform the upgrade installation
 
     Args:
@@ -179,7 +198,9 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
         # Copy new package to remote host home directory
         home_dir = f"/home/{env_vars['user']}"
         remote_path_with_filename = f"{home_dir}/{filename}"
-        remote_host.put_file(local_path=full_path, remote_path=remote_path_with_filename)
+        remote_host.put_file(
+            local_path=full_path, remote_path=remote_path_with_filename
+        )
 
         # Determine upgrade command based on distribution
         distribution = env_vars["machine_config"]["distribution"].lower()
@@ -196,7 +217,9 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
     result = remote_host.run_command(upgrade_command)
     u.print_remote_result(result)
 
-    if (platform == "windows" and result.stderr) or (platform == "linux" and result.exited != 0):
+    if (platform == "windows" and result.stderr) or (
+        platform == "linux" and result.exited != 0
+    ):
         u.die("❌ Error upgrading observe-agent")
 
     # TODO: Remove this workaround after 2.9.0 is released and OLD_VERSION is updated to v2.9.0+
@@ -207,13 +230,20 @@ def _perform_upgrade(remote_host: u.Host, filename: str, full_path: str,
         distribution = env_vars["machine_config"]["distribution"].lower()
         if "redhat" in distribution:
             print("Re-enabling and restarting service after RPM upgrade...")
-            restart_result = remote_host.run_command("sudo systemctl enable --now observe-agent")
+            restart_result = remote_host.run_command(
+                "sudo systemctl enable --now observe-agent"
+            )
             if restart_result.exited != 0:
                 print(f"Warning: Failed to restart service: {restart_result.stderr}")
 
 
-def _verify_upgrade(remote_host: u.Host, status_command: str, version_command: str,
-                   old_version: str, platform: str = None) -> None:
+def _verify_upgrade(
+    remote_host: u.Host,
+    status_command: str,
+    version_command: str,
+    old_version: str,
+    platform: str = None,
+) -> None:
     """Verify the upgrade was successful
 
     Args:
@@ -262,7 +292,9 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
     # Set windows home dir paths for consistency (same as test_install.py)
     home_dir = r"/C:/Users/{}".format(env_vars["user"])  # for user in sftp
-    home_dir_powershell = r"C:\Users\{}".format(env_vars["user"])  # for use in powershell script
+    home_dir_powershell = r"C:\Users\{}".format(
+        env_vars["user"]
+    )  # for use in powershell script
 
     # Download the old version Windows package locally, then upload (same as test_install.py)
 
@@ -270,10 +302,13 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     old_filename = "observe-agent-old.zip"
 
     # Download to local temp file first
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_file:
         print(f"Downloading {download_url}...")
         try:
-            with urllib.request.urlopen(f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip", timeout=60) as response:
+            with urllib.request.urlopen(
+                f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_Windows_x86_64.zip",
+                timeout=60,
+            ) as response:
                 temp_file.write(response.read())
             local_package_path = temp_file.name
         except urllib.error.URLError as e:
@@ -283,11 +318,15 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
     # Upload the package to remote host with correct filename (same as test_install.py)
     remote_path_with_filename = f"{home_dir}/{old_filename}"
-    remote_host.put_file(local_path=local_package_path, remote_path=remote_path_with_filename)
+    remote_host.put_file(
+        local_path=local_package_path, remote_path=remote_path_with_filename
+    )
 
     # Copy the install script from the scripts directory (same as test_install.py)
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
-    ps_installation_script_path = os.path.join(current_script_dir, "install_windows.ps1")
+    ps_installation_script_path = os.path.join(
+        current_script_dir, "install_windows.ps1"
+    )
     remote_host.put_file(local_path=ps_installation_script_path, remote_path=home_dir)
 
     # Run install script with the uploaded package (same pattern as test_install.py)
@@ -300,7 +339,9 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 
     if result.stderr:
         # Use RuntimeError like test_install.py
-        raise RuntimeError("❌ Installation error in install_windows.ps1 powershell script")
+        raise RuntimeError(
+            "❌ Installation error in install_windows.ps1 powershell script"
+        )
     else:
         print("✅ Old version installation completed")
 
@@ -314,7 +355,9 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     _start_service(remote_host, start_command, "windows", env_vars)
 
     # Verify old version is running
-    old_version_actual = _verify_running(remote_host, status_command, version_command, "old")
+    old_version_actual = _verify_running(
+        remote_host, status_command, version_command, "old"
+    )
 
     # Find and perform upgrade
     print("⬆️ Upgrading to new version...")
@@ -322,7 +365,9 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
     _perform_upgrade(remote_host, filename, full_path, "windows", env_vars)
 
     # Verify upgrade was successful
-    _verify_upgrade(remote_host, status_command, version_command, old_version_actual, "windows")
+    _verify_upgrade(
+        remote_host, status_command, version_command, old_version_actual, "windows"
+    )
 
 
 @u.print_test_decorator
@@ -360,15 +405,17 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     if "redhat" in distribution:
         # Use RPM package for RedHat-based systems (Amazon Linux, RHEL, etc.)
         # v2.5.0 uses format: observe-agent-2.5.0-1.x86_64.rpm
-        version_number = old_version.lstrip('v')  # Remove 'v' prefix
+        version_number = old_version.lstrip("v")  # Remove 'v' prefix
         package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent-{version_number}-1.{arch}.rpm"
         filename = f"observe-agent-{version_number}-1.{arch}.rpm"
         install_command = f"cd ~ && sudo dnf install -y {filename}"
     elif "debian" in distribution:
         # Use DEB package for Debian-based systems
         # v2.5.0 uses format: observe-agent_2.5.0_amd64.deb (note: amd64 not x86_64)
-        version_number = old_version.lstrip('v')  # Remove 'v' prefix
-        deb_arch = "amd64" if arch == "x86_64" else arch  # Debian uses amd64 instead of x86_64
+        version_number = old_version.lstrip("v")  # Remove 'v' prefix
+        deb_arch = (
+            "amd64" if arch == "x86_64" else arch
+        )  # Debian uses amd64 instead of x86_64
         package_url = f"https://github.com/observeinc/observe-agent/releases/download/{old_version}/observe-agent_{version_number}_{deb_arch}.deb"
         filename = f"observe-agent_{version_number}_{deb_arch}.deb"
         install_command = f"cd ~ && sudo dpkg -i {filename}"
@@ -378,7 +425,7 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     # Download package locally, then upload (same pattern as test_install.py)
 
     # Download to local temp file first
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pkg') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pkg") as temp_file:
         print(f"Downloading {package_url}...")
         try:
             with urllib.request.urlopen(package_url, timeout=60) as response:
@@ -391,7 +438,9 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
 
     # Upload the package to remote host with correct filename (same as test_install.py)
     remote_path_with_filename = f"{home_dir}/{filename}"
-    remote_host.put_file(local_path=local_package_path, remote_path=remote_path_with_filename)
+    remote_host.put_file(
+        local_path=local_package_path, remote_path=remote_path_with_filename
+    )
 
     # Install the package using the appropriate package manager (same as test_install.py)
     result = remote_host.run_command(install_command)
@@ -411,7 +460,9 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     _start_service(remote_host, start_command, "linux")
 
     # Verify old version is running
-    old_version_actual = _verify_running(remote_host, status_command, version_command, "old")
+    old_version_actual = _verify_running(
+        remote_host, status_command, version_command, "old"
+    )
 
     # Find and perform upgrade
     print("⬆️ Upgrading to new version...")
@@ -419,7 +470,9 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     _perform_upgrade(remote_host, filename, full_path, "linux", env_vars)
 
     # Verify upgrade was successful
-    _verify_upgrade(remote_host, status_command, version_command, old_version_actual, "linux")
+    _verify_upgrade(
+        remote_host, status_command, version_command, old_version_actual, "linux"
+    )
 
 
 if __name__ == "__main__":
@@ -441,7 +494,9 @@ if __name__ == "__main__":
     elif "windows" in distribution:
         run_test_windows(remote_host, env_vars)
     elif "docker" in distribution:
-        print("✅ Docker upgrade test skipped - upgrades are handled via container image replacement")
+        print(
+            "✅ Docker upgrade test skipped - upgrades are handled via container image replacement"
+        )
         print("✅ Upgrade test passed (Docker containers use image-based upgrades)")
     else:
         u.die(f"❌ Unsupported distribution: {distribution}")

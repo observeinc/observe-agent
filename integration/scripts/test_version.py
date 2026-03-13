@@ -71,7 +71,7 @@ def run_test_windows(remote_host: u.Host, env_vars: dict) -> None:
 @u.print_test_decorator
 def run_test_docker(remote_host: u.Host, env_vars: dict) -> None:
     u.upload_default_docker_config(env_vars, remote_host)
-    docker_prefix = u.get_docker_prefix(remote_host, False)
+    docker_prefix = u.get_docker_prefix(remote_host)
     config_file_linux = "/etc/observe-agent/observe-agent.yaml"
     version_pattern = re.compile(r"^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$")
 
@@ -99,14 +99,14 @@ def run_test_linux(remote_host: u.Host, env_vars: dict) -> None:
     Raises:
         ValueError: if version or config file is invalid
     """
-    config_file_linux = "/etc/observe-agent/observe-agent.yaml"
+    config_file_docker = "/etc/observe-agent/observe-agent.yaml"
     # Can match 0.2.2-SNAPSHOT-b6e1491 or 0.2.2
     version_pattern = re.compile(r"^\d+\.\d+\.\d+(-[A-Za-z0-9-]+)?$")
 
     result = remote_host.run_command("observe-agent version")
     config_file, version = _extract_version_config(result)
 
-    if config_file != config_file_linux:
+    if config_file != config_file_docker:
         raise ValueError(f" ❌ Invalid config file: {config_file}")
     if not version_pattern.match(version):
         raise ValueError(f" ❌ Invalid version: {version}")

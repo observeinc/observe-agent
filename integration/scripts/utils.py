@@ -255,7 +255,10 @@ class Host(object):
 
 
 def check_status_loop(
-    remote_host: "Host", status_command: str, num_retries: int = 10, sleep_seconds: float = 1.5
+    remote_host: "Host",
+    status_command: str,
+    num_retries: int = 10,
+    sleep_seconds: float = 1.5,
 ) -> bool:
     """Run Check Status Command in a loop to wait for observe-agent to start
 
@@ -313,7 +316,7 @@ def get_agent_version(remote_host: Host, version_command: str) -> str:
         if result.exited == 0:
             # Extract version from output - format is "observe-agent version: X.Y.Z" or "observe-agent version X.Y.Z"
             version_line = result.stdout.strip()
-            version_match = re.search(r'version:?\s+(\S+)', version_line)
+            version_match = re.search(r"version:?\s+(\S+)", version_line)
             if version_match:
                 return version_match.group(1)
         return "unknown"
@@ -333,7 +336,12 @@ def get_docker_image(remote_host: Host) -> str:
     return images[0]
 
 
-def get_docker_prefix(remote_host: Host, detach: bool, extra_args: str = "") -> str:
+def get_docker_prefix(
+    remote_host: Host,
+    detach: bool = False,
+    mount_config: bool = True,
+    extra_args: str = "",
+) -> str:
     image = get_docker_image(remote_host)
     return f'sudo docker run {"-d --restart on-failure" if detach else ""} \
         --mount type=bind,source=/proc,target=/hostfs/proc,readonly \
@@ -342,7 +350,7 @@ def get_docker_prefix(remote_host: Host, detach: bool, extra_args: str = "") -> 
         --mount type=bind,source=/var/lib,target=/hostfs/var/lib,readonly \
         --mount type=bind,source=/var/log,target=/hostfs/var/log,readonly \
         --mount type=bind,source=/var/lib/docker/containers,target=/var/lib/docker/containers,readonly \
-        --mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml \
+        {"--mount type=bind,source=$(pwd)/observe-agent.yaml,target=/etc/observe-agent/observe-agent.yaml" if mount_config else ""} \
         {extra_args} \
         --pid host {image}'
 
