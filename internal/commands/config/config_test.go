@@ -95,11 +95,33 @@ var allSnapshotTests = []snapshotTest{
 		outputPath:      "test/snap2-windows-output.yaml",
 		packageType:     Windows,
 	},
+	// Tests with sending_queue_batch enabled
+	{
+		agentConfigPath: "test/snap3-sending-queue-batch-agent-config.yaml",
+		outputPath:      "test/snap3-docker-output.yaml",
+		packageType:     Docker,
+	},
+	{
+		agentConfigPath: "test/snap3-sending-queue-batch-agent-config.yaml",
+		outputPath:      "test/snap3-linux-output.yaml",
+		packageType:     Linux,
+	},
+	{
+		agentConfigPath: "test/snap3-sending-queue-batch-agent-config.yaml",
+		outputPath:      "test/snap3-macos-output.yaml",
+		packageType:     MacOS,
+	},
+	{
+		agentConfigPath: "test/snap3-sending-queue-batch-agent-config.yaml",
+		outputPath:      "test/snap3-windows-output.yaml",
+		packageType:     Windows,
+	},
 }
 
 // This test cannot be run in our CI since some of the OTel components validate file paths
 // which are not set up in our CI environment (ex checking that the file storage dir exists).
-func XTest_ValidateOtelConfig(t *testing.T) {
+func Test_ValidateOtelConfig(t *testing.T) {
+	t.Skip("Unskip to validate otel configs")
 	for _, test := range allSnapshotTests {
 		// Skip environments that don't match the current OS; some OTel component behavior is OS-specific.
 		switch test.packageType {
@@ -227,6 +249,22 @@ func setEnvVars(t *testing.T, packageType PackageType) {
 		t.Errorf("Unknown package type: %s", packageType)
 	}
 
+}
+
+func Test_GenerateSnapshots(t *testing.T) {
+	t.Skip("Unskip to regenerate snapshot output files")
+	for _, test := range allSnapshotTests {
+		t.Run(test.outputPath, func(t *testing.T) {
+			setupConfig(t, test)
+			curPath := getCurPath()
+			ctx := logger.WithCtx(context.Background(), logger.GetNop())
+			var output bytes.Buffer
+			err := PrintShortOtelConfig(ctx, &output)
+			assert.NoError(t, err)
+			err = os.WriteFile(filepath.Join(curPath, test.outputPath), output.Bytes(), 0644)
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func getCurPath() string {

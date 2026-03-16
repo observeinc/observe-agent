@@ -582,4 +582,3 @@ service:
                                     - observe.agent.instance.id
         resource:
             observe.agent.instance.id: test-agent-instance-id
-

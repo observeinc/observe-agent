@@ -1,37 +1,8 @@
 connectors:
     count: null
-    spanmetrics:
-        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
-        dimensions:
-            - name: service.namespace
-            - name: service.version
-            - name: deployment.environment.name
-            - name: team.name
-            - name: peer.db.name
-            - name: peer.messaging.system
-            - name: otel.status_description
-            - name: observe.status_code
-            - name: customer_id
-        histogram:
-            exponential:
-                max_size: 100
 exporters:
     debug: null
     nop: null
-    otlphttp/agentheartbeat:
-        compression: zstd
-        headers:
-            Authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
-            X-Observe-Agent-Instance-Id: test-agent-instance-id
-            X-Observe-Context: '{"environment":"macos","version":"dev"}'
-            X-Observe-Enable-Auth-Error-Reporting: "true"
-            X-Observe-Target-Package: Observe Agent
-        logs_endpoint: https://123456789.collect.observe-eng.com/v1/kubernetes/v1/entity
-        retry_on_failure:
-            enabled: true
-        sending_queue:
-            num_consumers: 4
-            queue_size: 100
     otlphttp/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
@@ -41,6 +12,11 @@ exporters:
         retry_on_failure:
             enabled: true
         sending_queue:
+            batch:
+                flush_timeout: 5s
+                max_size: 20971520
+                min_size: 0
+                sizer: bytes
             num_consumers: 4
             queue_size: 100
     otlphttp/observemetrics:
@@ -52,6 +28,11 @@ exporters:
         retry_on_failure:
             enabled: true
         sending_queue:
+            batch:
+                flush_timeout: 5s
+                max_size: 20971520
+                min_size: 0
+                sizer: bytes
             num_consumers: 4
             queue_size: 100
     otlphttp/observetracing:
@@ -63,6 +44,11 @@ exporters:
         retry_on_failure:
             enabled: true
         sending_queue:
+            batch:
+                flush_timeout: 5s
+                max_size: 20971520
+                min_size: 0
+                sizer: bytes
             num_consumers: 4
             queue_size: 100
     prometheusremotewrite/observe:
@@ -80,41 +66,17 @@ extensions:
     file_storage:
         directory: /var/lib/observe-agent/filestorage
     health_check:
-        endpoint: localhost:12345
-        path: /test-status
+        endpoint: localhost:13133
+        path: /status
 processors:
-    attributes/observe_global_attributes:
-        actions:
-            - action: insert
-              key: test-attr
-              value: test-value
     batch:
         timeout: 5s
-    cumulativetodelta/observe:
-        max_staleness: 5m
     deltatocumulative: null
     filter/count:
         error_mode: ignore
         metrics:
             metric:
                 - IsMatch(name, ".*")
-    filter/drop_long_spans:
-        error_mode: ignore
-        traces:
-            span:
-                - (span.end_time - span.start_time) > Duration("30m")
-    filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client:
-        error_mode: ignore
-        traces:
-            span:
-                - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.messaging.system"] == nil and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
-                - span.kind == SPAN_KIND_UNSPECIFIED
-                - span.kind == SPAN_KIND_INTERNAL
-                - span.kind == SPAN_KIND_PRODUCER
-    groupbyattrs/peers:
-        keys:
-            - peer.db.name
-            - peer.messaging.system
     memory_limiter:
         check_interval: 1s
         limit_percentage: 80
@@ -135,19 +97,6 @@ processors:
             - action: upsert
               key: observe.agent.instance.id
               value: test-agent-instance-id
-    resource/heartbeat:
-        attributes:
-            - action: insert
-              from_attribute: host.name
-              key: observe.agent.hostname
-    resource/observe_global_resource_attributes:
-        attributes:
-            - action: insert
-              key: deployment.environment
-              value: test
-            - action: insert
-              key: service.name
-              value: test-service
     resourcedetection:
         detectors:
             - env
@@ -181,8 +130,10 @@ processors:
                     enabled: true
     resourcedetection/cloud:
         detectors:
+            - gcp
+            - ecs
             - ec2
-            - system
+            - azure
         override: false
         timeout: 2s
     transform/add_span_status_code:
@@ -193,38 +144,6 @@ processors:
             - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
-    transform/fix_peer_attributes:
-        error_mode: ignore
-        metric_statements:
-            - set(datapoint.attributes["peer.db.name"], resource.attributes["peer.db.name"]) where resource.attributes["peer.db.name"] != nil
-            - set(datapoint.attributes["peer.messaging.system"], resource.attributes["peer.messaging.system"]) where resource.attributes["peer.messaging.system"] != nil
-    transform/fix_red_metrics_resource_attributes:
-        error_mode: ignore
-        metric_statements:
-            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|team.name)")
-            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|team.name)")
-            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
-            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
-            - delete_key(datapoint.attributes, "status.code")
-    transform/heartbeat:
-        error_mode: ignore
-        log_statements:
-            - context: log
-              statements:
-                - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
-                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
-                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
-    transform/remove_service_name_for_peer_metrics:
-        error_mode: ignore
-        metric_statements:
-            - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
-    transform/shape_spans_for_red_metrics:
-        error_mode: ignore
-        trace_statements:
-            - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
-            - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
-            - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
     transform/truncate:
         log_statements:
             - context: log
@@ -238,21 +157,13 @@ processors:
                 - truncate_all(resource.attributes, 4095)
 receivers:
     filelog/host_monitoring:
-        exclude:
-            - exclude1
-            - exclude2
         include:
-            - include1
-            - include2
+            - /var/log/**/*.log
         include_file_path: true
         max_log_size: 4MiB
         operators:
             - expr: body matches "otel-contrib"
               type: filter
-            - combine_field: body
-              id: multiline-recombine
-              is_first_entry: body matches "^(\\d{4}[-/]\\d{2}[-/]\\d{2} \\d{2}:\\d{2}:\\d{2}|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z?|[A-Za-z]+ \\d{1,2} \\d{2}:\\d{2}:\\d{2})"
-              type: recombine
         retry_on_failure:
             enabled: true
         storage: file_storage
@@ -260,14 +171,6 @@ receivers:
         collection_interval: 5m
         include: /usr/local/observe-agent/observe-agent.yaml
         initial_delay: 60s
-    heartbeat:
-        auth_check:
-            headers:
-                authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
-            url: https://123456789.collect.observe-eng.com
-        config_interval: 24h
-        environment: macos
-        interval: 30s
     hostmetrics/host-monitoring-host:
         collection_interval: 60s
         scrapers:
@@ -302,38 +205,13 @@ receivers:
                     system.paging.utilization:
                         enabled: true
             processes: null
-    hostmetrics/host-monitoring-process:
-        collection_interval: 60s
-        scrapers:
-            process:
-                metrics:
-                    process.context_switches:
-                        enabled: true
-                    process.cpu.utilization:
-                        enabled: true
-                    process.disk.operations:
-                        enabled: true
-                    process.memory.utilization:
-                        enabled: true
-                    process.open_file_descriptors:
-                        enabled: true
-                    process.paging.faults:
-                        enabled: true
-                    process.signals_pending:
-                        enabled: true
-                    process.threads:
-                        enabled: true
-                mute_process_exe_error: true
-                mute_process_io_error: true
-                mute_process_name_error: true
-                mute_process_user_error: true
     nop: null
     otlp:
         protocols:
             grpc:
-                endpoint: 0.0.0.0:6789
+                endpoint: localhost:4317
             http:
-                endpoint: 0.0.0.0:5678
+                endpoint: localhost:4318
     prometheus/agent:
         config:
             scrape_configs:
@@ -346,7 +224,7 @@ receivers:
                   scrape_interval: 10s
                   static_configs:
                     - targets:
-                        - 0.0.0.0:12346
+                        - localhost:8888
 service:
     extensions:
         - health_check
@@ -366,24 +244,8 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - batch
             receivers:
                 - otlp
-        logs/heartbeat:
-            exporters:
-                - otlphttp/agentheartbeat
-            processors:
-                - resourcedetection
-                - resource/observe_global_resource_attributes
-                - attributes/observe_global_attributes
-                - resourcedetection/cloud
-                - resource/agent_instance
-                - resource/heartbeat
-                - transform/heartbeat
-            receivers:
-                - heartbeat
         logs/host_monitoring-file:
             exporters:
                 - otlphttp/observe
@@ -393,9 +255,6 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - batch
             receivers:
                 - filelog/host_monitoring
         metrics/agent-filestats:
@@ -405,8 +264,6 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filestats/agent
@@ -418,9 +275,6 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - resource/agent_instance
                 - deltatocumulative
                 - batch
             receivers:
@@ -443,10 +297,6 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - cumulativetodelta/observe
-                - batch
             receivers:
                 - otlp
         metrics/host_monitoring_host:
@@ -456,79 +306,33 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
-        metrics/host_monitoring_process:
-            exporters:
-                - prometheusremotewrite/observe
-            processors:
-                - memory_limiter
-                - resourcedetection
-                - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - batch
-            receivers:
-                - hostmetrics/host-monitoring-process
-        metrics/spanmetrics:
-            exporters:
-                - otlphttp/observemetrics
-            processors:
-                - memory_limiter
-                - groupbyattrs/peers
-                - transform/fix_peer_attributes
-                - transform/remove_service_name_for_peer_metrics
-                - transform/fix_red_metrics_resource_attributes
-                - resourcedetection
-                - resourcedetection/cloud
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - batch
-            receivers:
-                - spanmetrics
         traces/forward:
             exporters:
                 - otlphttp/observetracing
             processors:
                 - memory_limiter
-                - filter/drop_long_spans
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
-                - transform/add_span_status_code
-                - attributes/observe_global_attributes
-                - resource/observe_global_resource_attributes
-                - resource/add_empty_service_attributes
-                - batch
-            receivers:
-                - otlp
-        traces/spanmetrics:
-            exporters:
-                - spanmetrics
-            processors:
-                - memory_limiter
-                - filter/drop_long_spans
-                - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
-                - transform/shape_spans_for_red_metrics
                 - transform/add_span_status_code
                 - resource/add_empty_service_attributes
             receivers:
                 - otlp
     telemetry:
         logs:
-            encoding: json
-            level: ERROR
+            encoding: console
+            level: INFO
         metrics:
-            level: normal
+            level: detailed
             readers:
                 - pull:
                     exporter:
                         prometheus:
-                            host: 0.0.0.0
-                            port: 12346
+                            host: localhost
+                            port: 8888
                             with_resource_constant_labels:
                                 included:
                                     - observe.agent.instance.id

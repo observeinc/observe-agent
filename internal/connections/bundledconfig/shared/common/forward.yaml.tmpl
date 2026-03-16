@@ -50,6 +50,13 @@ exporters:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
       x-observe-target-package: "Tracing"
     sending_queue:
+      {{- if .Exporters.SendingQueueBatch.Enabled }}
+      batch:
+        flush_timeout: 5s
+        max_size: {{ .Exporters.SendingQueueBatch.MaxSize }}
+        min_size: 0
+        sizer: bytes
+      {{- end }}
       num_consumers: 4
       queue_size: 100
     retry_on_failure:
@@ -62,6 +69,13 @@ exporters:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
       x-observe-target-package: "Metrics"
     sending_queue:
+      {{- if .Exporters.SendingQueueBatch.Enabled }}
+      batch:
+        flush_timeout: 5s
+        max_size: {{ .Exporters.SendingQueueBatch.MaxSize }}
+        min_size: 0
+        sizer: bytes
+      {{- end }}
       num_consumers: 4
       queue_size: 100
     retry_on_failure:
@@ -88,7 +102,9 @@ service:
         {{- if .Forwarding.Metrics.ConvertCumulativeToDelta }}
         - cumulativetodelta/observe
         {{- end }}
+        {{- if or (not .Exporters.SendingQueueBatch.Enabled) (not .Forwarding.Metrics.OtlpMetrics) }}
         - batch
+        {{- end }}
       exporters:
         {{- if .Forwarding.Metrics.OtlpMetrics }}
         - otlphttp/observemetrics
@@ -109,7 +125,9 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
+        {{- end }}
       exporters: [otlphttp/observe, count]
 
     traces/forward:
@@ -130,5 +148,7 @@ service:
         - resource/observe_global_resource_attributes
         {{- end }}
         - resource/add_empty_service_attributes
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
+        {{- end }}
       exporters: [otlphttp/observetracing]

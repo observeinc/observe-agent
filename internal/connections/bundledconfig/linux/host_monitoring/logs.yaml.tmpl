@@ -60,7 +60,9 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
+        {{- end }}
       exporters: [otlphttp/observe, count]
 
     logs/host_monitoring-journald:
@@ -76,5 +78,7 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
+        {{- end }}
       exporters: [otlphttp/observe, count]

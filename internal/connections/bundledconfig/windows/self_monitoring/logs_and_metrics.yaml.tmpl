@@ -67,5 +67,7 @@ service:
         {{- if .SelfMonitoring.Fleet.Enabled }}
         - resource/agent_instance
         {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
+        {{- end }}
       exporters: [otlphttp/observe, count]
