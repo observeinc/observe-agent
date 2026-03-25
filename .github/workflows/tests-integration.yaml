@@ -49,7 +49,7 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: 2.14.1
-          args: release --prepare --clean --snapshot --verbose --parallelism 6
+          args: release --prepare --clean --skip=sign,sbom --snapshot --verbose --parallelism 6
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - name: Save docker as .tar #Save docker images to tar
