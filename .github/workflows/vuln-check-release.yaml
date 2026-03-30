@@ -35,7 +35,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25.7
+          go-version: 1.25.8
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -51,7 +51,7 @@ jobs:
           cp dist/linux_amd64/linux_build_linux_amd64_v1/observe-agent .
 
       - name: Build an image from Dockerfile
-        run: docker build -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG }} .
+        run: docker build --build-arg TARGETPLATFORM=. -f packaging/docker/Dockerfile -t docker.io/${{ env.TEST_TAG }} .
 
       - name: Docker Scout
         id: docker-scout
