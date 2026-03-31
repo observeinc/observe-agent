@@ -160,8 +160,10 @@ release:
 
 dockers_v2:
   - images:
-      - "docker.io/observeinc/observe-agent"
+      # Only publish nightly images to our private AWS ECR repo.
       - "723346149663.dkr.ecr.us-west-2.amazonaws.com/observe-agent"
+      - "{{ if not .IsNightly }}docker.io/observeinc/observe-agent{{ end }}"
+      - "{{ if not .IsNightly }}public.ecr.aws/observeinc/observe-agent{{ end }}"
     ids: [docker_build]
     tags:
       - "{{ .Version }}"

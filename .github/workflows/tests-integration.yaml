@@ -60,7 +60,7 @@ jobs:
           echo "arm64_image: ${arm64_image}"
           docker save -o dist/observe-agent_docker_arm64.tar ${arm64_image}
           docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
-      - run: ls -l && ls -l dist/
+      - run: pwd && ls -l && ls -l dist/
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -120,6 +120,8 @@ jobs:
         with:
           name: dist
           path: dist
+
+      - run: pwd && ls -l && ls -l ../dist/
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
