@@ -87,11 +87,8 @@ rm -rf $tmp_dir
 mkdir -p $tmp_dir
 unzip $ZIP_DIR -d $tmp_dir >/dev/null
 
-if [ -f "/Library/LaunchDaemons/$service_name.plist" ]; then
-    echo "Stopping $service_name. This may ask for your password..."
-    sudo launchctl stop "$service_name" || true
-    sudo launchctl unload -wF /Library/LaunchDaemons/$service_name.plist || true
-fi
+echo "Stopping $service_name (if running). This may ask for your password..."
+sudo launchctl bootout "system/$service_name" 2>/dev/null || true
 
 # Create the needed directories
 echo "Creating system install folders. This may ask for your password..."
@@ -147,13 +144,15 @@ if [ -z "$SETUP_LAUNCH_DAEMON" ] || [[ "$(echo "$SETUP_LAUNCH_DAEMON" | tr '[:up
     echo "Installing $service_name as a LaunchDaemon. This may ask for your password..."
     sudo cp -f $tmp_dir/observe-agent.plist /Library/LaunchDaemons/$service_name.plist
     sudo chown root:wheel /Library/LaunchDaemons/$service_name.plist
-    sudo launchctl load -w /Library/LaunchDaemons/$service_name.plist
-    sudo launchctl kickstart "system/$service_name"
+    sudo chmod 644 /Library/LaunchDaemons/$service_name.plist
+    sudo launchctl bootstrap "system" /Library/LaunchDaemons/$service_name.plist
+    sudo launchctl kickstart -kp "system/$service_name"
 fi
 
 echo
 echo "---"
 echo "Installation complete! You can view the agent status with observe-agent status"
 echo "Agent logs will be written to /var/log/observe-agent.log"
-echo "Use launchctl to stop and start the agent."
+echo "To restart the agent:  sudo launchctl kickstart -kp system/$service_name"
+echo "To uninstall:          curl -sL https://github.com/observeinc/observe-agent/releases/latest/download/uninstall_mac.sh | bash"
 exit 0
