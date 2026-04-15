@@ -62,6 +62,7 @@ build-ocb:
 	cp ./ocb-build/go.sum ./observecol/go.sum
 	go mod tidy && go work vendor
 	cd ./observecol && go mod tidy && go work vendor
+	$(MAKE) generate-readme
 
 install-tools:
 	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
@@ -69,6 +70,15 @@ install-tools:
 
 ## generate-jsonschema: Generates JSON schema from config
 generate-jsonschema:
-	go run ./scripts/generate_jsonschema.go
+	go run ./scripts/generate_jsonschema/
 
-.PHONY: all vendor build go-test release-snapshot install-ocb build-ocb install-tools
+## generate-readme: Generates README.md from README.md.tmpl
+generate-readme:
+	go run ./scripts/generate_readme/
+
+## check-readme: Checks if README.md is up to date with README.md.tmpl and builder-config.yaml
+check-readme:
+	go run ./scripts/generate_readme/
+	git diff --exit-code README.md || (echo "README.md is out of date, run 'make generate-readme' to update it." && exit 1)
+
+.PHONY: all vendor build go-test release-snapshot install-ocb build-ocb install-tools generate-readme check-readme
