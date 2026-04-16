@@ -14,6 +14,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
       - name: Generated the jsonschema file
         run: |
           make generate-jsonschema
@@ -33,4 +38,25 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file-path: ./formatted_diff.txt
           comment-tag: jsonschema-changes
+          reactions: eyes
+
+      - name: Check README.md is up to date
+        run: |
+          make generate-readme
+          git diff > readme_diff.txt
+          if [ -s readme_diff.txt ]; then
+            echo "README.md is out of date, run \`make generate-readme\` to update it." > formatted_readme_diff.txt
+            echo "\`\`\`" >> formatted_readme_diff.txt
+            cat readme_diff.txt >> formatted_readme_diff.txt
+            echo "\`\`\`" >> formatted_readme_diff.txt
+            exit 1
+          fi
+
+      - name: Comment PR with README changes needed
+        if: failure()
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file-path: ./formatted_readme_diff.txt
+          comment-tag: readme-changes
           reactions: eyes
