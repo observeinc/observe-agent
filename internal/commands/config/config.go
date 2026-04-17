@@ -48,10 +48,7 @@ var configValidateCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := logger.WithCtx(context.Background(), logger.GetNop())
-		col, cleanup, err := observecol.GetOtelCollector(ctx)
-		if cleanup != nil {
-			defer cleanup()
-		}
+		col, err := observecol.GetOtelCollector(ctx)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "❌ failed to generate config")
 			return err

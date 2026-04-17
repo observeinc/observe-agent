@@ -31,10 +31,7 @@ func run() error {
 	root.InitConfig()
 
 	// Get the collector settings along with our bundled config files.
-	colSettings, cleanup, err := observecol.GetOtelCollectorSettings(context.Background())
-	if cleanup != nil {
-		defer cleanup()
-	}
+	colSettings, err := observecol.GetOtelCollectorSettings(context.Background())
 	if err != nil {
 		return err
 	}

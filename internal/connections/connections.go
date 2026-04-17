@@ -1,10 +1,10 @@
 package connections
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
-	"os"
 	"path"
 	"strings"
 	"text/template"
@@ -16,7 +16,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// TempFilesFolder is the name prefix CleanupLegacyTempDirs uses to identify
+// legacy observe-agent config directories in os.TempDir().
 var TempFilesFolder = "observe-agent"
+
+// RenderedConfigFragment is an otel config fragment held in memory and
+// passed to the otelcol resolver via an inline `yaml:` URI.
+type RenderedConfigFragment struct {
+	// Name is a human-readable identifier used for logging and for the
+	// `config print` command headers (e.g. `host_monitoring-host_metrics.yaml`).
+	Name string
+	// Content is the rendered YAML body of the fragment.
+	Content string
+}
 
 type EnabledCheckFn func(*config.AgentConfig) bool
 
@@ -45,55 +57,49 @@ func (c *ConnectionType) getTemplate(tplName string) (*template.Template, error)
 	return template.New(path.Base(tplName)).Funcs(utils.TemplateFuncs()).ParseFS(fs, tplName)
 }
 
-func renderBundledConfigTemplate(ctx context.Context, tmpDir string, outFileName string, tmpl *template.Template, confValues any) (string, error) {
-	f, err := os.CreateTemp(tmpDir, fmt.Sprintf("*-%s", outFileName))
-	if err != nil {
-		logger.FromCtx(ctx).Error("failed to create temporary config fragment file", zap.String("fileName", outFileName), zap.Error(err))
+func renderBundledConfigTemplate(tmpl *template.Template, confValues any) (string, error) {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, confValues); err != nil {
 		return "", err
 	}
-	err = tmpl.Execute(f, confValues)
-	if err != nil {
-		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("fileName", outFileName), zap.Error(err))
-		return "", err
-	}
-	return f.Name(), nil
+	return buf.String(), nil
 }
 
-func (c *ConnectionType) renderBundledConfigTemplate(ctx context.Context, tmpDir string, tplName string, confValues any) (string, error) {
+func (c *ConnectionType) renderBundledConfigTemplate(ctx context.Context, tplName string, confValues any) (RenderedConfigFragment, error) {
 	tmpl, err := c.getTemplate(c.Name + "/" + tplName)
 	if err != nil {
-		fmt.Printf("TODO err1: %s\n", err.Error())
-		return "", err
+		return RenderedConfigFragment{}, err
 	}
-	outFileName := c.Name + "-" + strings.TrimSuffix(tplName, ".tmpl")
-	return renderBundledConfigTemplate(ctx, tmpDir, outFileName, tmpl, confValues)
+	content, err := renderBundledConfigTemplate(tmpl, confValues)
+	if err != nil {
+		logger.FromCtx(ctx).Error("failed to execute config fragment template", zap.String("tplName", tplName), zap.Error(err))
+		return RenderedConfigFragment{}, err
+	}
+	name := c.Name + "-" + strings.TrimSuffix(tplName, ".tmpl")
+	return RenderedConfigFragment{Name: name, Content: content}, nil
 }
 
-func (c *ConnectionType) renderAllBundledConfigFragments(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
-	paths := make([]string, 0)
+func (c *ConnectionType) renderAllBundledConfigFragments(ctx context.Context, agentConfig *config.AgentConfig) ([]RenderedConfigFragment, error) {
+	rendered := make([]RenderedConfigFragment, 0)
 	for _, fragment := range c.BundledConfigFragments {
 		if !fragment.enabledCheck(agentConfig) || fragment.colConfigFilePath == "" {
 			continue
 		}
-		configPath, err := c.renderBundledConfigTemplate(ctx, tmpDir, fragment.colConfigFilePath, agentConfig)
+		r, err := c.renderBundledConfigTemplate(ctx, fragment.colConfigFilePath, agentConfig)
 		if err != nil {
 			return nil, err
 		}
-		paths = append(paths, configPath)
+		rendered = append(rendered, r)
 	}
-	return paths, nil
+	return rendered, nil
 }
 
-func (c *ConnectionType) GetBundledConfigs(ctx context.Context, tmpDir string, agentConfig *config.AgentConfig) ([]string, error) {
+func (c *ConnectionType) GetBundledConfigs(ctx context.Context, agentConfig *config.AgentConfig) ([]RenderedConfigFragment, error) {
 	if !c.EnabledCheck(agentConfig) {
-		return []string{}, nil
+		return []RenderedConfigFragment{}, nil
 	}
 
-	configPaths, err := c.renderAllBundledConfigFragments(ctx, tmpDir, agentConfig)
-	if err != nil {
-		return nil, err
-	}
-	return configPaths, nil
+	return c.renderAllBundledConfigFragments(ctx, agentConfig)
 }
 
 type ConnectionTypeOption func(*ConnectionType)

@@ -18,10 +18,7 @@ import (
 )
 
 func PrintAllConfigsIndividually(ctx context.Context, w io.Writer) error {
-	configFilePaths, cleanup, err := connections.SetupAndGetConfigFiles(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	fragments, err := connections.SetupAndGetConfigs(ctx)
 	if err != nil {
 		return err
 	}
@@ -47,26 +44,22 @@ func PrintAllConfigsIndividually(ctx context.Context, w io.Writer) error {
 		return err
 	}
 	printConfig("computed agent config", agentConfigYaml)
-	agentConfigFile := viper.ConfigFileUsed()
-	if agentConfigFile != "" {
-		configFilePaths = append([]string{agentConfigFile}, configFilePaths...)
-	}
-	for _, filePath := range configFilePaths {
-		file, err := os.ReadFile(filePath)
+	if agentConfigFile := viper.ConfigFileUsed(); agentConfigFile != "" {
+		file, err := os.ReadFile(agentConfigFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error reading config file %s: %s", filePath, err.Error())
+			fmt.Fprintf(os.Stderr, "error reading config file %s: %s", agentConfigFile, err.Error())
 		} else {
-			printConfig("config file "+filePath, file)
+			printConfig("config file "+agentConfigFile, file)
 		}
+	}
+	for _, f := range fragments {
+		printConfig("config fragment "+f.Name, []byte(f.Content))
 	}
 	return nil
 }
 
 func PrintShortOtelConfig(ctx context.Context, w io.Writer) error {
-	settings, cleanup, err := observecol.GetOtelCollectorSettings(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	settings, err := observecol.GetOtelCollectorSettings(ctx)
 	if err != nil {
 		return err
 	}
@@ -90,10 +83,7 @@ func PrintShortOtelConfig(ctx context.Context, w io.Writer) error {
 }
 
 func PrintFullOtelConfig(ctx context.Context, w io.Writer) error {
-	settings, cleanup, err := observecol.GetOtelCollectorSettings(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	settings, err := observecol.GetOtelCollectorSettings(ctx)
 	if err != nil {
 		return err
 	}

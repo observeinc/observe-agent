@@ -149,10 +149,7 @@ func runValidateTest(t *testing.T, test snapshotTest) {
 
 	// Run the test
 	ctx := logger.WithCtx(context.Background(), logger.GetNop())
-	col, cleanup, err := observecol.GetOtelCollector(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	col, err := observecol.GetOtelCollector(ctx)
 	assert.NoError(t, err)
 	err = col.DryRun(ctx)
 	assert.NoError(t, err)

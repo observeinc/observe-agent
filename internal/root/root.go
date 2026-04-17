@@ -90,7 +90,7 @@ func InitConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(CfgFile)
 	} else {
-		viper.AddConfigPath(connections.GetDefaultAgentPath())
+		viper.AddConfigPath(utils.GetDefaultAgentPath())
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("observe-agent")
 	}
