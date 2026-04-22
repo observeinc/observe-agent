@@ -9,7 +9,7 @@ See <https://docs.observeinc.com/en/latest/content/observe-agent/configuration.h
 
 ## Build
 
-To run the code you need to have `golang v1.25.8` installed. Then you can run the following command to compile the binary.
+To run the code you need to have `golang v1.25.9` installed. Then you can run the following command to compile the binary.
 
 ```sh
 go build -o observe-agent
@@ -67,7 +67,7 @@ To start the observe agent after building the binary run the following command.
 
 ## Components
 
-Current OTEL Collector Version: `v0.147.0`
+Current OTEL Collector Version: `v0.151.0`
 
 This section lists the components that are included in the Observe Distribution of the OpenTelemetry Collector.
 
@@ -104,69 +104,69 @@ This section lists the components that are included in the Observe Distribution 
 | [udplog][udplogreceiver]                                 |                                                       |                                                        |                                         |                                     |
 | [windowseventlog][windowseventlogreceiver]               |                                                       |                                                        |                                         |                                     |
 
-[attributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/attributesprocessor
-[awsecscontainermetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/awsecscontainermetricsreceiver
-[batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/processor/batchprocessor
-[cgroupruntimeextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/extension/cgroupruntimeextension
-[countconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/connector/countconnector
-[cumulativetodeltaprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/cumulativetodeltaprocessor
-[debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/exporter/debugexporter
-[deltatocumulativeprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/deltatocumulativeprocessor
-[dockerstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/dockerstatsreceiver
-[elasticsearchreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/elasticsearchreceiver
-[fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/exporter/fileexporter
-[filelogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/filelogreceiver
-[filestatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/filestatsreceiver
-[filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/extension/storage/filestorage
-[filterprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/filterprocessor
-[forwardconnector]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/connector/forwardconnector
-[groupbyattrsprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/groupbyattrsprocessor
-[healthcheckextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/extension/healthcheckextension
+[attributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/attributesprocessor
+[awsecscontainermetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/awsecscontainermetricsreceiver
+[batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/processor/batchprocessor
+[cgroupruntimeextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/cgroupruntimeextension
+[countconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/connector/countconnector
+[cumulativetodeltaprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/cumulativetodeltaprocessor
+[debugexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/exporter/debugexporter
+[deltatocumulativeprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/deltatocumulativeprocessor
+[dockerstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/dockerstatsreceiver
+[elasticsearchreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/elasticsearchreceiver
+[fileexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/fileexporter
+[filelogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/filelogreceiver
+[filestatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/filestatsreceiver
+[filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/storage/filestorage
+[filterprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/filterprocessor
+[forwardconnector]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/connector/forwardconnector
+[groupbyattrsprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/groupbyattrsprocessor
+[healthcheckextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/healthcheckextension
 [heartbeatreceiver]: ./components/receivers/heartbeatreceiver
-[hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/hostmetricsreceiver
-[httpcheckreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/httpcheckreceiver
-[iisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/iisreceiver
-[jmxreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/jmxreceiver
-[journaldreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/journaldreceiver
-[k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/k8sattributesprocessor
-[k8sclusterreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/k8sclusterreceiver
-[k8sobjectsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/k8sobjectsreceiver
-[kafkametricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/kafkametricsreceiver
-[kafkareceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/kafkareceiver
-[kubeletstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/kubeletstatsreceiver
-[loadbalancingexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/exporter/loadbalancingexporter
-[logdedupprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/logdedupprocessor
-[memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/processor/memorylimiterprocessor
-[metricstransformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/metricstransformprocessor
-[mongodbreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/mongodbreceiver
-[nopexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/exporter/nopexporter
-[nopreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/receiver/nopreceiver
+[hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/hostmetricsreceiver
+[httpcheckreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/httpcheckreceiver
+[iisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/iisreceiver
+[jmxreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/jmxreceiver
+[journaldreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/journaldreceiver
+[k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/k8sattributesprocessor
+[k8sclusterreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/k8sclusterreceiver
+[k8sobjectsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/k8sobjectsreceiver
+[kafkametricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/kafkametricsreceiver
+[kafkareceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/kafkareceiver
+[kubeletstatsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/kubeletstatsreceiver
+[loadbalancingexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/loadbalancingexporter
+[logdedupprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/logdedupprocessor
+[memorylimiterprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/processor/memorylimiterprocessor
+[metricstransformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/metricstransformprocessor
+[mongodbreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/mongodbreceiver
+[nopexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/exporter/nopexporter
+[nopreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/receiver/nopreceiver
 [observek8sattributesprocessor]: ./components/processors/observek8sattributesprocessor
-[otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/exporter/otlpexporter
-[otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/exporter/otlphttpexporter
-[otlpreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/receiver/otlpreceiver
-[postgresqlreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/postgresqlreceiver
-[pprofextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/extension/pprofextension
-[probabilisticsamplerprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/probabilisticsamplerprocessor
-[prometheusexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/exporter/prometheusexporter
-[prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/prometheusreceiver
-[prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/exporter/prometheusremotewriteexporter
-[redactionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/redactionprocessor
-[redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/redisreceiver
-[resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/resourcedetectionprocessor
-[resourceprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/resourceprocessor
-[routingconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/connector/routingconnector
-[snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/snmpreceiver
-[spanmetricsconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/connector/spanmetricsconnector
-[spanprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/spanprocessor
-[sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/sqlqueryreceiver
-[sqlserverreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/sqlserverreceiver
-[statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/statsdreceiver
-[syslogexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/exporter/syslogexporter
-[syslogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/syslogreceiver
-[tailsamplingprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/tailsamplingprocessor
-[tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/tcplogreceiver
-[transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/processor/transformprocessor
-[udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/udplogreceiver
-[windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.147.0/receiver/windowseventlogreceiver
-[zpagesextension]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.147.0/extension/zpagesextension
+[otlpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/exporter/otlpexporter
+[otlphttpexporter]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/exporter/otlphttpexporter
+[otlpreceiver]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/receiver/otlpreceiver
+[postgresqlreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/postgresqlreceiver
+[pprofextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/pprofextension
+[probabilisticsamplerprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/probabilisticsamplerprocessor
+[prometheusexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/prometheusexporter
+[prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/prometheusreceiver
+[prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/prometheusremotewriteexporter
+[redactionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/redactionprocessor
+[redisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/redisreceiver
+[resourcedetectionprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/resourcedetectionprocessor
+[resourceprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/resourceprocessor
+[routingconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/connector/routingconnector
+[snmpreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/snmpreceiver
+[spanmetricsconnector]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/connector/spanmetricsconnector
+[spanprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/spanprocessor
+[sqlqueryreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/sqlqueryreceiver
+[sqlserverreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/sqlserverreceiver
+[statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/statsdreceiver
+[syslogexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/syslogexporter
+[syslogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/syslogreceiver
+[tailsamplingprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/tailsamplingprocessor
+[tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/tcplogreceiver
+[transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/transformprocessor
+[udplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/udplogreceiver
+[windowseventlogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/windowseventlogreceiver
+[zpagesextension]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/extension/zpagesextension

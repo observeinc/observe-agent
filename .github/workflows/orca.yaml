@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: "0 0 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
     name: Orca Container Image Scan
     runs-on: ubuntu-observe-agent-8cpu
     permissions:
-        security-events: write
+      security-events: write
     env:
       PROJECT_KEY: observeinc-observe-agent
       TEST_TAG: observeinc/observe-agent:test
@@ -53,7 +53,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25.8
+          go-version: 1.25.9
           cache: false
 
       - name: Run GoReleaser

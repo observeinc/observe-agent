@@ -40,7 +40,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.25.8
+          go-version: 1.25.9
       - name: Install yq
         run: |
           YQ_VERSION=v4.45.4
@@ -51,7 +51,7 @@ jobs:
       - name: Generate integration GoReleaser config
         run: ./scripts/generate-integration-goreleaser.sh
       - name: Run GoReleaser
-        timeout-minutes: 25
+        timeout-minutes: 40
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
