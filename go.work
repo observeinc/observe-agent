@@ -6,3 +6,5 @@ use (
 	./components/receivers/heartbeatreceiver
 	./observecol
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.147.0 => ./patches/k8sattributesprocessor
