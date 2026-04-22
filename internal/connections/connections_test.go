@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
@@ -29,7 +28,6 @@ var TestTemplateOverrides = map[string]embed.FS{
 
 type ConnectionsTestSuite struct {
 	suite.Suite
-	tempDir         string
 	configFilesPath string
 	ctx             context.Context
 }
@@ -37,17 +35,9 @@ type ConnectionsTestSuite struct {
 func (suite *ConnectionsTestSuite) SetupSuite() {
 	suite.ctx = logger.WithCtx(context.Background(), logger.Get())
 
-	tempDir, err := os.MkdirTemp("", "test-connections")
-	suite.NoError(err)
-	suite.tempDir = tempDir
-
 	_, filename, _, ok := runtime.Caller(0)
 	suite.True(ok)
 	suite.configFilesPath = path.Dir(filename)
-}
-
-func (suite *ConnectionsTestSuite) TearDownSuite() {
-	os.RemoveAll(suite.tempDir)
 }
 
 func (suite *ConnectionsTestSuite) MakeConnectionType(configFields []BundledConfigFragment, enableCheck EnabledCheckFn) *ConnectionType {
@@ -88,17 +78,15 @@ func (suite *ConnectionsTestSuite) TestConnections_RenderConfigTemplate() {
 			C: []string{"test1", "test2", "test3"},
 		},
 	}
-	result, err := ct.renderBundledConfigTemplate(suite.ctx, suite.tempDir, "testHelloWorld.tpl", confValues)
+	result, err := ct.renderBundledConfigTemplate(suite.ctx, "testHelloWorld.tpl", confValues)
 
 	suite.NoError(err)
-	suite.NotEmpty(result)
+	suite.NotEmpty(result.Content)
+	suite.Equal("test-testHelloWorld.tpl", result.Name)
 
-	// Read the rendered content
-	renderedContent, err := os.ReadFile(result)
-	suite.NoError(err)
 	expectedContent, err := os.ReadFile(filepath.Join(suite.configFilesPath, "test", "testHelloWorld.yaml"))
 	suite.NoError(err)
-	suite.Equal(string(expectedContent), string(renderedContent))
+	suite.Equal(string(expectedContent), result.Content)
 }
 
 func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
@@ -113,13 +101,12 @@ func (suite *ConnectionsTestSuite) TestConnectionType_ProcessConfigFields() {
 		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.Forwarding.Enabled }, colConfigFilePath: ""},
 	}, alwaysEnabled)
 
-	paths, err := ct.renderAllBundledConfigFragments(suite.ctx, suite.tempDir, &agentConfig)
+	fragments, err := ct.renderAllBundledConfigFragments(suite.ctx, &agentConfig)
 	suite.NoError(err)
 
-	suite.Len(paths, 1)
-	tmpFile := paths[0]
-	tmpConfName := tmpFile[strings.LastIndex(tmpFile, "-")+1:]
-	suite.Equal(ct.BundledConfigFragments[0].colConfigFilePath, tmpConfName)
+	suite.Len(fragments, 1)
+	suite.Equal("test-"+ct.BundledConfigFragments[0].colConfigFilePath, fragments[0].Name)
+	suite.NotEmpty(fragments[0].Content)
 }
 
 func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
@@ -135,16 +122,14 @@ func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
 		{enabledCheck: func(ac *config.AgentConfig) bool { return ac.Forwarding.Enabled }, colConfigFilePath: ""},
 	}, func(ac *config.AgentConfig) bool { return ac.Debug })
 
-	paths, err := ct.GetBundledConfigs(suite.ctx, suite.tempDir, &agentConfig)
+	fragments, err := ct.GetBundledConfigs(suite.ctx, &agentConfig)
 	suite.NoError(err)
-	suite.Len(paths, 1)
-	tmpFile := paths[0]
-	tmpConfName := tmpFile[strings.LastIndex(tmpFile, "-")+1:]
-	suite.Equal(ct.BundledConfigFragments[0].colConfigFilePath, tmpConfName)
+	suite.Len(fragments, 1)
+	suite.Equal("test-"+ct.BundledConfigFragments[0].colConfigFilePath, fragments[0].Name)
 
 	// Does nothing if not enabled
 	agentConfig.Debug = false
-	paths, err = ct.GetBundledConfigs(suite.ctx, suite.tempDir, &agentConfig)
+	fragments, err = ct.GetBundledConfigs(suite.ctx, &agentConfig)
 	suite.NoError(err)
-	suite.Len(paths, 0)
+	suite.Len(fragments, 0)
 }

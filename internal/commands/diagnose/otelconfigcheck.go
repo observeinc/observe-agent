@@ -16,10 +16,7 @@ type OtelConfigTestResult struct {
 
 func checkOtelConfig(_ *viper.Viper) (bool, any, error) {
 	ctx := logger.WithCtx(context.Background(), logger.GetNop())
-	col, cleanup, err := observecol.GetOtelCollector(ctx)
-	if cleanup != nil {
-		defer cleanup()
-	}
+	col, err := observecol.GetOtelCollector(ctx)
 	if err != nil {
 		return false, nil, err
 	}

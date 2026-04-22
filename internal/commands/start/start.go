@@ -62,10 +62,7 @@ collector on the current host.`,
 			if err := setConfigEnvVars(ctx); err != nil {
 				logger.FromCtx(ctx).Error("failed to set observe-agent config env vars, attempting to start anyway", zap.Error(err))
 			}
-			col, cleanup, err := observecol.GetOtelCollector(ctx)
-			if cleanup != nil {
-				defer cleanup()
-			}
+			col, err := observecol.GetOtelCollector(ctx)
 			if err != nil {
 				return err
 			}
