@@ -78,6 +78,13 @@ func setConfigMode() {
 
 }
 
+func getConfigMode() string {
+	if configMode != "" {
+		return strings.ToLower(configMode)
+	}
+	return bundledconfig.ConfigEnvironment
+}
+
 // InitConfig reads in config file and ENV variables if set.
 func InitConfig() {
 	setConfigMode()
@@ -99,7 +106,7 @@ func InitConfig() {
 	// viper.SetEnvPrefix("OBSERVE")
 	viper.AutomaticEnv() // read in environment variables that match
 
-	config.SetViperDefaults(viper.GetViper(), "::")
+	config.SetViperDefaults(viper.GetViper(), "::", getConfigMode())
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {

@@ -134,3 +134,23 @@ func TestAgentConfigFromViper(t *testing.T) {
 	assert.Equal(t, false, config.HealthCheck.Enabled)
 	assert.Equal(t, true, config.Forwarding.Enabled)
 }
+
+func TestSetViperDefaultsDockerConfigMode(t *testing.T) {
+	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	SetViperDefaults(v, "::", "docker")
+
+	assert.Equal(t, "0.0.0.0:4318", v.GetString("forwarding::endpoints::http"))
+	assert.Equal(t, "0.0.0.0:4317", v.GetString("forwarding::endpoints::grpc"))
+	assert.Equal(t, "0.0.0.0:13133", v.GetString("health_check::endpoint"))
+	assert.Equal(t, "0.0.0.0", v.GetString("internal_telemetry::metrics::host"))
+}
+
+func TestSetViperDefaultsNonDockerConfigMode(t *testing.T) {
+	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	SetViperDefaults(v, "::", "linux")
+
+	assert.Equal(t, "localhost:4318", v.GetString("forwarding::endpoints::http"))
+	assert.Equal(t, "localhost:4317", v.GetString("forwarding::endpoints::grpc"))
+	assert.Equal(t, "localhost:13133", v.GetString("health_check::endpoint"))
+	assert.Equal(t, "localhost", v.GetString("internal_telemetry::metrics::host"))
+}
