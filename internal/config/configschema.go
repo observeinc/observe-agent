@@ -150,9 +150,15 @@ func (config *AgentConfig) HasResourceAttributes() bool {
 	return len(config.ResourceAttributes) > 0
 }
 
-func SetViperDefaults(v *viper.Viper, separator string) {
+func SetViperDefaults(v *viper.Viper, separator string, configMode string) {
 	var config AgentConfig
 	defaults.SetDefaults(&config)
+	if strings.ToLower(configMode) == "docker" {
+		config.Forwarding.Endpoints.HTTP = "0.0.0.0:4318"
+		config.Forwarding.Endpoints.GRPC = "0.0.0.0:4317"
+		config.HealthCheck.Endpoint = "0.0.0.0:13133"
+		config.InternalTelemetry.Metrics.Host = "0.0.0.0"
+	}
 	var confMap map[string]any
 	err := mapstructure.Decode(config, &confMap)
 	if err != nil {

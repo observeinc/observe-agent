@@ -131,7 +131,7 @@ func Test_InitConfigCommand(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		v := viper.NewWithOptions(viper.KeyDelimiter("::"))
-		config.SetViperDefaults(v, "::")
+		config.SetViperDefaults(v, "::", "")
 		initConfigCmd := NewConfigureCmd(v)
 		RegisterConfigFlags(initConfigCmd, v)
 		initConfigCmd.SetArgs(tc.args)

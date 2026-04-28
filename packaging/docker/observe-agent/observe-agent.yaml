@@ -1,17 +1,5 @@
 # A minimal default agent config which should be overwritten via a docker volume or environment variables.
 debug: false
-
-# Bind to 0.0.0.0 so the agent is reachable from outside the container.
-health_check:
-  endpoint: 0.0.0.0:13133
-forwarding:
-  endpoints:
-    http: 0.0.0.0:4318
-    grpc: 0.0.0.0:4317
-internal_telemetry:
-  metrics:
-    host: 0.0.0.0
-
 self_monitoring:
   enabled: true
 host_monitoring:

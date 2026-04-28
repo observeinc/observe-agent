@@ -203,6 +203,8 @@ func setupConfig(t *testing.T, test snapshotTest) {
 	})
 
 	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
+	root.RootCmd.PersistentFlags().Set("config-mode", string(test.packageType))
+	t.Cleanup(func() { root.RootCmd.PersistentFlags().Set("config-mode", "") })
 	root.InitConfig()
 
 	setEnvVars(t, test.packageType)

@@ -69,7 +69,7 @@ extensions:
     file_storage:
         directory: /var/lib/observe-agent/filestorage
     health_check:
-        endpoint: localhost:13133
+        endpoint: 0.0.0.0:13133
         path: /status
 processors:
     batch:
@@ -227,9 +227,9 @@ receivers:
     otlp:
         protocols:
             grpc:
-                endpoint: localhost:4317
+                endpoint: 0.0.0.0:4317
             http:
-                endpoint: localhost:4318
+                endpoint: 0.0.0.0:4318
     prometheus/agent:
         config:
             scrape_configs:
@@ -242,7 +242,7 @@ receivers:
                   scrape_interval: 10s
                   static_configs:
                     - targets:
-                        - localhost:8888
+                        - 0.0.0.0:8888
 service:
     extensions:
         - health_check
@@ -372,7 +372,7 @@ service:
                 - pull:
                     exporter:
                         prometheus:
-                            host: localhost
+                            host: 0.0.0.0
                             port: 8888
                             with_resource_constant_labels:
                                 included:
