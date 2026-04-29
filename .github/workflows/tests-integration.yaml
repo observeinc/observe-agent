@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       old_version:
-        description: 'Old version of observe-agent to test upgrade from (e.g., v2.5.0)'
+        description: "Old version of observe-agent to test upgrade from (e.g., v2.5.0)"
         required: false
-        default: 'v2.5.0'
+        default: "v2.5.0"
         type: string
   pull_request:
   push:
@@ -41,24 +41,28 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.25.8
-      - name: Install qemu
-        uses: docker/setup-qemu-action@v3
+      - name: Install yq
+        run: |
+          YQ_VERSION=v4.45.4
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o "${RUNNER_TEMP}/bin/yq"
+          chmod +x "${RUNNER_TEMP}/bin/yq"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+      - name: Generate integration GoReleaser config
+        run: ./scripts/generate-integration-goreleaser.sh
       - name: Run GoReleaser
         timeout-minutes: 25
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
           version: 2.14.1
-          args: release --prepare --clean --skip=sign,sbom --snapshot --verbose --parallelism 6
+          args: release --config .goreleaser.integration.generated.yaml --prepare --clean --skip=sign,sbom --snapshot --verbose --parallelism 6
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-      - name: Save docker as .tar #Save docker images to tar
+      - name: Save docker as .tar # Save docker image to tar
         run: |
           amd64_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "amd64"| grep "observe-agent" | grep "SNAPSHOT" | sort -r -k4 | head -n 1)
-          arm64_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "arm64"| grep "observe-agent" | grep "SNAPSHOT" | sort -r -k4 | head -n 1)
           echo "amd64_image: ${amd64_image}"
-          echo "arm64_image: ${arm64_image}"
-          docker save -o dist/observe-agent_docker_arm64.tar ${arm64_image}
           docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
       - run: pwd && ls -l && ls -l dist/
       - name: Upload build artifacts
