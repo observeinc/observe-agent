@@ -73,7 +73,7 @@ jobs:
           registry-type: public
 
       - name: Run GoReleaser
-        timeout-minutes: 35
+        timeout-minutes: 60
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
