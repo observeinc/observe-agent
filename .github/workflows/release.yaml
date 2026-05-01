@@ -21,8 +21,62 @@ jobs:
     with:
       branch: ${{ github.ref }}
 
-  goreleaser:
+  prepare:
     needs: vuln-check
+    runs-on: ubuntu-observe-agent-8cpu
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: "386"
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: "386"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.8
+
+      - name: Download syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Run GoReleaser
+        timeout-minutes: 20
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: 2.15.4
+          args: release --split --clean --skip=validate
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist
+          if-no-files-found: error
+
+  goreleaser:
+    needs: [vuln-check, prepare]
     runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
@@ -67,13 +121,20 @@ jobs:
         with:
           registry-type: public
 
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
       - name: Run GoReleaser
-        timeout-minutes: 35
+        timeout-minutes: 25
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.14.1
-          args: release --clean --skip=validate --verbose --parallelism 6
+          version: 2.15.4
+          args: continue --merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
