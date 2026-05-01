@@ -149,7 +149,11 @@ nightly:
   publish_release: true
   keep_single_release: true
 
+partial:
+  by: target
+
 release:
+  replace_existing_artifacts: true
   make_latest: "{{ if .IsNightly }}false{{ else }}true{{ end }}"
   tag: "{{ if .IsNightly}}dev-nightly{{ else }}{{ .Tag }}{{ end }}"
 

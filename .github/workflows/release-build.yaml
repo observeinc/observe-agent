@@ -37,7 +37,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: 2.14.1
+          version: 2.15.4
           args: release --prepare --clean --snapshot --verbose
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
