@@ -2416,7 +2416,7 @@ go.mongodb.org/mongo-driver/v2/x/mongo/driver/wiremessage
 ## explicit; go 1.24.0
 go.opentelemetry.io/auto/sdk
 go.opentelemetry.io/auto/sdk/internal/telemetry
-# go.opentelemetry.io/collector v0.151.0
+# go.opentelemetry.io/collector v0.151.0 => ./patches/otel-collector
 ## explicit; go 1.25.0
 go.opentelemetry.io/collector/internal/grpccompression/snappy
 go.opentelemetry.io/collector/internal/grpccompression/zstd
