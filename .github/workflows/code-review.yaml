@@ -1,0 +1,247 @@
+name: Cursor Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model for Cursor agent CLI"
+        required: false
+        default: "gpt-5.3-codex"
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: cursor-code-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Preflight
+        id: preflight
+        env:
+          # Check secret availability via env mapping — you can't reference
+          # `secrets.*` directly in a step `if:` condition.
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          # PR base ref when available, otherwise the repo's default branch.
+          BASE_REF: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch || 'main' }}
+        run: |
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "::notice::CURSOR_API_KEY is not available (likely a PR from a fork, which does not receive repository secrets). Skipping review."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch origin "$BASE_REF:refs/remotes/origin/$BASE_REF"
+          BASE=$(git merge-base "origin/$BASE_REF" HEAD)
+          git diff "$BASE..HEAD" > diff.patch
+          git diff --stat "$BASE..HEAD" > diff.stat
+          if [ ! -s diff.patch ]; then
+            echo "::notice::No diff against $BASE_REF; skipping review."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Install Cursor CLI
+        if: steps.preflight.outputs.skip != 'true'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+
+      - name: Run code-reviewer
+        if: steps.preflight.outputs.skip != 'true'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          read -r -d '' PROMPT << 'EOF' || true
+          Review the unified diff in ./diff.patch (summary in ./diff.stat) for repository ${{ github.repository }}.
+
+          Read and follow the reviewer instructions in `.agents/subagents/code-reviewer.md`.
+          Perform the full review against ONLY the changes in diff.patch — do NOT infer
+          scope from git history or HEAD~1.
+
+          When finished, write your review to a file called `review-result.md` in the
+          repository root, using EXACTLY this format and nothing else (no preamble, no
+          "Review of <scope>" header, no surrounding prose):
+
+          ### Critical Issues
+          - [issues with file:line refs, or "None"]
+
+          ### Warnings
+          - [issues with file:line refs, or "None"]
+
+          ### Info / Suggestions
+          - [suggestions, or "None"]
+
+          ### Passing Checks
+          - [summary of what looks good]
+
+          ### Verdict
+          [PASS / PASS WITH WARNINGS / NEEDS FIXES]
+
+          STRICT RULES:
+          - The `### Verdict` section must contain exactly one of:
+            PASS, PASS WITH WARNINGS, or NEEDS FIXES — nothing else.
+          - Do NOT wrap the output in a code block. Write raw markdown.
+          - Do NOT add any other top-level (`##`) headings.
+          EOF
+
+          MODEL="${{ inputs.model || 'gpt-5.3-codex' }}"
+          echo "Using model: $MODEL"
+
+          agent -f -p --model "$MODEL" "$PROMPT" 2>&1 | tee agent-output.txt
+
+          if [ ! -f review-result.md ] || [ ! -s review-result.md ]; then
+            {
+              echo "### Critical Issues"
+              echo "- Agent did not produce structured output. Raw output:"
+              echo
+              echo '```'
+              head -c 50000 agent-output.txt
+              echo '```'
+              echo
+              echo "### Warnings"
+              echo "- None"
+              echo
+              echo "### Info / Suggestions"
+              echo "- None"
+              echo
+              echo "### Passing Checks"
+              echo "- None"
+              echo
+              echo "### Verdict"
+              echo "NEEDS FIXES"
+            } > review-result.md
+          fi
+
+      - name: Format PR comment
+        if: steps.preflight.outputs.skip != 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 <<'PY'
+          import os, re, pathlib
+
+          src = pathlib.Path("review-result.md").read_text()
+
+          # Defensive: strip any "## Review of ..." header the agent may still emit.
+          src = re.sub(r"^\s*##\s+Review of[^\n]*\n+", "", src, count=1)
+
+          # Extract verdict (first non-empty line after "### Verdict").
+          m = re.search(r"^###\s+Verdict\s*\n+([^\n]+)", src, re.MULTILINE)
+          verdict_raw = (m.group(1).strip().strip("[]").strip() if m else "")
+          v_upper = verdict_raw.upper()
+          if "NEEDS FIXES" in v_upper:
+              icon, badge = "❌", "NEEDS FIXES"
+          elif "WARNING" in v_upper:
+              icon, badge = "⚠️", "PASS WITH WARNINGS"
+          elif v_upper.startswith("PASS"):
+              icon, badge = "✅", "PASS"
+          else:
+              # Missing/unparseable verdict → fail loud; never emit UNKNOWN
+              # (it would violate the workflow's PASS/WARN/FIX contract).
+              icon, badge = "❌", "NEEDS FIXES"
+
+          # Drop the "### Verdict\n<line>" block from the body — verdict moves to header.
+          src = re.sub(r"\n*###\s+Verdict\s*\n+[^\n]+\s*", "\n", src, count=1)
+
+          # Wrap "Info / Suggestions" and "Passing Checks" in <details>.
+          collapsible = {"Info / Suggestions", "Passing Checks"}
+          out, inside = [], False
+          for line in src.split("\n"):
+              h = re.match(r"^###\s+(.+?)\s*$", line)
+              if h:
+                  title = h.group(1).strip()
+                  if inside:
+                      out += ["", "</details>", ""]
+                      inside = False
+                  if title in collapsible:
+                      out.append(f"<details><summary><strong>{title}</strong></summary>")
+                      out.append("")
+                      inside = True
+                      continue
+              out.append(line)
+          if inside:
+              out += ["", "</details>"]
+          body = "\n".join(out).strip()
+
+          short_sha = os.environ["GITHUB_SHA"][:7]
+          run_url = (
+              f"{os.environ['GITHUB_SERVER_URL']}/"
+              f"{os.environ['GITHUB_REPOSITORY']}/actions/runs/"
+              f"{os.environ['GITHUB_RUN_ID']}"
+          )
+
+          parts = [
+              "<!-- cursor-code-review -->",
+              f"## Cursor Code Review — {icon} {badge}",
+              "",
+              body,
+              "",
+              "---",
+              f"_Reviewed at `{short_sha}` by [Cursor Agent](https://cursor.com) · [Workflow run]({run_url})_",
+              "",
+          ]
+          pathlib.Path("pr-comment.md").write_text("\n".join(parts))
+          print(f"Verdict parsed as {verdict_raw!r} -> {badge}")
+          PY
+
+      - name: Upsert PR comment
+        if: steps.preflight.outputs.skip != 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          MARKER="<!-- cursor-code-review -->"
+
+          # Find the most recent comment containing our marker. --paginate is
+          # defensive in case the PR has many comments.
+          EXISTING=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq "[.[] | select(.body | contains(\"$MARKER\"))] | last | .id // empty")
+
+          # Encode the comment body as {"body": "<file contents>"} and pipe it
+          # to `gh api --input -`. This side-steps both quirks of `gh api`'s
+          # field flags:
+          #   - `-f key=@file` does NOT expand @file (raw-field sends literally)
+          #   - `-F key=@file` does expand it, but then tries magic JSON parsing
+          # `--input` posts the stdin JSON verbatim, so bodies of any size and
+          # content (backticks, quotes, emoji, etc.) always round-trip cleanly.
+          jq -Rs '{body: .}' pr-comment.md > pr-comment.json
+
+          if [ -n "$EXISTING" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING" \
+              --input pr-comment.json > /dev/null
+            echo "Updated existing review comment #$EXISTING on PR #$PR"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" \
+              --input pr-comment.json > /dev/null
+            echo "Created new review comment on PR #$PR"
+          fi
+
+      - name: Publish review to job summary
+        if: always() && steps.preflight.outputs.skip != 'true'
+        run: |
+          if [ -f pr-comment.md ]; then
+            cat pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f review-result.md ]; then
+            cat review-result.md >> "$GITHUB_STEP_SUMMARY"
+          fi
