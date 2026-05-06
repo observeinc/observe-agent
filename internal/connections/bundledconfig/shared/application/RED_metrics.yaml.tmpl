@@ -17,6 +17,41 @@ connectors:
       - name: {{ . }}
       {{- end }}
 
+  spanmetrics/summary:
+    aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+    histogram:
+      exponential:
+        max_size: 100
+    dimensions:
+      {{- $summaryDimensions := concat .Application.REDMetrics.SummaryMetrics.ResourceDimensions .Application.REDMetrics.SummaryMetrics.SpanDimensions }}
+      {{- range ($summaryDimensions | uniq) }}
+      {{- if not (eq . "service.name") }}
+      - name: {{ . }}
+      {{- end }}
+      {{- end }}
+
+  {{- if not .Application.REDMetrics.OnlyGenerateForAPMSpans }}
+  # Routes RED metric datapoints generated from spans that would have been dropped by
+  # filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client (i.e. INTERNAL,
+  # UNSPECIFIED, non-DB CLIENT, non-messaging PRODUCER) to a dedicated pipeline that renames
+  # them with an ".internal" suffix. All other datapoints go to the default pipeline.
+  routing/red_metrics_internal:
+    error_mode: ignore
+    match_once: true
+    default_pipelines: [metrics/spanmetrics/default]
+    table:
+      - context: datapoint
+        statement: |
+          route() where
+            attributes["span.kind"] == "SPAN_KIND_INTERNAL"
+            or attributes["span.kind"] == "SPAN_KIND_UNSPECIFIED"
+            or (attributes["span.kind"] == "SPAN_KIND_CLIENT"
+                and attributes["peer.db.name"] == nil)
+            or (attributes["span.kind"] == "SPAN_KIND_PRODUCER"
+                and attributes["peer.messaging.system"] == nil)
+        pipelines: [metrics/spanmetrics/internal]
+  {{- end }}
+
 processors:
   # This handles schema normalization as well as moving status to attributes so it can be a dimension in spanmetrics
   transform/shape_spans_for_red_metrics:
@@ -25,8 +60,8 @@ processors:
       # peer.db.name = coalesce(peer.db.name, db.system.name, db.system)
       - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
       - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
-      # deployment.environment = coalesce(deployment.environment, deployment.environment.name)
-      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+      # peer.messaging.system = coalesce(peer.messaging.system, messaging.system)
+      - set(span.attributes["peer.messaging.system"], span.attributes["messaging.system"]) where span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] != nil
       # Needed because `spanmetrics` connector can only operate on attributes or resource attributes.
       - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
 
@@ -50,17 +85,17 @@ processors:
     metric_statements:
       - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
 
-  {{- if .Application.REDMetrics.OnlyGenerateForServiceEntrypointSpans }}
-  # This is used in the RED metrics generation pipeline to drop data that is not used in Observe APM.
+  # This drops spans (and thus RED metric data) for span kinds that are not relevant to the Observe APM offering.
+  # If you use RED metrics outside of APM, then we recommend disabling this filter and generating RED metrics for all span kinds.
   filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client:
     error_mode: ignore
     traces:
       span:
-        - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.messaging.system"] == nil and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+        # We are keeping: all SERVER spans, all CONSUMER spans, CLIENT spans with a peer db, and PRODUCER spans with a peer messaging system.
+        - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+        - span.kind == SPAN_KIND_PRODUCER and span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] == nil
         - span.kind == SPAN_KIND_UNSPECIFIED
         - span.kind == SPAN_KIND_INTERNAL
-        - span.kind == SPAN_KIND_PRODUCER
-  {{- end }}
 
   # The spanmetrics connector puts all dimensions as attributes on the datapoint, and copies the resource attributes from an arbitrary span's resource. This cleans that up as well as handling any other renaming.
   transform/fix_red_metrics_resource_attributes:
@@ -77,6 +112,43 @@ processors:
       - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
       - delete_key(datapoint.attributes, "status.code")
 
+  transform/fix_red_metrics_resource_attributes/summary:
+    error_mode: ignore
+    metric_statements:
+      # Drop all resource attributes that aren't dimensions in the summary spanmetrics connector.
+      - keep_matching_keys(resource.attributes, "^({{ join "|" (concat (list "service.name") .Application.REDMetrics.SummaryMetrics.ResourceDimensions | uniq) }})")
+
+      # Drop all datapoint attributes that are resource attributes on the spans.
+      - delete_matching_keys(datapoint.attributes, "^({{ join "|" (concat (list "service.name") .Application.REDMetrics.SummaryMetrics.ResourceDimensions | uniq) }})")
+
+      # Rename status.code to response_status to be consistent with Trace Explorer and disambiguate from status_code (with an underscore).
+      - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+      - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+      - delete_key(datapoint.attributes, "status.code")
+
+  metricstransform/rename_summary_metrics:
+    transforms:
+      - include: traces.span.metrics.calls
+        action: update
+        new_name: traces.span.metrics.calls.summary
+      - include: traces.span.metrics.duration
+        action: update
+        new_name: traces.span.metrics.duration.summary
+
+  {{- if not .Application.REDMetrics.OnlyGenerateForAPMSpans }}
+  # Renames RED metrics from non-entrypoint (would-have-been-dropped) spans with an ".internal"
+  # suffix. This processor lives on the metrics/spanmetrics/internal pipeline, downstream of
+  # routing/red_metrics_internal, so every datapoint it sees is already known to be "internal".
+  metricstransform/rename_internal_metrics:
+    transforms:
+      - include: traces.span.metrics.calls
+        action: update
+        new_name: traces.span.metrics.calls.internal
+      - include: traces.span.metrics.duration
+        action: update
+        new_name: traces.span.metrics.duration.internal
+  {{- end }}
+
 service:
   pipelines:
     traces/spanmetrics:
@@ -87,12 +159,12 @@ service:
         {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
         - filter/drop_long_spans
         {{- end }}
-        {{- if .Application.REDMetrics.OnlyGenerateForServiceEntrypointSpans }}
+        {{- if .Application.REDMetrics.OnlyGenerateForAPMSpans }}
         - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
         {{- end }}
         - transform/shape_spans_for_red_metrics
         - transform/add_span_status_code
-        - resource/add_empty_service_attributes
+        - transform/add_empty_service_attributes
       exporters:
         - spanmetrics
 
@@ -105,6 +177,70 @@ service:
         - transform/fix_peer_attributes
         - transform/remove_service_name_for_peer_metrics
         - transform/fix_red_metrics_resource_attributes
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
+        - batch
+        {{- end }}
+      exporters:
+        {{- if .Application.REDMetrics.OnlyGenerateForAPMSpans }}
+        - otlphttp/observemetrics
+        {{- else }}
+        # When only_generate_for_apm_spans is off, RED metrics are generated for span kinds that
+        # would otherwise be dropped. Route them so the "internal" kinds can be renamed with an
+        # ".internal" suffix; entrypoint kinds pass through the default pipeline unchanged.
+        - routing/red_metrics_internal
+        {{- end }}
+
+    {{- if not .Application.REDMetrics.OnlyGenerateForAPMSpans }}
+    metrics/spanmetrics/default:
+      receivers:
+        - routing/red_metrics_internal
+      processors:
+        - memory_limiter
+      exporters:
+        - otlphttp/observemetrics
+
+    metrics/spanmetrics/internal:
+      receivers:
+        - routing/red_metrics_internal
+      processors:
+        - memory_limiter
+        - metricstransform/rename_internal_metrics
+      exporters:
+        - otlphttp/observemetrics
+    {{- end }}
+
+    traces/spanmetrics/summary:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
+        - filter/drop_long_spans
+        {{- end }}
+        - filter/drop_span_kinds_other_than_server_and_consumer_and_peer_client
+        - transform/shape_spans_for_red_metrics
+        - transform/add_empty_service_attributes
+      exporters:
+        - spanmetrics/summary
+
+    metrics/spanmetrics/summary:
+      receivers:
+        - spanmetrics/summary
+      processors:
+        - memory_limiter
+        - groupbyattrs/peers
+        - transform/fix_peer_attributes
+        - transform/remove_service_name_for_peer_metrics
+        - transform/fix_red_metrics_resource_attributes/summary
+        - metricstransform/rename_summary_metrics
         - resourcedetection
         - resourcedetection/cloud
         {{- if .HasAttributes }}

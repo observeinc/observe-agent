@@ -69,17 +69,6 @@ processors:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
-    resource/add_empty_service_attributes:
-        attributes:
-            - action: insert
-              key: service.name
-              value: ""
-            - action: insert
-              key: service.namespace
-              value: ""
-            - action: insert
-              key: deployment.environment
-              value: ""
     resource/agent_instance:
         attributes:
             - action: upsert
@@ -124,6 +113,15 @@ processors:
             - azure
         override: false
         timeout: 2s
+    transform/add_empty_service_attributes:
+        error_mode: ignore
+        trace_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+            - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
+            - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
+            - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
+            - set(resource.attributes["deployment.environment"], "") where resource.attributes["deployment.environment"] == nil
     transform/add_span_status_code:
         error_mode: ignore
         trace_statements:
@@ -349,7 +347,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
-                - resource/add_empty_service_attributes
+                - transform/add_empty_service_attributes
                 - batch
             receivers:
                 - otlp

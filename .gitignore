@@ -31,3 +31,5 @@ tfplan
 *pycache*
 *.pyc
 
+#tooling
+.snowflake/cortex/plans
