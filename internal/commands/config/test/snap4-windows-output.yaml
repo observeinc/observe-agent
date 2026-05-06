@@ -1,8 +1,59 @@
 connectors:
     count: null
+    spanmetrics:
+        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+        dimensions:
+            - name: service.namespace
+            - name: service.version
+            - name: deployment.environment.name
+            - name: host.name
+            - name: peer.db.name
+            - name: peer.messaging.system
+            - name: otel.status_description
+            - name: observe.status_code
+        histogram:
+            exponential:
+                max_size: 100
+        resource_metrics_key_attributes:
+            - service.name
+            - service.namespace
+            - service.version
+            - deployment.environment.name
+            - host.name
+    spanmetrics/summary:
+        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+        dimensions:
+            - name: service.namespace
+            - name: service.version
+            - name: deployment.environment.name
+            - name: peer.db.name
+            - name: peer.messaging.system
+            - name: observe.status_code
+        histogram:
+            exponential:
+                max_size: 100
+        resource_metrics_key_attributes:
+            - service.name
+            - service.namespace
+            - service.version
+            - deployment.environment.name
 exporters:
     debug: null
     nop: null
+    otlphttp/agentheartbeat:
+        compression: zstd
+        headers:
+            Authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            X-Observe-Agent-Instance-Id: test-agent-instance-id
+            X-Observe-Context: '{"environment":"windows","version":"dev"}'
+            X-Observe-Enable-Auth-Error-Reporting: "true"
+            X-Observe-Target-Package: Observe Agent
+        logs_endpoint: https://123456789.collect.observe-eng.com/v1/kubernetes/v1/entity
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
     otlphttp/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
@@ -50,13 +101,10 @@ exporters:
         target_info:
             enabled: false
 extensions:
-    cgroupruntime:
-        gomaxprocs:
-            enabled: true
     file_storage:
-        directory: /var/lib/observe-agent/filestorage
+        directory: C:\ProgramData\Observe\observe-agent\filestorage
     health_check:
-        endpoint: 0.0.0.0:13133
+        endpoint: localhost:13133
         path: /status
 processors:
     batch:
@@ -67,45 +115,54 @@ processors:
         metrics:
             metric:
                 - IsMatch(name, ".*")
+    filter/drop_long_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - (span.end_time - span.start_time) > Duration("1h")
+    filter/drop_non_apm_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+                - span.kind == SPAN_KIND_PRODUCER and span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] == nil
+                - span.kind == SPAN_KIND_UNSPECIFIED
+                - span.kind == SPAN_KIND_INTERNAL
+    groupbyattrs/peers:
+        keys:
+            - peer.db.name
+            - peer.messaging.system
     memory_limiter:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    metricstransform/rename_summary_metrics:
+        transforms:
+            - action: update
+              include: traces.span.metrics.calls
+              new_name: traces.span.metrics.calls.summary
+            - action: update
+              include: traces.span.metrics.duration
+              new_name: traces.span.metrics.duration.summary
     resource/agent_instance:
         attributes:
             - action: upsert
               key: observe.agent.instance.id
               value: test-agent-instance-id
+    resource/heartbeat:
+        attributes:
+            - action: insert
+              from_attribute: host.name
+              key: observe.agent.hostname
     resourcedetection:
         detectors:
             - env
             - system
         system:
             hostname_sources:
-                - dns
                 - os
             resource_attributes:
-                host.arch:
-                    enabled: true
-                host.cpu.cache.l2.size:
-                    enabled: true
-                host.cpu.family:
-                    enabled: true
-                host.cpu.model.id:
-                    enabled: true
-                host.cpu.model.name:
-                    enabled: true
-                host.cpu.stepping:
-                    enabled: true
-                host.cpu.vendor.id:
-                    enabled: true
                 host.id:
-                    enabled: false
-                host.name:
-                    enabled: true
-                os.description:
-                    enabled: true
-                os.type:
                     enabled: true
     resourcedetection/cloud:
         detectors:
@@ -132,6 +189,55 @@ processors:
             - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
+    transform/fix_red_metrics_resource_attributes:
+        error_mode: ignore
+        metric_statements:
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name)")
+            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+            - delete_key(datapoint.attributes, "status.code")
+    transform/fix_red_metrics_resource_attributes/summary:
+        error_mode: ignore
+        metric_statements:
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+            - delete_key(datapoint.attributes, "status.code")
+    transform/heartbeat:
+        error_mode: ignore
+        log_statements:
+            - context: log
+              statements:
+                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
+                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
+    transform/promote_peer_to_service:
+        error_mode: ignore
+        trace_statements:
+            - context: resource
+              statements:
+                - set(attributes["service.name"], attributes["peer.db.name"]) where attributes["peer.db.name"] != nil
+                - set(attributes["service.name"], attributes["peer.messaging.system"]) where attributes["peer.messaging.system"] != nil and attributes["peer.db.name"] == nil
+            - context: span
+              statements:
+                - set(attributes["peer.db.name"], resource.attributes["peer.db.name"]) where resource.attributes["peer.db.name"] != nil
+                - set(attributes["peer.messaging.system"], resource.attributes["peer.messaging.system"]) where resource.attributes["peer.messaging.system"] != nil
+            - context: resource
+              statements:
+                - delete_key(attributes, "peer.db.name")
+                - delete_key(attributes, "peer.messaging.system")
+    transform/remove_service_name_for_peer_metrics:
+        error_mode: ignore
+        metric_statements:
+            - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
+    transform/shape_spans_for_red_metrics:
+        error_mode: ignore
+        trace_statements:
+            - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
+            - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
+            - set(span.attributes["peer.messaging.system"], span.attributes["messaging.system"]) where span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] != nil
+            - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
     transform/truncate:
         log_statements:
             - context: log
@@ -144,34 +250,23 @@ processors:
                 - truncate_all(attributes, 4095)
                 - truncate_all(resource.attributes, 4095)
 receivers:
-    filelog/host_monitoring:
-        include:
-            - /hostfs/var/log/**/*.log
-            - /hostfs/var/log/syslog
-        include_file_path: true
-        max_log_size: 4MiB
-        operators:
-            - expr: body matches "otel-contrib"
-              type: filter
-        retry_on_failure:
-            enabled: true
-        storage: file_storage
     filestats/agent:
         collection_interval: 5m
-        include: /etc/observe-agent/observe-agent.yaml
+        include: C:\Program Files\Observe\observe-agent\observe-agent.yaml
         initial_delay: 60s
+    heartbeat:
+        auth_check:
+            headers:
+                authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            url: https://123456789.collect.observe-eng.com
+        config_interval: 24h
+        environment: windows
+        interval: 10m
     hostmetrics/host-monitoring-host:
         collection_interval: 60s
-        root_path: /hostfs
         scrapers:
             cpu:
                 metrics:
-                    system.cpu.frequency:
-                        enabled: true
-                    system.cpu.logical.count:
-                        enabled: true
-                    system.cpu.physical.count:
-                        enabled: true
                     system.cpu.utilization:
                         enabled: true
             disk: null
@@ -182,8 +277,6 @@ receivers:
             load: null
             memory:
                 metrics:
-                    system.linux.memory.available:
-                        enabled: true
                     system.memory.utilization:
                         enabled: true
             network: null
@@ -191,30 +284,13 @@ receivers:
                 metrics:
                     system.paging.utilization:
                         enabled: true
-            processes: null
-    journald/agent:
-        priority: info
-        units:
-            - observe-agent
-    journald/host_monitoring:
-        priority: info
-        units:
-            - cron
-            - ssh
-            - systemd-networkd
-            - systemd-resolved
-            - systemd-login
-            - multipathd
-            - systemd-user-sessions
-            - ufw
-            - observe-agent
     nop: null
     otlp:
         protocols:
             grpc:
-                endpoint: 0.0.0.0:4317
+                endpoint: localhost:4317
             http:
-                endpoint: 0.0.0.0:4318
+                endpoint: localhost:4318
     prometheus/agent:
         config:
             scrape_configs:
@@ -227,19 +303,41 @@ receivers:
                   scrape_interval: 10s
                   static_configs:
                     - targets:
-                        - 0.0.0.0:8888
+                        - localhost:8888
+    windowseventlog/agent:
+        query: |
+            <QueryList>
+              <Query Id="0">
+                <Select Path="Application">*[System[Provider[@Name='ObserveAgent']]]</Select>
+              </Query>
+            </QueryList>
+        retry_on_failure:
+            enabled: true
+    windowseventlog/host_monitoring-application:
+        channel: Application
+        exclude_providers:
+            - ObserveAgent
+        retry_on_failure:
+            enabled: true
+    windowseventlog/host_monitoring-security:
+        channel: Security
+        retry_on_failure:
+            enabled: true
+    windowseventlog/host_monitoring-system:
+        channel: System
+        retry_on_failure:
+            enabled: true
 service:
     extensions:
         - health_check
         - file_storage
-        - cgroupruntime
     pipelines:
         logs/agent-config:
             exporters:
                 - nop
             receivers:
                 - nop
-        logs/agent-journald:
+        logs/agent-windowseventlog:
             exporters:
                 - otlphttp/observe
                 - count
@@ -248,9 +346,10 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/agent_instance
                 - batch
             receivers:
-                - journald/agent
+                - windowseventlog/agent
         logs/forward:
             exporters:
                 - otlphttp/observe
@@ -263,7 +362,18 @@ service:
                 - batch
             receivers:
                 - otlp
-        logs/host_monitoring-file:
+        logs/heartbeat:
+            exporters:
+                - otlphttp/agentheartbeat
+            processors:
+                - resourcedetection
+                - resourcedetection/cloud
+                - resource/agent_instance
+                - resource/heartbeat
+                - transform/heartbeat
+            receivers:
+                - heartbeat
+        logs/host_monitoring-windowsevents:
             exporters:
                 - otlphttp/observe
                 - count
@@ -274,19 +384,9 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - filelog/host_monitoring
-        logs/host_monitoring-journald:
-            exporters:
-                - otlphttp/observe
-                - count
-            processors:
-                - memory_limiter
-                - transform/truncate
-                - resourcedetection
-                - resourcedetection/cloud
-                - batch
-            receivers:
-                - journald/host_monitoring
+                - windowseventlog/host_monitoring-application
+                - windowseventlog/host_monitoring-security
+                - windowseventlog/host_monitoring-system
         metrics/agent-filestats:
             exporters:
                 - prometheusremotewrite/observe
@@ -305,6 +405,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/agent_instance
                 - deltatocumulative
                 - batch
             receivers:
@@ -340,17 +441,56 @@ service:
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
+        metrics/spanmetrics:
+            exporters:
+                - otlphttp/observemetrics
+            processors:
+                - memory_limiter
+                - transform/remove_service_name_for_peer_metrics
+                - transform/fix_red_metrics_resource_attributes
+                - batch
+            receivers:
+                - spanmetrics
+        metrics/spanmetrics/summary:
+            exporters:
+                - otlphttp/observemetrics
+            processors:
+                - memory_limiter
+                - transform/remove_service_name_for_peer_metrics
+                - transform/fix_red_metrics_resource_attributes/summary
+                - metricstransform/rename_summary_metrics
+                - batch
+            receivers:
+                - spanmetrics/summary
         traces/forward:
             exporters:
                 - otlphttp/observetracing
             processors:
                 - memory_limiter
+                - filter/drop_long_spans
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
                 - transform/add_empty_service_attributes
                 - batch
+            receivers:
+                - otlp
+        traces/spanmetrics:
+            exporters:
+                - spanmetrics
+                - spanmetrics/summary
+            processors:
+                - memory_limiter
+                - filter/drop_long_spans
+                - filter/drop_non_apm_spans
+                - resourcedetection
+                - resourcedetection/cloud
+                - transform/shape_spans_for_red_metrics
+                - transform/add_span_status_code
+                - groupbyattrs/peers
+                - transform/promote_peer_to_service
+                - transform/add_empty_service_attributes
             receivers:
                 - otlp
     telemetry:
@@ -363,7 +503,7 @@ service:
                 - pull:
                     exporter:
                         prometheus:
-                            host: 0.0.0.0
+                            host: localhost
                             port: 8888
                             with_resource_constant_labels:
                                 included:

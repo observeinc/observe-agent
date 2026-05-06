@@ -1,8 +1,61 @@
 connectors:
     count: null
+    spanmetrics:
+        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+        dimensions:
+            - name: service.namespace
+            - name: service.version
+            - name: deployment.environment.name
+            - name: host.name
+            - name: container.id
+            - name: peer.db.name
+            - name: peer.messaging.system
+            - name: otel.status_description
+            - name: observe.status_code
+        histogram:
+            exponential:
+                max_size: 100
+        resource_metrics_key_attributes:
+            - service.name
+            - service.namespace
+            - service.version
+            - deployment.environment.name
+            - host.name
+            - container.id
+    spanmetrics/summary:
+        aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+        dimensions:
+            - name: service.namespace
+            - name: service.version
+            - name: deployment.environment.name
+            - name: peer.db.name
+            - name: peer.messaging.system
+            - name: observe.status_code
+        histogram:
+            exponential:
+                max_size: 100
+        resource_metrics_key_attributes:
+            - service.name
+            - service.namespace
+            - service.version
+            - deployment.environment.name
 exporters:
     debug: null
     nop: null
+    otlphttp/agentheartbeat:
+        compression: zstd
+        headers:
+            Authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            X-Observe-Agent-Instance-Id: test-agent-instance-id
+            X-Observe-Context: '{"environment":"docker","version":"dev"}'
+            X-Observe-Enable-Auth-Error-Reporting: "true"
+            X-Observe-Target-Package: Observe Agent
+        logs_endpoint: https://123456789.collect.observe-eng.com/v1/kubernetes/v1/entity
+        retry_on_failure:
+            enabled: true
+        sending_queue:
+            num_consumers: 4
+            queue_size: 100
     otlphttp/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
@@ -67,15 +120,45 @@ processors:
         metrics:
             metric:
                 - IsMatch(name, ".*")
+    filter/drop_long_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - (span.end_time - span.start_time) > Duration("1h")
+    filter/drop_non_apm_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+                - span.kind == SPAN_KIND_PRODUCER and span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] == nil
+                - span.kind == SPAN_KIND_UNSPECIFIED
+                - span.kind == SPAN_KIND_INTERNAL
+    groupbyattrs/peers:
+        keys:
+            - peer.db.name
+            - peer.messaging.system
     memory_limiter:
         check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
+    metricstransform/rename_summary_metrics:
+        transforms:
+            - action: update
+              include: traces.span.metrics.calls
+              new_name: traces.span.metrics.calls.summary
+            - action: update
+              include: traces.span.metrics.duration
+              new_name: traces.span.metrics.duration.summary
     resource/agent_instance:
         attributes:
             - action: upsert
               key: observe.agent.instance.id
               value: test-agent-instance-id
+    resource/heartbeat:
+        attributes:
+            - action: insert
+              from_attribute: host.name
+              key: observe.agent.hostname
     resourcedetection:
         detectors:
             - env
@@ -132,6 +215,55 @@ processors:
             - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
+    transform/fix_red_metrics_resource_attributes:
+        error_mode: ignore
+        metric_statements:
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name|container.id)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name|container.id)")
+            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+            - delete_key(datapoint.attributes, "status.code")
+    transform/fix_red_metrics_resource_attributes/summary:
+        error_mode: ignore
+        metric_statements:
+            - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+            - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+            - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+            - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+            - delete_key(datapoint.attributes, "status.code")
+    transform/heartbeat:
+        error_mode: ignore
+        log_statements:
+            - context: log
+              statements:
+                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
+                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
+    transform/promote_peer_to_service:
+        error_mode: ignore
+        trace_statements:
+            - context: resource
+              statements:
+                - set(attributes["service.name"], attributes["peer.db.name"]) where attributes["peer.db.name"] != nil
+                - set(attributes["service.name"], attributes["peer.messaging.system"]) where attributes["peer.messaging.system"] != nil and attributes["peer.db.name"] == nil
+            - context: span
+              statements:
+                - set(attributes["peer.db.name"], resource.attributes["peer.db.name"]) where resource.attributes["peer.db.name"] != nil
+                - set(attributes["peer.messaging.system"], resource.attributes["peer.messaging.system"]) where resource.attributes["peer.messaging.system"] != nil
+            - context: resource
+              statements:
+                - delete_key(attributes, "peer.db.name")
+                - delete_key(attributes, "peer.messaging.system")
+    transform/remove_service_name_for_peer_metrics:
+        error_mode: ignore
+        metric_statements:
+            - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
+    transform/shape_spans_for_red_metrics:
+        error_mode: ignore
+        trace_statements:
+            - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
+            - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
+            - set(span.attributes["peer.messaging.system"], span.attributes["messaging.system"]) where span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] != nil
+            - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
     transform/truncate:
         log_statements:
             - context: log
@@ -160,6 +292,14 @@ receivers:
         collection_interval: 5m
         include: /etc/observe-agent/observe-agent.yaml
         initial_delay: 60s
+    heartbeat:
+        auth_check:
+            headers:
+                authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
+            url: https://123456789.collect.observe-eng.com
+        config_interval: 24h
+        environment: docker
+        interval: 10m
     hostmetrics/host-monitoring-host:
         collection_interval: 60s
         root_path: /hostfs
@@ -248,6 +388,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/agent_instance
                 - batch
             receivers:
                 - journald/agent
@@ -263,6 +404,17 @@ service:
                 - batch
             receivers:
                 - otlp
+        logs/heartbeat:
+            exporters:
+                - otlphttp/agentheartbeat
+            processors:
+                - resourcedetection
+                - resourcedetection/cloud
+                - resource/agent_instance
+                - resource/heartbeat
+                - transform/heartbeat
+            receivers:
+                - heartbeat
         logs/host_monitoring-file:
             exporters:
                 - otlphttp/observe
@@ -305,6 +457,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/agent_instance
                 - deltatocumulative
                 - batch
             receivers:
@@ -340,17 +493,56 @@ service:
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
+        metrics/spanmetrics:
+            exporters:
+                - otlphttp/observemetrics
+            processors:
+                - memory_limiter
+                - transform/remove_service_name_for_peer_metrics
+                - transform/fix_red_metrics_resource_attributes
+                - batch
+            receivers:
+                - spanmetrics
+        metrics/spanmetrics/summary:
+            exporters:
+                - otlphttp/observemetrics
+            processors:
+                - memory_limiter
+                - transform/remove_service_name_for_peer_metrics
+                - transform/fix_red_metrics_resource_attributes/summary
+                - metricstransform/rename_summary_metrics
+                - batch
+            receivers:
+                - spanmetrics/summary
         traces/forward:
             exporters:
                 - otlphttp/observetracing
             processors:
                 - memory_limiter
+                - filter/drop_long_spans
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
                 - transform/add_empty_service_attributes
                 - batch
+            receivers:
+                - otlp
+        traces/spanmetrics:
+            exporters:
+                - spanmetrics
+                - spanmetrics/summary
+            processors:
+                - memory_limiter
+                - filter/drop_long_spans
+                - filter/drop_non_apm_spans
+                - resourcedetection
+                - resourcedetection/cloud
+                - transform/shape_spans_for_red_metrics
+                - transform/add_span_status_code
+                - groupbyattrs/peers
+                - transform/promote_peer_to_service
+                - transform/add_empty_service_attributes
             receivers:
                 - otlp
     telemetry:

@@ -99,15 +99,30 @@ type InternalTelemetryConfig struct {
 	Logs    InternalTelemetryLogsConfig    `yaml:"logs" mapstructure:"logs"`
 }
 
+type REDSummaryMetricsConfig struct {
+	// Resource attributes to include as dimensions for summary RED metrics. Summary metrics have
+	// fewer dimensions than the full RED metrics and are named with a .summary suffix.
+	// Altering these dimensions will negatively impact query performance in APM.
+	ResourceDimensions []string `yaml:"resource_dimensions" mapstructure:"resource_dimensions" default:"[service.namespace,service.version,deployment.environment.name]"`
+	// Span attributes to include as dimensions for summary RED metrics. Altering these dimensions
+	// will negatively impact query performance in APM.
+	SpanDimensions []string `yaml:"span_dimensions" mapstructure:"span_dimensions" default:"[peer.db.name,peer.messaging.system,observe.status_code]"`
+}
+
 type REDMetricsConfig struct {
 	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"false"`
-	// If enabled, this will skip generating RED metrics for spans that are not service entrypoint spans
-	// (which are spans with kind Server, kind Consumer, or calls to DB or messaging system clients).
-	// This will limit the metrics created to only those directly used in Observe APM.
-	OnlyGenerateForServiceEntrypointSpans bool `yaml:"only_generate_for_service_entrypoint_spans" mapstructure:"only_generate_for_service_entrypoint_spans" default:"false"`
+	// If enabled, this will skip generating RED metrics for spans that are not considered to be
+	// top level in APM (which are spans with kind Server, kind Consumer, or calls to DB or
+	// messaging system clients). If this is set to false, metrics generated for non-APM spans
+	// will be suffixed with `.internal`. If this flag and trace sampling are both enabled, it
+	// will not be possible to deduce accurate RED metrics for non-APM spans.
+	OnlyGenerateForAPMSpans bool `yaml:"only_generate_for_apm_spans" mapstructure:"only_generate_for_apm_spans" default:"true"`
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector#overview
-	ResourceDimensions []string `yaml:"resource_dimensions" mapstructure:"resource_dimensions" default:"[service.namespace,service.version,deployment.environment]"`
+	// SetViperDefaults appends `container.id` when configMode is "docker".
+	ResourceDimensions []string `yaml:"resource_dimensions" mapstructure:"resource_dimensions" default:"[service.namespace,service.version,deployment.environment.name,host.name]"`
 	SpanDimensions     []string `yaml:"span_dimensions" mapstructure:"span_dimensions" default:"[peer.db.name,peer.messaging.system,otel.status_description,observe.status_code]"`
+	// SummaryMetrics controls the lower-cardinality `.summary` RED metrics emitted in parallel.
+	SummaryMetrics REDSummaryMetricsConfig `yaml:"summary_metrics" mapstructure:"summary_metrics"`
 }
 
 type ApplicationConfig struct {
@@ -159,6 +174,8 @@ func SetViperDefaults(v *viper.Viper, separator string, configMode string) {
 		config.Forwarding.Endpoints.GRPC = "0.0.0.0:4317"
 		config.HealthCheck.Endpoint = "0.0.0.0:13133"
 		config.InternalTelemetry.Metrics.Host = "0.0.0.0"
+		// Identify metric streams by container.id in addition to host.name (which is the docker host).
+		config.Application.REDMetrics.ResourceDimensions = append(config.Application.REDMetrics.ResourceDimensions, "container.id")
 	}
 	var confMap map[string]any
 	err := mapstructure.Decode(config, &confMap)
