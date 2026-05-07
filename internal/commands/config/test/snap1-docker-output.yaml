@@ -89,6 +89,12 @@ processors:
     attributes/observe_global_attributes:
         actions:
             - action: insert
+              key: bool-attr
+              value: "true"
+            - action: insert
+              key: digits-attr
+              value: "12345"
+            - action: insert
               key: test-attr
               value: test-value
     batch:
@@ -151,6 +157,12 @@ processors:
             - action: insert
               key: service.name
               value: test-service
+            - action: insert
+              key: service.namespace
+              value: "1.0"
+            - action: insert
+              key: service.version
+              value: "060520262300"
     resourcedetection:
         detectors:
             - env
