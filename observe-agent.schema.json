@@ -293,9 +293,30 @@
         "enabled": {
           "type": "boolean"
         },
-        "only_generate_for_service_entrypoint_spans": {
+        "only_generate_for_apm_spans": {
           "type": "boolean"
         },
+        "resource_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "span_dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "summary_metrics": {
+          "$ref": "#/$defs/REDSummaryMetricsConfig"
+        }
+      },
+      "type": "object"
+    },
+    "REDSummaryMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
         "resource_dimensions": {
           "items": {
             "type": "string"

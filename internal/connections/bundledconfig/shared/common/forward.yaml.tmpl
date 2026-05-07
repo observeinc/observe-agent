@@ -16,18 +16,22 @@ processors:
       - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
       - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
 
-  # Always add service.name, service.namespace, and deployment.environment to the resource attributes.
-  resource/add_empty_service_attributes:
-    attributes:
-      - key: service.name
-        value: ""
-        action: insert
-      - key: service.namespace
-        value: ""
-        action: insert
-      - key: deployment.environment
-        value: ""
-        action: insert
+  # Normalizes deployment environment (coalescing between the deprecated
+  # `deployment.environment` and `deployment.environment.name`) and defaults the
+  # service / environment resource attributes so they are always present on
+  # forwarded traces.
+  transform/add_empty_service_attributes:
+    error_mode: ignore
+    trace_statements:
+      # deployment.environment.name = coalesce(deployment.environment.name, deployment.environment)
+      - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+      # deployment.environment = coalesce(deployment.environment, deployment.environment.name)
+      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+      # Default any still-missing attributes to an empty string.
+      - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
+      - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
+      - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
+      - set(resource.attributes["deployment.environment"], "") where resource.attributes["deployment.environment"] == nil
 
 {{- if ne .Forwarding.Traces.MaxSpanDuration "none" }}
   # This drops spans that are longer than the configured time (default 1hr) to match service explorer behavior.
@@ -147,7 +151,7 @@ service:
         {{- if .HasResourceAttributes }}
         - resource/observe_global_resource_attributes
         {{- end }}
-        - resource/add_empty_service_attributes
+        - transform/add_empty_service_attributes
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
         {{- end }}
