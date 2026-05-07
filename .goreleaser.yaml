@@ -156,6 +156,7 @@ release:
   replace_existing_artifacts: true
   make_latest: "{{ if .IsNightly }}false{{ else }}true{{ end }}"
   tag: "{{ if .IsNightly}}dev-nightly{{ else }}{{ .Tag }}{{ end }}"
+  disable: "{{ .IsNightly }}"
 
   # Add all install scripts to the release
   extra_files:
