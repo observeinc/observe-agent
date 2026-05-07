@@ -6,3 +6,5 @@ use (
 	./components/receivers/heartbeatreceiver
 	./observecol
 )
+
+replace go.opentelemetry.io/collector v0.151.0 => ./patches/otel-collector
