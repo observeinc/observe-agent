@@ -135,6 +135,9 @@ type Meta struct {
 }
 
 // ChunkFromSamples requires all samples to have the same type.
+// It is not efficient and meant for testing purposes only.
+// It scans the samples to determine whether any sample has ST set and
+// creates a chunk accordingly.
 func ChunkFromSamples(s []Sample) (Meta, error) {
 	return ChunkFromSamplesGeneric(SampleSlice(s))
 }
@@ -153,7 +156,17 @@ func ChunkFromSamplesGeneric(s Samples) (Meta, error) {
 	}
 
 	sampleType := s.Get(0).Type()
-	c, err := chunkenc.NewEmptyChunk(sampleType.ChunkEncoding())
+
+	hasST := false
+	for i := range s.Len() {
+		if s.Get(i).ST() != 0 {
+			hasST = true
+			break
+		}
+	}
+
+	// Request storing ST in the chunk if available.
+	c, err := sampleType.NewChunk(hasST)
 	if err != nil {
 		return Meta{}, err
 	}
@@ -164,9 +177,9 @@ func ChunkFromSamplesGeneric(s Samples) (Meta, error) {
 	for i := 0; i < s.Len(); i++ {
 		switch sampleType {
 		case chunkenc.ValFloat:
-			ca.Append(s.Get(i).T(), s.Get(i).F())
+			ca.Append(s.Get(i).ST(), s.Get(i).T(), s.Get(i).F())
 		case chunkenc.ValHistogram:
-			newChunk, _, ca, err = ca.AppendHistogram(nil, s.Get(i).T(), s.Get(i).H(), false)
+			newChunk, _, ca, err = ca.AppendHistogram(nil, s.Get(i).ST(), s.Get(i).T(), s.Get(i).H(), false)
 			if err != nil {
 				return emptyChunk, err
 			}
@@ -174,7 +187,7 @@ func ChunkFromSamplesGeneric(s Samples) (Meta, error) {
 				return emptyChunk, errors.New("did not expect to start a second chunk")
 			}
 		case chunkenc.ValFloatHistogram:
-			newChunk, _, ca, err = ca.AppendFloatHistogram(nil, s.Get(i).T(), s.Get(i).FH(), false)
+			newChunk, _, ca, err = ca.AppendFloatHistogram(nil, s.Get(i).ST(), s.Get(i).T(), s.Get(i).FH(), false)
 			if err != nil {
 				return emptyChunk, err
 			}
@@ -776,7 +789,7 @@ func sequenceFiles(dir string) ([]string, error) {
 	return res, nil
 }
 
-// closeAll closes all given closers while recording error in MultiError.
+// closeAll closes all given closers while recording all errors.
 func closeAll(cs []io.Closer) error {
 	var errs []error
 	for _, c := range cs {

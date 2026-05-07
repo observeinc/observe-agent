@@ -3,6 +3,7 @@ package protocol
 import (
 	"database/sql/driver"
 	"fmt"
+	"math/bits"
 	"reflect"
 
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
@@ -112,7 +113,7 @@ func (f *ParameterField) IsLob() bool { return f.tc.isLob() }
 func (f *ParameterField) Convert(v any, cesu8Encoder transform.Transformer) (any, error) {
 	cv, err := convertField(f.tc, v, cesu8Encoder)
 	if err != nil {
-		return nil, fmt.Errorf("field %[1]s type code %[2]s type %[3]T value %[3]v coversion error %[4]w", f.fieldName(), f.tc, v, err)
+		return nil, fmt.Errorf("field %[1]s type code %[2]s type %[3]T value %[3]v conversion error %[4]w", f.fieldName(), f.tc, v, err)
 	}
 	return cv, nil
 }
@@ -159,7 +160,7 @@ func (f *ParameterField) In() bool { return f.mode == pmInout || f.mode == pmIn 
 // It implements the go-hdb driver ParameterType interface.
 func (f *ParameterField) Out() bool { return f.mode == pmInout || f.mode == pmOut }
 
-// InOut returns true if the parameter field is an in,- output field.
+// InOut returns true if the parameter field is an input/output field.
 // It implements the go-hdb driver ParameterType interface.
 func (f *ParameterField) InOut() bool { return f.mode == pmInout }
 
@@ -441,6 +442,12 @@ func (p *OutputParameters) String() string {
 
 func (p *OutputParameters) decodeResult(dec *encoding.Decoder, tr transform.Transformer, numArg int, lobReader LobReader, lobChunkSize int) error {
 	cols := len(p.OutputFields)
+	if numArg < 0 {
+		return fmt.Errorf("invalid number of arguments %d", numArg)
+	}
+	if hi, _ := bits.Mul(uint(numArg), uint(cols)); hi != 0 {
+		return fmt.Errorf("result set too large: %d rows x %d cols", numArg, cols)
+	}
 	p.FieldValues = resizeSlice(p.FieldValues, numArg*cols)
 
 	for i := range numArg {

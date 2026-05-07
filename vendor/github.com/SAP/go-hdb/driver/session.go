@@ -70,7 +70,7 @@ type session struct {
 		we cannot work with nested errors containing driver.ErrBadConn
 		as go sql retries these statements.
 	*/
-	cancelled bool
+	canceled bool
 }
 
 func newSession(ctx context.Context, host string, logger *slog.Logger, metrics *metrics, attrs *connAttrs, authHnd *p.AuthHnd) (*session, error) {
@@ -127,8 +127,8 @@ func newSession(ctx context.Context, host string, logger *slog.Logger, metrics *
 
 // we cannot work with nested errors containing driver.ErrBadConn
 // as go sql retries these statements.
-func (s *session) isBad() bool { return s.cancelled || s.pwr.HasError() }
-func (s *session) cancel()     { s.cancelled = true }
+func (s *session) isBad() bool { return s.canceled || s.pwr.HasError() }
+func (s *session) cancel()     { s.canceled = true }
 
 func (s *session) close() error {
 	// do not disconnect if isBad.
@@ -220,8 +220,6 @@ func (s *session) authenticate(ctx context.Context, authHnd *p.AuthHnd, attrs *c
 		return nil, fmt.Errorf("invalid session id %d", sessionID)
 	}
 	s.pwr.SetSessionID(sessionID)
-	// log.Printf("co: %s", co)
-	// log.Printf("ti: %s", ti)
 	return co, nil
 }
 
@@ -238,7 +236,9 @@ func (s *session) setSchema(ctx context.Context) error {
 	}
 }
 
-// ErrSwitchUser is the error raised if a switch user is requested in a not allowed context.
+const passwordRedacted = "***"
+
+// ErrSwitchUser is the error raised if a switch user is requested in a disallowed context.
 var ErrSwitchUser = errors.New("switch user inside transaction or in statement scope (prepared query) is not allowed")
 
 func (s *session) switchUser(ctx context.Context) error {
@@ -250,7 +250,10 @@ func (s *session) switchUser(ctx context.Context) error {
 		return ErrSwitchUser
 	}
 	s.user = user.clone()
-	if _, err := s.execDirect(ctx, "connect "+user.Username+" password \""+user.Password+"\""); err != nil {
+	connectQuery := func(password string) string {
+		return "connect " + user.Username + " password \"" + password + "\""
+	}
+	if _, err := s.execDirectQueryLog(ctx, connectQuery(user.Password), connectQuery(passwordRedacted)); err != nil {
 		return err
 	}
 	s.metrics.msgCh <- counterMsg{idx: counterSessionConnects, v: uint64(1)}
@@ -344,7 +347,7 @@ func (s *session) queryDirect(ctx context.Context, query string, traceKind strin
 	return qr, nil
 }
 
-func (s *session) execDirect(ctx context.Context, query string) (driver.Result, error) {
+func (s *session) execDirectQueryLog(ctx context.Context, query, logQuery string) (driver.Result, error) {
 	t := time.Now()
 	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeExec)
 
@@ -357,12 +360,16 @@ func (s *session) execDirect(ctx context.Context, query string) (driver.Result, 
 		return nil, err
 	}
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceExec, query)
+		s.sqlTracer.log(ctx, t, traceExec, logQuery)
 	}
 	if s.prd.FunctionCode() == p.FcDDL {
 		return driver.ResultNoRows, nil
 	}
 	return driver.RowsAffected(numRow), nil
+}
+
+func (s *session) execDirect(ctx context.Context, query string) (driver.Result, error) {
+	return s.execDirectQueryLog(ctx, query, query)
 }
 
 func (s *session) prepare(ctx context.Context, query string) (*prepareResult, error) {
@@ -497,9 +504,14 @@ func (s *session) exec(ctx context.Context, query string, pr *prepareResult, nva
 			write lob data only for the last record as lob streaming is only available for the last one
 		*/
 		startLastRec := len(nvargs) - len(pr.parameterFields)
-		if err := s.writeLobs(ctx, nil, ids, pr.parameterFields, nvargs[startLastRec:]); err != nil {
+		numlobRow, err := s.writeLobs(ctx, nil, ids, pr.parameterFields, nvargs[startLastRec:])
+		if err != nil {
 			return nil, err
 		}
+		// Accumulate LOB rows with the initial numRow.
+		// HANA 2: lobRowsAffected will be 0
+		// HANA 4: lobRowsAffected will be > 0
+		numRow += numlobRow
 	}
 	if s.sqlTracer != nil {
 		s.sqlTracer.log(ctx, t, traceExec, query, nvargs...)
@@ -595,9 +607,14 @@ func (s *session) execCall(ctx context.Context, query string, pr *prepareResult,
 			- chunkReaders
 			- cr (callResult output parameters are set after all lob input parameters are written)
 		*/
-		if err := s.writeLobs(ctx, cr, ids, callArgs.inFields, callArgs.inArgs); err != nil {
+		numLobRow, err := s.writeLobs(ctx, cr, ids, callArgs.inFields, callArgs.inArgs)
+		if err != nil {
 			return nil, nil, 0, err
 		}
+		// Accumulate LOB rows with the initial numRow.
+		// HANA 2: lobRowsAffected will be 0
+		// HANA 4: lobRowsAffected will be > 0
+		numRow += numLobRow
 	}
 	if s.sqlTracer != nil {
 		s.sqlTracer.log(ctx, t, traceExecCall, query, nvargs...)
@@ -689,7 +706,7 @@ func (s *session) disconnect(ctx context.Context) error {
 readLob reads output lob or result lob parameters from db.
 
 read lob reply
-  - seems like readLobreply returns only a result for one lob - even if more then one is requested
+  - seems like readLobreply returns only a result for one lob - even if more than one is requested
     --> read single lobs
 */
 func (s *session) readLob(ctx context.Context, request *p.ReadLobRequest, reply *p.ReadLobReply) error {
@@ -718,8 +735,8 @@ func (s *session) readLob(ctx context.Context, request *p.ReadLobRequest, reply 
 	return nil
 }
 
-// writeLobs writes input lob parameters to db.
-func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.LocatorID, inPrmFields []*p.ParameterField, nvargs []driver.NamedValue) error {
+// writeLobs writes input lob parameters to db and returns the accumulated rows.
+func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.LocatorID, inPrmFields []*p.ParameterField, nvargs []driver.NamedValue) (int64, error) {
 	if len(inPrmFields) != len(nvargs) {
 		panic("lob streaming can only be done for one (the last) record")
 	}
@@ -729,47 +746,48 @@ func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.Locator
 		if f.IsLob() && nvargs[i].Value != nil {
 			lobInDescr, ok := nvargs[i].Value.(*p.LobInDescr)
 			if !ok {
-				return fmt.Errorf("protocol error: invalid lob parameter %[1]T %[1]v - lobInDescr expected", nvargs[i])
-			}
-			if j > len(ids) {
-				return fmt.Errorf("protocol error: invalid number of lob parameter ids %d", len(ids))
+				return 0, fmt.Errorf("protocol error: invalid lob parameter %[1]T %[1]v - lobInDescr expected", nvargs[i])
 			}
 			if !lobInDescr.IsLastData() {
+				if j >= len(ids) {
+					return 0, fmt.Errorf("protocol error: id index %d out of range - number of ids %d", j, len(ids))
+				}
 				descrs = append(descrs, &p.WriteLobDescr{LobInDescr: lobInDescr, ID: ids[j]})
 				j++
 			}
 		}
 	}
 
+	var totalNumRow int64
 	writeLobRequest := &p.WriteLobRequest{}
 	for len(descrs) != 0 {
 
 		if len(descrs) != len(ids) {
-			return fmt.Errorf("protocol error: invalid number of lob parameter ids %d - expected %d", len(descrs), len(ids))
+			return 0, fmt.Errorf("protocol error: invalid number of lob parameter ids %d - expected %d", len(descrs), len(ids))
 		}
 		for i, descr := range descrs { // check if ids and descrs are in sync
 			if descr.ID != ids[i] {
-				return fmt.Errorf("protocol error: lob parameter id mismatch %d - expected %d", descr.ID, ids[i])
+				return 0, fmt.Errorf("protocol error: lob parameter id mismatch %d - expected %d", descr.ID, ids[i])
 			}
 		}
 
 		// TODO check total size limit
 		for _, descr := range descrs {
 			if err := descr.FetchNext(s.attrs.lobChunkSize); err != nil {
-				return err
+				return 0, err
 			}
 		}
 
 		writeLobRequest.Descrs = descrs
 
 		if err := s.pwr.Write(ctx, p.MtReadLob, false, writeLobRequest); err != nil {
-			return err
+			return 0, err
 		}
 
 		lobReply := &p.WriteLobReply{}
 		outPrms := &p.OutputParameters{}
 
-		if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
+		numRow, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
 			switch kind {
 			case p.PkOutputParameters:
 				outPrms.OutputFields = cr.outFields
@@ -788,9 +806,15 @@ func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.Locator
 			default:
 				return p.ErrSkipped
 			}
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return 0, err
 		}
+
+		// Accumulate rowsAffected from LOB write operations.
+		// HANA 2: returns 0 for LOB writes
+		// HANA 4: returns 1 for LOB writes
+		totalNumRow += numRow
 
 		// remove done descr
 		j := 0
@@ -802,5 +826,5 @@ func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.Locator
 		}
 		descrs = descrs[:j]
 	}
-	return nil
+	return totalNumRow, nil
 }
