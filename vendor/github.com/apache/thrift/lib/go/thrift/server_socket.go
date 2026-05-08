@@ -26,12 +26,12 @@ import (
 )
 
 type TServerSocket struct {
+	listener      net.Listener
 	addr          net.Addr
 	clientTimeout time.Duration
 
-	// Protects the listener and interrupted fields to make them thread safe.
+	// Protects the interrupted value to make it thread safe.
 	mu          sync.RWMutex
-	listener    net.Listener
 	interrupted bool
 }
 
@@ -69,13 +69,15 @@ func (p *TServerSocket) Listen() error {
 func (p *TServerSocket) Accept() (TTransport, error) {
 	p.mu.RLock()
 	interrupted := p.interrupted
-	listener := p.listener
 	p.mu.RUnlock()
 
 	if interrupted {
 		return nil, errTransportInterrupted
 	}
 
+	p.mu.Lock()
+	listener := p.listener
+	p.mu.Unlock()
 	if listener == nil {
 		return nil, NewTTransportException(NOT_OPEN, "No underlying server socket")
 	}
@@ -108,9 +110,7 @@ func (p *TServerSocket) Open() error {
 }
 
 func (p *TServerSocket) Addr() net.Addr {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	if p.IsListening() {
+	if p.listener != nil {
 		return p.listener.Addr()
 	}
 	return p.addr
