@@ -577,6 +577,8 @@ require (
 )
 
 replace (
+	// TODO: Remove once transitive deps bump apache/thrift past the CVE-2026-41602 fix.
+	github.com/apache/thrift => github.com/apache/thrift v0.23.0
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 	github.com/observeinc/observe-agent/observecol => ./observecol
