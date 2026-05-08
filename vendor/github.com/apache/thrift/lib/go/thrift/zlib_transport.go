@@ -33,10 +33,9 @@ type TZlibTransportFactory struct {
 
 // TZlibTransport is a TTransport implementation that makes use of zlib compression.
 type TZlibTransport struct {
-	reader      io.ReadCloser
-	transport   TTransport
-	writer      *zlib.Writer
-	writeCloser io.Closer
+	reader    io.ReadCloser
+	transport TTransport
+	writer    *zlib.Writer
 }
 
 // GetTransport constructs a new instance of NewTZlibTransport
@@ -65,14 +64,14 @@ func NewTZlibTransportFactoryWithFactory(level int, factory TTransportFactory) *
 
 // NewTZlibTransport constructs a new instance of TZlibTransport
 func NewTZlibTransport(trans TTransport, level int) (*TZlibTransport, error) {
-	writer, closer, err := newZlibWriterCloserLevel(trans, level)
+	w, err := zlib.NewWriterLevel(trans, level)
 	if err != nil {
 		return nil, err
 	}
+
 	return &TZlibTransport{
-		writer:      writer,
-		writeCloser: closer,
-		transport:   trans,
+		writer:    w,
+		transport: trans,
 	}, nil
 }
 
@@ -84,7 +83,7 @@ func (z *TZlibTransport) Close() error {
 			return err
 		}
 	}
-	if err := z.writeCloser.Close(); err != nil {
+	if err := z.writer.Close(); err != nil {
 		return err
 	}
 	return z.transport.Close()
@@ -110,7 +109,7 @@ func (z *TZlibTransport) Open() error {
 
 func (z *TZlibTransport) Read(p []byte) (int, error) {
 	if z.reader == nil {
-		r, err := newZlibReader(z.transport)
+		r, err := zlib.NewReader(z.transport)
 		if err != nil {
 			return 0, NewTTransportExceptionFromError(err)
 		}
