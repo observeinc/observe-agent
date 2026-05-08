@@ -184,7 +184,7 @@ func NewBasicAuthConnector(host, username, password string) *Connector {
 }
 
 // NewX509AuthConnector creates a connector for X509 (client certificate) authentication.
-// Parameters clientCert and clientKey in PEM format, clientKey not password encryped.
+// Parameters clientCert and clientKey in PEM format, clientKey not password encrypted.
 func NewX509AuthConnector(host string, clientCert, clientKey []byte) (*Connector, error) {
 	c := NewConnector()
 	c._host = host
@@ -197,7 +197,7 @@ func NewX509AuthConnector(host string, clientCert, clientKey []byte) (*Connector
 
 // NewX509AuthConnectorByFiles creates a connector for X509 (client certificate) authentication
 // based on client certificate and client key files.
-// Parameters clientCertFile and clientKeyFile in PEM format, clientKeyFile not password encryped.
+// Parameters clientCertFile and clientKeyFile in PEM format, clientKeyFile not password encrypted.
 func NewX509AuthConnectorByFiles(host, clientCertFile, clientKeyFile string) (*Connector, error) {
 	c := NewConnector()
 	c._host = host
@@ -538,7 +538,7 @@ SetPingInterval sets the connection ping interval value of the connector.
 
 Using a ping interval supports detecting broken connections. In case the ping
 is not successful a new or another connection out of the connection pool would
-be used automatically instead of retuning an error.
+be used automatically instead of returning an error.
 
 Parameter d defines the time between the pings as duration.
 If d is zero no ping is executed. If d is not zero a database ping is executed if
@@ -657,7 +657,7 @@ func (c *Connector) SessionVariables() SessionVariables {
 	return maps.Clone(c._sessionVariables)
 }
 
-// SetSessionVariables sets the session varibles of the connector.
+// SetSessionVariables sets the session variables of the connector.
 func (c *Connector) SetSessionVariables(sessionVariables SessionVariables) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -670,7 +670,7 @@ func (c *Connector) Locale() string { c.mu.RLock(); defer c.mu.RUnlock(); return
 /*
 SetLocale sets the locale of the connector.
 
-For more information please see http://help.sap.com/hana/SAP_HANA_SQL_Command_Network_Protocol_Reference_en.pdf.
+For more information please see "SAP HANA SQL Command Network Protocol".
 */
 func (c *Connector) SetLocale(locale string) { c.mu.Lock(); defer c.mu.Unlock(); c._locale = locale }
 
@@ -742,7 +742,7 @@ func (c *Connector) SetCESU8Encoder(cesu8EncoderFn func() transform.Transformer)
 EmptyDateAsNull returns NULL for empty dates ('0000-00-00') if true, otherwise:
 
 For data format version 1 the backend does return the NULL indicator for empty date fields.
-For data format version non equal 1 (field type daydate) the NULL indicator is not set and the return value is 0.
+For data format version other than 1 (field type daydate) the NULL indicator is not set and the return value is 0.
 As value 1 represents '0001-01-01' (the minimal valid date) without setting EmptyDateAsNull '0000-12-31' is returned,
 so that NULL, empty and valid dates can be distinguished.
 
@@ -809,6 +809,7 @@ func (c *Connector) authHnd() *p.AuthHnd {
 	}
 	if c._password != "" {
 		authHnd.AddBasic(c._username, c._password)
+		authHnd.AddLDAP(c._username, c._password)
 	}
 	return authHnd
 }
@@ -870,7 +871,7 @@ func (c *Connector) refresh() (bool, error) {
 			}
 		}
 	} else if c._certFile != "" && c._keyFile != "" {
-		if certHandle, keyHandle, err := readCertKeyFiles(c._certFile, c._keyFile); err != nil {
+		if certHandle, keyHandle, err := readCertKeyFiles(c._certFile, c._keyFile); err == nil {
 			if c._certKey == nil || !c._certKey.Equal(certHandle, keyHandle) {
 				certKey, err := auth.NewCertKey(certHandle, keyHandle)
 				if err != nil {
@@ -927,6 +928,9 @@ func (c *Connector) SetRefreshPassword(refreshPasswordFn func() (password string
 func (c *Connector) ClientCert() (clientCert, clientKey []byte) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	if c._certKey == nil {
+		return nil, nil
+	}
 	return c._certKey.Cert(), c._certKey.Key()
 }
 

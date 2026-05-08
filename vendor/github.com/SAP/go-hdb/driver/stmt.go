@@ -112,12 +112,12 @@ func (s *stmt) ExecContext(ctx context.Context, nvargs []driver.NamedValue) (dri
 
 	var sqlErr error
 	var result driver.Result
-	var rows *sql.Rows // needed to avoid data race in case if context get cancelled.
+	var rows *sql.Rows // needed to avoid data race in case if context get canceled.
 	done := make(chan struct{})
 	s.wg.Go(func() {
 		defer close(done)
 		if s.pr.isProcedureCall() {
-			result, s.rows, sqlErr = s.execCall(ctx, s.pr, nvargs)
+			result, rows, sqlErr = s.execCall(ctx, s.pr, nvargs) //nolint: sqlclosecheck
 		} else {
 			result, sqlErr = s.execDefault(ctx, nvargs)
 		}
@@ -157,7 +157,7 @@ func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.
 	for i := range numOutArgs {
 		scanArgs[i] = callArgs.outArgs[i].Value.(sql.Out).Dest
 	}
-	// acccount for table output fields without call arguments.
+	// account for table output fields without call arguments.
 	for i := numOutArgs; i < numOutputField; i++ {
 		scanArgs[i] = new(sql.Rows)
 	}
@@ -309,6 +309,7 @@ func (s *stmt) execSeq(ctx context.Context, nvargs []driver.NamedValue) (driver.
 				return driver.RowsAffected(totalRowsAffected), err
 			}
 			args = args[:0]
+			n = 0
 			batch++
 		}
 	}
@@ -363,7 +364,7 @@ Bulk insert containing LOBs:
     .Sending more than one row with partial LOB data.
   - Observations:
     .In hdb version 1 and 2 'piecewise' LOB writing does work.
-    .Same does not work in case of geo fields which are LOBs en,- decoded as well.
+    .Same does not work in case of geo fields which are LOBs encoded and decoded as well.
     .In hana version 4 'piecewise' LOB writing seems not to work anymore at all.
   - Server implementation (not documented):
     .'piecewise' LOB writing is only supported for the last row of a 'bulk insert'.

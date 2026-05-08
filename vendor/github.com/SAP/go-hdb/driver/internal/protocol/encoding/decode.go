@@ -187,7 +187,7 @@ func (d *Decoder) Decimal() (*big.Int, int, error) { // m, exp
 	bs := d.b[:decSize]
 
 	if err := d.readFull(bs); err != nil {
-		return nil, 0, nil
+		return nil, 0, nil //nolint:nilerr
 	}
 
 	if (bs[15] & 0x70) == 0x70 { // null value (bit 4,5,6 set)
@@ -268,7 +268,7 @@ func (d *Decoder) Fixed(size int) *big.Int { // m, exp
 // - error is only returned in case of conversion errors.
 func (d *Decoder) CESU8Bytes(size int) ([]byte, error) {
 	if d.err != nil {
-		return nil, nil
+		return nil, nil //nolint:nilerr
 	}
 
 	var p []byte
@@ -279,7 +279,7 @@ func (d *Decoder) CESU8Bytes(size int) ([]byte, error) {
 	}
 
 	if err := d.readFull(p); err != nil {
-		return nil, nil
+		return nil, nil //nolint:nilerr
 	}
 
 	b, _, err := transform.Bytes(d.tr, p)
@@ -292,13 +292,13 @@ func (d *Decoder) varFieldInd() (n, size int, null bool) {
 	switch {
 	default:
 		return 1, 0, false
-	case ind == bytesLenIndNullValue:
+	case ind == varFieldLenIndNullValue:
 		return 1, 0, true
-	case ind <= bytesLenIndSmall:
+	case ind <= varFieldLenIndSmall:
 		return 1, int(ind), false
-	case ind == bytesLenIndMedium:
+	case ind == varFieldLenIndMedium:
 		return 3, int(d.Int16()), false
-	case ind == bytesLenIndBig:
+	case ind == varFieldLenIndBig:
 		return 5, int(d.Int32()), false
 	}
 }
@@ -524,7 +524,7 @@ func (d *Decoder) VarField() (any, error) {
 	return b, nil
 }
 
-// AlphanumField decodes a alphanum field.
+// AlphanumField decodes an alphanum field.
 func (d *Decoder) AlphanumField() (any, error) {
 	if d.alphanumDfv1 { // like VarField
 		return d.VarField()

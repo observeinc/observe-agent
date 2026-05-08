@@ -1,0 +1,4 @@
+global:
+  excluded_paths:
+    - "./vendor/**/package-lock.json"
+    - "./vendor/**/package.json"

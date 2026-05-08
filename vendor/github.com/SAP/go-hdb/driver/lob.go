@@ -32,19 +32,25 @@ func scanLob(src any, wr io.Writer) error {
 	// the following cases do support types which might be used in
 	// db mock scenarios
 	case string:
-		rd := strings.NewReader(src)
-		_, err := io.Copy(wr, rd)
+		_, err := io.Copy(wr, strings.NewReader(src))
 		return err
 
 	case []byte:
-		rd := bytes.NewBuffer(src)
-		_, err := io.Copy(wr, rd)
+		_, err := io.Copy(wr, bytes.NewReader(src))
 		return err
 
 	case io.Reader:
 		_, err := io.Copy(wr, src)
 		return err
 	}
+}
+
+// byteSliceWriter implements io.Writer by appending to a byte slice.
+type byteSliceWriter []byte
+
+func (w *byteSliceWriter) Write(p []byte) (int, error) {
+	*w = append(*w, p...)
+	return len(p), nil
 }
 
 // ScanLobBytes supports scanning Lob data into a byte slice.
@@ -54,12 +60,8 @@ func ScanLobBytes(src any, b *[]byte) error {
 	if b == nil {
 		return fmt.Errorf("lob scan error: parameter b %T is nil", b)
 	}
-	wr := new(bytes.Buffer) // cannot pool as we use the underlaying buffer (*).
-	if err := scanLob(src, wr); err != nil {
-		return err
-	}
-	*b = wr.Bytes() // (*) use underlaying buffer.
-	return nil
+	*b = (*b)[:0]
+	return scanLob(src, (*byteSliceWriter)(b))
 }
 
 // ScanLobString supports scanning Lob data into a string.
@@ -69,15 +71,16 @@ func ScanLobString(src any, s *string) error {
 	if s == nil {
 		return fmt.Errorf("lob scan error: parameter s %T is nil", s)
 	}
-	wr := new(bytes.Buffer) // cannot pool as we use the underlaying buffer (*).
-	if err := scanLob(src, wr); err != nil {
+	b := unsafe.String2ByteSlice(*s)
+	b = b[:0]
+	if err := scanLob(src, (*byteSliceWriter)(&b)); err != nil {
 		return err
 	}
-	*s = unsafe.ByteSlice2String(wr.Bytes()) // (*) use underlaying buffer.
+	*s = unsafe.ByteSlice2String(b)
 	return nil
 }
 
-// ScanLobWriter supports scanning Lob data into a io.Writer object.
+// ScanLobWriter supports scanning Lob data into an io.Writer object.
 // This enables using io.Writer based custom types for scanning Lobs instead of using a Lob object.
 // For usage please refer to the example.
 func ScanLobWriter(src any, wr io.Writer) error {
@@ -90,7 +93,7 @@ func ScanLobWriter(src any, wr io.Writer) error {
 // A Lob is the driver representation of a database large object field.
 // A Lob object uses an io.Reader object as source for writing content to a database lob field.
 // A Lob object uses an io.Writer object as destination for reading content from a database lob field.
-// A Lob can be created by contructor method NewLob with io.Reader and io.Writer as parameters or
+// A Lob can be created by constructor method NewLob with io.Reader and io.Writer as parameters or
 // created by new, setting io.Reader and io.Writer by SetReader and SetWriter methods.
 type Lob struct {
 	rd io.Reader
@@ -108,7 +111,7 @@ func (l Lob) Reader() io.Reader {
 }
 
 // SetReader sets the io.Reader source for a lob field to be written to database
-// and return *Lob, to enable simple call chaining.
+// and returns *Lob, to enable simple call chaining.
 func (l *Lob) SetReader(rd io.Reader) *Lob {
 	l.rd = rd
 	return l
@@ -120,7 +123,7 @@ func (l Lob) Writer() io.Writer {
 }
 
 // SetWriter sets the io.Writer destination for a lob field to be read from database
-// and return *Lob, to enable simple call chaining.
+// and returns *Lob, to enable simple call chaining.
 func (l *Lob) SetWriter(wr io.Writer) *Lob {
 	l.wr = wr
 	return l

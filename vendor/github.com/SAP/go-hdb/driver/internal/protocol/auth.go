@@ -38,6 +38,11 @@ func (a *AuthHnd) AddJWT(token string) { a.methods[auth.MtJWT] = auth.NewJWT(tok
 // AddX509 adds X509 authentication method.
 func (a *AuthHnd) AddX509(certKey *auth.CertKey) { a.methods[auth.MtX509] = auth.NewX509(certKey) }
 
+// AddLDAP adds LDAP authentication method.
+func (a *AuthHnd) AddLDAP(username, password string) {
+	a.methods[auth.MtLDAP] = auth.NewLDAP(username, password)
+}
+
 // Selected returns the selected authentication method.
 func (a *AuthHnd) Selected() auth.Method { return a.selected }
 
@@ -99,17 +104,15 @@ func (r *AuthInitReply) decode(dec *encoding.Decoder) error {
 		return nil
 	}
 
-	d := auth.NewDecoder(dec)
-
-	if err := d.NumPrm(2); err != nil {
+	if err := auth.DecodeAndCheckNumPrm(dec, 2); err != nil {
 		return err
 	}
-	mt := d.String()
+	mt := dec.AuthString()
 
 	if err := r.authHnd.setMethod(mt); err != nil {
 		return err
 	}
-	if err := r.authHnd.selected.InitRepDecode(d); err != nil {
+	if err := r.authHnd.selected.InitRepDecode(dec); err != nil {
 		return err
 	}
 	return dec.Error()
@@ -139,7 +142,7 @@ func (r *AuthFinalReply) decode(dec *encoding.Decoder) error {
 		return nil
 	}
 
-	if err := r.method.FinalRepDecode(auth.NewDecoder(dec)); err != nil {
+	if err := r.method.FinalRepDecode(dec); err != nil {
 		return err
 	}
 	return dec.Error()
