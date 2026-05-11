@@ -80,6 +80,9 @@
     "ExportersConfig": {
       "additionalProperties": false,
       "properties": {
+        "emit_prometheus_target_info_metric": {
+          "type": "boolean"
+        },
         "sending_queue_batch": {
           "$ref": "#/$defs/SendingQueueBatchConfig"
         }
