@@ -47,6 +47,8 @@ exporters:
         resource_to_telemetry_conversion:
             enabled: true
         send_metadata: true
+        target_info:
+            enabled: false
 extensions:
     file_storage:
         directory: C:\ProgramData\Observe\observe-agent\filestorage
