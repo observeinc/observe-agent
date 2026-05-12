@@ -120,7 +120,8 @@ type SendingQueueBatchConfig struct {
 }
 
 type ExportersConfig struct {
-	SendingQueueBatch SendingQueueBatchConfig `yaml:"sending_queue_batch,omitempty" mapstructure:"sending_queue_batch"`
+	SendingQueueBatch              SendingQueueBatchConfig `yaml:"sending_queue_batch,omitempty" mapstructure:"sending_queue_batch"`
+	EmitPrometheusTargetInfoMetric bool                    `yaml:"emit_prometheus_target_info_metric" mapstructure:"emit_prometheus_target_info_metric"`
 }
 
 type AgentConfig struct {

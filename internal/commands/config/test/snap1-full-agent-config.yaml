@@ -84,3 +84,6 @@ application:
             - customer_id
 
 otel_config_overrides: {}
+
+exporters:
+    emit_prometheus_target_info_metric: true
