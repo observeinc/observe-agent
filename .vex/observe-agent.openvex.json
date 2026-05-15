@@ -1,0 +1,73 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/observeinc/observe-agent/.vex/observe-agent.openvex.json",
+  "author": "Observe Agent Team <observe-agent@observeinc.com>",
+  "timestamp": "2026-05-15T00:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-42154"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/prometheus/prometheus@0.311.2-0.20260410083055-07c6232d159b" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "observe-agent vendors github.com/prometheus/prometheus as a library for receiver/exporter code paths only. The Prometheus server HTTP/UI/query surface affected by this CVE is not initialized or exposed by the agent."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-42151"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/prometheus/prometheus@0.311.2-0.20260410083055-07c6232d159b" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "observe-agent vendors github.com/prometheus/prometheus as a library for receiver/exporter code paths only. The Prometheus server HTTP/UI/query surface affected by this CVE is not initialized or exposed by the agent."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-44903"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/prometheus/prometheus@0.311.2-0.20260410083055-07c6232d159b" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "observe-agent vendors github.com/prometheus/prometheus as a library for receiver/exporter code paths only. The Prometheus server HTTP/UI surface where this XSS lands is not initialized or exposed by the agent."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-41602"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/apache/thrift@0.22.0" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "observe-agent uses github.com/apache/thrift only via the jaeger receiver decode path. The agent does not expose unbounded attacker-controlled framed Thrift messages on a public listener, so the integer-overflow code path is not reachable in deployed agent configurations."
+    }
+  ]
+}

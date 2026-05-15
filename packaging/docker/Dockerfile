@@ -9,10 +9,10 @@ RUN tar czhf journalctl.tar.gz /bin/journalctl $(ldd /bin/journalctl | grep -oP 
 # however, we can copy full directory as root (/) to be base file structure for scratch image
 RUN mkdir /output && tar xf /journalctl.tar.gz --directory /output
 
-FROM alpine:3.23.3 AS certs
+FROM alpine:3.23.4 AS certs
 RUN apk --update add ca-certificates
 
-FROM alpine:3.23.3
+FROM alpine:3.23.4
 
 ARG USER_UID=10001
 ARG USER_GID=10001
