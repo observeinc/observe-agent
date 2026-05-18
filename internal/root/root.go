@@ -161,7 +161,9 @@ func setEnvVars() error {
 	os.Setenv("OBSERVE_OTEL_ENDPOINT", otelEndpoint)
 	os.Setenv("OBSERVE_PROMETHEUS_ENDPOINT", promEndpoint)
 	os.Setenv("OBSERVE_AUTHORIZATION_HEADER", "Bearer "+token)
-	os.Setenv("FILESTORAGE_PATH", utils.GetDefaultFilestoragePath())
+	if os.Getenv("FILESTORAGE_PATH") == "" {
+		os.Setenv("FILESTORAGE_PATH", utils.GetDefaultFilestoragePath())
+	}
 
 	configFile := viper.ConfigFileUsed()
 	if configFile != "" {

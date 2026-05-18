@@ -30,52 +30,65 @@ env:
   TF_VAR_old_version: ${{ github.event.inputs.old_version || 'v2.5.0' }}
 
 jobs:
-  build:
+  prepare-integration:
     runs-on: ubuntu-observe-agent-8cpu
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: windows
+            goarch: amd64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.25.10
-      - name: Install yq
-        run: |
-          YQ_VERSION=v4.45.4
-          mkdir -p "${RUNNER_TEMP}/bin"
-          curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o "${RUNNER_TEMP}/bin/yq"
-          chmod +x "${RUNNER_TEMP}/bin/yq"
-          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
-      - name: Generate integration GoReleaser config
-        run: ./scripts/generate-integration-goreleaser.sh
+      - name: Install qemu
+        if: matrix.goos == 'linux'
+        uses: docker/setup-qemu-action@v3
+      - name: Setup Docker Buildx
+        if: matrix.goos == 'linux'
+        uses: docker/setup-buildx-action@v4
       - name: Run GoReleaser
         timeout-minutes: 40
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser-pro
-          version: 2.14.1
-          args: release --config .goreleaser.integration.generated.yaml --prepare --clean --skip=sign,sbom --snapshot --verbose --parallelism 6
+          version: 2.15.4
+          args: release --split --clean --skip=sign,sbom --snapshot --verbose --parallelism 6
         env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - name: Save docker as .tar # Save docker image to tar
+        if: matrix.goos == 'linux'
         run: |
           amd64_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "amd64"| grep "observe-agent" | grep "SNAPSHOT" | sort -r -k4 | head -n 1)
           echo "amd64_image: ${amd64_image}"
           docker save -o dist/observe-agent_docker_amd64.tar ${amd64_image}
+      - name: Flatten dist directory
+        # `goreleaser release --split` nests artifacts under dist/<goos>_<goarch>/.
+        # The terraform integration tests call os.listdir(../dist) and expect a
+        # flat layout, so move package artifacts up to dist/ before upload.
+        run: |
+          find dist -mindepth 2 -maxdepth 2 -type f -exec mv -t dist/ {} +
       - run: pwd && ls -l && ls -l dist/
-      - name: Upload build artifacts
+      - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
-          retention-days: 10
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist
+          if-no-files-found: error
 
   observe-agent-integration-tests:
     name: observe-agent-integration-tests-${{ matrix.AWS_MACHINE}}
     runs-on: ubuntu-latest
-    needs: build
+    needs: prepare-integration
     strategy:
       fail-fast: false
       matrix:
@@ -93,7 +106,7 @@ jobs:
         working-directory: integration #Terrafrom commands and tests are ran from integration directory
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - run: git branch && df -h
       - name: Configure AWS Credentials ## Terraform provider automatically uses these creds
         uses: aws-actions/configure-aws-credentials@v4
@@ -122,8 +135,9 @@ jobs:
         uses: actions/download-artifact@v4
         id: artifact-download-step
         with:
-          name: dist
+          pattern: dist-*
           path: dist
+          merge-multiple: true
 
       - run: pwd && ls -l && ls -l ../dist/
 
