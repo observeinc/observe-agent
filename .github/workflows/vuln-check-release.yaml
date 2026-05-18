@@ -18,27 +18,27 @@ jobs:
     runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.branch }}
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.25.9
+          go-version: 1.25.10
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser-pro
           version: 2.14.1
@@ -64,4 +64,6 @@ jobs:
           ignore-unchanged: true
           only-fixed: true
           only-severities: medium,critical,high
+          vex-location: .vex/
+          vex-author: Observe Agent Team <observe-agent@observeinc.com>
           exit-code: true

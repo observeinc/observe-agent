@@ -91,23 +91,31 @@ git push origin tag v<new-version>
 
 ## Step 5: Monitor the Release Version action
 
-The tag push triggers the [Release Version](https://github.com/observeinc/observe-agent/actions/workflows/release.yaml) workflow. Monitor it:
+The tag push triggers the [Release Version](https://github.com/observeinc/observe-agent/actions/workflows/release.yaml) workflow.
+
+**You MUST actively monitor the workflow until it reaches a terminal state
+(success or failure).** Do not leave this step to the user — poll the run
+status in the background and report the outcome.
+
+1. Find the triggered run:
 
 ```bash
-gh run list --repo observeinc/observe-agent --workflow release.yaml --limit 1
+gh run list --repo observeinc/observe-agent --workflow release.yaml --limit 1 --json databaseId,status,conclusion
 ```
 
-Past successful releases take ~30-37 minutes. Watch until completion:
+2. Watch it until completion (past successful releases take ~30-37 minutes):
 
 ```bash
 gh run watch <run-id> --repo observeinc/observe-agent
 ```
 
-On failure, fetch logs with:
+3. On failure, fetch logs and surface them:
 
 ```bash
 gh run view <run-id> --repo observeinc/observe-agent --log-failed | tail -100
 ```
+
+Do not proceed to Step 6 until the workflow succeeds.
 
 ## Step 6: Draft release announcement
 

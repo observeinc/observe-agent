@@ -76,6 +76,8 @@ exporters:
         resource_to_telemetry_conversion:
             enabled: true
         send_metadata: true
+        target_info:
+            enabled: true
 extensions:
     cgroupruntime:
         gomaxprocs:
