@@ -170,6 +170,8 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.20 h1:oK/njaL8GtyEihkWMD4k3Vg
 github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.20/go.mod h1:JHs8/y1f3zY7U5WcuzoJ/yAYGYtNIVPKLIbp61euvmg=
 github.com/aws/aws-sdk-go-v2/service/sts v1.42.0 h1:ks8KBcZPh3PYISr5dAiXCM5/Thcuxk8l+PG4+A0exds=
 github.com/aws/aws-sdk-go-v2/service/sts v1.42.0/go.mod h1:pFw33T0WLvXU3rw1WBkpMlkgIn54eCB5FYLhjDc9Foo=
+github.com/aws/aws-sdk-go-v2/service/xray v1.36.22 h1:uOE5uDbRUGleUG+J4sQCHGZKmSTu2NyA9cH3N7VLw78=
+github.com/aws/aws-sdk-go-v2/service/xray v1.36.22/go.mod h1:Cz/R9mCmvBYHGLd2aXjaLJSmDtFcDA2XFVzizAmeeTo=
 github.com/aws/smithy-go v1.25.1 h1:J8ERsGSU7d+aCmdQur5Txg6bVoYelvQJgtZehD12GkI=
 github.com/aws/smithy-go v1.25.1/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPnH1Wvgk=
@@ -741,8 +743,14 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.1
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.151.0/go.mod h1:XnhHVX5jsAfSqSxnHFYSnE2L1z7MgzzYxIwkpU1qqUY=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.151.0 h1:7Z7d8KePUChy6DcLsWY5vnkpfMe6zdeBe7YCSUmcwC0=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.151.0/go.mod h1:K0HJ9YJDbPRasbO7ZSZ+Wn50qkwL0o+NXX61S8+6b9Y=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.151.0 h1:mxw7gHpgGgzC0rQZoedS0zClgPVZUKWUEKM/R1FmclU=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.151.0/go.mod h1:u1iGNaRWVYnJRl/6rg34rx/o5wBA7WLMuvf76Whwozg=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0 h1:WOuV1Kp5CAo5gn8TyrU7+fGLfKv3hL7Yj80yg+TobSQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0/go.mod h1:WkKbD/chLCZZUU/C/6JCweEn75o0AsdFkje4ehK435Y=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.151.0 h1:rUHFCUc3hkaR/i0FbhDhKfPbEwBYJtETd23bB/Hh3aQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.151.0/go.mod h1:bDot2HjeGLve9M1b/Us1bFYAkZ57lQmIPfrLCJ5/T+Q=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.151.0 h1:3lixq3DGjNEKfFuec32J+mkarpXezIUJilaL59+wGeQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.151.0/go.mod h1:qZa7bcqs9EtNGxOT6lUw2n0AhMA77L+S4tK6r9fnw2I=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0 h1:cOqeW8ioU7tZhsvB/lrgzhdC2qwQP564hvK8tpbC18M=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0/go.mod h1:isMQULLE9AcIvNbdhdmiHs9jWInuHCeVblJXkUjK7hE=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0 h1:JRjznmSHnTt0S/GegT/vfsdiiV81L36NS9fBNV7tOmM=
@@ -845,6 +853,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformpro
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.151.0/go.mod h1:cVdoaU8GWd185FO4K5hFf24Yrk90pS1Gfsk6osNhpcQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0 h1:s5M9J5fYHUiMwYow2l+a1qkHqxIxbQEuFuIKmT7VSLg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0/go.mod h1:jV7GDoplubgVr8Yt71nFf84A6xm/wZaAxHpUjWTNQ4E=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.151.0 h1:OhXCJjSgjhqVUtrchramXg7jUkDYhqfQid50lhf++mc=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.151.0/go.mod h1:+jOXUUdVXRFq+tVQsCNh9prj+8C2BkfMwm5ZzKG7sMw=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0 h1:8+Wg6m5cCnv1T68jNkivkHKx2juaNsq3RmL4noD7ppM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0/go.mod h1:U3vjy0yIsXSaRmE+8e5lwRr5+X1y5bo8gzbNYsF9sOg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.151.0 h1:3YH05lugaTXztmEc9cE47xht5+dAEm1kWQ/zrqeNRu4=
