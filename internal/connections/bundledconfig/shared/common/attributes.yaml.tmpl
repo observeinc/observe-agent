@@ -4,7 +4,7 @@ processors:
     actions:
     {{- range $key, $value := .Attributes }}
       - key: {{ $key }}
-        value: {{ $value }}
+        value: {{ toYaml $value }}
         action: insert
     {{- end }}
   {{- end }}
@@ -13,7 +13,7 @@ processors:
     attributes:
     {{- range $key, $value := .ResourceAttributes }}
       - key: {{ $key }}
-        value: {{ $value }}
+        value: {{ toYaml $value }}
         action: insert
     {{- end }}
   {{- end }}

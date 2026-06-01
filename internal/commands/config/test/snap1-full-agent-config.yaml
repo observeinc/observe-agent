@@ -14,9 +14,15 @@ debug: true
 
 attributes:
     test-attr: test-value
+    # Regression coverage for OB-60193: each of these would be reinterpreted by
+    # the otelcol YAML loader as a non-string if rendered unquoted.
+    digits-attr: "12345"
+    bool-attr: "true"
 
 resource_attributes:
     service.name: test-service
+    service.version: "060520262300"
+    service.namespace: "1.0"
     deployment.environment: test
 
 health_check:
