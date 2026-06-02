@@ -116,6 +116,27 @@ var allSnapshotTests = []snapshotTest{
 		outputPath:      "test/snap3-windows-output.yaml",
 		packageType:     Windows,
 	},
+	// Tests with the recommended connection-portal settings
+	{
+		agentConfigPath: "test/snap4-recommended-settings-agent-config.yaml",
+		outputPath:      "test/snap4-docker-output.yaml",
+		packageType:     Docker,
+	},
+	{
+		agentConfigPath: "test/snap4-recommended-settings-agent-config.yaml",
+		outputPath:      "test/snap4-linux-output.yaml",
+		packageType:     Linux,
+	},
+	{
+		agentConfigPath: "test/snap4-recommended-settings-agent-config.yaml",
+		outputPath:      "test/snap4-macos-output.yaml",
+		packageType:     MacOS,
+	},
+	{
+		agentConfigPath: "test/snap4-recommended-settings-agent-config.yaml",
+		outputPath:      "test/snap4-windows-output.yaml",
+		packageType:     Windows,
+	},
 }
 
 // This test cannot be run in our CI since some of the OTel components validate file paths
