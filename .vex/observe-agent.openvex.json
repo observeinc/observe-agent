@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/observeinc/observe-agent/.vex/observe-agent.openvex.json",
   "author": "Observe Agent Team <observe-agent@observeinc.com>",
-  "timestamp": "2026-05-15T00:00:00Z",
-  "version": 1,
+  "timestamp": "2026-06-03T00:00:00Z",
+  "version": 2,
   "statements": [
     {
       "vulnerability": {
@@ -68,6 +68,38 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "observe-agent uses github.com/apache/thrift only via the jaeger receiver decode path. The agent does not expose unbounded attacker-controlled framed Thrift messages on a public listener, so the integer-overflow code path is not reachable in deployed agent configurations."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2020-8911"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/aws/aws-sdk-go@1.55.8" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "CVE-2020-8911 is a CBC padding-oracle issue in the github.com/aws/aws-sdk-go/service/s3/s3crypto client-side-encryption package. observe-agent depends on aws-sdk-go for plain S3 GetObject/PutObject/SQS/STS calls only and does not import the s3crypto subpackage; govulncheck (symbol scan, source mode) confirms the vulnerable symbols are not in the import graph. There is no upstream fix; AWS recommends migrating to AWS Encryption SDK, which does not apply to our usage."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2020-8912"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/aws/aws-sdk-go@1.55.8" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "CVE-2020-8912 is an in-band key-negotiation issue in the github.com/aws/aws-sdk-go/service/s3/s3crypto client-side-encryption package. observe-agent does not import s3crypto; govulncheck (symbol scan, source mode) confirms the vulnerable symbols are not in the import graph. There is no upstream fix."
     }
   ]
 }
