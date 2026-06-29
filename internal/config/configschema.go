@@ -1,9 +1,11 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
@@ -166,6 +168,40 @@ func (config *AgentConfig) HasResourceAttributes() bool {
 	return len(config.ResourceAttributes) > 0
 }
 
+// StringToStringMapHookFunc returns a mapstructure DecodeHookFunc that converts
+// a string to map[string]string. Supports JSON ({"k":"v"}) and comma-separated
+// key=value pairs (k=v,k2=v2), which aligns with the OTEL_RESOURCE_ATTRIBUTES format.
+// This allows map[string]string config fields to be set via environment variables.
+func StringToStringMapHookFunc() mapstructure.DecodeHookFunc {
+	return mapstructure.DecodeHookFuncType(func(from reflect.Type, to reflect.Type, data any) (any, error) {
+		if from.Kind() != reflect.String {
+			return data, nil
+		}
+		if to != reflect.TypeOf(map[string]string{}) {
+			return data, nil
+		}
+		s := data.(string)
+		if s == "" {
+			return map[string]string{}, nil
+		}
+		// Try JSON first.
+		var m map[string]string
+		if err := json.Unmarshal([]byte(s), &m); err == nil {
+			return m, nil
+		}
+		// Fall back to comma-separated key=value pairs.
+		result := make(map[string]string)
+		for _, pair := range strings.Split(s, ",") {
+			parts := strings.SplitN(strings.TrimSpace(pair), "=", 2)
+			if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" {
+				return nil, fmt.Errorf("invalid key=value pair %q: expected format key=value or JSON object", pair)
+			}
+			result[strings.TrimSpace(parts[0])] = parts[1]
+		}
+		return result, nil
+	})
+}
+
 func SetViperDefaults(v *viper.Viper, separator string, configMode string) {
 	var config AgentConfig
 	defaults.SetDefaults(&config)
@@ -203,7 +239,16 @@ func AgentConfigFromViper(v *viper.Viper) (*AgentConfig, error) {
 	}
 	var config AgentConfig
 	defaults.SetDefaults(&config)
-	err := v.Unmarshal(&config)
+	// viper.DecodeHook replaces (rather than extends) viper's default hooks, so
+	// StringToTimeDurationHookFunc and StringToSliceHookFunc must be re-listed here
+	// to preserve their default behavior alongside our custom StringToStringMapHookFunc.
+	err := v.Unmarshal(&config, viper.DecodeHook(
+		mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+			StringToStringMapHookFunc(),
+		),
+	))
 	if err != nil {
 		return nil, err
 	}
