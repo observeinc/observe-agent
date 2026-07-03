@@ -15,6 +15,7 @@ import (
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	servicediscovery "github.com/observeinc/observe-agent/components/connectors/servicediscovery"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -260,6 +261,7 @@ func components() (otelcol.Factories, error) {
 		countconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
 		routingconnector.NewFactory(),
+		servicediscovery.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -269,6 +271,7 @@ func components() (otelcol.Factories, error) {
 		countconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0",
 		spanmetricsconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0",
 		routingconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0",
+		servicediscovery.NewFactory().Type(): "github.com/observeinc/observe-agent/components/connectors/servicediscovery v0.0.0-00010101000000-000000000000",
 	})
 
 	return factories, nil

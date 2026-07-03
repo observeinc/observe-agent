@@ -6,6 +6,7 @@ go 1.25.11
 
 require (
 	github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000
+	github.com/observeinc/observe-agent/components/connectors/servicediscovery v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0
@@ -570,6 +571,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/observeinc/observe-agent/components/connectors/servicediscovery => ../components/connectors/servicediscovery
 
 replace github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver => ../components/receivers/heartbeatreceiver
 

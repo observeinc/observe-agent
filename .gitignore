@@ -30,3 +30,6 @@ tfplan
 
 #tooling
 .snowflake/cortex/plans
+
+#test coverage
+coverage.out

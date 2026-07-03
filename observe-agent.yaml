@@ -1,0 +1,46 @@
+observe_url: "https://126836105945.collect.observe-staging.com/"
+
+token: "ds1NcFUMcnzIclKK3cnq:YAUA_cE1SicStZeJTp2cOPI-D2FAr70d"
+
+host_monitoring:
+  enabled: false
+
+forwarding:
+    enabled: true
+    endpoints:
+        http: 0.0.0.0:4318
+        grpc: 0.0.0.0:4317
+    metrics:
+        output_format: otel
+        convert_cumulative_to_delta: true
+    traces:
+        max_span_duration: 30m
+
+otel_config_overrides:
+  connectors:
+    servicediscovery:
+  exporters:
+    debug:
+      verbosity: detailed
+
+  service:
+    # telemetry:
+    #   logs:
+    #     level: debug
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter]
+        exporters: [servicediscovery]
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter]
+        exporters: [servicediscovery, otlphttp/observemetrics]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter]
+        exporters: [servicediscovery, otlphttp/observe]
+      logs/servicediscovery:
+        receivers: [servicediscovery]
+        processors: [memory_limiter]
+        exporters: [debug, otlphttp/observe]
