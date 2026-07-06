@@ -263,6 +263,7 @@ require (
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0 // indirect
