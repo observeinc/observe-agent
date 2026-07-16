@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -38,8 +40,9 @@ import (
 )
 
 const (
-	defaultLocalThreshold = 15 * time.Millisecond
-	defaultMaxPoolSize    = 100
+	defaultLocalThreshold       = 15 * time.Millisecond
+	defaultMaxPoolSize          = 100
+	defaultAdaptiveRetries uint = 2
 )
 
 var (
@@ -56,24 +59,28 @@ var (
 // The Client type opens and closes connections automatically and maintains a pool of idle connections. For
 // connection pool configuration options, see documentation for the ClientOptions type in the mongo/options package.
 type Client struct {
-	id             uuid.UUID
-	deployment     driver.Deployment
-	localThreshold time.Duration
-	retryWrites    bool
-	retryReads     bool
-	clock          *session.ClusterClock
-	readPreference *readpref.ReadPref
-	readConcern    *readconcern.ReadConcern
-	writeConcern   *writeconcern.WriteConcern
-	bsonOpts       *options.BSONOptions
-	registry       *bson.Registry
-	monitor        *event.CommandMonitor
-	serverAPI      *driver.ServerAPIOptions
-	serverMonitor  *event.ServerMonitor
-	sessionPool    *session.Pool
-	timeout        *time.Duration
-	httpClient     *http.Client
-	logger         *logger.Logger
+	id                        uuid.UUID
+	deployment                driver.Deployment
+	localThreshold            time.Duration
+	retryWrites               bool
+	retryReads                bool
+	maxAdaptiveRetries        *uint
+	enableOverloadRetargeting bool
+	clock                     *session.ClusterClock
+	readPreference            *readpref.ReadPref
+	readConcern               *readconcern.ReadConcern
+	writeConcern              *writeconcern.WriteConcern
+	bsonOpts                  *options.BSONOptions
+	registry                  *bson.Registry
+	monitor                   *event.CommandMonitor
+	serverAPI                 *driver.ServerAPIOptions
+	serverMonitor             *event.ServerMonitor
+	sessionPool               *session.Pool
+	timeout                   *time.Duration
+	httpClient                *http.Client
+	logger                    *logger.Logger
+	currentDriverInfo         *atomic.Pointer[options.DriverInfo]
+	seenDriverInfo            sync.Map
 
 	// in-use encryption fields
 	isAutoEncryptionSet bool
@@ -87,27 +94,19 @@ type Client struct {
 	authenticator       driver.Authenticator
 }
 
-// Connect creates a new Client and then initializes it using the Connect method.
+// Connect creates a new Client with the given configuration options.
 //
-// When creating an options.ClientOptions, the order the methods are called matters. Later Set*
-// methods will overwrite the values from previous Set* method invocations. This includes the
-// ApplyURI method. This allows callers to determine the order of precedence for option
-// application. For instance, if ApplyURI is called before SetAuth, the Credential from
-// SetAuth will overwrite the values from the connection string. If ApplyURI is called
+// Connect returns an error if the configuration options are invalid, but does
+// not validate that the MongoDB deployment is reachable. To verify that the
+// deployment is reachable, call [Client.Ping].
+//
+// When creating an [options.ClientOptions], the order the methods are called
+// matters. Later option setter calls overwrite the values from previous option
+// setter calls, including the ApplyURI method. This allows callers to
+// determine the order of precedence for setting options. For instance, if
+// ApplyURI is called before SetAuth, the Credential from SetAuth will
+// overwrite the values from the connection string. If ApplyURI is called
 // after SetAuth, then its values will overwrite those from SetAuth.
-//
-// The opts parameter is processed using options.MergeClientOptions, which will overwrite entire
-// option fields of previous options, there is no partial overwriting. For example, if Username is
-// set in the Auth field for the first option, and Password is set for the second but with no
-// Username, after the merge the Username field will be empty.
-//
-// The NewClient function does not do any I/O and returns an error if the given options are invalid.
-// The Client.Connect method starts background goroutines to monitor the state of the deployment and does not do
-// any I/O in the main goroutine to prevent the main goroutine from blocking. Therefore, it will not error if the
-// deployment is down.
-//
-// The Client.Ping method can be used to verify that the deployment is successfully connected and the
-// Client was correctly configured.
 func Connect(opts ...*options.ClientOptions) (*Client, error) {
 	c, err := newClient(opts...)
 	if err != nil {
@@ -140,7 +139,11 @@ func newClient(opts ...*options.ClientOptions) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &Client{id: id}
+
+	client := &Client{
+		id:                id,
+		currentDriverInfo: &atomic.Pointer[options.DriverInfo]{},
+	}
 
 	// ClusterClock
 	client.clock = new(session.ClusterClock)
@@ -186,6 +189,9 @@ func newClient(opts ...*options.ClientOptions) (*Client, error) {
 	if clientOpts.RetryReads != nil {
 		client.retryReads = *clientOpts.RetryReads
 	}
+	client.maxAdaptiveRetries = clientOpts.MaxAdaptiveRetries
+	client.enableOverloadRetargeting = clientOpts.EnableOverloadRetargeting != nil &&
+		*clientOpts.EnableOverloadRetargeting
 	// Timeout
 	client.timeout = clientOpts.Timeout
 	client.httpClient = clientOpts.HTTPClient
@@ -225,7 +231,15 @@ func newClient(opts ...*options.ClientOptions) (*Client, error) {
 		}
 	}
 
-	cfg, err := topology.NewConfigFromOptionsWithAuthenticator(clientOpts, client.clock, client.authenticator)
+	if clientOpts.DriverInfo != nil {
+		client.AppendDriverInfo(*clientOpts.DriverInfo)
+	}
+
+	cfg, err := topology.NewAuthenticatorConfig(client.authenticator,
+		topology.WithAuthConfigClock(client.clock),
+		topology.WithAuthConfigClientOptions(clientOpts),
+		topology.WithAuthConfigDriverInfo(client.currentDriverInfo),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -300,6 +314,45 @@ func (c *Client) connect() error {
 	}
 	c.sessionPool = session.NewPool(updateChan)
 	return nil
+}
+
+// AppendDriverInfo appends the provided [options.DriverInfo] to the metadata
+// (e.g. name, version, platform) that will be sent to the server in handshake
+// requests when establishing new connections.
+//
+// Repeated calls to AppendDriverInfo with equivalent DriverInfo is a no-op.
+//
+// Metadata is limited to 512 bytes; any excess will be truncated.
+func (c *Client) AppendDriverInfo(info options.DriverInfo) {
+	if _, loaded := c.seenDriverInfo.LoadOrStore(info, struct{}{}); loaded {
+		return
+	}
+
+	if old := c.currentDriverInfo.Load(); old != nil {
+		if old.Name != "" && info.Name != "" && old.Name != info.Name {
+			info.Name = old.Name + "|" + info.Name
+		} else if old.Name != "" {
+			info.Name = old.Name
+		}
+
+		if old.Version != "" && info.Version != "" && old.Version != info.Version {
+			info.Version = old.Version + "|" + info.Version
+		} else if old.Version != "" {
+			info.Version = old.Version
+		}
+
+		if old.Platform != "" && info.Platform != "" && old.Platform != info.Platform {
+			info.Platform = old.Platform + "|" + info.Platform
+		} else if old.Platform != "" {
+			info.Platform = old.Platform
+		}
+	}
+
+	// Copy-on-write so that the info stored in the client is immutable.
+	infoCopy := new(options.DriverInfo)
+	*infoCopy = info
+
+	c.currentDriverInfo.Store(infoCopy)
 }
 
 // Disconnect closes sockets to the topology referenced by this Client. It will
@@ -429,8 +482,13 @@ func (c *Client) StartSession(opts ...options.Lister[options.SessionOptions]) (*
 			coreOpts.DefaultReadPreference = rp
 		}
 	}
+
 	if sessArgs.Snapshot != nil {
 		coreOpts.Snapshot = sessArgs.Snapshot
+	}
+
+	if sessArgs.SnapshotTime != nil {
+		coreOpts.SnapshotTime = sessArgs.SnapshotTime
 	}
 
 	sess, err := session.NewClientSession(c.sessionPool, c.id, coreOpts)
@@ -449,7 +507,9 @@ func (c *Client) endSessions(ctx context.Context) {
 	sessionIDs := c.sessionPool.IDSlice()
 	op := operation.NewEndSessions(nil).ClusterClock(c.clock).Deployment(c.deployment).
 		ServerSelector(&serverselector.ReadPref{ReadPref: readpref.PrimaryPreferred()}).
-		CommandMonitor(c.monitor).Database("admin").Crypt(c.cryptFLE).ServerAPI(c.serverAPI)
+		CommandMonitor(c.monitor).Database("admin").Crypt(c.cryptFLE).ServerAPI(c.serverAPI).
+		MaxAdaptiveRetries(c.effectiveAdaptiveRetries(true)).
+		EnableOverloadRetargeting(c.enableOverloadRetargeting)
 
 	totalNumIDs := len(sessionIDs)
 	var currentBatch []bsoncore.Document
@@ -603,15 +663,16 @@ func (c *Client) newMongoCrypt(opts *options.AutoEncryptionOptions) (*mongocrypt
 	bypassAutoEncryption := opts.BypassAutoEncryption != nil && *opts.BypassAutoEncryption
 	bypassQueryAnalysis := opts.BypassQueryAnalysis != nil && *opts.BypassQueryAnalysis
 
-	mc, err := mongocrypt.NewMongoCrypt(mcopts.MongoCrypt().
-		SetKmsProviders(kmsProviders).
-		SetLocalSchemaMap(cryptSchemaMap).
-		SetBypassQueryAnalysis(bypassQueryAnalysis).
-		SetEncryptedFieldsMap(cryptEncryptedFieldsMap).
-		SetCryptSharedLibDisabled(cryptSharedLibDisabled || bypassAutoEncryption).
-		SetCryptSharedLibOverridePath(cryptSharedLibPath).
-		SetHTTPClient(opts.HTTPClient).
-		SetKeyExpiration(opts.KeyExpiration))
+	mc, err := mongocrypt.NewMongoCrypt(&mcopts.MongoCryptOptions{
+		KmsProviders:               kmsProviders,
+		LocalSchemaMap:             cryptSchemaMap,
+		BypassQueryAnalysis:        bypassQueryAnalysis,
+		EncryptedFieldsMap:         cryptEncryptedFieldsMap,
+		CryptSharedLibDisabled:     cryptSharedLibDisabled || bypassAutoEncryption,
+		CryptSharedLibOverridePath: cryptSharedLibPath,
+		HTTPClient:                 opts.HTTPClient,
+		KeyExpiration:              opts.KeyExpiration,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -707,6 +768,13 @@ func (c *Client) ListDatabases(ctx context.Context, filter any, opts ...options.
 		return ListDatabasesResult{}, err
 	}
 
+	retry := driver.RetryNone
+	if c.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := c.effectiveAdaptiveRetries(c.retryReads)
+
 	var selector description.ServerSelector
 
 	selector = &serverselector.Composite{
@@ -724,6 +792,8 @@ func (c *Client) ListDatabases(ctx context.Context, filter any, opts ...options.
 	}
 	op := operation.NewListDatabases(filterDoc).
 		Session(sess).ReadPreference(c.readPreference).CommandMonitor(c.monitor).
+		Retry(retry).MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(c.enableOverloadRetargeting).
 		ServerSelector(selector).ClusterClock(c.clock).Database("admin").Deployment(c.deployment).Crypt(c.cryptFLE).
 		ServerAPI(c.serverAPI).Timeout(c.timeout).Authenticator(c.authenticator)
 
@@ -733,12 +803,6 @@ func (c *Client) ListDatabases(ctx context.Context, filter any, opts ...options.
 	if lda.AuthorizedDatabases != nil {
 		op = op.AuthorizedDatabases(*lda.AuthorizedDatabases)
 	}
-
-	retry := driver.RetryNone
-	if c.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op.Retry(retry)
 
 	err = op.Execute(ctx)
 	if err != nil {
@@ -843,7 +907,8 @@ func (c *Client) UseSessionWithOptions(
 // The opts parameter can be used to specify options for change stream creation (see the options.ChangeStreamOptions
 // documentation).
 func (c *Client) Watch(ctx context.Context, pipeline any,
-	opts ...options.Lister[options.ChangeStreamOptions]) (*ChangeStream, error) {
+	opts ...options.Lister[options.ChangeStreamOptions],
+) (*ChangeStream, error) {
 	csConfig := changeStreamConfig{
 		readConcern:    c.readConcern,
 		readPreference: c.readPreference,
@@ -866,12 +931,24 @@ func (c *Client) NumberSessionsInProgress() int {
 	return int(c.sessionPool.CheckedOut())
 }
 
-func (c *Client) createBaseCursorOptions() driver.CursorOptions {
+func (c *Client) createBaseCursorOptions(retryOverload bool) driver.CursorOptions {
 	return driver.CursorOptions{
-		CommandMonitor: c.monitor,
-		Crypt:          c.cryptFLE,
-		ServerAPI:      c.serverAPI,
+		CommandMonitor:            c.monitor,
+		Crypt:                     c.cryptFLE,
+		ServerAPI:                 c.serverAPI,
+		MaxAdaptiveRetries:        c.effectiveAdaptiveRetries(retryOverload),
+		EnableOverloadRetargeting: c.enableOverloadRetargeting,
 	}
+}
+
+func (c *Client) effectiveAdaptiveRetries(retryOverload bool) uint {
+	if !retryOverload {
+		return 0
+	}
+	if c.maxAdaptiveRetries != nil {
+		return *c.maxAdaptiveRetries
+	}
+	return defaultAdaptiveRetries
 }
 
 // ClientBulkWrite is a struct that can be used in a client-level BulkWrite operation.
@@ -883,7 +960,8 @@ type ClientBulkWrite struct {
 
 // BulkWrite performs a client-level bulk write operation.
 func (c *Client) BulkWrite(ctx context.Context, writes []ClientBulkWrite,
-	opts ...options.Lister[options.ClientBulkWriteOptions]) (*ClientBulkWriteResult, error) {
+	opts ...options.Lister[options.ClientBulkWriteOptions],
+) (*ClientBulkWriteResult, error) {
 	// TODO(GODRIVER-3403): Remove after support for QE with Client.bulkWrite.
 	if c.isAutoEncryptionSet {
 		return nil, errors.New("bulkWrite does not currently support automatic encryption")
@@ -931,6 +1009,8 @@ func (c *Client) BulkWrite(ctx context.Context, writes []ClientBulkWrite,
 		sess = nil
 	}
 
+	maxAdaptiveRetries := c.effectiveAdaptiveRetries(c.retryWrites)
+
 	writeSelector := &serverselector.Composite{
 		Selectors: []description.ServerSelector{
 			&serverselector.Write{},
@@ -957,11 +1037,15 @@ func (c *Client) BulkWrite(ctx context.Context, writes []ClientBulkWrite,
 		client:                   c,
 		selector:                 selector,
 		writeConcern:             wc,
+
+		maxAdaptiveRetries:        maxAdaptiveRetries,
+		enableOverloadRetargeting: c.enableOverloadRetargeting,
 	}
-	if rawDataOpt := optionsutil.Value(bwo.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op.rawData = &rawData
-		}
+	if rawData, ok := optionsutil.Value(bwo.Internal, "rawData").(bool); ok {
+		op.rawData = &rawData
+	}
+	if additionalCmd, ok := optionsutil.Value(bwo.Internal, "addCommandFields").(bson.D); ok {
+		op.additionalCmd = additionalCmd
 	}
 	if bwo.VerboseResults == nil || !(*bwo.VerboseResults) {
 		op.errorsOnly = true

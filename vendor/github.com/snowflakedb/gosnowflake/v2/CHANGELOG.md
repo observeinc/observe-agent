@@ -8,6 +8,30 @@ Bug fixes:
 
 Internal changes:
 
+## 2.1.0
+
+New features:
+
+- Added `SF_DISABLE_OCSP_CHECKS` environment variable as an additional option to override OCSP checks' default behaviour besides the existing `DisableOCSPChecks` config. (snowflakedb/gosnowflake#1798).
+  - Note: the env var is explicitly refused when OCSP fail-closed mode is active.
+- Added `ArrowStreamBatch.Reset()` method that closes any existing stream and clears the cached reader, allowing callers to retry `GetStream` after a mid-stream failure (e.g. TCP RST) without re-executing the entire query. Inline (RowSetBase64) batches are restored from cached bytes on reset.
+- Added one in-band telemetry record per successful login describing which connection-identifier fields the user supplied (`account_provided`, `account_with_region`, `account_org_provided`, `region_provided`, `host_provided`). No hostname or account value is included. This is gated by the existing server-side `CLIENT_TELEMETRY_ENABLED` parameter and can additionally be disabled locally by setting `SF_TELEMETRY_DISABLE_CONNECTION_SHAPE=true`. The telemetry collection is time-boxed and will be removed in a future release.
+
+Bug fixes:
+
+- Fixed stale OCSP cache `.lck` directory permanently blocking cache writes (and forcing an online OCSP validation if OCSP is enabled, as is by default) by using `os.RemoveAll` instead of `os.Remove` for stale lock recovery (snowflakedb/gosnowflake#1793).
+- Fixed regular chunk downloader reads so canceling the query context now interrupts stalled chunk downloads and wakes waiting row readers instead of hanging on the HTTP body read (snowflakedb/gosnowflake#1789).
+- Fixed `QueryArrowStream` chunk reads so canceling the query context now interrupts stalled Arrow stream downloads and reports the cancellation instead of hanging on the HTTP body read (snowflakedb/gosnowflake#1789).
+- Fixed `baseName` silently dropping files whose name ends with a dot (e.g. `myfile.txt.`), which caused PUT uploads to discard such files without error (snowflakedb/gosnowflake#1788).
+- Improved error message when `Host` is incorrectly configured with a URL scheme (e.g. `https://myorg-myaccount.snowflakecomputing.com`), previously this produced a cryptic `260004: failed to parse a port number` error (snowflakedb/gosnowflake#1784).
+- Fixed minicore build on OpenBSD by skipping the `-ldl` linker flag, since libdl is not a separate library on OpenBSD (`dlopen`/`dlsym` are provided by libc) (snowflakedb/gosnowflake#1791).
+
+Internal changes:
+
+- Introduced `SKIP_FILE_PERMISSIONS_VERIFICATION` environment variable to allow bypassing file permissions checks for `connections.toml` and the credential cache, which is useful for environments where strict permissions cannot be set (snowflakedb/gosnowflake#1780).
+- Added support for `SPCS_TOKEN` in the login request. When the driver detects it is running inside a Snowpark Container Services workload (via the `SNOWFLAKE_RUNNING_INSIDE_SPCS` environment variable), it reads an opaque service token from `/snowflake/session/spcs_token` on every login and attaches it to the login-request payload as `SPCS_TOKEN`. Read failures are logged at warn and do not affect login (snowflakedb/gosnowflake#1783).
+- Minicore binaries for Windows and Mac are now signed - content is the same. (snowflakedb/gosnowflake#1790).
+
 ## 2.0.2
 
 New features:

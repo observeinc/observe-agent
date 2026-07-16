@@ -6,6 +6,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	_ "embed"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -117,6 +118,14 @@ SELECT DISTINCT
 		counter_name IN (
 			 'SQL Compilations/sec'
 			,'SQL Re-Compilations/sec'
+			,'SQL Attention rate'
+			,'Auto-Param Attempts/sec'
+			,'Safe Auto-Params/sec'
+			,'Unsafe Auto-Params/sec'
+			,'Failed Auto-Params/sec'
+			,'Forced Parameterizations/sec'
+			,'Guided plan executions/sec'
+			,'Misguided plan executions/sec'
 			,'User Connections'
 			,'Batch Requests/sec'
 			,'Logouts/sec'
@@ -124,13 +133,31 @@ SELECT DISTINCT
 			,'Processes blocked'
 			,'Latch Waits/sec'
 			,'Average Latch Wait Time (ms)'
+			,'Total Latch Wait Time (ms)'
+			,'Number of SuperLatches'
+			,'SuperLatch Promotions/sec'
+			,'SuperLatch Demotions/sec'
+			,'Extent Deallocations/sec'
+			,'Extents Allocated/sec'
+			,'FreeSpace Scans/sec'
 			,'Full Scans/sec'
 			,'Index Searches/sec'
+			,'Mixed page allocations/sec'
+			,'Page Compression Attempts/sec'
+			,'Page Deallocations/sec'
 			,'Page Splits/sec'
 			,'Page lookups/sec'
 			,'Page reads/sec'
 			,'Page writes/sec'
+			,'Pages Allocated/sec'
+			,'Pages Compressed/sec'
+			,'Probe Scans/sec'
+			,'Range Scans/sec'
 			,'Readahead pages/sec'
+			,'Scan Point Revalidations/sec'
+			,'Skipped Ghosted Records/sec'
+			,'Worktables From Cache Base'
+			,'Worktables From Cache Ratio'
 			,'Lazy writes/sec'
 			,'Checkpoint pages/sec'
 			,'Table Lock Escalations/sec'
@@ -154,9 +181,22 @@ SELECT DISTINCT
 			,'Buffer cache hit ratio'
 			,'Buffer cache hit ratio base'
 			,'Database Pages'
+			,'Cache Pages'
+			,'Total Pages'
+			,'Target Pages'
+			,'Stolen Pages'
+			,'Reserved Pages'
+			,'Free Pages'
 			,'Backup/Restore Throughput/sec'
 			,'Total Server Memory (KB)'
 			,'Target Server Memory (KB)'
+			,'SQL Cache Memory (KB)'
+			,'Optimizer Memory (KB)'
+			,'Connection Memory (KB)'
+			,'Granted Workspace Memory (KB)'
+			,'Maximum Workspace Memory (KB)'
+			,'Cache Object Counts'
+			,'Cache Objects in use'
 			,'Log Flushes/sec'
 			,'Log Flush Wait Time'
 			,'Memory broker clerk size'
@@ -272,6 +312,7 @@ LEFT OUTER JOIN @PCounters AS pc1
 	ON (
 		pc.[counter_name] = REPLACE(pc1.[counter_name],' base','')
 		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' (ms)')
+		OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' Ratio')
 	)
 	AND pc.[object_name] = pc1.[object_name]
 	AND pc.[instance_name] = pc1.[instance_name]
@@ -399,6 +440,27 @@ var sqlServerQuerySamples string
 
 func getSQLServerQuerySamplesQuery() string {
 	return sqlServerQuerySamples
+}
+
+//go:embed templates/sqlServerIdleBlockerQuerySample.tmpl
+var sqlServerIdleBlockingQuerySamples string
+
+func getSQLServerIdleBlockingSessionsQuery() string {
+	return sqlServerIdleBlockingQuerySamples
+}
+
+func formatSQLServerSessionIDsParam(sessionIDs map[int64]struct{}) string {
+	idValues := make([]int64, 0, len(sessionIDs))
+	for sessionID := range sessionIDs {
+		idValues = append(idValues, sessionID)
+	}
+	slices.Sort(idValues)
+
+	filterParts := make([]string, 0, len(idValues))
+	for _, sessionID := range idValues {
+		filterParts = append(filterParts, fmt.Sprintf("%d", sessionID))
+	}
+	return strings.Join(filterParts, ",")
 }
 
 // Conditional check based on Azure SQL DB v/s the rest aka (Azure SQL Managed instance OR On-prem SQL Server)

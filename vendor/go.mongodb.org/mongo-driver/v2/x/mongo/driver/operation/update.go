@@ -25,29 +25,32 @@ import (
 
 // Update performs an update operation.
 type Update struct {
-	authenticator            driver.Authenticator
-	bypassDocumentValidation *bool
-	comment                  bsoncore.Value
-	ordered                  *bool
-	updates                  []bsoncore.Document
-	session                  *session.Client
-	clock                    *session.ClusterClock
-	collection               string
-	monitor                  *event.CommandMonitor
-	database                 string
-	deployment               driver.Deployment
-	hint                     *bool
-	arrayFilters             *bool
-	selector                 description.ServerSelector
-	writeConcern             *writeconcern.WriteConcern
-	retry                    *driver.RetryMode
-	result                   UpdateResult
-	crypt                    driver.Crypt
-	serverAPI                *driver.ServerAPIOptions
-	let                      bsoncore.Document
-	timeout                  *time.Duration
-	rawData                  *bool
-	logger                   *logger.Logger
+	authenticator             driver.Authenticator
+	bypassDocumentValidation  *bool
+	comment                   bsoncore.Value
+	ordered                   *bool
+	updates                   []bsoncore.Document
+	session                   *session.Client
+	clock                     *session.ClusterClock
+	collection                string
+	monitor                   *event.CommandMonitor
+	database                  string
+	deployment                driver.Deployment
+	hint                      *bool
+	arrayFilters              *bool
+	selector                  description.ServerSelector
+	writeConcern              *writeconcern.WriteConcern
+	retry                     *driver.RetryMode
+	maxAdaptiveRetries        uint
+	enableOverloadRetargeting bool
+	result                    UpdateResult
+	crypt                     driver.Crypt
+	serverAPI                 *driver.ServerAPIOptions
+	let                       bsoncore.Document
+	timeout                   *time.Duration
+	rawData                   *bool
+	additionalCmd             bson.D
+	logger                    *logger.Logger
 }
 
 // Upsert contains the information for an upsert in an Update operation.
@@ -136,7 +139,6 @@ func (u *Update) processResponse(_ context.Context, resp bsoncore.Document, info
 	}
 	u.result.Upserted = append(u.result.Upserted, ur.Upserted...)
 	return err
-
 }
 
 // Execute runs this operations and returns an error if the operation did not execute successfully.
@@ -151,26 +153,28 @@ func (u *Update) Execute(ctx context.Context) error {
 	}
 
 	return driver.Operation{
-		CommandFn:         u.command,
-		ProcessResponseFn: u.processResponse,
-		Batches:           batches,
-		RetryMode:         u.retry,
-		Type:              driver.Write,
-		Client:            u.session,
-		Clock:             u.clock,
-		CommandMonitor:    u.monitor,
-		Database:          u.database,
-		Deployment:        u.deployment,
-		Selector:          u.selector,
-		WriteConcern:      u.writeConcern,
-		Crypt:             u.crypt,
-		ServerAPI:         u.serverAPI,
-		Timeout:           u.timeout,
-		Logger:            u.logger,
-		Name:              driverutil.UpdateOp,
-		Authenticator:     u.authenticator,
+		CommandFn:                 u.command,
+		ProcessResponseFn:         u.processResponse,
+		Batches:                   batches,
+		RetryMode:                 u.retry,
+		MaxAdaptiveRetries:        u.maxAdaptiveRetries,
+		EnableOverloadRetargeting: u.enableOverloadRetargeting,
+		Type:                      driver.Write,
+		Client:                    u.session,
+		Clock:                     u.clock,
+		CommandMonitor:            u.monitor,
+		Database:                  u.database,
+		Deployment:                u.deployment,
+		Selector:                  u.selector,
+		WriteConcern:              u.writeConcern,
+		Crypt:                     u.crypt,
+		ServerAPI:                 u.serverAPI,
+		Timeout:                   u.timeout,
+		Logger:                    u.logger,
+		Name:                      driverutil.UpdateOp,
+		Authenticator:             u.authenticator,
+		SendAfterClusterTime:      true,
 	}.Execute(ctx)
-
 }
 
 func (u *Update) command(dst []byte, desc description.SelectedServer) ([]byte, error) {
@@ -184,7 +188,6 @@ func (u *Update) command(dst []byte, desc description.SelectedServer) ([]byte, e
 		dst = bsoncore.AppendValueElement(dst, "comment", u.comment)
 	}
 	if u.ordered != nil {
-
 		dst = bsoncore.AppendBooleanElement(dst, "ordered", *u.ordered)
 	}
 	if u.hint != nil && *u.hint {
@@ -207,6 +210,13 @@ func (u *Update) command(dst []byte, desc description.SelectedServer) ([]byte, e
 	// Set rawData for 8.2+ servers.
 	if u.rawData != nil && desc.WireVersion != nil && driverutil.VersionRangeIncludes(*desc.WireVersion, 27) {
 		dst = bsoncore.AppendBooleanElement(dst, "rawData", *u.rawData)
+	}
+	if len(u.additionalCmd) > 0 {
+		doc, err := bson.Marshal(u.additionalCmd)
+		if err != nil {
+			return nil, err
+		}
+		dst = append(dst, doc[4:len(doc)-1]...)
 	}
 
 	return dst, nil
@@ -368,6 +378,28 @@ func (u *Update) Retry(retry driver.RetryMode) *Update {
 	return u
 }
 
+// MaxAdaptiveRetries specifies the maximum number of times the driver should retry operations
+// that fail with a server side overload error.
+func (u *Update) MaxAdaptiveRetries(maxAdaptiveRetries uint) *Update {
+	if u == nil {
+		u = new(Update)
+	}
+
+	u.maxAdaptiveRetries = maxAdaptiveRetries
+	return u
+}
+
+// EnableOverloadRetargeting specifies whether the driver adds the previously failed server's address
+// to the list of deprioritized server addresses
+func (u *Update) EnableOverloadRetargeting(enabled bool) *Update {
+	if u == nil {
+		u = new(Update)
+	}
+
+	u.enableOverloadRetargeting = enabled
+	return u
+}
+
 // Crypt sets the Crypt object to use for automatic encryption and decryption.
 func (u *Update) Crypt(crypt driver.Crypt) *Update {
 	if u == nil {
@@ -435,5 +467,15 @@ func (u *Update) RawData(rawData bool) *Update {
 	}
 
 	u.rawData = &rawData
+	return u
+}
+
+// AdditionalCmd sets additional command fields to be attached.
+func (u *Update) AdditionalCmd(d bson.D) *Update {
+	if u == nil {
+		u = new(Update)
+	}
+
+	u.additionalCmd = d
 	return u
 }
