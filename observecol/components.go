@@ -13,6 +13,7 @@ import (
 	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	failoverconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
@@ -258,6 +259,7 @@ func components() (otelcol.Factories, error) {
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
+		failoverconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
 		routingconnector.NewFactory(),
 	)
@@ -267,6 +269,7 @@ func components() (otelcol.Factories, error) {
 	factories.ConnectorModules = makeModulesMap(factories.Connectors, map[component.Type]string{
 		forwardconnector.NewFactory().Type(): "go.opentelemetry.io/collector/connector/forwardconnector v0.151.0",
 		countconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0",
+		failoverconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0",
 		spanmetricsconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0",
 		routingconnector.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0",
 	})
