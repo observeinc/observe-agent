@@ -722,6 +722,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsc
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0/go.mod h1:bRSm+1iexAKystSys29/2ua+/Wc9dhM1U6Avom7mpt4=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0 h1:8+88Mpr9WwN58hXDfJvRepGD4PgdVIC87+2XV2ExGuw=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0/go.mod h1:/rtSJQOgOeY4eZtlncxuvRVipt6PvegZFnGCrIoEIQs=
+github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.151.0 h1:z92nAcSBLDoyZCFiLEneidv7JsAca+McYtHMiTkZDVM=
+github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.151.0/go.mod h1:g1PC3cVpQxZu8Bso10NuodAKxkzvqqGTH80paY1Qljo=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.151.0 h1:FN5PjV4pXe7auNd3bnHFQ0sEeokWVLI6jx1OYEgjxko=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.151.0/go.mod h1:SOHdU2U4XUV1BVcvuistdo3UUbZHw84j+Xo84BHuT58=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.151.0 h1:bHlBOOTFh9NR/07yyJUuCwhmvDy3x9/11dmxHWjQL1g=
@@ -748,6 +750,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/file
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.151.0/go.mod h1:K0HJ9YJDbPRasbO7ZSZ+Wn50qkwL0o+NXX61S8+6b9Y=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0 h1:WOuV1Kp5CAo5gn8TyrU7+fGLfKv3hL7Yj80yg+TobSQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0/go.mod h1:WkKbD/chLCZZUU/C/6JCweEn75o0AsdFkje4ehK435Y=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.151.0 h1:bls1PA3xlmfoapGj6fQh3y5geYy6yeoDLOn4bl7GdFY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.151.0/go.mod h1:4Yd3SxnUugRxt3RslElxdDeBusvdyAq+gQVPF3ohjMs=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0 h1:cOqeW8ioU7tZhsvB/lrgzhdC2qwQP564hvK8tpbC18M=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0/go.mod h1:isMQULLE9AcIvNbdhdmiHs9jWInuHCeVblJXkUjK7hE=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0 h1:JRjznmSHnTt0S/GegT/vfsdiiV81L36NS9fBNV7tOmM=
@@ -790,6 +794,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0 h1
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0/go.mod h1:UjELBH4CzaY+y3fHR4RpenHJ3277jBYxTC4xEa5Sxfk=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0 h1:9daiwoN8YOfB16qESN1bRuq/+cXnenZ3aSvnF0eWuug=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0/go.mod h1:WZGNoE2XX8hFbXlwsC8aQoA5l367RGSzcWgeewhweb0=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.151.0 h1:KZFd0hYdmotkTmZdYr722B7f5p2NO7txbuPbavOL9Z0=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.151.0/go.mod h1:CnkW4xd+Xa6MvVtuY5CKkQtEdb2Sazq7E4rRI/F7nJY=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.151.0 h1:oNfWcQCD3t/yPQDTwg84Ttsp8GCmqHXwvJ9wp/Wxz0w=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.151.0/go.mod h1:asN18RvgWekBnCt0tGRHNuSNWe2XsjUOxMSO6JlIA04=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0 h1:JbnrAMGHqSW+jvJRL9RS7JGMrWpXqGPXdkAk6JoMHV4=
@@ -850,6 +856,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformpro
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.151.0/go.mod h1:cVdoaU8GWd185FO4K5hFf24Yrk90pS1Gfsk6osNhpcQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0 h1:s5M9J5fYHUiMwYow2l+a1qkHqxIxbQEuFuIKmT7VSLg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0/go.mod h1:jV7GDoplubgVr8Yt71nFf84A6xm/wZaAxHpUjWTNQ4E=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.151.0 h1:brzsTJ6FKRteEvWeanvZEOelWIFZZcY2kfyK3V9ne9g=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.151.0/go.mod h1:h42pOre+qMIssXgri4joNgb+9S9lh8hGMANUdHSTSNo=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0 h1:8+Wg6m5cCnv1T68jNkivkHKx2juaNsq3RmL4noD7ppM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0/go.mod h1:U3vjy0yIsXSaRmE+8e5lwRr5+X1y5bo8gzbNYsF9sOg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.151.0 h1:3YH05lugaTXztmEc9cE47xht5+dAEm1kWQ/zrqeNRu4=

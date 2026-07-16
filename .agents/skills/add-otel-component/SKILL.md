@@ -109,7 +109,85 @@ Expected output (example for `failoverconnector`):
 272:            failoverconnector.NewFactory().Type(): "github.com/.../connector/failoverconnector v0.151.0",
 ```
 
-## Step 6: Propose commit
+## Step 6: Build and validate
+
+### 6a: Build the agent binary
+
+```bash
+make build
+```
+
+This compiles the full agent binary including the new component. Expected output ends with:
+```
+go build -o observe-agent .
+```
+
+### 6b: Write a minimal test config
+
+Write a temporary `test-components.yaml` that exercises each new component via a minimal
+pipeline. Use `nop` receiver or exporter on the other end of the pipeline as needed.
+
+Rules for the config:
+- `token` must be non-empty and contain a colon (e.g. `test:token`)
+- `observe_url` must be a valid URL (e.g. `https://123456789.collect.observe-eng.com/`)
+- Set `forwarding.enabled`, `self_monitoring.enabled`, and `host_monitoring.enabled` all
+  to `false` to avoid unrelated pipeline dependencies during the test
+- Add pipelines under `otel_config_overrides.service.pipelines`
+- Add the new components under `otel_config_overrides.receivers` / `otel_config_overrides.exporters`
+- Use the component's type name (found in its `metadata.yaml` `type:` field), not its Go package name
+
+Example for a new receiver `collectd` (type `collectd`) and exporter `kafka` (type `kafka`):
+
+```yaml
+token: "test:token"
+observe_url: "https://123456789.collect.observe-eng.com/"
+
+forwarding:
+  enabled: false
+self_monitoring:
+  enabled: false
+host_monitoring:
+  enabled: false
+
+otel_config_overrides:
+  receivers:
+    collectd:
+      endpoint: 0.0.0.0:8081
+    nop:
+  exporters:
+    nop:
+    kafka:
+      brokers:
+        - localhost:9092
+  service:
+    pipelines:
+      metrics/collectd_test:
+        receivers: [collectd]
+        exporters: [nop]
+      logs/kafka_test:
+        receivers: [nop]
+        exporters: [kafka]
+```
+
+### 6c: Run config validate
+
+```bash
+./observe-agent --observe-config ./test-components.yaml config validate
+```
+
+Expected output:
+```
+✅ configuration is valid
+```
+
+If validation fails, fix the test config (or the component config) before proceeding.
+
+After a successful validation, remove the temporary config file:
+```bash
+rm test-components.yaml
+```
+
+## Step 7: Propose commit
 
 `make build-ocb` modifies several files. Stage them all:
 
@@ -129,7 +207,7 @@ confirmation — those are `[MUTATING]` operations.
 
 ## Stopping Points
 
-- ✋ **Step 6** — before pushing or opening a PR
+- ✋ **Step 7** — before pushing or opening a PR
 
 ## Output
 

@@ -13,6 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.151.0
@@ -37,6 +38,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.151.0
@@ -334,6 +336,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.151.0 // indirect
@@ -353,6 +356,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.151.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.151.0 // indirect
