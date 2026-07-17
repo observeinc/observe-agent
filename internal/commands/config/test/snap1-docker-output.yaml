@@ -124,13 +124,9 @@ extensions:
             enabled: true
     file_storage:
         directory: /var/lib/observe-agent/filestorage
-    healthcheckv2:
-        http:
-            endpoint: localhost:12345
-            status:
-                enabled: true
-                path: /test-status
-        use_v2: true
+    health_check:
+        endpoint: localhost:12345
+        path: /test-status
 processors:
     attributes/observe_global_attributes:
         actions:
@@ -457,7 +453,7 @@ receivers:
                         - 0.0.0.0:12346
 service:
     extensions:
-        - healthcheckv2
+        - health_check
         - file_storage
         - cgroupruntime
     pipelines:

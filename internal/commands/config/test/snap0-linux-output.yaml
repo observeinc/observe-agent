@@ -52,13 +52,9 @@ exporters:
 extensions:
     file_storage:
         directory: /var/lib/observe-agent/filestorage
-    healthcheckv2:
-        http:
-            endpoint: localhost:13133
-            status:
-                enabled: true
-                path: /status
-        use_v2: true
+    health_check:
+        endpoint: localhost:13133
+        path: /status
 processors:
     batch:
         timeout: 5s
@@ -230,7 +226,7 @@ receivers:
                         - localhost:8888
 service:
     extensions:
-        - healthcheckv2
+        - health_check
         - file_storage
     pipelines:
         logs/agent-config:

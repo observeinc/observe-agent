@@ -53,6 +53,7 @@ type HealthCheckConfig struct {
 	Enabled  bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
 	Endpoint string `yaml:"endpoint" mapstructure:"endpoint" default:"localhost:13133"`
 	Path     string `yaml:"path" mapstructure:"path" default:"/status"`
+	UseV2    bool   `yaml:"use_v2" mapstructure:"use_v2" default:"false"`
 }
 
 type ForwardingMetricsConfig struct {
