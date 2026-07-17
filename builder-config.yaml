@@ -12,6 +12,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.151.0
 
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.151.0
@@ -45,6 +46,7 @@ receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.151.0
 
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.151.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.151.0
@@ -87,6 +89,7 @@ connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.151.0
 
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0
 
