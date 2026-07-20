@@ -740,6 +740,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otl
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.151.0/go.mod h1:lXh4gADj7ehRSv3zoeelVjtKrUnmi41IwZkCQ+u/TSM=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.151.0 h1:iMmJ0NCZoRrUgguHAhov4abEfw/Yhrgfcxs5cs26x6o=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.151.0/go.mod h1:l8Kn2cAN1Bzmb6hrr9Vgr32BwTDue3xGwVkM4rpByeI=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension v0.151.0 h1:5f+Rsst2AgWh3wbWftmZRnT5lu3BnRcvllM8l2QV1jg=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension v0.151.0/go.mod h1:VGlznAlXkdRKWjKz2eWJRChJKySdtfmUDffl2m8XBrY=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.151.0 h1:QydjnpTAkU4fNMcFIg8VrEsKTfd+lmwDfNu3MuAc6fQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.151.0/go.mod h1:e1rqbvucptfLJhslNvZ1QuU3QGI5Poz3Ii1dZLHyOUE=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.151.0 h1:VMPdFZM4zJTfzBck4onWPwMRa7L2M0xhoQkZOxn1KGk=
@@ -997,8 +999,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/prometheus/procfs v0.20.1 h1:XwbrGOIplXW/AU3YhIhLODXMJYyC1isLFfYCsTEycfc=
 github.com/prometheus/procfs v0.20.1/go.mod h1:o9EMBZGRyvDrSPH1RqdxhojkuXstoe4UlK79eF5TGGo=
-github.com/prometheus/prometheus v0.311.2-0.20260410083055-07c6232d159b h1:tjxqNQlYTJzrQrY7HM2SbnxqzuE64vnvlSmSbAvBBDE=
-github.com/prometheus/prometheus v0.311.2-0.20260410083055-07c6232d159b/go.mod h1:h4Ogksuo6VUZmnm6q/ruKTUzrg9Vvu6u/6O/rQ5xPMg=
+github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0 h1:QwOYpZWGGMjDW0g11F64TtvgP3JbIg92VAFPHxTunA8=
+github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0/go.mod h1:h4Ogksuo6VUZmnm6q/ruKTUzrg9Vvu6u/6O/rQ5xPMg=
 github.com/prometheus/sigv4 v0.4.1 h1:EIc3j+8NBea9u1iV6O5ZAN8uvPq2xOIUPcqCTivHuXs=
 github.com/prometheus/sigv4 v0.4.1/go.mod h1:eu+ZbRvsc5TPiHwqh77OWuCnWK73IdkETYY46P4dXOU=
 github.com/puzpuzpuz/xsync/v4 v4.5.0 h1:vOSWu6b57/emh+L/Cw0BeQfvxa/cogFywXHeGUxQxAg=
@@ -1435,8 +1437,8 @@ golang.org/x/crypto v0.13.0/go.mod h1:y6Z2r+Rw4iayiXXAIxJIDAJ1zMW4yaTpebo8fPOliY
 golang.org/x/crypto v0.19.0/go.mod h1:Iy9bg/ha4yyC70EfRS8jz+B6ybOBKMaSxLj6P6oBDfU=
 golang.org/x/crypto v0.23.0/go.mod h1:CKFgDieR+mRhux2Lsu27y0fO304Db0wZe70UKqHu0v8=
 golang.org/x/crypto v0.31.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
-golang.org/x/crypto v0.52.0 h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=
-golang.org/x/crypto v0.52.0/go.mod h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc=
+golang.org/x/crypto v0.51.0 h1:IBPXwPfKxY7cWQZ38ZCIRPI50YLeevDLlLnyC5wRGTI=
+golang.org/x/crypto v0.51.0/go.mod h1:8AdwkbraGNABw2kOX6YFPs3WM22XqI4EXEd8g+x7Oc8=
 golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 h1:jiDhWWeC7jfWqR9c/uplMOqJ0sbNlNWv0UkzE0vX1MA=
 golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90/go.mod h1:xE1HEv6b+1SCZ5/uscMRjUBKtIxworgEcEi+/n9NQDQ=
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=

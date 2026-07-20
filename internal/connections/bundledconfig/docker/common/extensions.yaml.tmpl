@@ -8,7 +8,11 @@ extensions:
 service:
   extensions:
     {{- if .HealthCheck.Enabled }}
+    {{- if .HealthCheck.UseV2 }}
+    - healthcheckv2
+    {{- else }}
     - health_check
+    {{- end }}
     {{- end }}
     - file_storage
     - cgroupruntime

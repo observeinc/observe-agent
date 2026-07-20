@@ -1,4 +1,14 @@
 extensions:
+{{- if .HealthCheck.UseV2 }}
+  healthcheckv2:
+    use_v2: true
+    http:
+      endpoint: {{ .HealthCheck.Endpoint }}
+      status:
+        enabled: true
+        path: {{ .HealthCheck.Path }}
+{{- else }}
   health_check:
     endpoint: {{ .HealthCheck.Endpoint }}
     path: {{ .HealthCheck.Path }}
+{{- end }}

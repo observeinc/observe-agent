@@ -76,9 +76,9 @@ This section lists the components that are included in the Observe Distribution 
 | [awsecscontainermetrics][awsecscontainermetricsreceiver] | [attributes][attributesprocessor]                     | [debug][debugexporter]                                 | [cgroupruntime][cgroupruntimeextension] | [count][countconnector]             |
 | [collectd][collectdreceiver]                             | [batch][batchprocessor]                               | [file][fileexporter]                                   | [file_storage][filestorage]             | [failover][failoverconnector]       |
 | [docker_stats][dockerstatsreceiver]                      | [cumulativetodelta][cumulativetodeltaprocessor]       | [kafka][kafkaexporter]                                 | [health_check][healthcheckextension]    | [forward][forwardconnector]         |
-| [elasticsearch][elasticsearchreceiver]                   | [deltatocumulative][deltatocumulativeprocessor]       | [loadbalancing][loadbalancingexporter]                 | [pprof][pprofextension]                 | [routing][routingconnector]         |
-| [filelog][filelogreceiver]                               | [filter][filterprocessor]                             | [nop][nopexporter]                                     | [zpages][zpagesextension]               | [spanmetrics][spanmetricsconnector] |
-| [filestats][filestatsreceiver]                           | [groupbyattrs][groupbyattrsprocessor]                 | [otlp][otlpexporter]                                   |                                         |                                     |
+| [elasticsearch][elasticsearchreceiver]                   | [deltatocumulative][deltatocumulativeprocessor]       | [loadbalancing][loadbalancingexporter]                 | [healthcheckv2][healthcheckv2extension] | [routing][routingconnector]         |
+| [filelog][filelogreceiver]                               | [filter][filterprocessor]                             | [nop][nopexporter]                                     | [pprof][pprofextension]                 | [spanmetrics][spanmetricsconnector] |
+| [filestats][filestatsreceiver]                           | [groupbyattrs][groupbyattrsprocessor]                 | [otlp][otlpexporter]                                   | [zpages][zpagesextension]               |                                     |
 | [heartbeat][heartbeatreceiver]                           | [k8sattributes][k8sattributesprocessor]               | [otlphttp][otlphttpexporter]                           |                                         |                                     |
 | [hostmetrics][hostmetricsreceiver]                       | [logdedup][logdedupprocessor]                         | [prometheus][prometheusexporter]                       |                                         |                                     |
 | [httpcheck][httpcheckreceiver]                           | [memory_limiter][memorylimiterprocessor]              | [prometheusremotewrite][prometheusremotewriteexporter] |                                         |                                     |
@@ -125,6 +125,7 @@ This section lists the components that are included in the Observe Distribution 
 [forwardconnector]: https://github.com/open-telemetry/opentelemetry-collector/tree/v0.151.0/connector/forwardconnector
 [groupbyattrsprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/groupbyattrsprocessor
 [healthcheckextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/healthcheckextension
+[healthcheckv2extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/healthcheckv2extension
 [heartbeatreceiver]: ./components/receivers/heartbeatreceiver
 [hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/hostmetricsreceiver
 [httpcheckreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/httpcheckreceiver
