@@ -45,6 +45,10 @@ type clientBulkWrite struct {
 	selector                 description.ServerSelector
 	writeConcern             *writeconcern.WriteConcern
 	rawData                  *bool
+	additionalCmd            bson.D
+
+	maxAdaptiveRetries        uint
+	enableOverloadRetargeting bool
 
 	result ClientBulkWriteResult
 }
@@ -67,24 +71,27 @@ func (bw *clientBulkWrite) execute(ctx context.Context) error {
 		retryMode:  driver.RetryOnce,
 	}
 	err := driver.Operation{
-		CommandFn:         bw.newCommand(),
-		ProcessResponseFn: batches.processResponse,
-		Client:            bw.session,
-		Clock:             bw.client.clock,
-		RetryMode:         &batches.retryMode,
-		Type:              driver.Write,
-		Batches:           batches,
-		CommandMonitor:    bw.client.monitor,
-		Database:          database,
-		Deployment:        bw.client.deployment,
-		Selector:          bw.selector,
-		WriteConcern:      bw.writeConcern,
-		Crypt:             bw.client.cryptFLE,
-		ServerAPI:         bw.client.serverAPI,
-		Timeout:           bw.client.timeout,
-		Logger:            bw.client.logger,
-		Authenticator:     bw.client.authenticator,
-		Name:              driverutil.BulkWriteOp,
+		CommandFn:                 bw.newCommand(),
+		ProcessResponseFn:         batches.processResponse,
+		Client:                    bw.session,
+		Clock:                     bw.client.clock,
+		RetryMode:                 &batches.retryMode,
+		MaxAdaptiveRetries:        bw.maxAdaptiveRetries,
+		EnableOverloadRetargeting: bw.enableOverloadRetargeting,
+		Type:                      driver.Write,
+		Batches:                   batches,
+		CommandMonitor:            bw.client.monitor,
+		Database:                  database,
+		Deployment:                bw.client.deployment,
+		Selector:                  bw.selector,
+		WriteConcern:              bw.writeConcern,
+		Crypt:                     bw.client.cryptFLE,
+		ServerAPI:                 bw.client.serverAPI,
+		Timeout:                   bw.client.timeout,
+		Logger:                    bw.client.logger,
+		Authenticator:             bw.client.authenticator,
+		Name:                      driverutil.BulkWriteOp,
+		SendAfterClusterTime:      true,
 	}.Execute(ctx)
 	var exception *ClientBulkWriteException
 
@@ -147,6 +154,13 @@ func (bw *clientBulkWrite) newCommand() func([]byte, description.SelectedServer)
 		// Set rawData for 8.2+ servers.
 		if bw.rawData != nil && desc.WireVersion != nil && driverutil.VersionRangeIncludes(*desc.WireVersion, 27) {
 			dst = bsoncore.AppendBooleanElement(dst, "rawData", *bw.rawData)
+		}
+		if len(bw.additionalCmd) > 0 {
+			doc, err := bson.Marshal(bw.additionalCmd)
+			if err != nil {
+				return nil, err
+			}
+			dst = append(dst, doc[4:len(doc)-1]...)
 		}
 		return dst, nil
 	}

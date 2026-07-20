@@ -92,7 +92,7 @@ Note if the minimum Go version requirement changed.
 ## Step 6: Check custom component go.mod files
 
 The `components/` directory contains custom OTel components, each with its own
-`go.mod`. Find all `go.mod` files under `components/`:
+`go.mod`. Find all `go.mod` files under `components/**`:
 
 ```bash
 find components -name go.mod
