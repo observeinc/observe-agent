@@ -91,21 +91,24 @@ changelog:
       - "^docs:"
       - "^test:"
   groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+    - title: "Breaking Changes"
+      regexp: '^.*?\w+(\([[:word:]]+\))?!:.+$'
       order: 0
-    - title: "Bug Fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??:.+$'
       order: 1
-    - title: "Configuration Updates"
-      regexp: '^.*?config(\([[:word:]]+\))??!?:.+$'
+    - title: "Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??:.+$'
       order: 2
-    - title: "Enhancements"
-      regexp: '^.*?internal(\([[:word:]]+\))??!?:.+$'
+    - title: "Configuration Updates"
+      regexp: '^.*?config(\([[:word:]]+\))??:.+$'
       order: 3
-    - title: "Dependency Updates"
-      regexp: '^.*?build\(deps\)(\([[:word:]]+\))??!?:.+$'
+    - title: "Enhancements"
+      regexp: '^.*?internal(\([[:word:]]+\))??:.+$'
       order: 4
+    - title: "Dependency Updates"
+      regexp: '^.*?build\(deps\)(\([[:word:]]+\))??:.+$'
+      order: 5
     - title: Others
       order: 999
 
