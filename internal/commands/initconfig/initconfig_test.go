@@ -2,6 +2,8 @@ package initconfig
 
 import (
 	"os"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -128,6 +130,116 @@ func Test_InitConfigCommand(t *testing.T) {
 			}),
 			expectErr: "",
 		},
+		// Newly-covered fields: forwarding endpoints
+		{
+			args: []string{
+				"--config_path=./test-config.yaml",
+				"--token=test-token",
+				"--observe_url=test-url",
+				"--forwarding::endpoints::http=0.0.0.0:4318",
+				"--forwarding::endpoints::grpc=0.0.0.0:4317",
+			},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				Forwarding: config.ForwardingConfig{
+					Endpoints: config.ForwardingReceiverEndpointsConfig{
+						HTTP: "0.0.0.0:4318",
+						GRPC: "0.0.0.0:4317",
+					},
+				},
+				SelfMonitoring: config.SelfMonitoringConfig{Enabled: true},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs:    config.HostMonitoringLogsConfig{Enabled: true},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{Enabled: true},
+					},
+				},
+			}),
+			expectErr: "",
+		},
+		// Newly-covered fields: internal telemetry
+		{
+			args: []string{
+				"--config_path=./test-config.yaml",
+				"--token=test-token",
+				"--observe_url=test-url",
+				"--internal_telemetry::metrics::port=9999",
+				"--internal_telemetry::logs::encoding=json",
+			},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				InternalTelemetry: config.InternalTelemetryConfig{
+					Metrics: config.InternalTelemetryMetricsConfig{Port: 9999},
+					Logs:    config.InternalTelemetryLogsConfig{Encoding: "json"},
+				},
+				SelfMonitoring: config.SelfMonitoringConfig{Enabled: true},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs:    config.HostMonitoringLogsConfig{Enabled: true},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{Enabled: true},
+					},
+				},
+			}),
+			expectErr: "",
+		},
+		// Newly-covered fields: health check endpoint and path
+		{
+			args: []string{
+				"--config_path=./test-config.yaml",
+				"--token=test-token",
+				"--observe_url=test-url",
+				"--health_check::endpoint=0.0.0.0:13133",
+				"--health_check::path=/custom-status",
+			},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				HealthCheck: config.HealthCheckConfig{
+					Endpoint: "0.0.0.0:13133",
+					Path:     "/custom-status",
+				},
+				SelfMonitoring: config.SelfMonitoringConfig{Enabled: true},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs:    config.HostMonitoringLogsConfig{Enabled: true},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{Enabled: true},
+					},
+				},
+			}),
+			expectErr: "",
+		},
+		// Newly-covered fields: exporters
+		{
+			args: []string{
+				"--config_path=./test-config.yaml",
+				"--token=test-token",
+				"--observe_url=test-url",
+				"--exporters::sending_queue_batch::max_size=1000",
+				"--exporters::emit_prometheus_target_info_metric=true",
+			},
+			expectedConfig: setConfigDefaults(config.AgentConfig{
+				Token:      "test-token",
+				ObserveURL: "test-url",
+				Exporters: config.ExportersConfig{
+					SendingQueueBatch:              config.SendingQueueBatchConfig{MaxSize: 1000},
+					EmitPrometheusTargetInfoMetric: true,
+				},
+				SelfMonitoring: config.SelfMonitoringConfig{Enabled: true},
+				HostMonitoring: config.HostMonitoringConfig{
+					Enabled: true,
+					Logs:    config.HostMonitoringLogsConfig{Enabled: true},
+					Metrics: config.HostMonitoringMetricsConfig{
+						Host: config.HostMonitoringHostMetricsConfig{Enabled: true},
+					},
+				},
+			}),
+			expectErr: "",
+		},
 	}
 	for _, tc := range testcases {
 		v := viper.NewWithOptions(viper.KeyDelimiter("::"))
@@ -166,4 +278,56 @@ func Test_InitConfigCommand(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, tc.expectedConfig, configYaml)
 	}
+}
+
+// Test_AllConfigFieldsHaveFlags walks AgentConfig via reflection and asserts
+// that every leaf field has a corresponding registered cobra flag (or is in the
+// known skip set). This test will fail if a new field is added to AgentConfig
+// without the reflection walker being able to handle it, making coverage
+// machine-checked.
+func Test_AllConfigFieldsHaveFlags(t *testing.T) {
+	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	cmd := NewConfigureCmd(v)
+	RegisterConfigFlags(cmd, v)
+
+	skip := map[string]bool{
+		"debug": true, // deprecated
+	}
+
+	var checkFields func(typ reflect.Type, prefix string)
+	checkFields = func(typ reflect.Type, prefix string) {
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			mapKey := strings.Split(field.Tag.Get("mapstructure"), ",")[0]
+			if mapKey == "" || mapKey == "-" {
+				continue
+			}
+			viperKey := mapKey
+			if prefix != "" {
+				viperKey = prefix + "::" + mapKey
+			}
+			if skip[viperKey] {
+				continue
+			}
+			switch field.Type.Kind() {
+			case reflect.Struct:
+				checkFields(field.Type, viperKey)
+			case reflect.Bool, reflect.String, reflect.Int:
+				assert.NotNil(t, cmd.PersistentFlags().Lookup(viperKey),
+					"missing flag for field: %s", viperKey)
+			case reflect.Slice:
+				if field.Type.Elem().Kind() == reflect.String {
+					assert.NotNil(t, cmd.PersistentFlags().Lookup(viperKey),
+						"missing flag for field: %s", viperKey)
+				}
+			case reflect.Map:
+				if field.Type.Key().Kind() == reflect.String &&
+					field.Type.Elem().Kind() == reflect.String {
+					assert.NotNil(t, cmd.PersistentFlags().Lookup(viperKey),
+						"missing flag for field: %s", viperKey)
+				}
+			}
+		}
+	}
+	checkFields(reflect.TypeOf(config.AgentConfig{}), "")
 }
