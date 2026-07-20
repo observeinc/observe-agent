@@ -2,11 +2,14 @@ package config
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mcuadros/go-defaults"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAgentConfigValidate(t *testing.T) {
@@ -107,6 +110,92 @@ func TestAgentConfigValidate(t *testing.T) {
 	assert.NoError(t, testEnvVarConfig.Validate())
 }
 
+func TestStringToStringMapHookFunc(t *testing.T) {
+	hook := StringToStringMapHookFunc()
+	mapType := reflect.TypeOf(map[string]string{})
+	strType := reflect.TypeOf("")
+
+	cases := []struct {
+		name    string
+		from    reflect.Type
+		to      reflect.Type
+		input   any
+		want    any
+		wantErr string
+	}{
+		{
+			name:  "pass-through when source is not a string",
+			from:  mapType,
+			to:    mapType,
+			input: map[string]string{"k": "v"},
+			want:  map[string]string{"k": "v"},
+		},
+		{
+			name:  "pass-through when target is not map[string]string",
+			from:  strType,
+			to:    strType,
+			input: "k=v",
+			want:  "k=v",
+		},
+		{
+			name:  "empty string returns empty map",
+			from:  strType,
+			to:    mapType,
+			input: "",
+			want:  map[string]string{},
+		},
+		{
+			name:  "JSON format",
+			from:  strType,
+			to:    mapType,
+			input: `{"service.name":"myservice","env":"prod"}`,
+			want:  map[string]string{"service.name": "myservice", "env": "prod"},
+		},
+		{
+			name:  "key=value pairs",
+			from:  strType,
+			to:    mapType,
+			input: "service.name=myservice,env=prod",
+			want:  map[string]string{"service.name": "myservice", "env": "prod"},
+		},
+		{
+			name:  "single key=value pair",
+			from:  strType,
+			to:    mapType,
+			input: "service.name=myservice",
+			want:  map[string]string{"service.name": "myservice"},
+		},
+		{
+			name:  "value containing equals sign",
+			from:  strType,
+			to:    mapType,
+			input: "url=http://host/path?a=1",
+			want:  map[string]string{"url": "http://host/path?a=1"},
+		},
+		{
+			name:    "malformed pair returns error",
+			from:    strType,
+			to:      mapType,
+			input:   "badvalue",
+			wantErr: "invalid key=value pair",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn, ok := hook.(mapstructure.DecodeHookFuncType)
+			require.True(t, ok)
+			got, err := fn(tc.from, tc.to, tc.input)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+		})
+	}
+}
+
 func TestAgentConfigFromViper(t *testing.T) {
 	config, err := AgentConfigFromViper(nil)
 	assert.Error(t, err, "no viper instance provided")
@@ -138,6 +227,32 @@ func TestAgentConfigFromViper(t *testing.T) {
 				// Defaults should be present when the value is not in the viper config.
 				assert.Equal(t, true, config.HealthCheck.Enabled)
 				assert.Equal(t, true, config.Forwarding.Enabled)
+			},
+		},
+		{
+			name: "resource_attributes from string simulates env var delivery",
+			options: map[string]any{
+				"token":               "some:token",
+				"observe_url":         "https://observeinc.com",
+				"resource_attributes": "service.name=myservice,env=prod",
+			},
+			configMode: "linux",
+			validate: func(t *testing.T, config *AgentConfig) {
+				assert.Equal(t, "myservice", config.ResourceAttributes["service.name"])
+				assert.Equal(t, "prod", config.ResourceAttributes["env"])
+			},
+		},
+		{
+			name: "resource_attributes from JSON string simulates env var delivery",
+			options: map[string]any{
+				"token":               "some:token",
+				"observe_url":         "https://observeinc.com",
+				"resource_attributes": `{"service.name":"myservice","env":"prod"}`,
+			},
+			configMode: "linux",
+			validate: func(t *testing.T, config *AgentConfig) {
+				assert.Equal(t, "myservice", config.ResourceAttributes["service.name"])
+				assert.Equal(t, "prod", config.ResourceAttributes["env"])
 			},
 		},
 		{
