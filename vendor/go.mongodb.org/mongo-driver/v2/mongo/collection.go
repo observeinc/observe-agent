@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/internal/csfle"
 	"go.mongodb.org/mongo-driver/v2/internal/mongoutil"
 	"go.mongodb.org/mongo-driver/v2/internal/optionsutil"
+	"go.mongodb.org/mongo-driver/v2/internal/ptrutil"
 	"go.mongodb.org/mongo-driver/v2/internal/serverselector"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
@@ -53,7 +54,6 @@ type aggregateParams struct {
 	registry       *bson.Registry
 	readConcern    *readconcern.ReadConcern
 	writeConcern   *writeconcern.WriteConcern
-	retryRead      bool
 	db             string
 	col            string
 	readSelector   description.ServerSelector
@@ -135,6 +135,7 @@ func (coll *Collection) copy() *Collection {
 		readPreference: coll.readPreference,
 		readSelector:   coll.readSelector,
 		writeSelector:  coll.writeSelector,
+		bsonOpts:       coll.bsonOpts,
 		registry:       coll.registry,
 	}
 }
@@ -161,6 +162,10 @@ func (coll *Collection) Clone(opts ...options.Lister[options.CollectionOptions])
 
 	if args.Registry != nil {
 		copyColl.registry = args.Registry
+	}
+
+	if args.BSONOptions != nil {
+		copyColl.bsonOpts = args.BSONOptions
 	}
 
 	copyColl.readSelector = &serverselector.Composite{
@@ -191,8 +196,8 @@ func (coll *Collection) Database() *Database {
 //
 // The opts parameter can be used to specify options for the operation (see the options.BulkWriteOptions documentation.)
 func (coll *Collection) BulkWrite(ctx context.Context, models []WriteModel,
-	opts ...options.Lister[options.BulkWriteOptions]) (*BulkWriteResult, error) {
-
+	opts ...options.Lister[options.BulkWriteOptions],
+) (*BulkWriteResult, error) {
 	if len(models) == 0 {
 		return nil, fmt.Errorf("invalid models: %w", ErrEmptySlice)
 	}
@@ -246,10 +251,11 @@ func (coll *Collection) BulkWrite(ctx context.Context, models []WriteModel,
 		writeConcern:             wc,
 		let:                      args.Let,
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op.rawData = &rawData
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op.rawData = &rawData
+	}
+	if additionalCmd, ok := optionsutil.Value(args.Internal, "addCommandFields").(bson.D); ok {
+		op.additionalCmd = additionalCmd
 	}
 
 	err = op.execute(ctx)
@@ -262,7 +268,6 @@ func (coll *Collection) insert(
 	documents []any,
 	opts ...options.Lister[options.InsertManyOptions],
 ) ([]any, error) {
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -303,14 +308,29 @@ func (coll *Collection) insert(
 		sess = nil
 	}
 
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryWrites)
+
 	selector := makePinnedSelector(sess, coll.writeSelector)
 
-	op := operation.NewInsert(docs...).
-		Session(sess).WriteConcern(wc).CommandMonitor(coll.client.monitor).
-		ServerSelector(selector).ClusterClock(coll.client.clock).
-		Database(coll.db.name).Collection(coll.name).
-		Deployment(coll.client.deployment).Crypt(coll.client.cryptFLE).Ordered(true).
-		ServerAPI(coll.client.serverAPI).Timeout(coll.client.timeout).Logger(coll.client.logger).Authenticator(coll.client.authenticator)
+	op := insertOp{
+		documents:                 docs,
+		session:                   sess,
+		writeConcern:              wc,
+		monitor:                   coll.client.monitor,
+		maxAdaptiveRetries:        maxAdaptiveRetries,
+		enableOverloadRetargeting: coll.client.enableOverloadRetargeting,
+		selector:                  selector,
+		clock:                     coll.client.clock,
+		database:                  coll.db.name,
+		collection:                coll.name,
+		deployment:                coll.client.deployment,
+		crypt:                     coll.client.cryptFLE,
+		ordered:                   ptrutil.Ptr(true),
+		serverAPI:                 coll.client.serverAPI,
+		timeout:                   coll.client.timeout,
+		logger:                    coll.client.logger,
+		authenticator:             coll.client.authenticator,
+	}
 
 	args, err := mongoutil.NewOptions[options.InsertManyOptions](opts...)
 	if err != nil {
@@ -318,28 +338,29 @@ func (coll *Collection) insert(
 	}
 
 	if args.BypassDocumentValidation != nil && *args.BypassDocumentValidation {
-		op = op.BypassDocumentValidation(*args.BypassDocumentValidation)
+		op.bypassDocumentValidation = args.BypassDocumentValidation
 	}
 	if args.Comment != nil {
 		comment, err := marshalValue(args.Comment, coll.bsonOpts, coll.registry)
 		if err != nil {
 			return nil, err
 		}
-		op = op.Comment(comment)
+		op.comment = comment
 	}
 	if args.Ordered != nil {
-		op = op.Ordered(*args.Ordered)
+		op.ordered = args.Ordered
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op.rawData = &rawData
+	}
+	if additionalCmd, ok := optionsutil.Value(args.Internal, "addCommandFields").(bson.D); ok {
+		op.additionalCmd = additionalCmd
 	}
 	retry := driver.RetryNone
 	if coll.client.retryWrites {
 		retry = driver.RetryOncePerCommand
 	}
-	op = op.Retry(retry)
+	op.retry = &retry
 
 	err = op.Execute(ctx)
 	var wce driver.WriteCommandError
@@ -372,8 +393,8 @@ func (coll *Collection) insert(
 //
 // For more information about the command, see https://www.mongodb.com/docs/manual/reference/command/insert/.
 func (coll *Collection) InsertOne(ctx context.Context, document any,
-	opts ...options.Lister[options.InsertOneOptions]) (*InsertOneResult, error) {
-
+	opts ...options.Lister[options.InsertOneOptions],
+) (*InsertOneResult, error) {
 	args, err := mongoutil.NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -388,7 +409,14 @@ func (coll *Collection) InsertOne(ctx context.Context, document any,
 	}
 	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
 		imOpts.Opts = append(imOpts.Opts, func(opts *options.InsertManyOptions) error {
-			optionsutil.WithValue(opts.Internal, "rawData", rawDataOpt)
+			opts.Internal = optionsutil.WithValue(opts.Internal, "rawData", rawDataOpt)
+
+			return nil
+		})
+	}
+	if additionalCmd := optionsutil.Value(args.Internal, "addCommandFields"); additionalCmd != nil {
+		imOpts.Opts = append(imOpts.Opts, func(opts *options.InsertManyOptions) error {
+			opts.Internal = optionsutil.WithValue(opts.Internal, "addCommandFields", additionalCmd)
 
 			return nil
 		})
@@ -422,7 +450,6 @@ func (coll *Collection) InsertMany(
 	documents any,
 	opts ...options.Lister[options.InsertManyOptions],
 ) (*InsertManyResult, error) {
-
 	dv := reflect.ValueOf(documents)
 	if dv.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("invalid documents: %w", ErrNotSlice)
@@ -474,7 +501,6 @@ func (coll *Collection) delete(
 	expectedRr returnResult,
 	args *options.DeleteManyOptions,
 ) (*DeleteResult, error) {
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -502,6 +528,14 @@ func (coll *Collection) delete(
 	if !wc.Acknowledged() {
 		sess = nil
 	}
+
+	// deleteMany cannot be retried
+	retryMode := driver.RetryNone
+	if deleteOne && coll.client.retryWrites {
+		retryMode = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryWrites)
 
 	selector := makePinnedSelector(sess, coll.writeSelector)
 
@@ -531,6 +565,8 @@ func (coll *Collection) delete(
 
 	op := operation.NewDelete(doc).
 		Session(sess).WriteConcern(wc).CommandMonitor(coll.client.monitor).
+		Retry(retryMode).MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(coll.client.enableOverloadRetargeting).
 		ServerSelector(selector).ClusterClock(coll.client.clock).
 		Database(coll.db.name).Collection(coll.name).
 		Deployment(coll.client.deployment).Crypt(coll.client.cryptFLE).Ordered(true).
@@ -552,18 +588,10 @@ func (coll *Collection) delete(
 		}
 		op = op.Let(let)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
 
-	// deleteMany cannot be retried
-	retryMode := driver.RetryNone
-	if deleteOne && coll.client.retryWrites {
-		retryMode = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retryMode)
 	rr, err := processWriteError(op.Execute(ctx))
 	if rr&expectedRr == 0 {
 		return nil, err
@@ -637,7 +665,6 @@ func (coll *Collection) updateOrReplace(
 	sort any,
 	args *options.UpdateManyOptions,
 ) (*UpdateResult, error) {
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -678,44 +705,64 @@ func (coll *Collection) updateOrReplace(
 		sess = nil
 	}
 
+	retry := driver.RetryNone
+	// retryable writes are only enabled updateOne/replaceOne operations
+	if !multi && coll.client.retryWrites {
+		retry = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryWrites)
+
 	selector := makePinnedSelector(sess, coll.writeSelector)
 
-	op := operation.NewUpdate(updateDoc).
-		Session(sess).WriteConcern(wc).CommandMonitor(coll.client.monitor).
-		ServerSelector(selector).ClusterClock(coll.client.clock).
-		Database(coll.db.name).Collection(coll.name).
-		Deployment(coll.client.deployment).Crypt(coll.client.cryptFLE).Hint(args.Hint != nil).
-		ArrayFilters(args.ArrayFilters != nil).Ordered(true).ServerAPI(coll.client.serverAPI).
-		Timeout(coll.client.timeout).Logger(coll.client.logger).Authenticator(coll.client.authenticator)
+	ordered := true
+	hint := args.Hint != nil
+	arrayFilters := args.ArrayFilters != nil
+	op := updateOp{
+		updates:                   []bsoncore.Document{updateDoc},
+		session:                   sess,
+		writeConcern:              wc,
+		monitor:                   coll.client.monitor,
+		retry:                     &retry,
+		maxAdaptiveRetries:        maxAdaptiveRetries,
+		enableOverloadRetargeting: coll.client.enableOverloadRetargeting,
+		selector:                  selector,
+		clock:                     coll.client.clock,
+		database:                  coll.db.name,
+		collection:                coll.name,
+		deployment:                coll.client.deployment,
+		crypt:                     coll.client.cryptFLE,
+		serverAPI:                 coll.client.serverAPI,
+		timeout:                   coll.client.timeout,
+		logger:                    coll.client.logger,
+		authenticator:             coll.client.authenticator,
+		ordered:                   &ordered,
+		hint:                      &hint,
+		arrayFilters:              &arrayFilters,
+	}
 	if args.Let != nil {
 		let, err := marshal(args.Let, coll.bsonOpts, coll.registry)
 		if err != nil {
 			return nil, err
 		}
-		op = op.Let(let)
+		op.let = let
 	}
-
 	if args.BypassDocumentValidation != nil && *args.BypassDocumentValidation {
-		op = op.BypassDocumentValidation(*args.BypassDocumentValidation)
+		op.bypassDocumentValidation = args.BypassDocumentValidation
 	}
 	if args.Comment != nil {
 		comment, err := marshalValue(args.Comment, coll.bsonOpts, coll.registry)
 		if err != nil {
 			return nil, err
 		}
-		op = op.Comment(comment)
+		op.comment = comment
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op.rawData = &rawData
 	}
-	retry := driver.RetryNone
-	// retryable writes are only enabled updateOne/replaceOne operations
-	if !multi && coll.client.retryWrites {
-		retry = driver.RetryOncePerCommand
+	if additionalCmd, ok := optionsutil.Value(args.Internal, "addCommandFields").(bson.D); ok {
+		op.additionalCmd = additionalCmd
 	}
-	op = op.Retry(retry)
 	err = op.Execute(ctx)
 
 	rr, err := processWriteError(err)
@@ -925,7 +972,6 @@ func (coll *Collection) Aggregate(
 		readConcern:    coll.readConcern,
 		writeConcern:   coll.writeConcern,
 		bsonOpts:       coll.bsonOpts,
-		retryRead:      coll.client.retryReads,
 		db:             coll.db.name,
 		col:            coll.name,
 		readSelector:   coll.readSelector,
@@ -957,6 +1003,7 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 	if sess == nil && a.client.sessionPool != nil {
 		sess = session.NewImplicitClientSession(a.client.sessionPool, a.client.id)
 	}
+
 	if err = a.client.validSession(sess); err != nil {
 		return nil, err
 	}
@@ -975,6 +1022,14 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 		sess = nil
 	}
 
+	retryReads := a.client.retryReads && !hasOutputStage
+	retryWrites := a.client.retryWrites && hasOutputStage
+
+	retry := driver.RetryNone
+	if retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
 	selector := makeReadPrefSelector(sess, a.readSelector, a.client.localThreshold)
 	if hasOutputStage {
 		selector = makeOutputAggregateSelector(sess, a.readPreference, a.client.localThreshold)
@@ -985,7 +1040,7 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 		return nil, err
 	}
 
-	cursorOpts := a.client.createBaseCursorOptions()
+	cursorOpts := a.client.createBaseCursorOptions(retryReads || retryWrites)
 
 	cursorOpts.MarshalValueEncoderFn = newEncoderFn(a.bsonOpts, a.registry)
 
@@ -995,6 +1050,9 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 		ReadConcern(rc).
 		ReadPreference(a.readPreference).
 		CommandMonitor(a.client.monitor).
+		Retry(retry).
+		MaxAdaptiveRetries(cursorOpts.MaxAdaptiveRetries).
+		EnableOverloadRetargeting(cursorOpts.EnableOverloadRetargeting).
 		ServerSelector(selector).
 		ClusterClock(a.client.clock).
 		Database(a.db).
@@ -1015,7 +1073,7 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 		op.AllowDiskUse(*args.AllowDiskUse)
 	}
 	// ignore batchSize of 0 with $out
-	if args.BatchSize != nil && !(*args.BatchSize == 0 && hasOutputStage) {
+	if args.BatchSize != nil && (*args.BatchSize != 0 || !hasOutputStage) {
 		op.BatchSize(*args.BatchSize)
 		cursorOpts.BatchSize = *args.BatchSize
 	}
@@ -1067,17 +1125,9 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 		}
 		op.CustomOptions(customOptions)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-
-	retry := driver.RetryNone
-	if a.retryRead && !hasOutputStage {
-		retry = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retry)
 
 	err = op.Execute(a.ctx)
 	if err != nil {
@@ -1111,7 +1161,8 @@ func aggregate(a aggregateParams, opts ...options.Lister[options.AggregateOption
 //
 // The opts parameter can be used to specify options for the operation (see the options.CountOptions documentation).
 func (coll *Collection) CountDocuments(ctx context.Context, filter any,
-	opts ...options.Lister[options.CountOptions]) (int64, error) {
+	opts ...options.Lister[options.CountOptions],
+) (int64, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -1140,8 +1191,17 @@ func (coll *Collection) CountDocuments(ctx context.Context, filter any,
 		rc = nil
 	}
 
+	retry := driver.RetryNone
+	if coll.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryReads)
+
 	selector := makeReadPrefSelector(sess, coll.readSelector, coll.client.localThreshold)
 	op := operation.NewAggregate(pipelineArr).Session(sess).ReadConcern(rc).ReadPreference(coll.readPreference).
+		Retry(retry).MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(coll.client.enableOverloadRetargeting).
 		CommandMonitor(coll.client.monitor).ServerSelector(selector).ClusterClock(coll.client.clock).Database(coll.db.name).
 		Collection(coll.name).Deployment(coll.client.deployment).Crypt(coll.client.cryptFLE).ServerAPI(coll.client.serverAPI).
 		Timeout(coll.client.timeout).Authenticator(coll.client.authenticator)
@@ -1166,16 +1226,9 @@ func (coll *Collection) CountDocuments(ctx context.Context, filter any,
 		}
 		op.Hint(hintVal)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-	retry := driver.RetryNone
-	if coll.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retry)
 
 	err = op.Execute(ctx)
 	if err != nil {
@@ -1238,10 +1291,19 @@ func (coll *Collection) EstimatedDocumentCount(
 		return 0, fmt.Errorf("failed to construct options from builder: %w", err)
 	}
 
+	retry := driver.RetryNone
+	if coll.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryReads)
+
 	selector := makeReadPrefSelector(sess, coll.readSelector, coll.client.localThreshold)
 	op := operation.NewCount().Session(sess).ClusterClock(coll.client.clock).
 		Database(coll.db.name).Collection(coll.name).CommandMonitor(coll.client.monitor).
 		Deployment(coll.client.deployment).ReadConcern(rc).ReadPreference(coll.readPreference).
+		Retry(retry).MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(coll.client.enableOverloadRetargeting).
 		ServerSelector(selector).Crypt(coll.client.cryptFLE).ServerAPI(coll.client.serverAPI).
 		Timeout(coll.client.timeout).Authenticator(coll.client.authenticator)
 
@@ -1252,17 +1314,9 @@ func (coll *Collection) EstimatedDocumentCount(
 		}
 		op = op.Comment(comment)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-
-	retry := driver.RetryNone
-	if coll.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op.Retry(retry)
 
 	err = op.Execute(ctx)
 	return op.Result().N, wrapErrors(err)
@@ -1310,6 +1364,13 @@ func (coll *Collection) Distinct(
 		rc = nil
 	}
 
+	retry := driver.RetryNone
+	if coll.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryReads)
+
 	selector := makeReadPrefSelector(sess, coll.readSelector, coll.client.localThreshold)
 
 	args, err := mongoutil.NewOptions[options.DistinctOptions](opts...)
@@ -1323,6 +1384,8 @@ func (coll *Collection) Distinct(
 		Session(sess).ClusterClock(coll.client.clock).
 		Database(coll.db.name).Collection(coll.name).CommandMonitor(coll.client.monitor).
 		Deployment(coll.client.deployment).ReadConcern(rc).ReadPreference(coll.readPreference).
+		Retry(retry).MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(coll.client.enableOverloadRetargeting).
 		ServerSelector(selector).Crypt(coll.client.cryptFLE).ServerAPI(coll.client.serverAPI).
 		Timeout(coll.client.timeout).Authenticator(coll.client.authenticator)
 
@@ -1346,16 +1409,9 @@ func (coll *Collection) Distinct(
 		}
 		op.Hint(hint)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-	retry := driver.RetryNone
-	if coll.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retry)
 
 	err = op.Execute(ctx)
 	if err != nil {
@@ -1385,7 +1441,8 @@ func (coll *Collection) Distinct(
 //
 // For more information about the command, see https://www.mongodb.com/docs/manual/reference/command/find/.
 func (coll *Collection) Find(ctx context.Context, filter any,
-	opts ...options.Lister[options.FindOptions]) (*Cursor, error) {
+	opts ...options.Lister[options.FindOptions],
+) (*Cursor, error) {
 	args, err := mongoutil.NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -1404,7 +1461,6 @@ func (coll *Collection) find(
 	omitMaxTimeMS bool,
 	args *options.FindOptions,
 ) (cur *Cursor, err error) {
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -1435,16 +1491,23 @@ func (coll *Collection) find(
 		rc = nil
 	}
 
+	retry := driver.RetryNone
+	if coll.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	cursorOpts := coll.client.createBaseCursorOptions(coll.client.retryReads)
+
 	selector := makeReadPrefSelector(sess, coll.readSelector, coll.client.localThreshold)
 	op := operation.NewFind(f).
 		Session(sess).ReadConcern(rc).ReadPreference(coll.readPreference).
 		CommandMonitor(coll.client.monitor).ServerSelector(selector).
+		Retry(retry).MaxAdaptiveRetries(cursorOpts.MaxAdaptiveRetries).
+		EnableOverloadRetargeting(cursorOpts.EnableOverloadRetargeting).
 		ClusterClock(coll.client.clock).Database(coll.db.name).Collection(coll.name).
 		Deployment(coll.client.deployment).Crypt(coll.client.cryptFLE).ServerAPI(coll.client.serverAPI).
 		Timeout(coll.client.timeout).Logger(coll.client.logger).Authenticator(coll.client.authenticator).
 		OmitMaxTimeMS(omitMaxTimeMS)
-
-	cursorOpts := coll.client.createBaseCursorOptions()
 
 	cursorOpts.MarshalValueEncoderFn = newEncoderFn(coll.bsonOpts, coll.registry)
 
@@ -1554,16 +1617,9 @@ func (coll *Collection) find(
 		}
 		op.Sort(sort)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-	retry := driver.RetryNone
-	if coll.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retry)
 
 	if err = op.Execute(ctx); err != nil {
 		return nil, wrapErrors(err)
@@ -1609,8 +1665,8 @@ func newFindArgsFromFindOneArgs(args *options.FindOneOptions) *options.FindOptio
 //
 // For more information about the command, see https://www.mongodb.com/docs/manual/reference/command/find/.
 func (coll *Collection) FindOne(ctx context.Context, filter any,
-	opts ...options.Lister[options.FindOneOptions]) *SingleResult {
-
+	opts ...options.Lister[options.FindOneOptions],
+) *SingleResult {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -1661,6 +1717,8 @@ func (coll *Collection) findAndModify(ctx context.Context, op *operation.FindAnd
 		retry = driver.RetryOnce
 	}
 
+	maxAdaptiveRetries := coll.client.effectiveAdaptiveRetries(coll.client.retryWrites)
+
 	op = op.Session(sess).
 		WriteConcern(wc).
 		CommandMonitor(coll.client.monitor).
@@ -1670,6 +1728,8 @@ func (coll *Collection) findAndModify(ctx context.Context, op *operation.FindAnd
 		Collection(coll.name).
 		Deployment(coll.client.deployment).
 		Retry(retry).
+		MaxAdaptiveRetries(maxAdaptiveRetries).
+		EnableOverloadRetargeting(coll.client.enableOverloadRetargeting).
 		Crypt(coll.client.cryptFLE)
 
 	rr, err := processWriteError(op.Execute(ctx))
@@ -1700,8 +1760,8 @@ func (coll *Collection) findAndModify(ctx context.Context, op *operation.FindAnd
 func (coll *Collection) FindOneAndDelete(
 	ctx context.Context,
 	filter any,
-	opts ...options.Lister[options.FindOneAndDeleteOptions]) *SingleResult {
-
+	opts ...options.Lister[options.FindOneAndDeleteOptions],
+) *SingleResult {
 	f, err := marshal(filter, coll.bsonOpts, coll.registry)
 	if err != nil {
 		return &SingleResult{err: err}
@@ -1757,10 +1817,8 @@ func (coll *Collection) FindOneAndDelete(
 		}
 		op = op.Let(let)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
 
 	return coll.findAndModify(ctx, op)
@@ -1786,7 +1844,6 @@ func (coll *Collection) FindOneAndReplace(
 	replacement any,
 	opts ...options.Lister[options.FindOneAndReplaceOptions],
 ) *SingleResult {
-
 	f, err := marshal(filter, coll.bsonOpts, coll.registry)
 	if err != nil {
 		return &SingleResult{err: err}
@@ -1859,10 +1916,11 @@ func (coll *Collection) FindOneAndReplace(
 		}
 		op = op.Let(let)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
+	}
+	if additionalCmd, ok := optionsutil.Value(args.Internal, "addCommandFields").(bson.D); ok {
+		op = op.AdditionalCmd(additionalCmd)
 	}
 
 	return coll.findAndModify(ctx, op)
@@ -1887,8 +1945,8 @@ func (coll *Collection) FindOneAndUpdate(
 	ctx context.Context,
 	filter any,
 	update any,
-	opts ...options.Lister[options.FindOneAndUpdateOptions]) *SingleResult {
-
+	opts ...options.Lister[options.FindOneAndUpdateOptions],
+) *SingleResult {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -1973,10 +2031,11 @@ func (coll *Collection) FindOneAndUpdate(
 		}
 		op = op.Let(let)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
+	}
+	if additionalCmd, ok := optionsutil.Value(args.Internal, "addCommandFields").(bson.D); ok {
+		op = op.AdditionalCmd(additionalCmd)
 	}
 
 	return coll.findAndModify(ctx, op)
@@ -1996,8 +2055,8 @@ func (coll *Collection) FindOneAndUpdate(
 // The opts parameter can be used to specify options for change stream creation (see the options.ChangeStreamOptions
 // documentation).
 func (coll *Collection) Watch(ctx context.Context, pipeline any,
-	opts ...options.Lister[options.ChangeStreamOptions]) (*ChangeStream, error) {
-
+	opts ...options.Lister[options.ChangeStreamOptions],
+) (*ChangeStream, error) {
 	csConfig := changeStreamConfig{
 		readConcern:    coll.readConcern,
 		readPreference: coll.readPreference,

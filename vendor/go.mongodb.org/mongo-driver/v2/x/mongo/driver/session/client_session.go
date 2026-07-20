@@ -22,30 +22,58 @@ import (
 )
 
 // ErrSessionEnded is returned when a client session is used after a call to endSession().
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrSessionEnded = errors.New("ended session was used")
 
 // ErrNoTransactStarted is returned if a transaction operation is called when no transaction has started.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrNoTransactStarted = errors.New("no transaction started")
 
 // ErrTransactInProgress is returned if startTransaction() is called when a transaction is in progress.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrTransactInProgress = errors.New("transaction already in progress")
 
 // ErrAbortAfterCommit is returned when abort is called after a commit.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrAbortAfterCommit = errors.New("cannot call abortTransaction after calling commitTransaction")
 
 // ErrAbortTwice is returned if abort is called after transaction is already aborted.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrAbortTwice = errors.New("cannot call abortTransaction twice")
 
 // ErrCommitAfterAbort is returned if commit is called after an abort.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrCommitAfterAbort = errors.New("cannot call commitTransaction after calling abortTransaction")
 
 // ErrUnackWCUnsupported is returned if an unacknowledged write concern is supported for a transaction.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrUnackWCUnsupported = errors.New("transactions do not support unacknowledged write concerns")
 
 // ErrSnapshotTransaction is returned if an transaction is started on a snapshot session.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 var ErrSnapshotTransaction = errors.New("transactions are not supported in snapshot sessions")
 
 // TransactionState indicates the state of the transactions FSM.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release. To check whether a transaction is active, call
+// [go.mongodb.org/mongo-driver/v2/mongo.Session.TransactionRunning].
 type TransactionState uint8
 
 // Client Session states
@@ -82,6 +110,9 @@ var _ mnet.Pinner = (LoadBalancedTransactionConnection)(nil)
 // LoadBalancedTransactionConnection represents a connection that's pinned by a ClientSession because it's being used
 // to execute a transaction when running against a load balancer. This interface is a copy of driver.PinnedConnection
 // and exists to be able to pin transactions to a connection without causing an import cycle.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 type LoadBalancedTransactionConnection interface {
 	mnet.ReadWriteCloser
 	mnet.Describer
@@ -89,6 +120,10 @@ type LoadBalancedTransactionConnection interface {
 }
 
 // Client is a session for clients to run commands.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release. Use [go.mongodb.org/mongo-driver/v2/mongo.Client.StartSession]
+// to create a new session.
 type Client struct {
 	*Server
 	ClientID       uuid.UUID
@@ -101,6 +136,13 @@ type Client struct {
 	Committing     bool
 	Aborting       bool
 	Snapshot       bool
+
+	// SnapshotTime is the atClusterTime value for snapshot reads. This field is
+	// left immutable once set for the lifetime of the session. This guards
+	// against users updating custom snapshot times during transactions which
+	// could lead to a write conflict.
+	SnapshotTime    bson.Timestamp
+	SnapshotTimeSet bool
 
 	// options for the current transaction
 	// most recently set by transactionopt
@@ -119,7 +161,6 @@ type Client struct {
 	PinnedServerAddr *address.Address
 	RecoveryToken    bson.Raw
 	PinnedConnection LoadBalancedTransactionConnection
-	SnapshotTime     *bson.Timestamp
 }
 
 func getClusterTime(clusterTime bson.Raw) (uint32, uint32) {
@@ -141,6 +182,9 @@ func getClusterTime(clusterTime bson.Raw) (uint32, uint32) {
 }
 
 // MaxClusterTime compares 2 clusterTime documents and returns the document representing the highest cluster time.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release.
 func MaxClusterTime(ct1, ct2 bson.Raw) bson.Raw {
 	epoch1, ord1 := getClusterTime(ct1)
 	epoch2, ord2 := getClusterTime(ct2)
@@ -160,6 +204,10 @@ func MaxClusterTime(ct1, ct2 bson.Raw) bson.Raw {
 }
 
 // NewImplicitClientSession creates a new implicit client-side session.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release. Use [go.mongodb.org/mongo-driver/v2/mongo.Client.StartSession]
+// to create a new session.
 func NewImplicitClientSession(pool *Pool, clientID uuid.UUID) *Client {
 	// Server-side session checkout for implicit sessions is deferred until after checking out a
 	// connection, so don't check out a server-side session right now. This will limit the number of
@@ -173,6 +221,10 @@ func NewImplicitClientSession(pool *Pool, clientID uuid.UUID) *Client {
 }
 
 // NewClientSession creates a new explicit client-side session.
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release. Use [go.mongodb.org/mongo-driver/v2/mongo.Client.StartSession]
+// to create a new session.
 func NewClientSession(pool *Pool, clientID uuid.UUID, opts ...*ClientOptions) (*Client, error) {
 	c := &Client{
 		pool:     pool,
@@ -192,6 +244,10 @@ func NewClientSession(pool *Pool, clientID uuid.UUID, opts ...*ClientOptions) (*
 	if mergedOpts.Snapshot != nil {
 		c.Snapshot = *mergedOpts.Snapshot
 	}
+	if mergedOpts.SnapshotTime != nil {
+		c.SnapshotTime = *mergedOpts.SnapshotTime
+		c.SnapshotTimeSet = true
+	}
 
 	// For explicit sessions, the default for causalConsistency is true, unless Snapshot is
 	// enabled, then it's false. Set the default and then allow any explicit causalConsistency
@@ -203,6 +259,10 @@ func NewClientSession(pool *Pool, clientID uuid.UUID, opts ...*ClientOptions) (*
 
 	if c.Consistent && c.Snapshot {
 		return nil, errors.New("causal consistency and snapshot cannot both be set for a session")
+	}
+
+	if c.SnapshotTimeSet && !c.Snapshot {
+		return nil, errors.New("snapshotTime cannot be set when snapshot is false")
 	}
 
 	if err := c.SetServer(); err != nil {
@@ -273,9 +333,13 @@ func (c *Client) UpdateRecoveryToken(response bson.Raw) {
 	c.RecoveryToken = token.Document()
 }
 
-// UpdateSnapshotTime updates the session's value for the atClusterTime field of ReadConcern.
+// UpdateSnapshotTime updates the session's value for the atClusterTime field of
+// ReadConcern.
 func (c *Client) UpdateSnapshotTime(response bsoncore.Document) {
-	if c == nil {
+	if c == nil || c.SnapshotTimeSet {
+		// Do nothing if session is nil or snapshot time is already set. The driver
+		// sends the same atClusterTime for all operations in a snapshot session so
+		// resetting is a potentially dangerous redundancy.
 		return
 	}
 
@@ -291,10 +355,11 @@ func (c *Client) UpdateSnapshotTime(response bsoncore.Document) {
 	}
 
 	t, i := ssTimeElem.Timestamp()
-	c.SnapshotTime = &bson.Timestamp{
+	c.SnapshotTime = bson.Timestamp{
 		T: t,
 		I: i,
 	}
+	c.SnapshotTimeSet = true
 }
 
 // ClearPinnedResources clears the pinned server and/or connection associated with the session.
@@ -360,6 +425,10 @@ func (c *Client) TransactionStarting() bool {
 
 // TransactionRunning returns true if the client session has started the transaction
 // and it hasn't been committed or aborted
+//
+// Deprecated: For internal use only, do not use. May be changed or removed in
+// any release. To check whether a transaction is active, call
+// [go.mongodb.org/mongo-driver/v2/mongo.Session.TransactionRunning].
 func (c *Client) TransactionRunning() bool {
 	return c != nil && (c.TransactionState == Starting || c.TransactionState == InProgress)
 }
@@ -422,9 +491,10 @@ func (c *Client) StartTransaction(opts *TransactionOptions) error {
 // CheckCommitTransaction checks to see if allowed to commit transaction and returns
 // an error if not allowed.
 func (c *Client) CheckCommitTransaction() error {
-	if c.TransactionState == None {
+	switch c.TransactionState {
+	case None:
 		return ErrNoTransactStarted
-	} else if c.TransactionState == Aborted {
+	case Aborted:
 		return ErrCommitAfterAbort
 	}
 	return nil
@@ -462,12 +532,12 @@ func (c *Client) UpdateCommitTransactionWriteConcern() {
 // CheckAbortTransaction checks to see if allowed to abort transaction and returns
 // an error if not allowed.
 func (c *Client) CheckAbortTransaction() error {
-	switch {
-	case c.TransactionState == None:
+	switch c.TransactionState {
+	case None:
 		return ErrNoTransactStarted
-	case c.TransactionState == Committed:
+	case Committed:
 		return ErrAbortAfterCommit
-	case c.TransactionState == Aborted:
+	case Aborted:
 		return ErrAbortTwice
 	}
 	return nil
@@ -506,13 +576,14 @@ func (c *Client) ApplyCommand(desc description.Server) error {
 		// Do not change state if committing after already committed
 		return nil
 	}
-	if c.TransactionState == Starting {
+	switch c.TransactionState {
+	case Starting:
 		c.TransactionState = InProgress
 		// If this is in a transaction and the server is a mongos, pin it
 		if desc.Kind == description.ServerKindMongos {
 			c.PinnedServerAddr = &desc.Addr
 		}
-	} else if c.TransactionState == Committed || c.TransactionState == Aborted {
+	case Committed, Aborted:
 		c.TransactionState = None
 		return c.clearTransactionOpts()
 	}

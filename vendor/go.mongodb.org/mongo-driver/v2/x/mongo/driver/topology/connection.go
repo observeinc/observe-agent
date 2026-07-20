@@ -9,6 +9,7 @@ package topology
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -45,6 +46,40 @@ var (
 )
 
 func nextConnectionID() uint64 { return atomic.AddUint64(&globalConnectionID, 1) }
+
+func wrapConnectionError(connErr ConnectionError) error {
+	var dnsErr *net.DNSError
+	if errors.As(connErr.Wrapped, &dnsErr) {
+		return connErr
+	}
+	// x509 errors are returned as values by the crypto/tls package
+	var hostErr x509.HostnameError
+	if errors.As(connErr.Wrapped, &hostErr) {
+		return connErr
+	}
+	var certErr x509.CertificateInvalidError
+	if errors.As(connErr.Wrapped, &certErr) {
+		return connErr
+	}
+	var unknownCAErr x509.UnknownAuthorityError
+	if errors.As(connErr.Wrapped, &unknownCAErr) {
+		return connErr
+	}
+	// tls.RecordHeaderError is a non-I/O TLS error per the CMAP spec: the peer
+	// sent bytes that don't form a valid TLS record. This cannot indicate
+	// server overload.
+	//
+	// TODO(GODRIVER-3956): Make the TLS record header error check and test work
+	// on Windows.
+	var tlsRecordHeaderErr tls.RecordHeaderError
+	if errors.As(connErr.Wrapped, &tlsRecordHeaderErr) {
+		return connErr
+	}
+	return driver.Error{
+		Labels:  []string{driver.ErrSystemOverloadedError, driver.ErrRetryableError, driver.NetworkError},
+		Wrapped: connErr,
+	}
+}
 
 type connection struct {
 	// state must be accessed using the atomic package and should be at the beginning of the struct.
@@ -211,7 +246,8 @@ func (c *connection) connect(ctx context.Context) (err error) {
 	// Assign the result of DialContext to a temporary net.Conn to ensure that c.nc is not set in an error case.
 	tempNc, err := c.config.dialer.DialContext(ctx, c.addr.Network(), c.addr.String())
 	if err != nil {
-		return ConnectionError{Wrapped: err, init: true, message: fmt.Sprintf("failed to connect to %s", c.addr)}
+		connErr := ConnectionError{Wrapped: err, init: true, message: fmt.Sprintf("failed to connect to %s", c.addr)}
+		return wrapConnectionError(connErr)
 	}
 	c.nc = tempNc
 
@@ -226,9 +262,9 @@ func (c *connection) connect(ctx context.Context) (err error) {
 			HTTPClient:              c.config.httpClient,
 		}
 		tlsNc, err := configureTLS(ctx, c.config.tlsConnectionSource, c.nc, c.addr, tlsConfig, ocspOpts)
-
 		if err != nil {
-			return ConnectionError{Wrapped: err, init: true, message: fmt.Sprintf("failed to configure TLS for %s", c.addr)}
+			connErr := ConnectionError{Wrapped: err, init: true, message: fmt.Sprintf("failed to configure TLS for %s", c.addr)}
+			return wrapConnectionError(connErr)
 		}
 		c.nc = tlsNc
 	}
@@ -246,34 +282,33 @@ func (c *connection) connect(ctx context.Context) (err error) {
 	handshakeConn := mnet.NewConnection(iconn)
 
 	handshakeInfo, err = handshaker.GetHandshakeInformation(ctx, c.addr, handshakeConn)
-	if err == nil {
-		// We only need to retain the Description field as the connection's description. The authentication-related
-		// fields in handshakeInfo are tracked by the handshaker if necessary.
-		c.desc = handshakeInfo.Description
-		c.serverConnectionID = handshakeInfo.ServerConnectionID
-		c.helloRTT = time.Since(handshakeStartTime)
-
-		// If the application has indicated that the cluster is load balanced, ensure the server has included serviceId
-		// in its handshake response to signal that it knows it's behind an LB as well.
-		if c.config.loadBalanced && c.desc.ServiceID == nil {
-			err = errLoadBalancedStateMismatch
-		}
-	}
-	if err == nil {
-		// For load-balanced connections, the generation number depends on the service ID, which isn't known until the
-		// initial MongoDB handshake is done. To account for this, we don't attempt to set the connection's generation
-		// number unless GetHandshakeInformation succeeds.
-		if c.config.loadBalanced {
-			c.setGenerationNumber()
-		}
-
-		// If we successfully finished the first part of the handshake and verified LB state, continue with the rest of
-		// the handshake.
-		err = handshaker.FinishHandshake(ctx, handshakeConn)
-	}
-
-	// We have a failed handshake here
 	if err != nil {
+		connErr := ConnectionError{Wrapped: err, init: true}
+		return wrapConnectionError(connErr)
+	}
+
+	// We only need to retain the Description field as the connection's description. The authentication-related
+	// fields in handshakeInfo are tracked by the handshaker if necessary.
+	c.desc = handshakeInfo.Description
+	c.serverConnectionID = handshakeInfo.ServerConnectionID
+	c.helloRTT = time.Since(handshakeStartTime)
+
+	// If the application has indicated that the cluster is load balanced, ensure the server has included serviceId
+	// in its handshake response to signal that it knows it's behind an LB as well.
+	if c.config.loadBalanced && c.desc.ServiceID == nil {
+		return ConnectionError{Wrapped: errLoadBalancedStateMismatch, init: true}
+	}
+
+	// For load-balanced connections, the generation number depends on the service ID, which isn't known until the
+	// initial MongoDB handshake is done. To account for this, we don't attempt to set the connection's generation
+	// number unless GetHandshakeInformation succeeds.
+	if c.config.loadBalanced {
+		c.setGenerationNumber()
+	}
+
+	// If we successfully finished the first part of the handshake and verified LB state, continue with the rest of
+	// the handshake. Authentication errors are not connection establishment errors and do not get backpressure labels.
+	if err = handshaker.FinishHandshake(ctx, handshakeConn); err != nil {
 		return ConnectionError{Wrapped: err, init: true}
 	}
 
@@ -365,7 +400,8 @@ func (c *connection) writeWireMessage(ctx context.Context, wm []byte) error {
 
 	err = c.write(ctx, wm)
 	if err != nil {
-		c.close()
+		_ = c.close()
+
 		return ConnectionError{
 			ConnectionID: c.id,
 			Wrapped:      transformNetworkError(ctx, err, contextDeadlineUsed),
@@ -412,8 +448,9 @@ func (c *connection) readWireMessage(ctx context.Context) ([]byte, error) {
 		if c.awaitRemainingBytes == nil {
 			// If the connection was not marked as awaiting response, close the
 			// connection because we don't know what the connection state is.
-			c.close()
+			_ = c.close()
 		}
+
 		message := errMsg
 		return nil, ConnectionError{
 			ConnectionID: c.id,
@@ -586,15 +623,17 @@ func (c *connection) SetOIDCTokenGenID(genID uint64) {
 // *connection to a Handshaker.
 type initConnection struct{ *connection }
 
-var _ mnet.ReadWriteCloser = initConnection{}
-var _ mnet.Describer = initConnection{}
-var _ mnet.Streamer = initConnection{}
+var (
+	_ mnet.ReadWriteCloser = initConnection{}
+	_ mnet.Describer       = initConnection{}
+	_ mnet.Streamer        = initConnection{}
+)
 
 func (c initConnection) Description() description.Server {
 	if c.connection == nil {
 		return description.Server{}
 	}
-	return c.connection.desc
+	return c.desc
 }
 func (c initConnection) Close() error             { return nil }
 func (c initConnection) ID() string               { return c.id }
@@ -606,18 +645,23 @@ func (c initConnection) LocalAddress() address.Address {
 	}
 	return address.Address(c.nc.LocalAddr().String())
 }
+
 func (c initConnection) Write(ctx context.Context, wm []byte) error {
 	return c.writeWireMessage(ctx, wm)
 }
+
 func (c initConnection) Read(ctx context.Context) ([]byte, error) {
 	return c.readWireMessage(ctx)
 }
+
 func (c initConnection) SetStreaming(streaming bool) {
 	c.setStreaming(streaming)
 }
+
 func (c initConnection) CurrentlyStreaming() bool {
 	return c.getCurrentlyStreaming()
 }
+
 func (c initConnection) SupportsStreaming() bool {
 	return c.canStream
 }
@@ -639,13 +683,15 @@ type Connection struct {
 	mu sync.RWMutex
 }
 
-var _ mnet.ReadWriteCloser = (*Connection)(nil)
-var _ mnet.Describer = (*Connection)(nil)
-var _ mnet.Compressor = (*Connection)(nil)
-var _ mnet.Pinner = (*Connection)(nil)
-var _ driver.Expirable = (*Connection)(nil)
+var (
+	_ mnet.ReadWriteCloser = (*Connection)(nil)
+	_ mnet.Describer       = (*Connection)(nil)
+	_ mnet.Compressor      = (*Connection)(nil)
+	_ mnet.Pinner          = (*Connection)(nil)
+	_ driver.Expirable     = (*Connection)(nil)
+)
 
-// WriteWireMessage handles writing a wire message to the underlying connection.
+// Write handles writing a wire message to the underlying connection.
 func (c *Connection) Write(ctx context.Context, wm []byte) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -655,8 +701,8 @@ func (c *Connection) Write(ctx context.Context, wm []byte) error {
 	return c.connection.writeWireMessage(ctx, wm)
 }
 
-// ReadWireMessage handles reading a wire message from the underlying connection. The dst parameter
-// will be overwritten with the new wire message.
+// Read handles reading a wire message from the underlying connection. The dst
+// parameter will be overwritten with the new wire message.
 func (c *Connection) Read(ctx context.Context) ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -774,6 +820,9 @@ func (c *Connection) ServerConnectionID() *int64 {
 func (c *Connection) Stale() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	if c.connection == nil {
+		return true
+	}
 	return c.connection.pool.stale(c.connection)
 }
 
@@ -799,19 +848,28 @@ func (c *Connection) LocalAddress() address.Address {
 
 // PinToCursor updates this connection to reflect that it is pinned to a cursor.
 func (c *Connection) PinToCursor() error {
-	return c.pin("cursor", c.connection.pool.pinConnectionToCursor, c.connection.pool.unpinConnectionFromCursor)
+	return c.pin("cursor",
+		func() { c.connection.pool.pinConnectionToCursor() },
+		func() { c.connection.pool.unpinConnectionFromCursor() })
 }
 
 // PinToTransaction updates this connection to reflect that it is pinned to a transaction.
 func (c *Connection) PinToTransaction() error {
-	return c.pin("transaction", c.connection.pool.pinConnectionToTransaction, c.connection.pool.unpinConnectionFromTransaction)
+	return c.pin("transaction",
+		func() { c.connection.pool.pinConnectionToTransaction() },
+		func() { c.connection.pool.unpinConnectionFromTransaction() })
 }
 
 func (c *Connection) pin(reason string, updatePoolFn, cleanupPoolFn func()) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	if c.connection == nil {
 		return fmt.Errorf("attempted to pin a connection for a %s, but the connection has already been returned to the pool", reason)
+	}
+
+	if c.connection.pool == nil {
+		return fmt.Errorf("attempted to pin a connection for a %s, but the connection is not associated with a pool", reason)
 	}
 
 	// Only use the provided callbacks for the first reference to avoid double-counting pinned connection statistics
@@ -851,6 +909,9 @@ func (c *Connection) unpin(reason string) error {
 
 // DriverConnectionID returns the driver connection ID.
 func (c *Connection) DriverConnectionID() int64 {
+	if c.connection == nil {
+		return 0
+	}
 	return c.connection.DriverConnectionID()
 }
 
