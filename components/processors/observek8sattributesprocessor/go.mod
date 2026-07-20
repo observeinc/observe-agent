@@ -1,6 +1,6 @@
 module github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor
 
-go 1.25.11
+go 1.25.12
 
 require (
 	github.com/jmespath/go-jmespath v0.4.0
