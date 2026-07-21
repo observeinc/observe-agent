@@ -29,9 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/session"
 )
 
-var (
-	defaultRunCmdOpts = []options.Lister[options.RunCmdOptions]{options.RunCmd().SetReadPreference(readpref.Primary())}
-)
+var defaultRunCmdOpts = []options.Lister[options.RunCmdOptions]{options.RunCmd().SetReadPreference(readpref.Primary())}
 
 // Database is a handle to a MongoDB database. It is safe for concurrent use by multiple goroutines.
 type Database struct {
@@ -142,7 +140,6 @@ func (db *Database) Aggregate(
 		registry:       db.registry,
 		readConcern:    db.readConcern,
 		writeConcern:   db.writeConcern,
-		retryRead:      db.client.retryReads,
 		db:             db.name,
 		readSelector:   db.readSelector,
 		writeSelector:  db.writeSelector,
@@ -199,15 +196,18 @@ func (db *Database) processRunCommand(
 	}
 
 	var op *operation.Command
-	switch cursorCommand {
+	switch retryOverload := db.client.retryReads && db.client.retryWrites; cursorCommand {
 	case true:
-		cursorOpts := db.client.createBaseCursorOptions()
+		cursorOpts := db.client.createBaseCursorOptions(retryOverload)
 
 		cursorOpts.MarshalValueEncoderFn = newEncoderFn(db.bsonOpts, db.registry)
 
 		op = operation.NewCursorCommand(runCmdDoc, cursorOpts)
 	default:
 		op = operation.NewCommand(runCmdDoc)
+		maxAdaptiveRetries := db.client.effectiveAdaptiveRetries(retryOverload)
+		op = op.MaxAdaptiveRetries(maxAdaptiveRetries).
+			EnableOverloadRetargeting(db.client.enableOverloadRetargeting)
 	}
 
 	return op.Session(sess).CommandMonitor(db.client.monitor).
@@ -458,6 +458,13 @@ func (db *Database) ListCollections(
 		return nil, err
 	}
 
+	retry := driver.RetryNone
+	if db.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	cursorOpts := db.client.createBaseCursorOptions(db.client.retryReads)
+
 	var selector description.ServerSelector
 
 	selector = &serverselector.Composite{
@@ -471,11 +478,11 @@ func (db *Database) ListCollections(
 
 	op := operation.NewListCollections(filterDoc).
 		Session(sess).ReadPreference(db.readPreference).CommandMonitor(db.client.monitor).
+		Retry(retry).MaxAdaptiveRetries(cursorOpts.MaxAdaptiveRetries).
+		EnableOverloadRetargeting(cursorOpts.EnableOverloadRetargeting).
 		ServerSelector(selector).ClusterClock(db.client.clock).
 		Database(db.name).Deployment(db.client.deployment).Crypt(db.client.cryptFLE).
 		ServerAPI(db.client.serverAPI).Timeout(db.client.timeout).Authenticator(db.client.authenticator)
-
-	cursorOpts := db.client.createBaseCursorOptions()
 
 	cursorOpts.MarshalValueEncoderFn = newEncoderFn(db.bsonOpts, db.registry)
 
@@ -489,17 +496,9 @@ func (db *Database) ListCollections(
 	if args.AuthorizedCollections != nil {
 		op = op.AuthorizedCollections(*args.AuthorizedCollections)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-
-	retry := driver.RetryNone
-	if db.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op = op.Retry(retry)
 
 	err = op.Execute(ctx)
 	if err != nil {
@@ -578,8 +577,8 @@ func (db *Database) ListCollectionNames(
 // The opts parameter can be used to specify options for change stream creation (see the options.ChangeStreamOptions
 // documentation).
 func (db *Database) Watch(ctx context.Context, pipeline any,
-	opts ...options.Lister[options.ChangeStreamOptions]) (*ChangeStream, error) {
-
+	opts ...options.Lister[options.ChangeStreamOptions],
+) (*ChangeStream, error) {
 	csConfig := changeStreamConfig{
 		readConcern:    db.readConcern,
 		readPreference: db.readPreference,
@@ -702,7 +701,7 @@ func (db *Database) createCollectionWithEncryptedFields(
 		defer conn.Close()
 		wireVersionRange := conn.Description().WireVersion
 		if wireVersionRange.Max < QEv2WireVersion {
-			return fmt.Errorf("Driver support of Queryable Encryption is incompatible with server. Upgrade server to use Queryable Encryption. Got maxWireVersion %v but need maxWireVersion >= %v", wireVersionRange.Max, QEv2WireVersion)
+			return fmt.Errorf("driver support of Queryable Encryption is incompatible with server. Upgrade server to use Queryable Encryption. Got maxWireVersion %v but need maxWireVersion >= %v", wireVersionRange.Max, QEv2WireVersion)
 		}
 	}
 
@@ -899,8 +898,8 @@ func (db *Database) createCollectionOperation(
 // See https://www.mongodb.com/docs/manual/core/views/ for more information
 // about views.
 func (db *Database) CreateView(ctx context.Context, viewName, viewOn string, pipeline any,
-	opts ...options.Lister[options.CreateViewOptions]) error {
-
+	opts ...options.Lister[options.CreateViewOptions],
+) error {
 	pipelineArray, _, err := marshalAggregatePipeline(pipeline, db.bsonOpts, db.registry)
 	if err != nil {
 		return err
@@ -981,7 +980,7 @@ func (db *Database) GridFSBucket(opts ...options.Lister[options.BucketOptions]) 
 		b.rp = bo.ReadPreference
 	}
 
-	var collOpts = options.Collection().SetWriteConcern(b.wc).SetReadConcern(b.rc).SetReadPreference(b.rp)
+	collOpts := options.Collection().SetWriteConcern(b.wc).SetReadConcern(b.rc).SetReadPreference(b.rp)
 
 	b.chunksColl = db.Collection(b.name+".chunks", collOpts)
 	b.filesColl = db.Collection(b.name+".files", collOpts)

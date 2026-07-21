@@ -1237,13 +1237,13 @@ github.com/munnerz/goautoneg
 ## explicit
 github.com/mwitkow/go-conntrack
 # github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000 => .
-## explicit; go 1.25.11
+## explicit; go 1.25.12
 # github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
-## explicit; go 1.25.11
+## explicit; go 1.25.12
 # github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
-## explicit; go 1.25.11
+## explicit; go 1.25.12
 # github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000 => ./observecol
-## explicit; go 1.25.11
+## explicit; go 1.25.12
 # github.com/oklog/ulid/v2 v2.1.1
 ## explicit; go 1.15
 github.com/oklog/ulid/v2
@@ -2383,7 +2383,7 @@ go.etcd.io/bbolt
 go.etcd.io/bbolt/errors
 go.etcd.io/bbolt/internal/common
 go.etcd.io/bbolt/internal/freelist
-# go.mongodb.org/mongo-driver/v2 v2.3.1
+# go.mongodb.org/mongo-driver/v2 v2.8.0
 ## explicit; go 1.19
 go.mongodb.org/mongo-driver/v2/bson
 go.mongodb.org/mongo-driver/v2/event
@@ -2391,6 +2391,7 @@ go.mongodb.org/mongo-driver/v2/internal/aws
 go.mongodb.org/mongo-driver/v2/internal/aws/awserr
 go.mongodb.org/mongo-driver/v2/internal/aws/credentials
 go.mongodb.org/mongo-driver/v2/internal/aws/signer/v4
+go.mongodb.org/mongo-driver/v2/internal/binaryutil
 go.mongodb.org/mongo-driver/v2/internal/bsoncoreutil
 go.mongodb.org/mongo-driver/v2/internal/bsonutil
 go.mongodb.org/mongo-driver/v2/internal/codecutil
