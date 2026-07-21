@@ -74,6 +74,13 @@ func (iv IndexView) List(ctx context.Context, opts ...options.Lister[options.Lis
 	}
 	var selector description.ServerSelector
 
+	retry := driver.RetryNone
+	if iv.coll.client.retryReads {
+		retry = driver.RetryOncePerCommand
+	}
+
+	cursorOpts := iv.coll.client.createBaseCursorOptions(iv.coll.client.retryReads)
+
 	selector = &serverselector.Composite{
 		Selectors: []description.ServerSelector{
 			&serverselector.ReadPref{ReadPref: readpref.Primary()},
@@ -85,11 +92,11 @@ func (iv IndexView) List(ctx context.Context, opts ...options.Lister[options.Lis
 	op := operation.NewListIndexes().
 		Session(sess).CommandMonitor(iv.coll.client.monitor).
 		ServerSelector(selector).ClusterClock(iv.coll.client.clock).
+		Retry(retry).MaxAdaptiveRetries(cursorOpts.MaxAdaptiveRetries).
+		EnableOverloadRetargeting(cursorOpts.EnableOverloadRetargeting).
 		Database(iv.coll.db.name).Collection(iv.coll.name).
 		Deployment(iv.coll.client.deployment).ServerAPI(iv.coll.client.serverAPI).
 		Timeout(iv.coll.client.timeout).Crypt(iv.coll.client.cryptFLE).Authenticator(iv.coll.client.authenticator)
-
-	cursorOpts := iv.coll.client.createBaseCursorOptions()
 
 	cursorOpts.MarshalValueEncoderFn = newEncoderFn(iv.coll.bsonOpts, iv.coll.registry)
 
@@ -102,17 +109,9 @@ func (iv IndexView) List(ctx context.Context, opts ...options.Lister[options.Lis
 		op = op.BatchSize(*args.BatchSize)
 		cursorOpts.BatchSize = *args.BatchSize
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
-
-	retry := driver.RetryNone
-	if iv.coll.client.retryReads {
-		retry = driver.RetryOncePerCommand
-	}
-	op.Retry(retry)
 
 	err = op.Execute(ctx)
 	if err != nil {
@@ -270,6 +269,8 @@ func (iv IndexView) CreateMany(
 		sess = nil
 	}
 
+	maxAdaptiveRetries := iv.coll.client.effectiveAdaptiveRetries(iv.coll.client.retryWrites)
+
 	selector := makePinnedSelector(sess, iv.coll.writeSelector)
 
 	args, err := mongoutil.NewOptions[options.CreateIndexesOptions](opts...)
@@ -279,6 +280,7 @@ func (iv IndexView) CreateMany(
 
 	op := operation.NewCreateIndexes(indexes).
 		Session(sess).WriteConcern(wc).ClusterClock(iv.coll.client.clock).
+		MaxAdaptiveRetries(maxAdaptiveRetries).EnableOverloadRetargeting(iv.coll.client.enableOverloadRetargeting).
 		Database(iv.coll.db.name).Collection(iv.coll.name).CommandMonitor(iv.coll.client.monitor).
 		Deployment(iv.coll.client.deployment).ServerSelector(selector).ServerAPI(iv.coll.client.serverAPI).
 		Timeout(iv.coll.client.timeout).Crypt(iv.coll.client.cryptFLE).Authenticator(iv.coll.client.authenticator)
@@ -290,10 +292,8 @@ func (iv IndexView) CreateMany(
 
 		op.CommitQuorum(commitQuorum)
 	}
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
 
 	_, err = processWriteError(op.Execute(ctx))
@@ -421,18 +421,19 @@ func (iv IndexView) drop(ctx context.Context, index any, opts ...options.Lister[
 		sess = nil
 	}
 
+	maxAdaptiveRetries := iv.coll.client.effectiveAdaptiveRetries(iv.coll.client.retryWrites)
+
 	selector := makePinnedSelector(sess, iv.coll.writeSelector)
 
 	op := operation.NewDropIndexes(index).Session(sess).WriteConcern(wc).CommandMonitor(iv.coll.client.monitor).
+		MaxAdaptiveRetries(maxAdaptiveRetries).EnableOverloadRetargeting(iv.coll.client.enableOverloadRetargeting).
 		ServerSelector(selector).ClusterClock(iv.coll.client.clock).
 		Database(iv.coll.db.name).Collection(iv.coll.name).
 		Deployment(iv.coll.client.deployment).ServerAPI(iv.coll.client.serverAPI).
 		Timeout(iv.coll.client.timeout).Crypt(iv.coll.client.cryptFLE).Authenticator(iv.coll.client.authenticator)
 
-	if rawDataOpt := optionsutil.Value(args.Internal, "rawData"); rawDataOpt != nil {
-		if rawData, ok := rawDataOpt.(bool); ok {
-			op = op.RawData(rawData)
-		}
+	if rawData, ok := optionsutil.Value(args.Internal, "rawData").(bool); ok {
+		op = op.RawData(rawData)
 	}
 
 	err = op.Execute(ctx)

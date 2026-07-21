@@ -2383,7 +2383,7 @@ go.etcd.io/bbolt
 go.etcd.io/bbolt/errors
 go.etcd.io/bbolt/internal/common
 go.etcd.io/bbolt/internal/freelist
-# go.mongodb.org/mongo-driver/v2 v2.3.1
+# go.mongodb.org/mongo-driver/v2 v2.8.0
 ## explicit; go 1.19
 go.mongodb.org/mongo-driver/v2/bson
 go.mongodb.org/mongo-driver/v2/event
@@ -2391,6 +2391,7 @@ go.mongodb.org/mongo-driver/v2/internal/aws
 go.mongodb.org/mongo-driver/v2/internal/aws/awserr
 go.mongodb.org/mongo-driver/v2/internal/aws/credentials
 go.mongodb.org/mongo-driver/v2/internal/aws/signer/v4
+go.mongodb.org/mongo-driver/v2/internal/binaryutil
 go.mongodb.org/mongo-driver/v2/internal/bsoncoreutil
 go.mongodb.org/mongo-driver/v2/internal/bsonutil
 go.mongodb.org/mongo-driver/v2/internal/codecutil
