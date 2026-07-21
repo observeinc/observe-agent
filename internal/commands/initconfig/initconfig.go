@@ -6,6 +6,9 @@ package initconfig
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/root"
@@ -13,25 +16,50 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	config_path                                   string
-	token                                         string
-	observe_url                                   string
-	cloud_resource_detectors                      []string
-	resource_attributes                           map[string]string
-	forwarding_metrics_format                     string
-	application_RED_metrics_enabled               bool
-	self_monitoring_enabled                       bool
-	host_monitoring_enabled                       bool
-	host_monitoring_logs_enabled                  bool
-	host_monitoring_logs_include                  []string
-	host_monitoring_logs_auto_multiline_detection bool
-	host_monitoring_metrics_host_enabled          bool
-	host_monitoring_metrics_process_enabled       bool
-	self_monitoring_fleet_enabled                 bool
-	self_monitoring_fleet_interval                string
-	self_monitoring_fleet_config_interval         string
-)
+var config_path string
+
+// flagDefaults overrides the zero-value default for fields that have no
+// `default` struct tag but need a non-zero default for backward compatibility.
+// Entries here are applied both to the cobra flag (shown in --help) and to
+// viper (so AgentConfigFromViper returns the correct value when the flag is
+// absent). Do NOT add new entries here; instead add a `default` struct tag to
+// configschema.go when adding new fields (unless that would be a breaking
+// change for existing config files).
+var flagDefaults = map[string]any{
+	"self_monitoring::enabled":                true,
+	"host_monitoring::enabled":                true,
+	"host_monitoring::logs::enabled":          true,
+	"host_monitoring::metrics::host::enabled": true,
+}
+
+// flagDescriptions provides custom help text for specific flags. When present,
+// the description is appended to the standard "Set <key>" prefix with " - ".
+var flagDescriptions = map[string]string{
+	"token":                                           "Observe ingest token",
+	"observe_url":                                     "Observe data collection url",
+	"cloud_resource_detectors":                        "The cloud environments from which to detect resources",
+	"resource_attributes":                             "Attributes about the monitored host to apply to all signals",
+	"application::RED_metrics::enabled":               "Enable RED metrics generation for application traces",
+	"forwarding::metrics::output_format":              "Format for sending app metrics to Observe, valid options are 'prometheus' and 'otel'",
+	"self_monitoring::enabled":                        "Enable self monitoring",
+	"self_monitoring::fleet::enabled":                 "Enable fleet heartbeat",
+	"self_monitoring::fleet::interval":                "Fleet heartbeat interval (e.g., '5m', '1h')",
+	"self_monitoring::fleet::config_interval":         "Fleet config heartbeat interval (e.g., '30m', '24h')",
+	"host_monitoring::enabled":                        "Enable host monitoring",
+	"host_monitoring::logs::enabled":                  "Enable host monitoring logs",
+	"host_monitoring::logs::include":                  "Host log file paths to include",
+	"host_monitoring::logs::auto_multiline_detection": "Enable host monitoring log auto multiline detection",
+	"host_monitoring::metrics::host::enabled":         "Enable host monitoring host metrics",
+	"host_monitoring::metrics::process::enabled":      "Enable host monitoring process metrics",
+}
+
+func flagUsage(viperKey string) string {
+	base := "Set " + viperKey
+	if desc, ok := flagDescriptions[viperKey]; ok {
+		return base + " - " + desc
+	}
+	return base
+}
 
 func NewConfigureCmd(v *viper.Viper) *cobra.Command {
 	return &cobra.Command{
@@ -75,63 +103,127 @@ func init() {
 }
 
 func RegisterConfigFlags(cmd *cobra.Command, v *viper.Viper) {
+	// Output-control flags (not part of AgentConfig).
 	cmd.Flags().StringVarP(&config_path, "config_path", "", "", "Path to write config output file to")
 	cmd.Flags().Bool("print", false, "Print the configuration to stdout instead of writing to a file")
 	v.BindPFlag("print", cmd.Flags().Lookup("print"))
 	cmd.Flags().Bool("include-defaults", false, "Include the names and default values for unset config options.")
 	v.BindPFlag("include-defaults", cmd.Flags().Lookup("include-defaults"))
 
-	cmd.PersistentFlags().StringVar(&token, "token", "", "Observe token")
-	v.BindPFlag("token", cmd.PersistentFlags().Lookup("token"))
+	// Apply viper defaults for fields that have no `default` struct tag but
+	// need a non-zero default for backward compatibility.
+	for key, val := range flagDefaults {
+		v.SetDefault(key, val)
+	}
 
-	cmd.PersistentFlags().StringVar(&observe_url, "observe_url", "", "Observe data collection url")
-	v.BindPFlag("observe_url", cmd.PersistentFlags().Lookup("observe_url"))
+	// Register a flag for every configurable leaf field in AgentConfig.
+	skip := map[string]bool{
+		"debug": true, // deprecated
+	}
+	registerStructFlags(cmd, v, reflect.TypeOf(config.AgentConfig{}), "", skip)
+}
 
-	cmd.PersistentFlags().StringSliceVar(&cloud_resource_detectors, "cloud_resource_detectors", []string{}, "The cloud environments from which to detect resources")
-	v.BindPFlag("cloud_resource_detectors", cmd.PersistentFlags().Lookup("cloud_resource_detectors"))
+// registerStructFlags walks t recursively and registers a cobra persistent flag
+// and viper binding for every leaf field, using the mapstructure tag as the key.
+// prefix is the accumulated viper key path ("::" separated).
+// skip is a set of viper keys to omit.
+func registerStructFlags(cmd *cobra.Command, v *viper.Viper, t reflect.Type, prefix string, skip map[string]bool) {
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
 
-	cmd.PersistentFlags().StringToStringVar(&resource_attributes, "resource_attributes", map[string]string{}, "The cloud environments from which to detect resources")
-	v.BindPFlag("resource_attributes", cmd.PersistentFlags().Lookup("resource_attributes"))
+		mapKey := strings.Split(field.Tag.Get("mapstructure"), ",")[0]
+		if mapKey == "" || mapKey == "-" {
+			continue
+		}
 
-	cmd.PersistentFlags().BoolVar(&application_RED_metrics_enabled, "application::RED_metrics::enabled", false, "Enable RED metrics generation for application traces")
-	v.BindPFlag("application::RED_metrics::enabled", cmd.PersistentFlags().Lookup("application::RED_metrics::enabled"))
+		viperKey := mapKey
+		if prefix != "" {
+			viperKey = prefix + "::" + mapKey
+		}
 
-	cmd.PersistentFlags().StringVar(&forwarding_metrics_format, "forwarding::metrics::output_format", "", "Format for sending app metrics to Observe, valid options are 'prometheus' and 'otel'")
-	v.BindPFlag("forwarding::metrics::output_format", cmd.PersistentFlags().Lookup("forwarding::metrics::output_format"))
+		if skip[viperKey] {
+			continue
+		}
 
-	cmd.PersistentFlags().BoolVar(&self_monitoring_enabled, "self_monitoring::enabled", true, "Enable self monitoring")
-	v.BindPFlag("self_monitoring::enabled", cmd.PersistentFlags().Lookup("self_monitoring::enabled"))
-	v.SetDefault("self_monitoring::enabled", true)
+		defaultTag := field.Tag.Get("default")
+		usage := flagUsage(viperKey)
 
-	cmd.PersistentFlags().BoolVar(&self_monitoring_fleet_enabled, "self_monitoring::fleet::enabled", true, "Enable fleet heartbeat")
-	v.BindPFlag("self_monitoring::fleet::enabled", cmd.PersistentFlags().Lookup("self_monitoring::fleet::enabled"))
+		switch field.Type.Kind() {
+		case reflect.Struct:
+			registerStructFlags(cmd, v, field.Type, viperKey, skip)
 
-	cmd.PersistentFlags().StringVar(&self_monitoring_fleet_interval, "self_monitoring::fleet::interval", "", "Fleet heartbeat interval (e.g., '5m', '1h')")
-	v.BindPFlag("self_monitoring::fleet::interval", cmd.PersistentFlags().Lookup("self_monitoring::fleet::interval"))
+		case reflect.Bool:
+			defVal := resolveBoolDefault(viperKey, defaultTag)
+			p := new(bool)
+			cmd.PersistentFlags().BoolVar(p, viperKey, defVal, usage)
+			v.BindPFlag(viperKey, cmd.PersistentFlags().Lookup(viperKey))
 
-	cmd.PersistentFlags().StringVar(&self_monitoring_fleet_config_interval, "self_monitoring::fleet::config_interval", "", "Fleet config heartbeat interval (e.g., '30m', '24h')")
-	v.BindPFlag("self_monitoring::fleet::config_interval", cmd.PersistentFlags().Lookup("self_monitoring::fleet::config_interval"))
+		case reflect.String:
+			defVal := resolveStringDefault(viperKey, defaultTag)
+			p := new(string)
+			cmd.PersistentFlags().StringVar(p, viperKey, defVal, usage)
+			v.BindPFlag(viperKey, cmd.PersistentFlags().Lookup(viperKey))
 
-	cmd.PersistentFlags().BoolVar(&host_monitoring_enabled, "host_monitoring::enabled", true, "Enable host monitoring")
-	v.BindPFlag("host_monitoring::enabled", cmd.PersistentFlags().Lookup("host_monitoring::enabled"))
-	v.SetDefault("host_monitoring::enabled", true)
+		case reflect.Int:
+			defVal := resolveIntDefault(viperKey, defaultTag)
+			p := new(int)
+			cmd.PersistentFlags().IntVar(p, viperKey, defVal, usage)
+			v.BindPFlag(viperKey, cmd.PersistentFlags().Lookup(viperKey))
 
-	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_enabled, "host_monitoring::logs::enabled", true, "Enable host monitoring logs")
-	v.BindPFlag("host_monitoring::logs::enabled", cmd.PersistentFlags().Lookup("host_monitoring::logs::enabled"))
-	v.SetDefault("host_monitoring::logs::enabled", true)
+		case reflect.Slice:
+			if field.Type.Elem().Kind() == reflect.String {
+				p := new([]string)
+				cmd.PersistentFlags().StringSliceVar(p, viperKey, parseStringSliceDefault(defaultTag), usage)
+				v.BindPFlag(viperKey, cmd.PersistentFlags().Lookup(viperKey))
+			}
+			// Non-string slices are not present in the current schema; skip.
 
-	cmd.PersistentFlags().StringSliceVar(&host_monitoring_logs_include, "host_monitoring::logs::include", nil, "Set host monitoring log include paths")
-	v.BindPFlag("host_monitoring::logs::include", cmd.PersistentFlags().Lookup("host_monitoring::logs::include"))
+		case reflect.Map:
+			if field.Type.Key().Kind() == reflect.String &&
+				field.Type.Elem().Kind() == reflect.String {
+				p := &map[string]string{}
+				cmd.PersistentFlags().StringToStringVar(p, viperKey, *p, usage)
+				v.BindPFlag(viperKey, cmd.PersistentFlags().Lookup(viperKey))
+			}
+			// map[string]any (otel_config_overrides) falls here and is skipped.
+		}
+	}
+}
 
-	cmd.PersistentFlags().BoolVar(&host_monitoring_logs_auto_multiline_detection, "host_monitoring::logs::auto_multiline_detection", false, "Enable host monitoring log auto multiline detection")
-	v.BindPFlag("host_monitoring::logs::auto_multiline_detection", cmd.PersistentFlags().Lookup("host_monitoring::logs::auto_multiline_detection"))
-	v.SetDefault("host_monitoring::logs::auto_multiline_detection", false)
+func resolveBoolDefault(viperKey, defaultTag string) bool {
+	if override, ok := flagDefaults[viperKey]; ok {
+		if b, ok := override.(bool); ok {
+			return b
+		}
+	}
+	val, _ := strconv.ParseBool(defaultTag)
+	return val
+}
 
-	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_host_enabled, "host_monitoring::metrics::host::enabled", true, "Enable host monitoring host metrics")
-	v.BindPFlag("host_monitoring::metrics::host::enabled", cmd.PersistentFlags().Lookup("host_monitoring::metrics::host::enabled"))
-	v.SetDefault("host_monitoring::metrics::host::enabled", true)
+func resolveStringDefault(viperKey, defaultTag string) string {
+	if override, ok := flagDefaults[viperKey]; ok {
+		if s, ok := override.(string); ok {
+			return s
+		}
+	}
+	return defaultTag
+}
 
-	cmd.PersistentFlags().BoolVar(&host_monitoring_metrics_process_enabled, "host_monitoring::metrics::process::enabled", false, "Enable host monitoring process metrics")
-	v.BindPFlag("host_monitoring::metrics::process::enabled", cmd.PersistentFlags().Lookup("host_monitoring::metrics::process::enabled"))
-	v.SetDefault("host_monitoring::metrics::process::enabled", false)
+func resolveIntDefault(viperKey, defaultTag string) int {
+	if override, ok := flagDefaults[viperKey]; ok {
+		if n, ok := override.(int); ok {
+			return n
+		}
+	}
+	val, _ := strconv.Atoi(defaultTag)
+	return val
+}
+
+func parseStringSliceDefault(s string) []string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, "["), "]")
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, ",")
 }
