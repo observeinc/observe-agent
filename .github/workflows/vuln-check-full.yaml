@@ -61,8 +61,6 @@ jobs:
           image: ${{ env.TEST_TAG }}
           command: cves,recommendations
           to-latest: true
-          ignore-base: true
-          ignore-unchanged: true
           only-fixed: false
           vex-location: .vex/
           vex-author: Observe Agent Team <observe-agent@observeinc.com>

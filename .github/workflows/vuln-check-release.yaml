@@ -60,8 +60,6 @@ jobs:
           image: ${{ env.TEST_TAG }}
           command: cves,recommendations
           to-latest: true
-          ignore-base: true
-          ignore-unchanged: true
           only-fixed: true
           only-severities: medium,critical,high
           vex-location: .vex/
