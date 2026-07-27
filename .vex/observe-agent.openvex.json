@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/observeinc/observe-agent/.vex/observe-agent.openvex.json",
   "author": "Observe Agent Team <observe-agent@observeinc.com>",
-  "timestamp": "2026-06-03T00:00:00Z",
-  "version": 2,
+  "timestamp": "2026-07-27T00:00:00Z",
+  "version": 3,
   "statements": [
     {
       "vulnerability": {
@@ -100,6 +100,22 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "CVE-2020-8912 is an in-band key-negotiation issue in the github.com/aws/aws-sdk-go/service/s3/s3crypto client-side-encryption package. observe-agent does not import s3crypto; govulncheck (symbol scan, source mode) confirms the vulnerable symbols are not in the import graph. There is no upstream fix."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-41178"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:golang/go.opentelemetry.io/otel@1.43.0" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "CVE-2026-41178 is a DoS via oversized baggage header parsing in go.opentelemetry.io/otel/baggage. observe-agent imports go.opentelemetry.io/otel only via the OTel collector service telemetry configuration path (otelconftelemetry), which does not register a baggage propagator. The vulnerable baggage.Parse function is never called because no propagator is configured to invoke it; incoming OTLP requests are processed by the OTLP receiver without baggage header extraction."
     }
   ]
 }
