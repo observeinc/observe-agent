@@ -4,6 +4,7 @@ use (
 	.
 	./components/processors/observek8sattributesprocessor
 	./components/receivers/heartbeatreceiver
+	./components/receivers/processdiscoveryreceiver
 	./observecol
 )
 

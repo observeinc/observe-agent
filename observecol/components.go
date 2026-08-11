@@ -80,6 +80,7 @@ import (
 	jmxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	sqlserverreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	heartbeatreceiver "github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver"
+	processdiscoveryreceiver "github.com/observeinc/observe-agent/components/receivers/processdiscoveryreceiver"
 )
 
 type aliasProvider interface{ DeprecatedAlias() component.Type }
@@ -152,6 +153,7 @@ func components() (otelcol.Factories, error) {
 		jmxreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
 		heartbeatreceiver.NewFactory(),
+		processdiscoveryreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -188,6 +190,7 @@ func components() (otelcol.Factories, error) {
 		jmxreceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.151.0",
 		sqlserverreceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.151.0",
 		heartbeatreceiver.NewFactory().Type(): "github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000",
+		processdiscoveryreceiver.NewFactory().Type(): "github.com/observeinc/observe-agent/components/receivers/processdiscoveryreceiver v0.0.0-00010101000000-000000000000",
 	})
 
 	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](

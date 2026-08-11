@@ -94,6 +94,7 @@ This section lists the components that are included in the Observe Distribution 
 | [nop][nopreceiver]                                       |                                                       |                                                        |                                         |                                     |
 | [otlp][otlpreceiver]                                     |                                                       |                                                        |                                         |                                     |
 | [postgresql][postgresqlreceiver]                         |                                                       |                                                        |                                         |                                     |
+| [processdiscovery][processdiscoveryreceiver]             |                                                       |                                                        |                                         |                                     |
 | [prometheus][prometheusreceiver]                         |                                                       |                                                        |                                         |                                     |
 | [redis][redisreceiver]                                   |                                                       |                                                        |                                         |                                     |
 | [snmp][snmpreceiver]                                     |                                                       |                                                        |                                         |                                     |
@@ -152,6 +153,7 @@ This section lists the components that are included in the Observe Distribution 
 [postgresqlreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/postgresqlreceiver
 [pprofextension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/extension/pprofextension
 [probabilisticsamplerprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/probabilisticsamplerprocessor
+[processdiscoveryreceiver]: ./components/receivers/processdiscoveryreceiver
 [prometheusexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/prometheusexporter
 [prometheusreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/prometheusreceiver
 [prometheusremotewriteexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/exporter/prometheusremotewriteexporter

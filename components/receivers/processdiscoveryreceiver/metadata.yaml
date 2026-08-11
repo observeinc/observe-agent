@@ -1,0 +1,195 @@
+type: processdiscovery
+scope_name: processdiscoveryreceiver
+
+resource_attributes:
+  process.pid:
+    description: Process identifier scoped by process.creation.time and the host resource.
+    enabled: true
+    type: int
+  process.creation.time:
+    description: Absolute process creation timestamp used to distinguish PID reuse.
+    enabled: true
+    type: string
+  process.command:
+    description: Command used to launch the process.
+    enabled: true
+    type: string
+  process.executable.name:
+    description: Name of the process executable.
+    enabled: true
+    type: string
+  process.runtime.name:
+    description: Runtime implementation when known.
+    enabled: true
+    type: string
+  container.id:
+    description: Container identifier associated with the process.
+    enabled: true
+    type: string
+  k8s.pod.uid:
+    description: Kubernetes pod UID associated with the process.
+    enabled: true
+    type: string
+
+metrics:
+  process.network.connection.accepted:
+    enabled: true
+    description: Total number of TCP connections accepted by the process.
+    unit: "{connection}"
+    stability: development
+    attributes: [network.local.port, network.transport, network.type]
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  process.network.connection.count:
+    enabled: true
+    description: Current number of process network connections by state.
+    unit: "{connection}"
+    stability: development
+    attributes: [network.connection.state, network.local.port, network.transport, network.type]
+    gauge:
+      value_type: int
+
+status:
+  class: receiver
+  stability:
+    development: [logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [abrao]
+
+telemetry:
+  metrics:
+    process_discovery_scans:
+      enabled: true
+      description: Number of process discovery scans completed.
+      stability: development
+      unit: "{scans}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [status]
+    process_discovery_scan_duration:
+      enabled: true
+      description: Time spent performing process discovery scans.
+      stability: development
+      unit: s
+      histogram:
+        value_type: double
+    process_discovery_processes_observed:
+      enabled: true
+      description: Number of processes observed by completed scans.
+      stability: development
+      unit: "{processes}"
+      histogram:
+        value_type: int
+    process_discovery_processes_inaccessible:
+      enabled: true
+      description: Number of processes inaccessible during scans.
+      stability: development
+      unit: "{processes}"
+      sum:
+        value_type: int
+        monotonic: true
+    process_discovery_lifecycle_events:
+      enabled: true
+      description: Number of process lifecycle events received.
+      stability: development
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [event_type]
+    process_discovery_lifecycle_events_lost:
+      enabled: true
+      description: Number of process lifecycle events reported lost.
+      stability: development
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+    process_discovery_records_emitted:
+      enabled: true
+      description: Number of public process records emitted.
+      stability: development
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [event_type]
+    process_discovery_saturation:
+      enabled: true
+      description: Number of scans that exceeded the process tracking limit.
+      stability: development
+      unit: "{scans}"
+      sum:
+        value_type: int
+        monotonic: true
+    process_discovery_network_series_dropped:
+      enabled: true
+      description: Number of public network metric series dropped by cardinality limits.
+      stability: development
+      unit: "{series}"
+      sum:
+        value_type: int
+        monotonic: true
+
+attributes:
+  status:
+    description: Result of a process discovery scan.
+    type: string
+    enum: [complete, partial, failed]
+  event_type:
+    description: Process discovery event type.
+    type: string
+  network.local.port:
+    description: Local TCP port observed on the process socket.
+    type: int
+  network.transport:
+    description: Network transport used by the socket.
+    type: string
+    enum: [tcp]
+  network.type:
+    description: Network address family used by the socket.
+    type: string
+    enum: [ipv4, ipv6]
+  network.connection.state:
+    description: State of the current network connection.
+    type: string
+    enum: [listen, established]
+
+tests:
+  config:
+    collection_interval: 2s
+    report_interval: 2s
+    initial_delay: 0s
+    termination_grace_scans: 1
+    max_tracked_processes: 100
+    procfs_path: /proc
+    runtimes: [java, python, nodejs, dotnet, ruby, go, rust, erlang, elixir, php, perl]
+    max_cmdline_bytes: 8192
+    runtime_detection:
+      binary_cache_ttl: 5m
+      binary_cache_size: 1024
+    lifecycle:
+      enabled: true
+      buffer_size: 4096
+    clock_ticks: 100
+    host_id: ""
+    host_arch: ""
+    host_machine_id_path: ""
+    command_line:
+      enabled: true
+      strip_all_arguments: false
+      max_arguments: 128
+      custom_sensitive_words: []
+    kubernetes:
+      enabled: false
+      node_name: ""
+      refresh_interval: 30s
+      kubeconfig_path: ""
+    network:
+      enabled: true
+      max_ports_per_process: 128
+      max_series: 2000
