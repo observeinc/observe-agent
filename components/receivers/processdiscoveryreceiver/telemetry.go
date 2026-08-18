@@ -16,9 +16,8 @@ type receiverTelemetry struct {
 	processesInaccessible metric.Int64Counter
 	lifecycleEvents       metric.Int64Counter
 	lifecycleEventsLost   metric.Int64Counter
-	recordsEmitted        metric.Int64Counter
-	saturation            metric.Int64Counter
-	networkSeriesDropped  metric.Int64Counter
+	recordsEmitted    metric.Int64Counter
+	saturation        metric.Int64Counter
 }
 
 func newReceiverTelemetry(settings component.TelemetrySettings) (*receiverTelemetry, error) {
@@ -47,9 +46,6 @@ func newReceiverTelemetry(settings component.TelemetrySettings) (*receiverTeleme
 		return nil, err
 	}
 	if telemetry.saturation, err = meter.Int64Counter("otelcol_process_discovery_saturation", metric.WithUnit("{scans}")); err != nil {
-		return nil, err
-	}
-	if telemetry.networkSeriesDropped, err = meter.Int64Counter("otelcol_process_discovery_network_series_dropped", metric.WithUnit("{series}")); err != nil {
 		return nil, err
 	}
 	return telemetry, nil

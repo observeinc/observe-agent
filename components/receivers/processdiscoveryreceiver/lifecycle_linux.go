@@ -10,10 +10,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 
-	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/asm"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
@@ -23,14 +22,12 @@ import (
 const lifecycleRecordSize = 32
 
 type linuxLifecycleSource struct {
-	bufferSize     int
-	logger         *zap.Logger
-	reader         *ringbuf.Reader
-	links          []link.Link
-	maps           []*ebpf.Map
-	programs       []*ebpf.Program
-	once           sync.Once
-	networkEnabled bool
+	bufferSize int
+	logger     *zap.Logger
+	reader     *ringbuf.Reader
+	objs       *lifecycleObjects
+	links      []link.Link
+	once       sync.Once
 }
 
 type bpfLifecycleRecord struct {
@@ -46,145 +43,53 @@ func newLifecycleSource(cfg *Config, logger *zap.Logger) (LifecycleSource, error
 	if !cfg.Lifecycle.Enabled {
 		return disabledLifecycleSource{}, nil
 	}
-	return &linuxLifecycleSource{bufferSize: cfg.Lifecycle.BufferSize, logger: logger, networkEnabled: cfg.Network.Enabled}, nil
+	return &linuxLifecycleSource{bufferSize: cfg.Lifecycle.BufferSize, logger: logger}, nil
 }
 
 func (s *linuxLifecycleSource) Start(ctx context.Context) (<-chan LifecycleEvent, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {
 		s.logger.Debug("unable to raise memlock limit", zap.Error(err))
 	}
-	mapSize := nextPowerOfTwo(max(s.bufferSize*lifecycleRecordSize, os.Getpagesize()))
-	eventsMap, err := ebpf.NewMap(&ebpf.MapSpec{Name: "process_lifecycle", Type: ebpf.RingBuf, MaxEntries: uint32(mapSize)})
+	ensureTracefs(s.logger)
+
+	spec, err := loadLifecycle()
 	if err != nil {
-		return nil, fmt.Errorf("create lifecycle ring buffer: %w", err)
+		return nil, fmt.Errorf("load lifecycle BPF spec: %w", err)
 	}
-	s.maps = append(s.maps, eventsMap)
-	reader, err := ringbuf.NewReader(eventsMap)
+
+	mapSize := nextPowerOfTwo(max(s.bufferSize*lifecycleRecordSize, os.Getpagesize()))
+	spec.Maps["process_lifecycle"].MaxEntries = uint32(mapSize)
+
+	var objs lifecycleObjects
+	if err := spec.LoadAndAssign(&objs, nil); err != nil {
+		return nil, fmt.Errorf("load lifecycle BPF objects: %w", err)
+	}
+	s.objs = &objs
+
+	reader, err := ringbuf.NewReader(objs.ProcessLifecycle)
 	if err != nil {
 		s.Close()
 		return nil, fmt.Errorf("create lifecycle reader: %w", err)
 	}
 	s.reader = reader
 
-	execProgram, err := ebpf.NewProgram(lifecycleProgramSpec("process_exec", eventsMap, 1))
-	if err != nil {
-		s.Close()
-		return nil, fmt.Errorf("load sched_process_exec program: %w", err)
-	}
-	exitProgram, err := ebpf.NewProgram(lifecycleProgramSpec("process_exit", eventsMap, 2))
-	if err != nil {
-		execProgram.Close()
-		s.Close()
-		return nil, fmt.Errorf("load sched_process_exit program: %w", err)
-	}
-	s.programs = append(s.programs, execProgram, exitProgram)
-	execLink, err := link.Tracepoint("sched", "sched_process_exec", execProgram, nil)
+	execLink, err := link.Tracepoint("sched", "sched_process_exec", objs.TracepointSchedProcessExec, nil)
 	if err != nil {
 		s.Close()
 		return nil, fmt.Errorf("attach sched_process_exec: %w", err)
 	}
-	exitLink, err := link.Tracepoint("sched", "sched_process_exit", exitProgram, nil)
+	s.links = append(s.links, execLink)
+
+	exitLink, err := link.Tracepoint("sched", "sched_process_exit", objs.TracepointSchedProcessExit, nil)
 	if err != nil {
-		execLink.Close()
 		s.Close()
 		return nil, fmt.Errorf("attach sched_process_exit: %w", err)
 	}
-	s.links = append(s.links, execLink, exitLink)
-	if s.networkEnabled {
-		for _, probe := range []struct {
-			name      string
-			eventType int32
-			entry     bool
-		}{{"sys_enter_accept", 4, true}, {"sys_enter_accept4", 4, true}, {"sys_exit_accept", 3, false}, {"sys_exit_accept4", 3, false}} {
-			program, loadErr := ebpf.NewProgram(acceptProgramSpec(eventsMap, probe.eventType, probe.entry))
-			if loadErr != nil {
-				s.logger.Debug("unable to load accept tracepoint", zap.String("event", probe.name), zap.Error(loadErr))
-				continue
-			}
-			s.programs = append(s.programs, program)
-			acceptLink, attachErr := link.Tracepoint("syscalls", probe.name, program, nil)
-			if attachErr != nil {
-				s.logger.Debug("unable to attach accept tracepoint", zap.String("event", probe.name), zap.Error(attachErr))
-				continue
-			}
-			s.links = append(s.links, acceptLink)
-		}
-	}
+	s.links = append(s.links, exitLink)
 
 	output := make(chan LifecycleEvent, s.bufferSize)
 	go s.read(ctx, output)
 	return output, nil
-}
-
-func acceptProgramSpec(eventMap *ebpf.Map, eventType int32, entry bool) *ebpf.ProgramSpec {
-	valueOffset := int16(16)
-	if entry {
-		valueOffset = 16
-	}
-	ins := asm.Instructions{
-		asm.LoadMem(asm.R8, asm.R1, valueOffset, asm.DWord),
-	}
-	if !entry {
-		ins = append(ins, asm.JSLT.Imm(asm.R8, 0, "skip_output"))
-	}
-	ins = append(ins,
-		asm.Mov.Imm(asm.R1, eventType),
-		asm.StoreMem(asm.RFP, -32, asm.R1, asm.Word),
-		asm.FnGetCurrentPidTgid.Call(),
-		asm.Mov.Reg(asm.R6, asm.R0),
-		asm.RSh.Imm(asm.R6, 32),
-		asm.StoreMem(asm.RFP, -28, asm.R6, asm.Word),
-		asm.StoreMem(asm.RFP, -24, asm.R7, asm.Word),
-		asm.StoreMem(asm.RFP, -20, asm.R8, asm.Word),
-		asm.FnKtimeGetNs.Call(),
-		asm.StoreMem(asm.RFP, -16, asm.R0, asm.DWord),
-		asm.FnGetCurrentCgroupId.Call(),
-		asm.StoreMem(asm.RFP, -8, asm.R0, asm.DWord),
-		asm.LoadMapPtr(asm.R1, eventMap.FD()),
-		asm.Mov.Reg(asm.R2, asm.RFP),
-		asm.Add.Imm(asm.R2, -32),
-		asm.Mov.Imm(asm.R3, lifecycleRecordSize),
-		asm.Mov.Imm(asm.R4, 0),
-		asm.FnRingbufOutput.Call(),
-		asm.Mov.Imm(asm.R0, 0),
-		asm.Return().WithSymbol("skip_output"),
-	)
-	return &ebpf.ProgramSpec{Name: "process_accept", Type: ebpf.TracePoint, License: "GPL", Instructions: ins}
-}
-
-func lifecycleProgramSpec(name string, eventMap *ebpf.Map, eventType int32) *ebpf.ProgramSpec {
-	ins := asm.Instructions{
-		asm.Mov.Imm(asm.R1, eventType),
-		asm.StoreMem(asm.RFP, -32, asm.R1, asm.Word),
-		asm.FnGetCurrentPidTgid.Call(),
-		asm.Mov.Reg(asm.R6, asm.R0),
-		asm.Mov.Reg(asm.R7, asm.R0),
-		asm.RSh.Imm(asm.R6, 32),
-		asm.StoreMem(asm.RFP, -28, asm.R6, asm.Word),
-		asm.Mov.Imm(asm.R1, 0),
-		asm.StoreMem(asm.RFP, -24, asm.R1, asm.Word),
-		asm.StoreMem(asm.RFP, -20, asm.R1, asm.Word),
-		asm.FnKtimeGetNs.Call(),
-		asm.StoreMem(asm.RFP, -16, asm.R0, asm.DWord),
-		asm.FnGetCurrentCgroupId.Call(),
-		asm.StoreMem(asm.RFP, -8, asm.R0, asm.DWord),
-	}
-	if eventType == 2 {
-		ins = append(ins,
-			asm.JNE.Reg32(asm.R6, asm.R7, "skip_output"),
-		)
-	}
-	ins = append(ins,
-		asm.LoadMapPtr(asm.R1, eventMap.FD()),
-		asm.Mov.Reg(asm.R2, asm.RFP),
-		asm.Add.Imm(asm.R2, -32),
-		asm.Mov.Imm(asm.R3, lifecycleRecordSize),
-		asm.Mov.Imm(asm.R4, 0),
-		asm.FnRingbufOutput.Call(),
-		asm.Mov.Imm(asm.R0, 0),
-		asm.Return().WithSymbol("skip_output"),
-	)
-	return &ebpf.ProgramSpec{Name: name, Type: ebpf.TracePoint, License: "GPL", Instructions: ins}
 }
 
 func (s *linuxLifecycleSource) read(ctx context.Context, output chan<- LifecycleEvent) {
@@ -203,13 +108,15 @@ func (s *linuxLifecycleSource) read(ctx context.Context, output chan<- Lifecycle
 			sendLifecycle(ctx, output, LifecycleEvent{Type: lifecycleLoss, Lost: 1, ObservedAt: time.Now()})
 			continue
 		}
-		eventType := lifecycleExec
-		if raw.Type == 2 {
+		var eventType LifecycleEventType
+		switch raw.Type {
+		case 1:
+			eventType = lifecycleExec
+		case 2:
 			eventType = lifecycleExit
-		} else if raw.Type == 3 {
-			eventType = lifecycleAccept
-		} else if raw.Type == 4 {
-			eventType = lifecycleAcceptEnter
+		default:
+			sendLifecycle(ctx, output, LifecycleEvent{Type: lifecycleLoss, Lost: 1, ObservedAt: time.Now()})
+			continue
 		}
 		sendLifecycle(ctx, output, LifecycleEvent{Type: eventType, PID: int32(raw.PID), ThreadID: int32(raw.ParentPID), FD: raw.FD, ObservedAt: time.Now(), CgroupID: raw.CgroupID})
 	}
@@ -236,14 +143,37 @@ func (s *linuxLifecycleSource) Close() error {
 		for _, item := range s.links {
 			closeErr = errors.Join(closeErr, item.Close())
 		}
-		for _, item := range s.programs {
-			closeErr = errors.Join(closeErr, item.Close())
-		}
-		for _, item := range s.maps {
-			closeErr = errors.Join(closeErr, item.Close())
+		if s.objs != nil {
+			closeErr = errors.Join(closeErr, s.objs.Close())
 		}
 	})
 	return closeErr
+}
+
+// ensureTracefs attempts to mount tracefs if neither tracefs nor debugfs
+// is already available. Tracepoints require one of these filesystems.
+// This mirrors what agents like Datadog do automatically rather than
+// requiring the user to mount it manually.
+func ensureTracefs(logger *zap.Logger) {
+	candidates := []string{
+		"/sys/kernel/tracing",       // tracefs (preferred, 4.1+)
+		"/sys/kernel/debug/tracing", // debugfs fallback
+	}
+	for _, path := range candidates {
+		if _, err := os.Stat(path + "/events"); err == nil {
+			return
+		}
+	}
+	target := "/sys/kernel/tracing"
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		logger.Debug("cannot create tracefs mount point", zap.Error(err))
+		return
+	}
+	if err := syscall.Mount("tracefs", target, "tracefs", 0, ""); err != nil {
+		logger.Debug("cannot mount tracefs (needs CAP_SYS_ADMIN)", zap.String("target", target), zap.Error(err))
+		return
+	}
+	logger.Info("mounted tracefs for eBPF tracepoint support", zap.String("path", target))
 }
 
 func nextPowerOfTwo(value int) int {

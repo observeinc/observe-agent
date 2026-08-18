@@ -8,6 +8,5 @@ var (
 )
 
 const (
-	LogsStability    = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
+	LogsStability = component.StabilityLevelDevelopment
 )

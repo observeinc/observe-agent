@@ -52,18 +52,28 @@ func TestBuildLogsSanitizesProcessData(t *testing.T) {
 	assert.False(t, strings.Contains(record.Body().Str(), "/"))
 }
 
-func TestBuildLogsKeepsInferredVersionOutOfRuntimeVersion(t *testing.T) {
+func TestBuildLogsFoldsInferredVersionIntoRuntimeVersion(t *testing.T) {
 	set := receivertest.NewNopSettings(component.MustNewType("processdiscovery"))
 	process := snapshot(10, 100, "go")
 	process.InferredVersion = "go1.25.0"
 	process.InferredVersionKind = "go_toolchain"
 	logs := buildLogs(set, []processEvent{{Name: "process.started", Process: process}}, nil)
 	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-	_, hasRuntimeVersion := attrs.Get("process.runtime.version")
-	assert.False(t, hasRuntimeVersion)
-	value, ok := attrs.Get("process.discovery.runtime.version.value")
+	value, ok := attrs.Get("process.runtime.version")
 	require.True(t, ok)
 	assert.Equal(t, "go1.25.0", value.Str())
+}
+
+func TestBuildLogsExplicitRuntimeVersionTakesPrecedence(t *testing.T) {
+	set := receivertest.NewNopSettings(component.MustNewType("processdiscovery"))
+	process := snapshot(10, 100, "java")
+	process.RuntimeVersion = "21.0.1"
+	process.InferredVersion = "21.0.0"
+	logs := buildLogs(set, []processEvent{{Name: "process.started", Process: process}}, nil)
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	value, ok := attrs.Get("process.runtime.version")
+	require.True(t, ok)
+	assert.Equal(t, "21.0.1", value.Str())
 }
 
 func TestSnapshotChangeIsNotReportedAsExec(t *testing.T) {
@@ -127,12 +137,10 @@ func newTestReceiver(t *testing.T, next consumer.Logs) *processDiscoveryReceiver
 	telemetry, err := newReceiverTelemetry(set.TelemetrySettings)
 	require.NoError(t, err)
 	receiver := &processDiscoveryReceiver{
-		cfg:      &Config{CollectionInterval: time.Second, ReportInterval: time.Minute, TerminationGraceScans: 1, MaxTrackedProcesses: 10},
+		cfg:      &Config{CollectionInterval: time.Second, ReportInterval: time.Minute, TerminationGraceScans: 1, MaxTrackedProcesses: 10, Filtering: FilterConfig{MinLifetimeScans: 1}},
 		settings: set, nextConsumer: next, obsrecv: obsrecv, telemetry: telemetry,
 		source:    staticSource{result: ScanResult{Processes: []ProcessSnapshot{snapshot(10, 100, "java")}, Complete: true}},
 		lifecycle: disabledLifecycleSource{}, state: newProcessState(), supported: true, collectionMode: "snapshot_only",
-		networkMetrics:   newNetworkMetricState(100),
-		acceptingSockets: make(map[int32]NetworkEndpoint),
 	}
 	receiver.references.Store(1)
 	receiver.emitter = newLogsEmitter(receiver)

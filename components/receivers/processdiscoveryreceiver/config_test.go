@@ -23,12 +23,14 @@ func TestConfigValidation(t *testing.T) {
 		"empty runtimes":               func(c *Config) { c.Runtimes = nil },
 		"unsupported runtime":          func(c *Config) { c.Runtimes = []string{"brainfuck"} },
 		"duplicate runtime":            func(c *Config) { c.Runtimes = []string{"java", "java"} },
-		"invalid network port limit":   func(c *Config) { c.Network.MaxPortsPerProcess = 0 },
-		"invalid network series limit": func(c *Config) { c.Network.MaxSeries = 0 },
+		"invalid otlp max connections": func(c *Config) { c.OTLPDetection.MaxConnectionsPerProcess = 0 },
 		"oversized commandline":        func(c *Config) { c.MaxCmdlineBytes = maxCmdlineBytes + 1 },
 		"zero cache ttl":               func(c *Config) { c.RuntimeDetection.BinaryCacheTTL = 0 },
 		"zero cache size":              func(c *Config) { c.RuntimeDetection.BinaryCacheSize = 0 },
 		"zero lifecycle buffer":        func(c *Config) { c.Lifecycle.BufferSize = 0 },
+		"zero min lifetime scans":      func(c *Config) { c.Filtering.MinLifetimeScans = 0 },
+		"invalid include path glob":    func(c *Config) { c.Filtering.Include.ExecutablePaths = []string{"[invalid"} },
+		"invalid exclude path glob":    func(c *Config) { c.Filtering.Exclude.ExecutablePaths = []string{"[invalid"} },
 	}
 	for name, mutate := range tests {
 		t.Run(name, func(t *testing.T) {

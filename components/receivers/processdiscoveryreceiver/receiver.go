@@ -19,31 +19,29 @@ import (
 )
 
 type processDiscoveryReceiver struct {
-	cfg                 *Config
-	settings            receiver.Settings
-	nextConsumer        consumer.Logs
-	nextMetricsConsumer consumer.Metrics
-	emitter             processEmitter
-	obsrecv             *receiverhelper.ObsReport
-	telemetry           *receiverTelemetry
-	source              ProcessSource
-	lifecycle           LifecycleSource
-	state               *processState
-	supported           bool
+	cfg          *Config
+	settings     receiver.Settings
+	nextConsumer consumer.Logs
+	emitter      processEmitter
+	obsrecv      *receiverhelper.ObsReport
+	telemetry    *receiverTelemetry
+	source       ProcessSource
+	lifecycle    LifecycleSource
+	state        *processState
+	supported    bool
+	filter       *processFilter
 
-	cancel           context.CancelFunc
-	wg               sync.WaitGroup
-	saturated        bool
-	collectionMode   string
-	eventLoss        uint64
-	lifecycleEvents  <-chan LifecycleEvent
-	resourceAttrs    map[string]string
-	exitReconcile    <-chan time.Time
-	startOnce        sync.Once
-	startErr         error
-	references       atomic.Int32
-	networkMetrics   *networkMetricState
-	acceptingSockets map[int32]NetworkEndpoint
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
+	saturated       bool
+	collectionMode  string
+	eventLoss       uint64
+	lifecycleEvents <-chan LifecycleEvent
+	resourceAttrs   map[string]string
+	exitReconcile   <-chan time.Time
+	startOnce       sync.Once
+	startErr        error
+	references      atomic.Int32
 }
 
 const exitReconcileDelay = 100 * time.Millisecond
@@ -70,9 +68,8 @@ func newReceiver(set receiver.Settings, cfg *Config) (*processDiscoveryReceiver,
 	receiver := &processDiscoveryReceiver{
 		cfg: cfg, settings: set, obsrecv: obsrecv, telemetry: telemetry,
 		source: source, lifecycle: lifecycle, state: newProcessState(), supported: platformSupported(),
+		filter: newProcessFilter(cfg.Filtering),
 		collectionMode: "snapshot_only", resourceAttrs: hostResourceAttributes(cfg),
-		networkMetrics:   newNetworkMetricState(cfg.Network.MaxSeries),
-		acceptingSockets: make(map[int32]NetworkEndpoint),
 	}
 	receiver.emitter = newLogsEmitter(receiver)
 	return receiver, nil
@@ -183,12 +180,14 @@ func (r *processDiscoveryReceiver) applyLifecycleEvent(ctx context.Context, even
 	case lifecycleExec:
 		snapshot, err := r.source.Inspect(ctx, event.PID)
 		if err != nil {
-			// Without generation evidence an unavailable exec cannot safely mutate
-			// state for a PID that may already have been reused.
-			r.scanAndEmit(ctx)
+			// Process exited before we could inspect it. The next periodic
+			// scan will reconcile state; avoid expensive full scans here.
 			return
 		}
 		snapshot.Source, snapshot.ObservedAt, snapshot.CgroupID = "ebpf", event.ObservedAt, event.CgroupID
+		if !r.filter.ShouldInclude(snapshot) {
+			return
+		}
 		r.applyAndEmit(ctx, func(state *processState) []processEvent {
 			events := state.applyObservation(snapshot)
 			for index := range events {
@@ -206,35 +205,7 @@ func (r *processDiscoveryReceiver) applyLifecycleEvent(ctx context.Context, even
 		if r.exitReconcile == nil {
 			r.exitReconcile = time.After(exitReconcileDelay)
 		}
-	case lifecycleAccept:
-		r.recordAcceptedConnection(event)
-	case lifecycleAcceptEnter:
-		r.recordAcceptEntry(event)
 	}
-}
-
-func (r *processDiscoveryReceiver) recordAcceptEntry(event LifecycleEvent) {
-	resolver, ok := r.source.(AcceptedConnectionResolver)
-	if !ok {
-		return
-	}
-	endpoint, err := resolver.ResolveAcceptedConnection(event.PID, event.FD)
-	if err == nil {
-		r.acceptingSockets[event.ThreadID] = endpoint
-	}
-}
-
-func (r *processDiscoveryReceiver) recordAcceptedConnection(event LifecycleEvent) {
-	key, ok := r.state.byPID[event.PID]
-	if !ok {
-		return
-	}
-	endpoint, ok := r.acceptingSockets[event.ThreadID]
-	delete(r.acceptingSockets, event.ThreadID)
-	if !ok {
-		return
-	}
-	r.networkMetrics.recordAccepted(r.state.tracked[key].snapshot, endpoint, event.ObservedAt)
 }
 
 func (r *processDiscoveryReceiver) initialScanAndEmit(ctx context.Context) {
@@ -246,29 +217,35 @@ func (r *processDiscoveryReceiver) initialScanAndEmit(ctx context.Context) {
 		return
 	}
 	nextState := r.state.clone()
-	events, saturated := nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.ReportInterval)
+	events, saturated := nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.Filtering.MinLifetimeScans, r.cfg.ReportInterval)
 	r.saturated = saturated
-	for r.lifecycleEvents != nil {
+
+	// Drain buffered lifecycle events that arrived during the scan, but
+	// enforce a deadline so we don't spin indefinitely when eBPF events
+	// arrive faster than we can process them.
+	deadline := time.After(2 * time.Second)
+	draining := r.lifecycleEvents != nil
+	for draining {
 		select {
 		case event, ok := <-r.lifecycleEvents:
 			if !ok {
 				r.lifecycleEvents = nil
 				r.collectionMode = "snapshot_only"
+				draining = false
 				continue
 			}
 			switch event.Type {
 			case lifecycleLoss:
 				r.eventLoss += event.Lost
-				scan, _ = r.source.Scan(ctx)
-				nextState = r.state.clone()
-				events, saturated = nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.ReportInterval)
-				r.saturated = saturated
 			case lifecycleExec:
 				snapshot, inspectErr := r.source.Inspect(ctx, event.PID)
 				if inspectErr == nil {
 					snapshot.Source = "ebpf"
 					snapshot.ObservedAt = event.ObservedAt
 					snapshot.CgroupID = event.CgroupID
+					if !r.filter.ShouldInclude(snapshot) {
+						continue
+					}
 					observedEvents := nextState.applyObservation(snapshot)
 					for index := range observedEvents {
 						if observedEvents[index].Name == "process.changed" {
@@ -276,29 +253,17 @@ func (r *processDiscoveryReceiver) initialScanAndEmit(ctx context.Context) {
 						}
 					}
 					events = append(events, observedEvents...)
-				} else {
-					scan, _ = r.source.Scan(ctx)
-					nextState = r.state.clone()
-					events, saturated = nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.ReportInterval)
-					r.saturated = saturated
 				}
 			case lifecycleExit:
-				scan, _ = r.source.Scan(ctx)
-				nextState = r.state.clone()
-				events, saturated = nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.ReportInterval)
-				r.saturated = saturated
-			case lifecycleAcceptEnter:
-				r.recordAcceptEntry(event)
-			case lifecycleAccept:
-				delete(r.acceptingSockets, event.ThreadID)
+				// Exit events during initial drain are handled by the
+				// snapshot scan that already ran; skip expensive re-scans.
 			}
+		case <-deadline:
+			draining = false
 		default:
-			r.emitMetrics(ctx, scan, time.Now())
-			r.emitAndCommit(ctx, nextState, events)
-			return
+			draining = false
 		}
 	}
-	r.emitMetrics(ctx, scan, time.Now())
 	r.emitAndCommit(ctx, nextState, events)
 }
 
@@ -311,18 +276,12 @@ func (r *processDiscoveryReceiver) scanAndEmit(ctx context.Context) {
 		return
 	}
 	nextState := r.state.clone()
-	events, saturated := nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.ReportInterval)
+	events, saturated := nextState.apply(scan, r.cfg.TerminationGraceScans, r.cfg.MaxTrackedProcesses, r.cfg.Filtering.MinLifetimeScans, r.cfg.ReportInterval)
 	if saturated && !r.saturated {
 		r.settings.Logger.Warn("process discovery tracked process limit reached", zap.Int("limit", r.cfg.MaxTrackedProcesses), zap.Int("candidates", len(scan.Processes)))
 		r.telemetry.saturation.Add(ctx, 1)
 	}
 	r.saturated = saturated
-	for key := range r.networkMetrics.accepted {
-		if _, ok := nextState.tracked[key.Process]; !ok {
-			r.networkMetrics.removeProcess(key.Process)
-		}
-	}
-	r.emitMetrics(ctx, scan, time.Now())
 	r.emitAndCommit(ctx, nextState, events)
 }
 

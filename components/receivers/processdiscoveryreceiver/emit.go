@@ -2,6 +2,7 @@ package processdiscoveryreceiver
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/observeinc/observe-agent/components/receivers/processdiscoveryreceiver/internal/metadata"
@@ -9,8 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-const discoverySchemaVersion = "2.0-experimental"
 
 type logsEmitter struct {
 	receiver *processDiscoveryReceiver
@@ -38,8 +37,6 @@ func buildLogs(settings receiver.Settings, events []processEvent, resourceAttrib
 		record.SetEventName(eventName(event.Name))
 		record.Body().SetStr("process.discovery")
 		attrs := record.Attributes()
-		attrs.PutStr("process.discovery.schema.version", discoverySchemaVersion)
-		attrs.PutStr("process.discovery.observation.source", event.Process.Source)
 		attrs.PutInt("process.pid", int64(event.Process.Key.PID))
 		if event.Process.ParentPID > 0 {
 			attrs.PutInt("process.parent_pid", int64(event.Process.ParentPID))
@@ -49,8 +46,8 @@ func buildLogs(settings receiver.Settings, events []processEvent, resourceAttrib
 		}
 		putString(attrs, "process.command", event.Process.Command)
 		putStrings(attrs, "process.command_args", event.Process.CommandArgs)
-		if len(event.Process.CommandArgs) > 0 {
-			attrs.PutInt("process.args_count", int64(len(event.Process.CommandArgs)))
+		if event.Process.ArgsCount > 0 {
+			attrs.PutInt("process.args_count", int64(event.Process.ArgsCount))
 		}
 		putString(attrs, "process.executable.name", event.Process.ExecutableName)
 		putString(attrs, "process.executable.path", event.Process.ExecutablePath)
@@ -64,7 +61,7 @@ func buildLogs(settings receiver.Settings, events []processEvent, resourceAttrib
 		putString(attrs, "process.state", event.Process.State)
 		putString(attrs, "process.working_directory", event.Process.WorkingDirectory)
 		putString(attrs, "process.linux.cgroup", event.Process.Cgroup)
-		putString(attrs, "process.discovery.application.entrypoint", event.Process.ApplicationEntrypoint)
+		putString(attrs, "process.application.entrypoint", event.Process.ApplicationEntrypoint)
 		putString(attrs, "process.executable.arch", event.Process.ExecutableArch)
 		if event.Process.GroupLeaderPID > 0 {
 			attrs.PutInt("process.group_leader.pid", int64(event.Process.GroupLeaderPID))
@@ -76,12 +73,12 @@ func buildLogs(settings receiver.Settings, events []processEvent, resourceAttrib
 			attrs.PutInt("process.vpid", int64(event.Process.VirtualPID))
 		}
 		putString(attrs, "process.runtime.name", event.Process.RuntimeName)
-		putString(attrs, "process.runtime.version", event.Process.RuntimeVersion)
-		putString(attrs, "process.discovery.runtime.family", event.Process.RuntimeFamily)
-		putString(attrs, "process.discovery.runtime.status", event.Process.RuntimeStatus)
-		putStrings(attrs, "process.discovery.runtime.assertion", event.Process.RuntimeAssertions)
-		putString(attrs, "process.discovery.runtime.version.value", event.Process.InferredVersion)
-		putString(attrs, "process.discovery.runtime.version.kind", event.Process.InferredVersionKind)
+		runtimeVersion := event.Process.RuntimeVersion
+		if runtimeVersion == "" {
+			runtimeVersion = event.Process.InferredVersion
+		}
+		putString(attrs, "process.runtime.version", runtimeVersion)
+		putString(attrs, "process.runtime.family", event.Process.RuntimeFamily)
 		putString(attrs, "container.id", event.Process.ContainerID)
 		putString(attrs, "container.name", event.Process.ContainerName)
 		putString(attrs, "container.runtime", event.Process.ContainerRuntime)
@@ -92,13 +89,23 @@ func buildLogs(settings receiver.Settings, events []processEvent, resourceAttrib
 		putString(attrs, "k8s.pod.uid", event.Process.K8sPodUID)
 		putString(attrs, "k8s.pod.name", event.Process.K8sPodName)
 		putString(attrs, "k8s.container.name", event.Process.K8sContainerName)
-		putString(attrs, "process.discovery.k8s.workload.kind", event.Process.K8sWorkloadKind)
-		putString(attrs, "process.discovery.k8s.workload.name", event.Process.K8sWorkloadName)
-		putString(attrs, "process.discovery.k8s.workload.uid", event.Process.K8sWorkloadUID)
-		putString(attrs, "process.discovery.k8s.correlation.status", event.Process.K8sCorrelationStatus)
-		putStrings(attrs, "process.discovery.changed_fields", event.ChangedFields)
+		if event.Process.K8sWorkloadKind != "" && event.Process.K8sWorkloadName != "" {
+			prefix := workloadPrefix(event.Process.K8sWorkloadKind)
+			putString(attrs, prefix+".name", event.Process.K8sWorkloadName)
+			putString(attrs, prefix+".uid", event.Process.K8sWorkloadUID)
+		}
+		if len(event.Process.OTLPConnections) > 0 {
+			connections := attrs.PutEmptySlice("otel.instrumentation.connections")
+			for _, conn := range event.Process.OTLPConnections {
+				connMap := connections.AppendEmpty().SetEmptyMap()
+				connMap.PutStr("remote.host", conn.RemoteHost)
+				connMap.PutInt("remote.port", int64(conn.RemotePort))
+				connMap.PutStr("network.transport", conn.Transport)
+				connMap.PutStr("observed_at", conn.ObservedAt.UTC().Format(time.RFC3339Nano))
+				connMap.PutStr("matched_rule", conn.MatchedRule)
+			}
+		}
 		if event.StopReason != "" {
-			putString(attrs, "process.discovery.exit.observation_method", event.StopReason)
 			attrs.PutStr("process.exit.time", record.Timestamp().AsTime().UTC().Format(time.RFC3339Nano))
 		}
 		builder.AppendLogRecord(record)
@@ -137,6 +144,25 @@ func eventName(name string) string {
 		return "process.exited"
 	default:
 		return name
+	}
+}
+
+func workloadPrefix(kind string) string {
+	switch strings.ToLower(kind) {
+	case "deployment":
+		return "k8s.deployment"
+	case "statefulset":
+		return "k8s.statefulset"
+	case "daemonset":
+		return "k8s.daemonset"
+	case "replicaset":
+		return "k8s.replicaset"
+	case "job":
+		return "k8s.job"
+	case "cronjob":
+		return "k8s.cronjob"
+	default:
+		return "k8s." + strings.ToLower(kind)
 	}
 }
 

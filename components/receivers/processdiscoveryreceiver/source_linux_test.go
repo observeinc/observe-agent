@@ -89,6 +89,7 @@ func testProcSource(root string) *procFSSource {
 	return &procFSSource{
 		root: root, maxCmdlineBytes: 8192, detector: newRuntimeDetector(supportedRuntimes),
 		cache: newExecutableCache(time.Minute, 10), bootTime: time.Unix(1000, 0), clockTicks: 100,
+		filter: newProcessFilter(FilterConfig{ExcludeSystemProcesses: false, MinLifetimeScans: 1}),
 	}
 }
 
@@ -96,6 +97,8 @@ func writeProcessFixture(t *testing.T, root string, pid, ppid int, start uint64,
 	t.Helper()
 	dir := filepath.Join(root, fmt.Sprint(pid))
 	require.NoError(t, os.MkdirAll(dir, 0o755))
+	comm := filepath.Base(args[0])
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "comm"), []byte(comm+"\n"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "stat"), []byte(procStatLine(pid, "fixture", ppid, start)), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmdline"), []byte(strings.Join(args, "\x00")+"\x00"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cgroup"), nil, 0o600))

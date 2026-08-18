@@ -22,10 +22,15 @@ type trackedProcess struct {
 type processState struct {
 	tracked map[ProcessKey]trackedProcess
 	byPID   map[int32]ProcessKey
+	pending map[ProcessKey]int
 }
 
 func newProcessState() *processState {
-	return &processState{tracked: make(map[ProcessKey]trackedProcess), byPID: make(map[int32]ProcessKey)}
+	return &processState{
+		tracked: make(map[ProcessKey]trackedProcess),
+		byPID:   make(map[int32]ProcessKey),
+		pending: make(map[ProcessKey]int),
+	}
 }
 
 func (s *processState) clone() *processState {
@@ -35,6 +40,9 @@ func (s *processState) clone() *processState {
 	}
 	for pid, key := range s.byPID {
 		cloned.byPID[pid] = key
+	}
+	for key, count := range s.pending {
+		cloned.pending[key] = count
 	}
 	return cloned
 }
@@ -89,19 +97,48 @@ func (s *processState) applyExit(pid int32, reason string) []processEvent {
 	return []processEvent{{Name: "process.stopped", Process: tracked.snapshot, StopReason: reason}}
 }
 
-func (s *processState) apply(scan ScanResult, graceScans, maxTracked int, reportInterval time.Duration) ([]processEvent, bool) {
+func (s *processState) apply(scan ScanResult, graceScans, maxTracked, minLifetimeScans int, reportInterval time.Duration) ([]processEvent, bool) {
 	candidates := make(map[ProcessKey]ProcessSnapshot, len(scan.Processes))
 	for _, snapshot := range scan.Processes {
 		candidates[snapshot.Key] = snapshot
 	}
-	admitted := make(map[ProcessKey]ProcessSnapshot, min(len(candidates), maxTracked))
+
+	// Enforce the "seen twice" rule for unidentified new processes.
+	// Already-tracked processes and those with an identified runtime or
+	// detected instrumentation bypass this gate.
+	ready := make(map[ProcessKey]ProcessSnapshot, len(candidates))
+	for key, snapshot := range candidates {
+		if _, alreadyTracked := s.tracked[key]; alreadyTracked {
+			ready[key] = snapshot
+			continue
+		}
+		if isHighValue(snapshot) || minLifetimeScans <= 1 {
+			ready[key] = snapshot
+			delete(s.pending, key)
+			continue
+		}
+		s.pending[key]++
+		if s.pending[key] >= minLifetimeScans {
+			ready[key] = snapshot
+			delete(s.pending, key)
+		}
+	}
+
+	// Evict pending entries that have disappeared from the scan.
+	for key := range s.pending {
+		if _, ok := candidates[key]; !ok {
+			delete(s.pending, key)
+		}
+	}
+
+	admitted := make(map[ProcessKey]ProcessSnapshot, min(len(ready), maxTracked))
 	for key := range s.tracked {
-		if snapshot, ok := candidates[key]; ok && len(admitted) < maxTracked {
+		if snapshot, ok := ready[key]; ok && len(admitted) < maxTracked {
 			admitted[key] = snapshot
 		}
 	}
-	keys := make([]ProcessKey, 0, len(candidates))
-	for key := range candidates {
+	keys := make([]ProcessKey, 0, len(ready))
+	for key := range ready {
 		if _, ok := admitted[key]; !ok {
 			keys = append(keys, key)
 		}
@@ -116,7 +153,7 @@ func (s *processState) apply(scan ScanResult, graceScans, maxTracked int, report
 		if len(admitted) >= maxTracked {
 			break
 		}
-		admitted[key] = candidates[key]
+		admitted[key] = ready[key]
 	}
 
 	var events []processEvent
@@ -160,6 +197,11 @@ func (s *processState) apply(scan ScanResult, graceScans, maxTracked int, report
 	return events, len(candidates) > maxTracked
 }
 
+func isHighValue(snapshot ProcessSnapshot) bool {
+	return snapshot.RuntimeStatus == "identified" ||
+		snapshot.InstrumentationEvidence.Status == "detected"
+}
+
 func eventOrder(name string) int {
 	switch name {
 	case "process.stopped":
@@ -181,6 +223,9 @@ func changedFields(before, after ProcessSnapshot) []string {
 	}
 	if before.ContainerID != after.ContainerID || before.K8sPodUID != after.K8sPodUID || before.K8sContainerName != after.K8sContainerName || before.K8sCorrelationStatus != after.K8sCorrelationStatus {
 		changed = append(changed, "deployment")
+	}
+	if before.InstrumentationEvidence.Status != after.InstrumentationEvidence.Status || len(before.OTLPConnections) != len(after.OTLPConnections) {
+		changed = append(changed, "instrumentation")
 	}
 	return changed
 }

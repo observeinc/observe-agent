@@ -13,6 +13,5 @@ func TestFactory(t *testing.T) {
 	factory := NewFactory()
 	assert.Equal(t, component.MustNewType("processdiscovery"), factory.Type())
 	require.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.MetricsStability())
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.LogsStability())
 }

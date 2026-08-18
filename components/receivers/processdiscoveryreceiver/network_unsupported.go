@@ -2,6 +2,11 @@
 
 package processdiscoveryreceiver
 
-func discoverNetworkEndpoints(string, int32, int) ([]NetworkEndpoint, string) {
-	return nil, "unavailable"
+func detectOTLPConnections(_ string, _ int32, _ []otlpEndpoint, _ int) InstrumentationEvidence {
+	return InstrumentationEvidence{Status: "unavailable"}
+}
+
+type otlpEndpoint struct {
+	Host string
+	Port int
 }

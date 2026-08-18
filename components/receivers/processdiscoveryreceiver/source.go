@@ -53,32 +53,35 @@ type ObservationProvenance struct {
 }
 
 type WorkloadContext struct {
-	ContainerID          string
-	ContainerName        string
-	ContainerRuntime     string
-	ContainerImageName   string
-	ContainerImageID     string
-	K8sNamespaceName     string
-	K8sNodeName          string
-	K8sPodUID            string
-	K8sPodName           string
-	K8sContainerName     string
-	K8sWorkloadKind      string
-	K8sWorkloadName      string
-	K8sWorkloadUID       string
-	K8sCorrelationStatus string
+	ContainerID           string
+	ContainerIDCandidates []string
+	ContainerName         string
+	ContainerRuntime      string
+	ContainerImageName    string
+	ContainerImageID      string
+	K8sNamespaceName      string
+	K8sNodeName           string
+	K8sPodUID             string
+	PodUIDCandidates      []string
+	K8sPodName            string
+	K8sContainerName      string
+	K8sWorkloadKind       string
+	K8sWorkloadName       string
+	K8sWorkloadUID        string
+	K8sCorrelationStatus  string
 }
 
-type NetworkEndpoint struct {
-	LocalPort int
-	Type      string
-	State     string
-	Count     int64
+type OTLPConnection struct {
+	RemoteHost  string
+	RemotePort  int
+	Transport   string
+	ObservedAt  time.Time
+	MatchedRule string
 }
 
-type NetworkEvidence struct {
-	Endpoints []NetworkEndpoint
-	Status    string
+type InstrumentationEvidence struct {
+	OTLPConnections []OTLPConnection
+	Status          string // "detected", "none_detected", "inaccessible", "unavailable"
 }
 
 type ProcessSnapshot struct {
@@ -87,7 +90,8 @@ type ProcessSnapshot struct {
 	RuntimeEvidence
 	ObservationProvenance
 	WorkloadContext
-	NetworkEvidence
+	InstrumentationEvidence
+	ArgsCount int
 }
 
 type ProcessRelationship struct {
@@ -112,18 +116,12 @@ type ProcessSource interface {
 	Inspect(context.Context, int32) (ProcessSnapshot, error)
 }
 
-type AcceptedConnectionResolver interface {
-	ResolveAcceptedConnection(int32, int32) (NetworkEndpoint, error)
-}
-
 type LifecycleEventType string
 
 const (
-	lifecycleExec        LifecycleEventType = "exec"
-	lifecycleExit        LifecycleEventType = "exit"
-	lifecycleLoss        LifecycleEventType = "loss"
-	lifecycleAccept      LifecycleEventType = "accept"
-	lifecycleAcceptEnter LifecycleEventType = "accept_enter"
+	lifecycleExec LifecycleEventType = "exec"
+	lifecycleExit LifecycleEventType = "exit"
+	lifecycleLoss LifecycleEventType = "loss"
 )
 
 type LifecycleEvent struct {

@@ -4,111 +4,166 @@ package processdiscoveryreceiver
 
 import (
 	"bufio"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func discoverNetworkEndpoints(procRoot string, pid int32, maxPorts int) ([]NetworkEndpoint, string) {
+type otlpEndpoint struct {
+	Host string
+	Port int
+}
+
+var standardOTLPPorts = []int{4317, 4318}
+
+func detectOTLPConnections(procRoot string, pid int32, endpoints []otlpEndpoint, maxConnections int) InstrumentationEvidence {
 	inodes, err := processSocketInodes(procRoot, pid)
 	if err != nil {
-		return nil, networkEvidenceStatus(err)
+		return InstrumentationEvidence{Status: evidenceStatus(err)}
 	}
-	counts := make(map[NetworkEndpoint]int64)
+
+	var connections []OTLPConnection
+	now := time.Now()
 	openedTables := 0
-	complete := true
+
+	type connKey struct {
+		host      string
+		port      int
+		transport string
+	}
+	seen := make(map[connKey]struct{})
+
 	for _, table := range []struct {
-		name, networkType string
-	}{{"tcp", "ipv4"}, {"tcp6", "ipv6"}} {
+		name      string
+		transport string
+		ipLen     int
+	}{
+		{"tcp", "tcp4", 4},
+		{"tcp6", "tcp6", 16},
+	} {
 		file, openErr := os.Open(filepath.Join(procRoot, strconv.Itoa(int(pid)), "net", table.name))
 		if openErr != nil {
-			complete = false
 			continue
 		}
 		openedTables++
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			fields := strings.Fields(scanner.Text())
+			line := scanner.Text()
+			fields := strings.Fields(line)
 			if len(fields) < 10 || fields[0] == "sl" {
 				continue
 			}
-			state := tcpConnectionState(fields[3])
-			if state == "" {
+			// Only ESTABLISHED connections (state 01)
+			if fields[3] != "01" {
 				continue
 			}
 			if _, ok := inodes[fields[9]]; !ok {
 				continue
 			}
-			port, parseErr := parseProcNetPort(fields[1])
+			remoteIP, remotePort, parseErr := parseProcNetAddress(fields[2], table.ipLen)
 			if parseErr != nil {
 				continue
 			}
-			key := NetworkEndpoint{LocalPort: port, Type: table.networkType, State: state}
-			counts[key]++
-		}
-		if scanner.Err() != nil {
-			complete = false
+			if rule := matchOTLPEndpoint(remoteIP, remotePort, endpoints); rule != "" {
+				key := connKey{host: remoteIP, port: remotePort, transport: table.transport}
+				if _, dup := seen[key]; dup {
+					continue
+				}
+				seen[key] = struct{}{}
+				connections = append(connections, OTLPConnection{
+					RemoteHost:  remoteIP,
+					RemotePort:  remotePort,
+					Transport:   table.transport,
+					ObservedAt:  now,
+					MatchedRule: rule,
+				})
+				if len(connections) >= maxConnections {
+					_ = file.Close()
+					return InstrumentationEvidence{OTLPConnections: connections, Status: "detected"}
+				}
+			}
 		}
 		_ = file.Close()
 	}
-	endpoints := make([]NetworkEndpoint, 0, len(counts))
-	for endpoint, count := range counts {
-		endpoint.Count = count
-		endpoints = append(endpoints, endpoint)
-	}
-	sort.Slice(endpoints, func(i, j int) bool {
-		if endpoints[i].LocalPort != endpoints[j].LocalPort {
-			return endpoints[i].LocalPort < endpoints[j].LocalPort
-		}
-		return endpoints[i].Type < endpoints[j].Type
-	})
-	if len(endpoints) > maxPorts {
-		endpoints = endpoints[:maxPorts]
-	}
+
 	if openedTables == 0 {
-		return endpoints, "unavailable"
+		return InstrumentationEvidence{Status: "unavailable"}
 	}
-	if !complete {
-		return endpoints, "partial"
+	if len(connections) > 0 {
+		return InstrumentationEvidence{OTLPConnections: connections, Status: "detected"}
 	}
-	return endpoints, "complete"
+	return InstrumentationEvidence{Status: "none_detected"}
 }
 
-func (s *procFSSource) ResolveAcceptedConnection(pid, fd int32) (NetworkEndpoint, error) {
-	target, err := os.Readlink(filepath.Join(s.root, strconv.Itoa(int(pid)), "fd", strconv.Itoa(int(fd))))
+func matchOTLPEndpoint(remoteIP string, remotePort int, endpoints []otlpEndpoint) string {
+	for _, ep := range endpoints {
+		if ep.Port == remotePort && matchesHost(remoteIP, ep.Host) {
+			return fmt.Sprintf("configured:%s:%d", ep.Host, ep.Port)
+		}
+	}
+	for _, port := range standardOTLPPorts {
+		if remotePort == port {
+			return fmt.Sprintf("standard_port:%d", port)
+		}
+	}
+	return ""
+}
+
+func matchesHost(remoteIP, host string) bool {
+	if host == remoteIP {
+		return true
+	}
+	addrs, err := net.LookupHost(host)
 	if err != nil {
-		return NetworkEndpoint{}, err
+		return false
 	}
-	inode := socketInode(target)
-	if inode == "" {
-		return NetworkEndpoint{}, fmt.Errorf("fd %d is not a socket", fd)
-	}
-	for _, table := range []struct {
-		name, networkType string
-	}{{"tcp", "ipv4"}, {"tcp6", "ipv6"}} {
-		file, openErr := os.Open(filepath.Join(s.root, strconv.Itoa(int(pid)), "net", table.name))
-		if openErr != nil {
-			continue
+	for _, addr := range addrs {
+		if addr == remoteIP {
+			return true
 		}
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			fields := strings.Fields(scanner.Text())
-			if len(fields) < 10 || fields[9] != inode {
-				continue
-			}
-			port, parseErr := parseProcNetPort(fields[1])
-			_ = file.Close()
-			if parseErr != nil {
-				return NetworkEndpoint{}, parseErr
-			}
-			return NetworkEndpoint{LocalPort: port, Type: table.networkType, Count: 1}, nil
-		}
-		_ = file.Close()
 	}
-	return NetworkEndpoint{}, fmt.Errorf("socket inode %s is no longer available", inode)
+	return false
+}
+
+func parseProcNetAddress(hexAddr string, ipLen int) (string, int, error) {
+	parts := strings.SplitN(hexAddr, ":", 2)
+	if len(parts) != 2 {
+		return "", 0, fmt.Errorf("invalid address %q", hexAddr)
+	}
+	port, err := strconv.ParseUint(parts[1], 16, 16)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid port in %q: %w", hexAddr, err)
+	}
+	ipHex := parts[0]
+	ipBytes, err := hex.DecodeString(ipHex)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid IP hex in %q: %w", hexAddr, err)
+	}
+	var ip net.IP
+	if ipLen == 4 {
+		if len(ipBytes) != 4 {
+			return "", 0, fmt.Errorf("expected 4 bytes for IPv4, got %d", len(ipBytes))
+		}
+		// /proc/net/tcp stores IPv4 in little-endian 32-bit word
+		ip = net.IPv4(ipBytes[3], ipBytes[2], ipBytes[1], ipBytes[0])
+	} else {
+		if len(ipBytes) != 16 {
+			return "", 0, fmt.Errorf("expected 16 bytes for IPv6, got %d", len(ipBytes))
+		}
+		// /proc/net/tcp6 stores IPv6 as four 32-bit words in host byte order (little-endian on x86)
+		ip = make(net.IP, 16)
+		for i := 0; i < 4; i++ {
+			word := binary.LittleEndian.Uint32(ipBytes[i*4 : (i+1)*4])
+			binary.BigEndian.PutUint32(ip[i*4:(i+1)*4], word)
+		}
+	}
+	return ip.String(), int(port), nil
 }
 
 func processSocketInodes(procRoot string, pid int32) (map[string]struct{}, error) {
@@ -135,32 +190,12 @@ func socketInode(target string) string {
 	return ""
 }
 
-func parseProcNetPort(localAddress string) (int, error) {
-	index := strings.LastIndex(localAddress, ":")
-	if index < 0 {
-		return 0, fmt.Errorf("invalid local address %q", localAddress)
-	}
-	port, err := strconv.ParseUint(localAddress[index+1:], 16, 16)
-	return int(port), err
-}
-
-func tcpConnectionState(value string) string {
-	switch value {
-	case "01":
-		return "established"
-	case "0A":
-		return "listen"
-	default:
-		return ""
-	}
-}
-
-func networkEvidenceStatus(err error) string {
+func evidenceStatus(err error) string {
 	if os.IsPermission(err) {
 		return "inaccessible"
 	}
 	if os.IsNotExist(err) {
 		return "unavailable"
 	}
-	return "partial"
+	return "unavailable"
 }

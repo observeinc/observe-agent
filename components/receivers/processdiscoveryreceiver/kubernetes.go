@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,9 +18,8 @@ import (
 const defaultKubernetesRefreshInterval = 30 * time.Second
 
 var (
-	containerIDPattern   = regexp.MustCompile(`(?i)(?:^|[-/:])([a-f0-9]{64})(?:\.scope)?(?:$|/)`)
-	containerLeafPattern = regexp.MustCompile(`(?i)^(?:(?:cri-containerd|docker|crio)-)?([a-f0-9]{64})$`)
-	podUIDPattern        = regexp.MustCompile(`(?i)pod([a-f0-9][a-f0-9_-]{30,})`)
+	containerIDPattern = regexp.MustCompile(`(?i)(?:^|[-/:])([a-f0-9]{64})(?:\.scope)?(?:$|/)`)
+	podUIDPattern      = regexp.MustCompile(`(?i)pod([a-f0-9][a-f0-9_-]{30,})`)
 )
 
 type KubernetesConfig struct {
@@ -66,7 +64,16 @@ type kubernetesEnricher struct {
 	client      kubernetes.Interface
 	mu          sync.RWMutex
 	byContainer map[string]podAssociation
+	byPodUID    map[string]podAssociation
 	lastRefresh time.Time
+}
+
+func newEmptyEnricher(cfg KubernetesConfig) *kubernetesEnricher {
+	return &kubernetesEnricher{
+		config:      cfg,
+		byContainer: make(map[string]podAssociation),
+		byPodUID:    make(map[string]podAssociation),
+	}
 }
 
 func newKubernetesEnricher(cfg KubernetesConfig) processEnricher {
@@ -78,13 +85,15 @@ func newKubernetesEnricher(cfg KubernetesConfig) processEnricher {
 	}
 	clientConfig, err := kubernetesClientConfig(cfg)
 	if err != nil {
-		return &kubernetesEnricher{config: cfg, byContainer: make(map[string]podAssociation)}
+		return newEmptyEnricher(cfg)
 	}
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
-		return &kubernetesEnricher{config: cfg, byContainer: make(map[string]podAssociation)}
+		return newEmptyEnricher(cfg)
 	}
-	return &kubernetesEnricher{config: cfg, client: client, byContainer: make(map[string]podAssociation)}
+	enricher := newEmptyEnricher(cfg)
+	enricher.client = client
+	return enricher
 }
 
 func kubernetesClientConfig(cfg KubernetesConfig) (*rest.Config, error) {
@@ -110,12 +119,18 @@ func (e *kubernetesEnricher) Refresh(ctx context.Context) {
 		}
 	}
 	associations := make(map[string]podAssociation)
+	podAssociations := make(map[string]podAssociation)
 	for _, pod := range pods.Items {
 		workload, _ := controllerOwner(pod.OwnerReferences)
 		if workload.Kind == "ReplicaSet" {
 			if owner, ok := replicaSetOwners[string(workload.UID)]; ok {
 				workload = owner
 			}
+		}
+		podAssociations[normalizePodUID(string(pod.UID))] = podAssociation{
+			podUID: string(pod.UID), podName: pod.Name, namespace: pod.Namespace,
+			nodeName: pod.Spec.NodeName, workloadKind: workload.Kind,
+			workloadName: workload.Name, workloadUID: string(workload.UID),
 		}
 		statuses := append([]corev1.ContainerStatus{}, pod.Status.InitContainerStatuses...)
 		statuses = append(statuses, pod.Status.ContainerStatuses...)
@@ -136,44 +151,65 @@ func (e *kubernetesEnricher) Refresh(ctx context.Context) {
 	}
 	e.mu.Lock()
 	e.byContainer = associations
+	e.byPodUID = podAssociations
 	e.lastRefresh = time.Now()
 	e.mu.Unlock()
 }
 
 func (e *kubernetesEnricher) Enrich(snapshot *ProcessSnapshot) {
-	if snapshot.ContainerID == "" {
-		snapshot.K8sCorrelationStatus = "unresolved"
-		return
+	containerCandidates := snapshot.ContainerIDCandidates
+	if len(containerCandidates) == 0 && snapshot.ContainerID != "" {
+		containerCandidates = []string{snapshot.ContainerID}
 	}
+	podCandidates := snapshot.PodUIDCandidates
+	if len(podCandidates) == 0 && snapshot.K8sPodUID != "" {
+		podCandidates = []string{normalizePodUID(snapshot.K8sPodUID)}
+	}
+
 	e.mu.RLock()
-	association, ok := e.byContainer[snapshot.ContainerID]
-	e.mu.RUnlock()
-	if !ok {
-		// A pod UID parsed from a cgroup path is not authoritative without a
-		// matching node-local pod/container association. This also prevents an
-		// outer host container from being presented as a minikube workload.
-		snapshot.K8sPodUID = ""
-		snapshot.K8sCorrelationStatus = "unresolved"
-		return
+	defer e.mu.RUnlock()
+
+	for _, candidate := range containerCandidates {
+		if association, ok := e.byContainer[candidate]; ok {
+			applyContainerAssociation(snapshot, association)
+			return
+		}
 	}
-	if snapshot.K8sPodUID != "" && normalizePodUID(snapshot.K8sPodUID) != normalizePodUID(association.podUID) {
-		snapshot.K8sCorrelationStatus = "ambiguous"
-		return
+
+	for _, candidate := range podCandidates {
+		if association, ok := e.byPodUID[candidate]; ok {
+			applyPodAssociation(snapshot, association)
+			snapshot.K8sCorrelationStatus = "resolved"
+			return
+		}
 	}
+
+	if len(containerCandidates) > 0 {
+		snapshot.ContainerID = containerCandidates[0]
+	}
+	snapshot.K8sPodUID = ""
+	snapshot.K8sCorrelationStatus = "unresolved"
+}
+
+func applyContainerAssociation(snapshot *ProcessSnapshot, association podAssociation) {
 	snapshot.ContainerID = association.containerID
 	snapshot.ContainerName = association.containerName
 	snapshot.ContainerRuntime = association.containerRuntime
 	snapshot.ContainerImageName = association.containerImageName
 	snapshot.ContainerImageID = association.containerImageID
+	applyPodAssociation(snapshot, association)
+	snapshot.K8sContainerName = association.containerName
+	snapshot.K8sCorrelationStatus = "resolved"
+}
+
+func applyPodAssociation(snapshot *ProcessSnapshot, association podAssociation) {
 	snapshot.K8sPodUID = association.podUID
 	snapshot.K8sPodName = association.podName
 	snapshot.K8sNamespaceName = association.namespace
-	snapshot.K8sContainerName = association.containerName
 	snapshot.K8sNodeName = association.nodeName
 	snapshot.K8sWorkloadKind = association.workloadKind
 	snapshot.K8sWorkloadName = association.workloadName
 	snapshot.K8sWorkloadUID = association.workloadUID
-	snapshot.K8sCorrelationStatus = "resolved"
 }
 
 func controllerOwner(owners []metav1.OwnerReference) (metav1.OwnerReference, bool) {
@@ -200,45 +236,67 @@ func normalizeImageID(value string) string {
 }
 
 func parseCgroupIdentity(data []byte) (string, string) {
-	text := string(data)
-	containerMatch := containerIDPattern.FindStringSubmatch(text)
-	podMatch := podUIDPattern.FindStringSubmatch(text)
-	containerID, podUID := "", ""
-	if len(containerMatch) > 1 {
-		containerID = strings.ToLower(containerMatch[1])
+	candidates := containerCandidatesFromCgroup(data)
+	if len(candidates) == 0 {
+		return "", ""
 	}
-	if len(podMatch) > 1 {
-		podUID = normalizePodUID(podMatch[1])
-	}
-	return containerID, podUID
+	return candidates[0], innermostPodUID(data)
 }
 
-func parseCgroupIdentityForPID(data []byte, pid int32) (string, string) {
+func parseCgroupIdentityForPID(data []byte, _ int32) (string, string) {
+	candidates := containerCandidatesFromCgroup(data)
+	if len(candidates) == 0 {
+		return "", ""
+	}
+	return candidates[0], innermostPodUID(data)
+}
+
+func containerCandidatesFromCgroup(data []byte) []string {
+	seen := make(map[string]struct{})
+	var ordered []string
 	for _, line := range strings.Split(string(data), "\n") {
 		parts := strings.SplitN(line, ":", 3)
 		if len(parts) != 3 {
 			continue
 		}
-		path := parts[2]
-		if !strings.Contains(path, "pod") {
-			if match := containerIDPattern.FindStringSubmatch(path); len(match) > 1 {
-				return strings.ToLower(match[1]), ""
+		for _, match := range containerIDPattern.FindAllStringSubmatch(parts[2], -1) {
+			id := strings.ToLower(match[1])
+			if _, ok := seen[id]; ok {
+				continue
 			}
-			continue
+			seen[id] = struct{}{}
+			ordered = append(ordered, id)
 		}
-
-		leaf := strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".scope")
-		if leaf == strconv.Itoa(int(pid)) {
-			continue
-		}
-		containerMatch := containerLeafPattern.FindStringSubmatch(leaf)
-		podMatch := podUIDPattern.FindStringSubmatch(path)
-		if len(containerMatch) < 2 || len(podMatch) < 2 {
-			continue
-		}
-		return strings.ToLower(containerMatch[1]), normalizePodUID(podMatch[1])
 	}
-	return "", ""
+	for i, j := 0, len(ordered)-1; i < j; i, j = i+1, j-1 {
+		ordered[i], ordered[j] = ordered[j], ordered[i]
+	}
+	return ordered
+}
+
+func podUIDCandidatesFromCgroup(data []byte) []string {
+	seen := make(map[string]struct{})
+	var ordered []string
+	for _, match := range podUIDPattern.FindAllStringSubmatch(string(data), -1) {
+		id := normalizePodUID(match[1])
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ordered = append(ordered, id)
+	}
+	for i, j := 0, len(ordered)-1; i < j; i, j = i+1, j-1 {
+		ordered[i], ordered[j] = ordered[j], ordered[i]
+	}
+	return ordered
+}
+
+func innermostPodUID(data []byte) string {
+	candidates := podUIDCandidatesFromCgroup(data)
+	if len(candidates) == 0 {
+		return ""
+	}
+	return candidates[0]
 }
 
 func normalizeContainerID(value string) string {

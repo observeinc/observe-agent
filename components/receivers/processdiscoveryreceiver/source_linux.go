@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -20,17 +21,19 @@ import (
 )
 
 type procFSSource struct {
-	root               string
-	maxCmdlineBytes    int64
-	detector           runtimeDetector
-	cache              *executableCache
-	bootTime           time.Time
-	clockTicks         uint64
-	kubernetes         processEnricher
-	scrubber           argumentScrubber
-	commandLineEnabled bool
-	maxPortsPerProcess int
-	networkEnabled     bool
+	root                     string
+	maxCmdlineBytes          int64
+	detector                 runtimeDetector
+	cache                    *executableCache
+	bootTime                 time.Time
+	clockTicks               uint64
+	kubernetes               processEnricher
+	scrubber                 argumentScrubber
+	commandLineEnabled       bool
+	otlpDetectionEnabled     bool
+	otlpEndpoints            []otlpEndpoint
+	maxConnectionsPerProcess int
+	filter                   *processFilter
 }
 
 type procStat struct {
@@ -54,6 +57,18 @@ func newProcessSource(cfg *Config) (ProcessSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read Linux boot time: %w", err)
 	}
+	var parsedEndpoints []otlpEndpoint
+	for _, ep := range cfg.OTLPDetection.Endpoints {
+		host, portStr, splitErr := net.SplitHostPort(ep)
+		if splitErr != nil {
+			continue
+		}
+		port, convErr := strconv.Atoi(portStr)
+		if convErr != nil {
+			continue
+		}
+		parsedEndpoints = append(parsedEndpoints, otlpEndpoint{Host: host, Port: port})
+	}
 	return &procFSSource{
 		root: cfg.ProcFSPath, maxCmdlineBytes: int64(cfg.MaxCmdlineBytes),
 		detector: newRuntimeDetector(cfg.Runtimes),
@@ -61,8 +76,10 @@ func newProcessSource(cfg *Config) (ProcessSource, error) {
 		bootTime: bootTime, clockTicks: cfg.ClockTicks,
 		kubernetes: newKubernetesEnricher(cfg.Kubernetes),
 		scrubber:   newArgumentScrubber(cfg.CommandLine), commandLineEnabled: cfg.CommandLine.Enabled,
-		maxPortsPerProcess: cfg.Network.MaxPortsPerProcess,
-		networkEnabled:     cfg.Network.Enabled,
+		otlpDetectionEnabled:     cfg.OTLPDetection.Enabled,
+		otlpEndpoints:            parsedEndpoints,
+		maxConnectionsPerProcess: cfg.OTLPDetection.MaxConnectionsPerProcess,
+		filter:                   newProcessFilter(cfg.Filtering),
 	}, nil
 }
 
@@ -88,12 +105,18 @@ func (s *procFSSource) Scan(ctx context.Context) (ScanResult, error) {
 			result.Complete = false
 			return result, err
 		}
+		if comm := readComm(s.root, int32(pid)); comm != "" && s.filter.PreFilter(comm) {
+			continue
+		}
 		snapshot, err := s.Inspect(ctx, int32(pid))
 		if err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {
 				result.UnavailablePIDs[int32(pid)] = struct{}{}
 				result.Complete = false
 			}
+			continue
+		}
+		if !s.filter.ShouldInclude(snapshot) {
 			continue
 		}
 		result.Processes = append(result.Processes, snapshot)
@@ -181,19 +204,21 @@ func (s *procFSSource) Inspect(_ context.Context, pid int32) (ProcessSnapshot, e
 		},
 		ObservationProvenance: ObservationProvenance{Source: "procfs", ObservedAt: time.Now(), Complete: complete},
 	}
+	snapshot.ArgsCount = len(cmdline)
 	if s.commandLineEnabled {
 		snapshot.CommandArgs = s.scrubber.scrub(cmdline)
 	}
 	if cgroupErr == nil {
 		snapshot.Cgroup = strings.TrimSpace(string(cgroupData))
 		snapshot.ContainerID, snapshot.K8sPodUID = parseCgroupIdentityForPID(cgroupData, pid)
+		snapshot.ContainerIDCandidates = containerCandidatesFromCgroup(cgroupData)
+		snapshot.PodUIDCandidates = podUIDCandidatesFromCgroup(cgroupData)
 	}
 	if s.kubernetes != nil {
 		s.kubernetes.Enrich(&snapshot)
 	}
-	if s.networkEnabled {
-		endpoints, status := discoverNetworkEndpoints(s.root, pid, s.maxPortsPerProcess)
-		snapshot.NetworkEvidence = NetworkEvidence{Endpoints: endpoints, Status: status}
+	if s.otlpDetectionEnabled {
+		snapshot.InstrumentationEvidence = detectOTLPConnections(s.root, pid, s.otlpEndpoints, s.maxConnectionsPerProcess)
 	}
 	return snapshot, nil
 }
@@ -334,6 +359,14 @@ func readLink(path string) string {
 }
 
 func readExecutableBase(path string) string { return filepath.Base(readLink(path)) }
+
+func readComm(root string, pid int32) string {
+	data, err := os.ReadFile(filepath.Join(root, strconv.Itoa(int(pid)), "comm"))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
 
 func readProcStatus(path string) (procStatus, error) {
 	data, err := os.ReadFile(path)

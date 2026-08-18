@@ -15,7 +15,6 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
@@ -35,20 +34,6 @@ func createLogsReceiver(
 		return nil, err
 	}
 	r.nextConsumer = nextConsumer
-	return r.addReference(), nil
-}
-
-func createMetricsReceiver(
-	_ context.Context,
-	set receiver.Settings,
-	cfg component.Config,
-	nextConsumer consumer.Metrics,
-) (receiver.Metrics, error) {
-	r, err := getSharedReceiver(set, cfg.(*Config))
-	if err != nil {
-		return nil, err
-	}
-	r.nextMetricsConsumer = nextConsumer
 	return r.addReference(), nil
 }
 

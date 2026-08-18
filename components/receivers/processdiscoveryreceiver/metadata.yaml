@@ -31,30 +31,10 @@ resource_attributes:
     enabled: true
     type: string
 
-metrics:
-  process.network.connection.accepted:
-    enabled: true
-    description: Total number of TCP connections accepted by the process.
-    unit: "{connection}"
-    stability: development
-    attributes: [network.local.port, network.transport, network.type]
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  process.network.connection.count:
-    enabled: true
-    description: Current number of process network connections by state.
-    unit: "{connection}"
-    stability: development
-    attributes: [network.connection.state, network.local.port, network.transport, network.type]
-    gauge:
-      value_type: int
-
 status:
   class: receiver
   stability:
-    development: [logs, metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [abrao]
@@ -126,15 +106,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    process_discovery_network_series_dropped:
-      enabled: true
-      description: Number of public network metric series dropped by cardinality limits.
-      stability: development
-      unit: "{series}"
-      sum:
-        value_type: int
-        monotonic: true
-
 attributes:
   status:
     description: Result of a process discovery scan.
@@ -143,22 +114,6 @@ attributes:
   event_type:
     description: Process discovery event type.
     type: string
-  network.local.port:
-    description: Local TCP port observed on the process socket.
-    type: int
-  network.transport:
-    description: Network transport used by the socket.
-    type: string
-    enum: [tcp]
-  network.type:
-    description: Network address family used by the socket.
-    type: string
-    enum: [ipv4, ipv6]
-  network.connection.state:
-    description: State of the current network connection.
-    type: string
-    enum: [listen, established]
-
 tests:
   config:
     collection_interval: 2s
@@ -189,7 +144,9 @@ tests:
       node_name: ""
       refresh_interval: 30s
       kubeconfig_path: ""
-    network:
+    otlp_detection:
       enabled: true
-      max_ports_per_process: 128
-      max_series: 2000
+      max_connections_per_process: 128
+    filtering:
+      exclude_system_processes: true
+      min_lifetime_scans: 2

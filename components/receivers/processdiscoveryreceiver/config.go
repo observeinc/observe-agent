@@ -2,8 +2,10 @@ package processdiscoveryreceiver
 
 import (
 	"fmt"
+	"net"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,6 +25,7 @@ const (
 	defaultLifecycleBufferSize   = 4096
 	defaultClockTicks            = 100
 	defaultMaxCommandArgs        = 128
+	defaultMinLifetimeScans      = 2
 )
 
 var supportedRuntimes = []string{
@@ -61,10 +64,22 @@ type CommandLineConfig struct {
 	CustomSensitiveWords []string `mapstructure:"custom_sensitive_words"`
 }
 
-type NetworkConfig struct {
-	Enabled            bool `mapstructure:"enabled"`
-	MaxPortsPerProcess int  `mapstructure:"max_ports_per_process"`
-	MaxSeries          int  `mapstructure:"max_series"`
+type OTLPDetectionConfig struct {
+	Enabled                  bool     `mapstructure:"enabled"`
+	Endpoints                []string `mapstructure:"endpoints"`
+	MaxConnectionsPerProcess int      `mapstructure:"max_connections_per_process"`
+}
+
+type MatchConfig struct {
+	ExecutableNames []string `mapstructure:"executable_names"`
+	ExecutablePaths []string `mapstructure:"executable_paths"`
+}
+
+type FilterConfig struct {
+	ExcludeSystemProcesses bool        `mapstructure:"exclude_system_processes"`
+	MinLifetimeScans       int         `mapstructure:"min_lifetime_scans"`
+	Include                MatchConfig `mapstructure:"include"`
+	Exclude                MatchConfig `mapstructure:"exclude"`
 }
 
 type Config struct {
@@ -84,7 +99,8 @@ type Config struct {
 	HostArch              string                 `mapstructure:"host_arch"`
 	HostMachineIDPath     string                 `mapstructure:"host_machine_id_path"`
 	CommandLine           CommandLineConfig      `mapstructure:"command_line"`
-	Network               NetworkConfig          `mapstructure:"network"`
+	OTLPDetection         OTLPDetectionConfig    `mapstructure:"otlp_detection"`
+	Filtering             FilterConfig           `mapstructure:"filtering"`
 }
 
 func createDefaultConfig() component.Config {
@@ -106,8 +122,9 @@ func createDefaultConfig() component.Config {
 			BufferSize: defaultLifecycleBufferSize,
 		},
 		ClockTicks:  defaultClockTicks,
-		CommandLine: CommandLineConfig{Enabled: true, MaxArguments: defaultMaxCommandArgs},
-		Network:     NetworkConfig{Enabled: true, MaxPortsPerProcess: 128, MaxSeries: 2000},
+		CommandLine:   CommandLineConfig{Enabled: true, MaxArguments: defaultMaxCommandArgs},
+		OTLPDetection: OTLPDetectionConfig{Enabled: true, MaxConnectionsPerProcess: 128},
+		Filtering:     FilterConfig{ExcludeSystemProcesses: true, MinLifetimeScans: defaultMinLifetimeScans},
 	}
 }
 
@@ -164,11 +181,34 @@ func (cfg *Config) Validate() error {
 	if cfg.CommandLine.MaxArguments < 1 {
 		return fmt.Errorf("command_line.max_arguments must be at least 1")
 	}
-	if cfg.Network.MaxPortsPerProcess < 1 {
-		return fmt.Errorf("network.max_ports_per_process must be at least 1")
+	if cfg.OTLPDetection.MaxConnectionsPerProcess < 1 {
+		return fmt.Errorf("otlp_detection.max_connections_per_process must be at least 1")
 	}
-	if cfg.Network.MaxSeries < 1 {
-		return fmt.Errorf("network.max_series must be at least 1")
+	for _, ep := range cfg.OTLPDetection.Endpoints {
+		host, portStr, err := net.SplitHostPort(ep)
+		if err != nil {
+			return fmt.Errorf("otlp_detection.endpoints: invalid endpoint %q: %w", ep, err)
+		}
+		if host == "" {
+			return fmt.Errorf("otlp_detection.endpoints: endpoint %q has empty host", ep)
+		}
+		port, err := strconv.Atoi(portStr)
+		if err != nil || port < 1 || port > 65535 {
+			return fmt.Errorf("otlp_detection.endpoints: endpoint %q has invalid port", ep)
+		}
+	}
+	if cfg.Filtering.MinLifetimeScans < 1 {
+		return fmt.Errorf("filtering.min_lifetime_scans must be at least 1")
+	}
+	for _, pattern := range cfg.Filtering.Include.ExecutablePaths {
+		if _, err := filepath.Match(pattern, "test"); err != nil {
+			return fmt.Errorf("filtering.include.executable_paths: invalid glob %q: %w", pattern, err)
+		}
+	}
+	for _, pattern := range cfg.Filtering.Exclude.ExecutablePaths {
+		if _, err := filepath.Match(pattern, "test"); err != nil {
+			return fmt.Errorf("filtering.exclude.executable_paths: invalid glob %q: %w", pattern, err)
+		}
 	}
 	if err := cfg.Kubernetes.Validate(); err != nil {
 		return err
