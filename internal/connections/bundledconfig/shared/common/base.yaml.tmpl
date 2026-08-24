@@ -42,7 +42,7 @@ processors:
           - 'IsMatch(name, ".*")'
 
 exporters:
-  otlphttp/observe:
+  otlp_http/observe:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
