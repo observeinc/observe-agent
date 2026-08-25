@@ -216,25 +216,35 @@ func TestNewFactory_AppliesShippedTable(t *testing.T) {
 	}
 }
 
-func TestSplitComponentKey(t *testing.T) {
+func TestRemapDefinitionKey(t *testing.T) {
+	c := &converter{mappings: map[string]string{
+		"otlphttp/observe": "otlp_http/observe",
+		"hostmetrics/host": "host_metrics/host",
+		"debug":            "debug_exporter",
+	}}
 	cases := []struct {
-		key               string
-		section, id, rest string
-		ok                bool
+		name, key, newKey, legacy string
+		ok                        bool
 	}{
-		{"exporters::otlphttp/observe::sending_queue::num_consumers", "exporters", "otlphttp/observe", "sending_queue::num_consumers", true},
-		{"exporters::debug", "exporters", "debug", "", true},
-		{"receivers::hostmetrics/host::scrapers::cpu", "receivers", "hostmetrics/host", "scrapers::cpu", true},
-		{"service::pipelines::logs::exporters", "", "", "", false},
-		{"exporters", "", "", "", false},
+		{"deeply nested remainder is preserved",
+			"exporters::otlphttp/observe::sending_queue::num_consumers",
+			"exporters::otlp_http/observe::sending_queue::num_consumers", "otlphttp/observe", true},
+		{"bare id with no remainder",
+			"exporters::debug", "exporters::debug_exporter", "debug", true},
+		{"unqualified type in a different section",
+			"receivers::hostmetrics/host::scrapers::cpu",
+			"receivers::host_metrics/host::scrapers::cpu", "hostmetrics/host", true},
+		{"id absent from the table", "exporters::otlphttp/mine", "", "", false},
+		{"reference key is not a definition", "service::pipelines::logs::exporters", "", "", false},
+		{"section on its own", "exporters", "", "", false},
+		{"unknown top-level section", "service::telemetry::otlphttp/observe", "", "", false},
 	}
-	for _, c := range cases {
-		t.Run(c.key, func(t *testing.T) {
-			section, id, rest, ok := splitComponentKey(c.key)
-			assert.Equal(t, c.ok, ok)
-			assert.Equal(t, c.section, section)
-			assert.Equal(t, c.id, id)
-			assert.Equal(t, c.rest, rest)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			newKey, legacy, ok := c.remapDefinitionKey(tc.key)
+			assert.Equal(t, tc.ok, ok)
+			assert.Equal(t, tc.newKey, newKey)
+			assert.Equal(t, tc.legacy, legacy)
 		})
 	}
 }
