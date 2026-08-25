@@ -127,6 +127,20 @@ func TestConvert_LeavesUnmappedComponentsAlone(t *testing.T) {
 	assert.Equal(t, in, got)
 }
 
+// remapIDs identifies entries via a type assertion that yields "" on failure,
+// so a malformed non-string entry must simply be carried through untouched.
+func TestConvert_LeavesNonStringReferenceEntriesAlone(t *testing.T) {
+	got := runConverter(t, map[string]string{"otlphttp/observe": "otlp_http/observe"}, map[string]any{
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"logs": map[string]any{"exporters": []any{42, "otlphttp/observe", nil}},
+			},
+		},
+	})
+	pipeline := got["service"].(map[string]any)["pipelines"].(map[string]any)["logs"].(map[string]any)
+	assert.Equal(t, []any{42, "otlp_http/observe", nil}, pipeline["exporters"])
+}
+
 func TestConvert_EmptyTableIsNoOp(t *testing.T) {
 	in := map[string]any{
 		"exporters": map[string]any{

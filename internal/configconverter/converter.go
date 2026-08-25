@@ -15,6 +15,7 @@ package configconverter
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -136,9 +137,10 @@ func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]st
 // rewriteReferences updates the ID lists that wire components into the service,
 // so a pipeline still naming a legacy ID points at the component that
 // rewriteDefinitions moved.
+//
+// AllKeys returns a snapshot rather than a live view, so rewriting keys while
+// ranging over it is safe.
 func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]string) error {
-	updates := make(map[string][]any)
-
 	for _, key := range conf.AllKeys() {
 		if !isReferenceKey(key) {
 			continue
@@ -147,37 +149,39 @@ func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]str
 		if !ok {
 			continue
 		}
-		next := make([]any, len(refs))
-		copy(next, refs)
-		changed := false
-		for i, ref := range refs {
-			id, ok := ref.(string)
-			if !ok {
-				continue
-			}
-			canonical, found := c.mappings[id]
-			if !found {
-				continue
-			}
-			next[i] = canonical
-			applied[id] = canonical
-			changed = true
+		remapped := c.remapIDs(refs, applied)
+		if remapped == nil {
+			continue
 		}
-		if changed {
-			updates[key] = next
-		}
-	}
-
-	for key, refs := range updates {
 		// Delete before merging: with the confmap.enableMergeAppendOption
 		// feature gate enabled, merging a list appends to the existing one
 		// rather than replacing it.
 		conf.Delete(key)
-		if err := conf.Merge(confmap.NewFromStringMap(map[string]any{key: refs})); err != nil {
+		if err := conf.Merge(confmap.NewFromStringMap(map[string]any{key: remapped})); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// remapIDs returns refs with every legacy ID replaced by its canonical form, or
+// nil when the list holds none. A non-string entry never matches: the failed
+// assertion yields "", and no component ID is empty.
+func (c *converter) remapIDs(refs []any, applied map[string]string) []any {
+	var out []any
+	for i, ref := range refs {
+		id, _ := ref.(string)
+		canonical, found := c.mappings[id]
+		if !found {
+			continue
+		}
+		if out == nil {
+			out = slices.Clone(refs)
+		}
+		out[i] = canonical
+		applied[id] = canonical
+	}
+	return out
 }
 
 // splitComponentKey breaks a flat key such as
