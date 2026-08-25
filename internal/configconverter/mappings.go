@@ -13,6 +13,4 @@ package configconverter
 // Add an entry in the same PR that renames a bundled component ID, and keep it
 // for at least as long as upstream keeps its own type aliases. Removing an entry
 // is itself a breaking change.
-//
-// See docs/config-compatibility.md.
 var LegacyComponentIDs = map[string]string{}

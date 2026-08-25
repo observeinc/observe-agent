@@ -15,11 +15,9 @@ package configconverter
 
 import (
 	"context"
-	"sort"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/zap"
 )
 
 // componentSections are the top-level keys whose immediate children are
@@ -42,7 +40,6 @@ var pipelineRefKeys = map[string]struct{}{
 
 type converter struct {
 	mappings map[string]string
-	logger   *zap.Logger
 }
 
 // NewFactory returns a converter factory that applies LegacyComponentIDs.
@@ -51,14 +48,8 @@ func NewFactory() confmap.ConverterFactory {
 }
 
 func newFactory(mappings map[string]string) confmap.ConverterFactory {
-	return confmap.NewConverterFactory(func(set confmap.ConverterSettings) confmap.Converter {
-		logger := set.Logger
-		if logger == nil {
-			// The resolver hands ConverterSettings to factories untouched, so a
-			// caller that leaves Logger unset would otherwise panic in Convert.
-			logger = zap.NewNop()
-		}
-		return &converter{mappings: mappings, logger: logger}
+	return confmap.NewConverterFactory(func(confmap.ConverterSettings) confmap.Converter {
+		return &converter{mappings: mappings}
 	})
 }
 
@@ -66,15 +57,10 @@ func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	if conf == nil || len(c.mappings) == 0 {
 		return nil
 	}
-	applied := make(map[string]string)
-	if err := c.rewriteDefinitions(conf, applied); err != nil {
+	if err := c.rewriteDefinitions(conf); err != nil {
 		return err
 	}
-	if err := c.rewriteReferences(conf, applied); err != nil {
-		return err
-	}
-	c.warnApplied(applied)
-	return nil
+	return c.rewriteReferences(conf)
 }
 
 // rewriteDefinitions moves every leaf belonging to a legacy component ID under
@@ -85,7 +71,7 @@ func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 // legacy leaves win on conflict, which is the intended precedence: the bundled
 // config is canonical by construction, so anything found under a legacy ID was
 // authored by the user.
-func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]string) error {
+func (c *converter) rewriteDefinitions(conf *confmap.Conf) error {
 	rewritten := make(map[string]any)
 	var stale []string
 
@@ -104,7 +90,6 @@ func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]st
 		}
 		rewritten[newKey] = conf.Get(key)
 		stale = append(stale, key)
-		applied[id] = canonical
 	}
 
 	if len(stale) == 0 {
@@ -119,7 +104,7 @@ func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]st
 // rewriteReferences updates the ID lists that wire components into the service,
 // so a pipeline still naming a legacy ID points at the component that
 // rewriteDefinitions moved.
-func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]string) error {
+func (c *converter) rewriteReferences(conf *confmap.Conf) error {
 	updates := make(map[string][]any)
 
 	for _, key := range conf.AllKeys() {
@@ -143,7 +128,6 @@ func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]str
 				continue
 			}
 			next[i] = canonical
-			applied[id] = canonical
 			changed = true
 		}
 		if changed {
@@ -192,19 +176,4 @@ func isReferenceKey(key string) bool {
 		return ok
 	}
 	return false
-}
-
-func (c *converter) warnApplied(applied map[string]string) {
-	legacyIDs := make([]string, 0, len(applied))
-	for legacy := range applied {
-		legacyIDs = append(legacyIDs, legacy)
-	}
-	sort.Strings(legacyIDs)
-	for _, legacy := range legacyIDs {
-		c.logger.Warn(
-			"remapped a deprecated component id in the otel configuration; update your configuration to use the new id",
-			zap.String("deprecated_id", legacy),
-			zap.String("new_id", applied[legacy]),
-		)
-	}
 }

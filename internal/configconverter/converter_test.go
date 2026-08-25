@@ -7,14 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 func runConverter(t *testing.T, mappings map[string]string, in map[string]any) map[string]any {
 	t.Helper()
 	conf := confmap.NewFromStringMap(in)
-	conv := newFactory(mappings).Create(confmap.ConverterSettings{Logger: zap.NewNop()})
+	conv := newFactory(mappings).Create(confmap.ConverterSettings{})
 	require.NoError(t, conv.Convert(context.Background(), conf))
 	return conf.ToStringMap()
 }
@@ -139,51 +137,13 @@ func TestConvert_EmptyTableIsNoOp(t *testing.T) {
 	assert.Equal(t, in, runConverter(t, map[string]string{}, in))
 }
 
-// The resolver passes ConverterSettings to factories untouched, so an unset
-// Logger has to be tolerated rather than panicking mid-resolve.
-func TestConvert_NilLoggerDoesNotPanic(t *testing.T) {
-	conf := confmap.NewFromStringMap(map[string]any{
-		"exporters": map[string]any{"otlphttp/observe": map[string]any{"compression": "gzip"}},
-	})
-	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
-		Create(confmap.ConverterSettings{})
-	require.NotPanics(t, func() {
-		require.NoError(t, conv.Convert(context.Background(), conf))
-	})
-}
-
-func TestConvert_WarnsOncePerRemappedID(t *testing.T) {
-	core, logs := observer.New(zap.WarnLevel)
-	conf := confmap.NewFromStringMap(map[string]any{
-		"exporters": map[string]any{
-			"otlphttp/observe": map[string]any{
-				"compression":   "gzip",
-				"sending_queue": map[string]any{"num_consumers": 20},
-			},
-		},
-		"service": map[string]any{
-			"pipelines": map[string]any{
-				"logs": map[string]any{"exporters": []any{"otlphttp/observe"}},
-			},
-		},
-	})
-	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
-		Create(confmap.ConverterSettings{Logger: zap.New(core)})
-	require.NoError(t, conv.Convert(context.Background(), conf))
-
-	entries := logs.All()
-	require.Len(t, entries, 1, "multiple leaves and a pipeline reference should still warn once")
-	assert.Equal(t, "otlphttp/observe", entries[0].ContextMap()["deprecated_id"])
-	assert.Equal(t, "otlp_http/observe", entries[0].ContextMap()["new_id"])
-}
-
 // The shipped table is applied through NewFactory; exercise that path so the
 // wiring is covered even while the table is empty.
 func TestNewFactory_AppliesShippedTable(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},
 	})
-	conv := NewFactory().Create(confmap.ConverterSettings{Logger: zap.NewNop()})
+	conv := NewFactory().Create(confmap.ConverterSettings{})
 	require.NoError(t, conv.Convert(context.Background(), conf))
 
 	for legacy, canonical := range LegacyComponentIDs {
