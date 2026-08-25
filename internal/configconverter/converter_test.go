@@ -4,16 +4,20 @@ import (
 	"context"
 	"testing"
 
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func runConverter(t *testing.T, mappings map[string]string, in map[string]any) map[string]any {
 	t.Helper()
 	conf := confmap.NewFromStringMap(in)
 	conv := newFactory(mappings).Create(confmap.ConverterSettings{})
-	require.NoError(t, conv.Convert(context.Background(), conf))
+	ctx := logger.WithCtx(context.Background(), logger.GetNop())
+	require.NoError(t, conv.Convert(ctx, conf))
 	return conf.ToStringMap()
 }
 
@@ -137,6 +141,47 @@ func TestConvert_EmptyTableIsNoOp(t *testing.T) {
 	assert.Equal(t, in, runConverter(t, map[string]string{}, in))
 }
 
+// A remapped id must surface in the logs, since the converter rewrites it
+// before the collector could emit its own deprecated alias warning. One entry
+// per id, not one per rewritten leaf.
+func TestConvert_WarnsOncePerRemappedID(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	ctx := logger.WithCtx(context.Background(), zap.New(core))
+	conf := confmap.NewFromStringMap(map[string]any{
+		"exporters": map[string]any{
+			"otlphttp/observe": map[string]any{
+				"compression":   "gzip",
+				"sending_queue": map[string]any{"num_consumers": 20},
+			},
+		},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"logs": map[string]any{"exporters": []any{"otlphttp/observe"}},
+			},
+		},
+	})
+	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
+		Create(confmap.ConverterSettings{})
+	require.NoError(t, conv.Convert(ctx, conf))
+
+	entries := logs.All()
+	require.Len(t, entries, 1, "two rewritten leaves and a pipeline reference should still warn once")
+	assert.Equal(t, "otlphttp/observe", entries[0].ContextMap()["deprecated_id"])
+	assert.Equal(t, "otlp_http/observe", entries[0].ContextMap()["new_id"])
+}
+
+func TestConvert_DoesNotWarnWhenNothingRemapped(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	ctx := logger.WithCtx(context.Background(), zap.New(core))
+	conf := confmap.NewFromStringMap(map[string]any{
+		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},
+	})
+	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
+		Create(confmap.ConverterSettings{})
+	require.NoError(t, conv.Convert(ctx, conf))
+	assert.Zero(t, logs.Len())
+}
+
 // The shipped table is applied through NewFactory; exercise that path so the
 // wiring is covered even while the table is empty.
 func TestNewFactory_AppliesShippedTable(t *testing.T) {
@@ -144,7 +189,8 @@ func TestNewFactory_AppliesShippedTable(t *testing.T) {
 		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},
 	})
 	conv := NewFactory().Create(confmap.ConverterSettings{})
-	require.NoError(t, conv.Convert(context.Background(), conf))
+	ctx := logger.WithCtx(context.Background(), logger.GetNop())
+	require.NoError(t, conv.Convert(ctx, conf))
 
 	for legacy, canonical := range LegacyComponentIDs {
 		assert.NotEqual(t, legacy, canonical, "a mapping to itself would loop pointlessly")
