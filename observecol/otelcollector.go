@@ -39,9 +39,9 @@ func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
 				},
-				// Runs after every URI above has been merged, remapping
-				// component IDs that earlier releases of the bundled config
-				// used. See internal/configconverter.
+				// Runs after every URI above is merged, folding component IDs
+				// from earlier releases of the bundled config into their
+				// current names. See internal/configconverter.
 				ConverterFactories: []confmap.ConverterFactory{
 					configconverter.NewFactory(),
 				},

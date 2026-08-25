@@ -23,8 +23,8 @@ func runConverter(t *testing.T, mappings map[string]string, in map[string]any) m
 
 // A legacy block and an existing canonical block must combine as a deep merge,
 // with the user's legacy leaves winning and untouched bundled leaves surviving.
-// This is the case that breaks today: the override lands on a separate component
-// instead of merging.
+// Without the converter the override lands on a separate component instead of
+// merging.
 func TestConvert_MergesLegacyBlockIntoCanonical(t *testing.T) {
 	got := runConverter(t, map[string]string{"otlphttp/observe": "otlp_http/observe"}, map[string]any{
 		"exporters": map[string]any{
@@ -110,8 +110,9 @@ func TestConvert_RewritesPipelineAndExtensionReferences(t *testing.T) {
 		"unmapped entries in the list should keep their position and value")
 }
 
-// A user component that merely looks legacy is none of our business: the
-// upstream type alias resolves it, and only IDs in the table were broken by us.
+// A user component that merely looks legacy must be left alone: the upstream
+// type alias still resolves it, and only IDs in the table were broken by our
+// renames.
 func TestConvert_LeavesUnmappedComponentsAlone(t *testing.T) {
 	in := map[string]any{
 		"receivers": map[string]any{
@@ -196,8 +197,10 @@ func TestConvert_DoesNotWarnWhenNothingRemapped(t *testing.T) {
 	assert.Zero(t, logs.Len())
 }
 
-// The shipped table is applied through NewFactory; exercise that path so the
-// wiring is covered even while the table is empty.
+// NewFactory must apply the shipped table. The loop pins two invariants the
+// rewrite depends on: a mapping never points at itself, and a canonical ID is
+// never itself a legacy key, which would leave the result dependent on map
+// iteration order.
 func TestNewFactory_AppliesShippedTable(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},

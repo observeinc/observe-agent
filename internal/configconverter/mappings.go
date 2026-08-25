@@ -10,9 +10,9 @@ package configconverter
 // upstream type alias still resolves it. Keying on the full ID leaves those
 // alone.
 //
-// Add an entry in the same PR that renames a bundled component ID, and keep it
-// for at least as long as upstream keeps its own type aliases. Removing an entry
-// is itself a breaking change.
+// Add an entry whenever a bundled component ID is renamed, and keep it for at
+// least as long as upstream keeps its own type aliases. Removing an entry is
+// itself a breaking change.
 var LegacyComponentIDs = map[string]string{
 	// Renamed to follow the upstream lower_snake_case component naming
 	// convention (open-telemetry/opentelemetry-collector#14208).

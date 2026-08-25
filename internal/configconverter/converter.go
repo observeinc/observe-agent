@@ -5,12 +5,11 @@
 // and --config merge against, and confmap merges by literal key string. Renaming
 // a bundled ID therefore does more than change a label: an override still naming
 // the old ID stops merging into our component and instead defines a separate one
-// holding only the override's own fields, which then fails validation. Note that
-// this is independent of the upstream type aliases, which keep resolving the old
-// spelling just fine.
+// holding only the override's own fields, which then fails validation. This is
+// independent of the upstream type aliases, which still resolve the old spelling.
 //
-// The converter registered here runs after the resolver has merged every config
-// source and folds legacy IDs back into their canonical counterparts.
+// The converter runs after the resolver has merged every config source and folds
+// legacy IDs back into their canonical counterparts.
 package configconverter
 
 import (
@@ -72,9 +71,9 @@ func (c *converter) Convert(ctx context.Context, conf *confmap.Conf) error {
 	return nil
 }
 
-// warnApplied reports each remapped ID once. Nothing else will: the converter
-// rewrites the ID before the collector ever sees it, so the upstream deprecated
-// alias warning never fires for these.
+// warnApplied reports each remapped ID once. Nothing else reports it: the
+// converter rewrites the ID before the collector sees it, so the upstream
+// deprecated alias warning never fires for these.
 func warnApplied(ctx context.Context, applied map[string]string) {
 	if len(applied) == 0 {
 		return
@@ -98,11 +97,10 @@ func warnApplied(ctx context.Context, applied map[string]string) {
 // rewriteDefinitions moves every leaf belonging to a legacy component ID under
 // the canonical ID.
 //
-// Working leaf by leaf rather than moving whole component blocks is what makes a
-// legacy block and an existing canonical block combine as a deep merge. The
-// legacy leaves win on conflict, which is the intended precedence: the bundled
-// config is canonical by construction, so anything found under a legacy ID was
-// authored by the user.
+// Rewriting individual leaves rather than whole blocks is what lets a legacy
+// block deep-merge with an existing canonical one. Legacy leaves win on
+// conflict, which is the intended precedence: the bundled config is canonical by
+// construction, so anything under a legacy ID was authored by the user.
 func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]string) error {
 	rewritten := make(map[string]any)
 	var stale []string
