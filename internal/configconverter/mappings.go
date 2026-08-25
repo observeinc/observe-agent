@@ -13,4 +13,15 @@ package configconverter
 // Add an entry in the same PR that renames a bundled component ID, and keep it
 // for at least as long as upstream keeps its own type aliases. Removing an entry
 // is itself a breaking change.
-var LegacyComponentIDs = map[string]string{}
+var LegacyComponentIDs = map[string]string{
+	// Renamed to follow the upstream lower_snake_case component naming
+	// convention (open-telemetry/opentelemetry-collector#14208).
+	"otlphttp/observe":                    "otlp_http/observe",
+	"otlphttp/observemetrics":             "otlp_http/observemetrics",
+	"otlphttp/observetracing":             "otlp_http/observetracing",
+	"otlphttp/agentheartbeat":             "otlp_http/agentheartbeat",
+	"filelog/host_monitoring":             "file_log/host_monitoring",
+	"filestats/agent":                     "file_stats/agent",
+	"hostmetrics/host-monitoring-host":    "host_metrics/host-monitoring-host",
+	"hostmetrics/host-monitoring-process": "host_metrics/host-monitoring-process",
+}
