@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,6 +12,13 @@ import (
 	"github.com/observeinc/observe-agent/internal/utils"
 	"github.com/spf13/viper"
 )
+
+// InstanceIdEnvVar is the environment variable the rendered collector config
+// reads the agent instance ID from. Deployments that already know a stable
+// identity for the agent process set it before the agent starts; the Helm chart
+// uses it to pass the node name for daemonsets, the deployment name for
+// singleton deployments, and the pod name otherwise.
+const InstanceIdEnvVar = "OBSERVE_AGENT_INSTANCE_ID"
 
 type AgentLocalData struct {
 	AgentInstanceId string `json:"agent_instance_id"`
@@ -24,17 +30,7 @@ type AgentResource struct {
 	filePath string
 }
 
-const nameSuffixCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 var defaultLocalFilePath = filepath.Join(utils.GetDefaultAgentDataPath(), "agent_local_data.json")
-
-func generateRandomString(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = nameSuffixCharset[rand.Intn(len(nameSuffixCharset))]
-	}
-	return string(b)
-}
 
 func New() (*AgentResource, error) {
 	var filePath string
@@ -61,25 +57,27 @@ func New() (*AgentResource, error) {
 func (a *AgentResource) initialize() error {
 	a.data.AgentStartTime = time.Now().UnixNano()
 
-	err := a.parseLocalFile()
-
-	if err != nil && os.IsNotExist(err) {
-		a.data.AgentInstanceId = a.generateAgentInstanceId()
-
-		if err := a.persistToLocalFile(); err != nil {
-			return fmt.Errorf("failed to persist agent data: %w", err)
-		}
+	// A configured ID is authoritative and already stable across restarts, so it
+	// never needs to be read back from or written to the local data file.
+	if id := configuredInstanceId(); id != "" {
+		a.data.AgentInstanceId = id
 		return nil
 	}
 
-	if err != nil {
-		// Provide more specific error message for permission issues
+	// Agents installed before the ID became deterministic have a random suffix
+	// that only exists in this file, so keep using it to preserve their identity.
+	id, err := a.readInstanceIdFromLocalFile()
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		if errors.Is(err, fs.ErrPermission) {
 			return fmt.Errorf("failed to parse local file: permission denied reading %s (check file permissions and ownership)", a.filePath)
 		}
 		return fmt.Errorf("failed to parse local file: %w", err)
 	}
+	if id == "" {
+		id = defaultInstanceId()
+	}
 
+	a.data.AgentInstanceId = id
 	return nil
 }
 
@@ -99,37 +97,38 @@ func (a *AgentResource) GetFilePath() string {
 	return a.filePath
 }
 
-func (a *AgentResource) generateAgentInstanceId() string {
+// configuredInstanceId returns the ID set explicitly by the user, either through
+// the agent config or through the environment variable the collector config and
+// the Helm chart use.
+func configuredInstanceId() string {
+	if id := viper.GetString("agent_instance_id"); id != "" {
+		return id
+	}
+	return os.Getenv(InstanceIdEnvVar)
+}
+
+// defaultInstanceId identifies the agent by hostname, which is stable across
+// restarts without having to be persisted. Environments where the hostname is
+// neither stable nor unique per agent, such as Kubernetes pods, are expected to
+// set InstanceIdEnvVar instead.
+func defaultInstanceId() string {
 	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
+	if err != nil || hostname == "" {
+		return "unknown"
 	}
-	return fmt.Sprintf("agent-%s-%s", hostname, generateRandomString(6))
+	return hostname
 }
 
-func (a *AgentResource) persistToLocalFile() error {
-	jsonData, err := json.Marshal(a.data)
-	if err != nil {
-		return err
-	}
-
-	dir := filepath.Dir(a.filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
-	return os.WriteFile(a.filePath, jsonData, 0644)
-}
-
-func (a *AgentResource) parseLocalFile() error {
-	if _, err := os.Stat(a.filePath); err != nil {
-		return err
-	}
-
+func (a *AgentResource) readInstanceIdFromLocalFile() (string, error) {
 	jsonData, err := os.ReadFile(a.filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return json.Unmarshal(jsonData, a.data)
+	var data AgentLocalData
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return "", err
+	}
+
+	return data.AgentInstanceId, nil
 }
