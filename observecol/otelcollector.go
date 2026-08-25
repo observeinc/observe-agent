@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/observeinc/observe-agent/build"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
+	"github.com/observeinc/observe-agent/internal/configconverter"
 	"github.com/observeinc/observe-agent/internal/connections"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,9 +18,10 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.uber.org/zap"
 )
 
-func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
+func generateCollectorSettings(URIs []string, logger *zap.Logger) *otelcol.CollectorSettings {
 	buildInfo := component.BuildInfo{
 		Command:     "observe-agent",
 		Description: "Observe Distribution of Opentelemetry Collector",
@@ -38,6 +41,13 @@ func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
 				},
+				// Runs after every URI above has been merged, remapping
+				// component IDs that earlier releases of the bundled config
+				// used. See internal/configconverter.
+				ConverterFactories: []confmap.ConverterFactory{
+					configconverter.NewFactory(),
+				},
+				ConverterSettings: confmap.ConverterSettings{Logger: logger},
 			},
 		},
 	}
@@ -88,7 +98,7 @@ func GetOtelCollectorSettings(ctx context.Context) (*otelcol.CollectorSettings, 
 	if err != nil {
 		return nil, err
 	}
-	return generateCollectorSettings(URIs), nil
+	return generateCollectorSettings(URIs, logger.FromCtx(ctx)), nil
 }
 
 func GetOtelCollector(ctx context.Context) (*otelcol.Collector, error) {
