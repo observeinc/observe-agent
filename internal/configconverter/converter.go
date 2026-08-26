@@ -8,8 +8,10 @@
 // holding only the override's own fields, which then fails validation. This is
 // independent of the upstream type aliases, which still resolve the old spelling.
 //
-// The converter runs after the resolver has merged every config source and folds
-// legacy IDs back into their canonical counterparts.
+// Bundled templates use canonical IDs. The converter runs after the resolver has
+// merged every config source and folds leftover legacy IDs (from user overrides,
+// --config, or --set) into their canonical counterparts. Because user sources
+// are appended after bundled fragments, remapped legacy leaves win on conflict.
 package configconverter
 
 import (
@@ -18,8 +20,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +35,7 @@ var pipelineRefKeys = []string{"receivers", "processors", "exporters"}
 
 type converter struct {
 	mappings map[string]string
+	logger   *zap.Logger
 }
 
 // NewFactory returns a converter factory that applies LegacyComponentIDs.
@@ -41,12 +44,16 @@ func NewFactory() confmap.ConverterFactory {
 }
 
 func newFactory(mappings map[string]string) confmap.ConverterFactory {
-	return confmap.NewConverterFactory(func(confmap.ConverterSettings) confmap.Converter {
-		return &converter{mappings: mappings}
+	return confmap.NewConverterFactory(func(set confmap.ConverterSettings) confmap.Converter {
+		log := set.Logger
+		if log == nil {
+			log = zap.NewNop()
+		}
+		return &converter{mappings: mappings, logger: log}
 	})
 }
 
-func (c *converter) Convert(ctx context.Context, conf *confmap.Conf) error {
+func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	if conf == nil || len(c.mappings) == 0 {
 		return nil
 	}
@@ -58,22 +65,19 @@ func (c *converter) Convert(ctx context.Context, conf *confmap.Conf) error {
 	if err := c.rewriteReferences(conf, applied); err != nil {
 		return err
 	}
-	c.warnApplied(ctx, applied)
+	c.warnApplied(applied)
 	return nil
 }
 
 // warnApplied reports each remapped ID once. Nothing else reports it: the
 // converter rewrites the ID before the collector sees it, so the upstream
 // deprecated alias warning never fires for these.
-func (c *converter) warnApplied(ctx context.Context, applied map[string]struct{}) {
-	// logger.FromCtx builds a fresh logger when the context carries none, so
-	// stay out of it on the common path where nothing was remapped.
+func (c *converter) warnApplied(applied map[string]struct{}) {
 	if len(applied) == 0 {
 		return
 	}
-	log := logger.FromCtx(ctx)
 	for _, legacy := range slices.Sorted(maps.Keys(applied)) {
-		log.Warn(
+		c.logger.Warn(
 			"remapped a deprecated component id in the otel configuration; update your configuration to use the new id",
 			zap.String("deprecated_id", legacy),
 			zap.String("new_id", c.mappings[legacy]),
@@ -86,18 +90,23 @@ func (c *converter) warnApplied(ctx context.Context, applied map[string]struct{}
 //
 // Rewriting individual leaves rather than whole blocks is what lets a legacy
 // block deep-merge with an existing canonical one. Legacy leaves win on
-// conflict, which is the intended precedence: the bundled config is canonical by
-// construction, so anything under a legacy ID was authored by the user.
+// conflict, which is the intended precedence once bundled templates use
+// canonical IDs: anything still under a legacy ID was authored by the user.
+//
+// Values are copied from xconfmap.ToStringMapRaw so ExpandedValue metadata
+// from environment expansion survives the move. Conf.Get strips that metadata
+// and can turn a string-origin env var into a number or bool.
 func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]struct{}) error {
 	rewritten := make(map[string]any)
 	var stale []string
+	raw := xconfmap.ToStringMapRaw(conf)
 
 	for _, key := range conf.AllKeys() {
 		newKey, legacy, ok := c.remapDefinitionKey(key)
 		if !ok {
 			continue
 		}
-		rewritten[newKey] = conf.Get(key)
+		rewritten[newKey] = nestedGet(raw, key)
 		stale = append(stale, key)
 		applied[legacy] = struct{}{}
 	}
@@ -110,6 +119,20 @@ func (c *converter) rewriteDefinitions(conf *confmap.Conf, applied map[string]st
 		conf.Delete(key)
 	}
 	return conf.Merge(confmap.NewFromStringMap(rewritten))
+}
+
+// nestedGet walks a raw nested confmap along a flattened key, returning the
+// leaf without sanitizing ExpandedValue.
+func nestedGet(raw map[string]any, key string) any {
+	var cur any = raw
+	for _, part := range strings.Split(key, confmap.KeyDelimiter) {
+		obj, ok := cur.(map[string]any)
+		if !ok {
+			return nil
+		}
+		cur = obj[part]
+	}
+	return cur
 }
 
 // remapDefinitionKey swaps the component-ID segment of a flat definition key
@@ -136,18 +159,16 @@ func (c *converter) remapDefinitionKey(key string) (newKey, legacy string, ok bo
 // rewriteDefinitions moved.
 //
 // AllKeys returns a snapshot rather than a live view, so rewriting keys while
-// ranging over it is safe.
+// ranging over it is safe. OTel accepts a scalar or comma-separated string in
+// place of a list; both are remapped so a renamed definition is not left
+// dangling.
 func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]struct{}) error {
 	for _, key := range conf.AllKeys() {
 		if !isReferenceKey(key) {
 			continue
 		}
-		refs, ok := conf.Get(key).([]any)
+		remapped, ok := c.remapReferenceValue(conf.Get(key), applied)
 		if !ok {
-			continue
-		}
-		remapped := c.remapIDs(refs, applied)
-		if remapped == nil {
 			continue
 		}
 		// Delete before merging: with the confmap.enableMergeAppendOption
@@ -159,6 +180,45 @@ func (c *converter) rewriteReferences(conf *confmap.Conf, applied map[string]str
 		}
 	}
 	return nil
+}
+
+// remapReferenceValue rewrites a pipeline or extension reference. ok is false
+// when the value holds no mapped IDs (or is an unrecognized type).
+func (c *converter) remapReferenceValue(val any, applied map[string]struct{}) (any, bool) {
+	switch refs := val.(type) {
+	case []any:
+		remapped := c.remapIDs(refs, applied)
+		if remapped == nil {
+			return nil, false
+		}
+		return remapped, true
+	case string:
+		return c.remapRefString(refs, applied)
+	default:
+		return nil, false
+	}
+}
+
+// remapRefString handles a scalar ID or a comma-separated list of IDs.
+func (c *converter) remapRefString(s string, applied map[string]struct{}) (any, bool) {
+	if !strings.Contains(s, ",") {
+		canonical, found := c.mappings[s]
+		if !found {
+			return nil, false
+		}
+		applied[s] = struct{}{}
+		return canonical, true
+	}
+	parts := strings.Split(s, ",")
+	refs := make([]any, len(parts))
+	for i, p := range parts {
+		refs[i] = strings.TrimSpace(p)
+	}
+	remapped := c.remapIDs(refs, applied)
+	if remapped == nil {
+		return nil, false
+	}
+	return remapped, true
 }
 
 // remapIDs returns refs with every legacy ID replaced by its canonical form, or

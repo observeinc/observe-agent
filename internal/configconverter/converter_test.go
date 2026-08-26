@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -16,8 +16,7 @@ func runConverter(t *testing.T, mappings map[string]string, in map[string]any) m
 	t.Helper()
 	conf := confmap.NewFromStringMap(in)
 	conv := newFactory(mappings).Create(confmap.ConverterSettings{})
-	ctx := logger.WithCtx(context.Background(), logger.GetNop())
-	require.NoError(t, conv.Convert(ctx, conf))
+	require.NoError(t, conv.Convert(context.Background(), conf))
 	return conf.ToStringMap()
 }
 
@@ -161,7 +160,6 @@ func TestConvert_EmptyTableIsNoOp(t *testing.T) {
 // per id, not one per rewritten leaf.
 func TestConvert_WarnsOncePerRemappedID(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
-	ctx := logger.WithCtx(context.Background(), zap.New(core))
 	conf := confmap.NewFromStringMap(map[string]any{
 		"exporters": map[string]any{
 			"otlphttp/observe": map[string]any{
@@ -176,8 +174,8 @@ func TestConvert_WarnsOncePerRemappedID(t *testing.T) {
 		},
 	})
 	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
-		Create(confmap.ConverterSettings{})
-	require.NoError(t, conv.Convert(ctx, conf))
+		Create(confmap.ConverterSettings{Logger: zap.New(core)})
+	require.NoError(t, conv.Convert(context.Background(), conf))
 
 	entries := logs.All()
 	require.Len(t, entries, 1, "two rewritten leaves and a pipeline reference should still warn once")
@@ -187,13 +185,12 @@ func TestConvert_WarnsOncePerRemappedID(t *testing.T) {
 
 func TestConvert_DoesNotWarnWhenNothingRemapped(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
-	ctx := logger.WithCtx(context.Background(), zap.New(core))
 	conf := confmap.NewFromStringMap(map[string]any{
 		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},
 	})
 	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
-		Create(confmap.ConverterSettings{})
-	require.NoError(t, conv.Convert(ctx, conf))
+		Create(confmap.ConverterSettings{Logger: zap.New(core)})
+	require.NoError(t, conv.Convert(context.Background(), conf))
 	assert.Zero(t, logs.Len())
 }
 
@@ -206,8 +203,7 @@ func TestNewFactory_AppliesShippedTable(t *testing.T) {
 		"exporters": map[string]any{"otlp_http/observe": map[string]any{"compression": "zstd"}},
 	})
 	conv := NewFactory().Create(confmap.ConverterSettings{})
-	ctx := logger.WithCtx(context.Background(), logger.GetNop())
-	require.NoError(t, conv.Convert(ctx, conf))
+	require.NoError(t, conv.Convert(context.Background(), conf))
 
 	for legacy, canonical := range LegacyComponentIDs {
 		assert.NotEqual(t, legacy, canonical, "a mapping to itself would loop pointlessly")
@@ -257,4 +253,42 @@ func TestIsReferenceKey(t *testing.T) {
 	assert.False(t, isReferenceKey("service::telemetry::resource"))
 	assert.False(t, isReferenceKey("extensions::file_storage::directory"))
 	assert.False(t, isReferenceKey("service::pipelines::logs::unknown"))
+}
+
+func TestConvert_RewritesScalarAndCSVPipelineReferences(t *testing.T) {
+	got := runConverter(t, map[string]string{"otlphttp/observe": "otlp_http/observe"}, map[string]any{
+		"exporters": map[string]any{
+			"otlphttp/observe": map[string]any{"endpoint": "https://example.collect.observeinc.com/v2/otel"},
+		},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"logs":   map[string]any{"exporters": "otlphttp/observe"},
+				"traces": map[string]any{"exporters": "otlphttp/observe, count"},
+			},
+		},
+	})
+
+	pipelines := got["service"].(map[string]any)["pipelines"].(map[string]any)
+	assert.Equal(t, "otlp_http/observe", pipelines["logs"].(map[string]any)["exporters"])
+	assert.Equal(t, []any{"otlp_http/observe", "count"}, pipelines["traces"].(map[string]any)["exporters"])
+}
+
+func TestConvert_PreservesExpandedValueMetadata(t *testing.T) {
+	expanded := xconfmap.ExpandedValue{Value: 123456, Original: "123456"}
+	conf := confmap.NewFromStringMap(map[string]any{
+		"exporters": map[string]any{
+			"otlphttp/observe": map[string]any{
+				"headers": map[string]any{"x-tenant-id": expanded},
+			},
+		},
+	})
+	conv := newFactory(map[string]string{"otlphttp/observe": "otlp_http/observe"}).
+		Create(confmap.ConverterSettings{})
+	require.NoError(t, conv.Convert(context.Background(), conf))
+
+	raw := xconfmap.ToStringMapRaw(conf)
+	headers := raw["exporters"].(map[string]any)["otlp_http/observe"].(map[string]any)["headers"].(map[string]any)
+	got, ok := headers["x-tenant-id"].(xconfmap.ExpandedValue)
+	require.True(t, ok, "expected ExpandedValue after remap, got %T", headers["x-tenant-id"])
+	assert.Equal(t, expanded, got)
 }

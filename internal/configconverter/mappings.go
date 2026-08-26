@@ -12,7 +12,9 @@ package configconverter
 //
 // Add an entry whenever a bundled component ID is renamed, and keep it for at
 // least as long as upstream keeps its own type aliases. Removing an entry is
-// itself a breaking change.
+// itself a breaking change. File-storage clients name files from the component
+// type and name, so a rename also changes the on-disk queue/checkpoint
+// filename; MigrateFileStorage uses this table to rename those files.
 var LegacyComponentIDs = map[string]string{
 	// Renamed to follow the upstream lower_snake_case component naming
 	// convention (open-telemetry/opentelemetry-collector#14208).
