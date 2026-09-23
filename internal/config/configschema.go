@@ -86,7 +86,7 @@ type InternalTelemetryMetricsConfig struct {
 	Enabled bool   `yaml:"enabled" mapstructure:"enabled" default:"true"`
 	Host    string `yaml:"host" mapstructure:"host" default:"localhost"`
 	Port    int    `yaml:"port" mapstructure:"port" default:"8888"`
-	Level   string `yaml:"level" mapstructure:"level" default:"detailed"`
+	Level   string `yaml:"level" mapstructure:"level" default:"normal"`
 }
 
 type InternalTelemetryLogsConfig struct {
