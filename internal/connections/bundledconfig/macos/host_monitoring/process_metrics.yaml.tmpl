@@ -1,0 +1,47 @@
+{{- /* Forked from the default because gopsutil does not implement context
+       switches, paging faults, or pending signals on darwin. Leaving them
+       enabled makes every scrape emit a partial-error per process, which the
+       collector logs as a single multi-hundred-KB line once per interval. */ -}}
+receivers:
+  hostmetrics/host-monitoring-process:
+    collection_interval: 60s
+    scrapers:
+      process:
+        metrics:
+          process.context_switches:
+            enabled: false
+          process.cpu.utilization:
+            enabled: true
+          process.disk.operations:
+            enabled: true
+          process.memory.utilization:
+            enabled: true
+          process.open_file_descriptors:
+            enabled: true
+          process.paging.faults:
+            enabled: false
+          process.signals_pending:
+            enabled: false
+          process.threads:
+            enabled: true
+        mute_process_name_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
+
+service:
+  pipelines:
+    metrics/host_monitoring_process:
+      receivers: [hostmetrics/host-monitoring-process]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        - batch
+      exporters: [prometheusremotewrite/observe]
