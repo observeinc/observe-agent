@@ -362,7 +362,7 @@ service:
             encoding: console
             level: INFO
         metrics:
-            level: detailed
+            level: normal
             readers:
                 - pull:
                     exporter:
