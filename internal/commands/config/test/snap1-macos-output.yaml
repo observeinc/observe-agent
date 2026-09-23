@@ -394,7 +394,7 @@ receivers:
             process:
                 metrics:
                     process.context_switches:
-                        enabled: true
+                        enabled: false
                     process.cpu.utilization:
                         enabled: true
                     process.disk.operations:
@@ -404,9 +404,9 @@ receivers:
                     process.open_file_descriptors:
                         enabled: true
                     process.paging.faults:
-                        enabled: true
+                        enabled: false
                     process.signals_pending:
-                        enabled: true
+                        enabled: false
                     process.threads:
                         enabled: true
                 mute_process_exe_error: true

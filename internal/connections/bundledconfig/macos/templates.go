@@ -1,3 +1,8 @@
 package macos
 
-// Add Mac specific templates here if we ever need them
+import "embed"
+
+var (
+	//go:embed host_monitoring/process_metrics.yaml.tmpl
+	ProcessMetricsTemplateFS embed.FS
+)

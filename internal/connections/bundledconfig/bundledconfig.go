@@ -5,6 +5,7 @@ import (
 
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/docker"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/linux"
+	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/macos"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/shared"
 	"github.com/observeinc/observe-agent/internal/connections/bundledconfig/windows"
 )
@@ -43,7 +44,9 @@ var LinuxTemplateFS = ConfigTemplates{
 	"self_monitoring/logs_and_metrics.yaml.tmpl": linux.LogsAndMetricsTemplateFS,
 }
 
-var MacOSTemplateFS = ConfigTemplates{}
+var MacOSTemplateFS = ConfigTemplates{
+	"host_monitoring/process_metrics.yaml.tmpl": macos.ProcessMetricsTemplateFS,
+}
 
 var WindowsTemplateFS = ConfigTemplates{
 	"common/resource_detection.yaml.tmpl":        windows.ResourceDetectionTemplateFS,
