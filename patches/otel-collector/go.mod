@@ -8,18 +8,17 @@ module go.opentelemetry.io/collector
 // For the OpenTelemetry Collector Core distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
-go 1.25.0
+go 1.26.8
 
 require (
 	github.com/golang/snappy v1.0.0
 	github.com/klauspost/compress v1.18.5
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516
-	google.golang.org/grpc v1.80.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+	google.golang.org/grpc v1.83.2
 )
 
 require (
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
