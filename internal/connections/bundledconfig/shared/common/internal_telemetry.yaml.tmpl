@@ -1,7 +1,9 @@
 service:
   telemetry:
     resource:
-      observe.agent.instance.id: ${env:OBSERVE_AGENT_INSTANCE_ID}
+      attributes:
+        - name: observe.agent.instance.id
+          value: ${env:OBSERVE_AGENT_INSTANCE_ID}
     {{- if .InternalTelemetry.Metrics.Enabled }}
     metrics:
       level: {{ .InternalTelemetry.Metrics.Level }}

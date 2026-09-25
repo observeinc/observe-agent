@@ -1,6 +1,6 @@
 {{- /* Forked from the default due to hostfs root path */ -}}
 receivers:
-  hostmetrics/host-monitoring-process:
+  host_metrics/host-monitoring-process:
     collection_interval: 60s
     root_path: /hostfs
     scrapers:
@@ -30,7 +30,7 @@ receivers:
 service:
   pipelines:
     metrics/host_monitoring_process:
-      receivers: [hostmetrics/host-monitoring-process]
+      receivers: [host_metrics/host-monitoring-process]
       processors:
         - memory_limiter
         - resourcedetection
