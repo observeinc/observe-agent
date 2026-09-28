@@ -1,6 +1,8 @@
 name: SAST, SCA & Image Scan Workflow
 
 on:
+  pull_request:
+    branches: ["main"]
   push:
     branches: ["main"]
   schedule:
@@ -13,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROJECT_KEY: observeinc-observe-agent
+      # Mapped from the secret so the steps below can be skipped when it is
+      # absent (e.g. pull requests from forks, which do not receive secrets).
+      # The `secrets` context is not available in a step `if`, but `env` is.
+      ORCA_SECURITY_API_TOKEN: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -20,6 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Orca SAST Scan
+        if: ${{ env.ORCA_SECURITY_API_TOKEN != '' }}
         uses: orcasecurity/shiftleft-sast-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
@@ -28,22 +35,28 @@ jobs:
           exclude_paths: "vendor,internal/agentresource/agentresource.go"
 
       - name: Run Orca FS Scan
+        if: ${{ env.ORCA_SECURITY_API_TOKEN != '' }}
         uses: orcasecurity/shiftleft-fs-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           path: "."
           exclude_paths: "vendor,components/processors/observek8sattributesprocessor/testdata"
-          exceptions_filepath: .orca/cve-exceptions.yaml
 
   orca-container-scan:
     name: Orca Container Image Scan
     runs-on: ubuntu-observe-agent-8cpu
+    # Skip on pull requests: this job builds release artifacts (GoReleaser +
+    # full Docker image), which we don't want to run on PRs. It still runs on
+    # push to main, the weekly schedule, and manual dispatch. The lightweight
+    # SAST/FS scans above provide PR coverage.
+    if: github.event_name != 'pull_request'
     permissions:
       security-events: write
     env:
       PROJECT_KEY: observeinc-observe-agent
       TEST_TAG: observeinc/observe-agent:test
+      ORCA_SECURITY_API_TOKEN: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -74,9 +87,9 @@ jobs:
         run: docker build --build-arg TARGETPLATFORM=. -f packaging/docker/Dockerfile -t ${{ env.TEST_TAG }} .
 
       - name: Run Orca Container Image Scan
+        if: ${{ env.ORCA_SECURITY_API_TOKEN != '' }}
         uses: orcasecurity/shiftleft-container-image-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           image: ${{ env.TEST_TAG }}
-          exceptions_filepath: .orca/cve-exceptions.yaml
