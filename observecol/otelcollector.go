@@ -3,10 +3,14 @@ package observecol
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/observeinc/observe-agent/build"
+	"github.com/observeinc/observe-agent/internal/commands/util/logger"
+	"github.com/observeinc/observe-agent/internal/configconverter"
 	"github.com/observeinc/observe-agent/internal/connections"
+	"github.com/observeinc/observe-agent/internal/utils"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -37,6 +41,12 @@ func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 					yamlprovider.NewFactory(),
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
+				},
+				// Runs after every URI above is merged, folding component IDs
+				// from earlier releases of the bundled config into their
+				// current names. See internal/configconverter.
+				ConverterFactories: []confmap.ConverterFactory{
+					configconverter.NewFactory(),
 				},
 			},
 		},
@@ -87,6 +97,13 @@ func GetOtelCollectorSettings(ctx context.Context) (*otelcol.CollectorSettings, 
 	URIs, err := buildResolverURIs(fragments, otelConfigs, otelSets)
 	if err != nil {
 		return nil, err
+	}
+	dir := os.Getenv("FILESTORAGE_PATH")
+	if dir == "" {
+		dir = utils.GetDefaultFilestoragePath()
+	}
+	if err := configconverter.MigrateFileStorage(dir, logger.FromCtx(ctx)); err != nil {
+		return nil, fmt.Errorf("migrate file storage after component id rename: %w", err)
 	}
 	return generateCollectorSettings(URIs), nil
 }

@@ -1,6 +1,6 @@
 {{- /* Forked from the default due to mismatch in collected metrics; TODO unify this */ -}}
 receivers:
-  hostmetrics/host-monitoring-host:
+  host_metrics/host-monitoring-host:
     collection_interval: 60s
     scrapers:
       cpu:
@@ -26,7 +26,7 @@ receivers:
 service:
   pipelines:
     metrics/host_monitoring_host:
-      receivers: [hostmetrics/host-monitoring-host]
+      receivers: [host_metrics/host-monitoring-host]
       processors:
         - memory_limiter
         - resourcedetection

@@ -24,7 +24,7 @@ processors:
         - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
         - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
 exporters:
-  otlphttp/agentheartbeat:
+  otlp_http/agentheartbeat:
       compression: zstd
       logs_endpoint: ${env:OBSERVE_COLLECTOR_URL}/v1/kubernetes/v1/entity
       headers:
@@ -63,4 +63,4 @@ service:
         - resource/heartbeat
         - transform/heartbeat
       exporters:
-        - otlphttp/agentheartbeat
+        - otlp_http/agentheartbeat

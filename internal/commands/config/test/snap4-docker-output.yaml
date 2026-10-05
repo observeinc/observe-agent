@@ -42,7 +42,7 @@ connectors:
 exporters:
     debug: null
     nop: null
-    otlphttp/agentheartbeat:
+    otlp_http/agentheartbeat:
         compression: zstd
         headers:
             Authorization: Bearer abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
@@ -56,7 +56,7 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
-    otlphttp/observe:
+    otlp_http/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -67,7 +67,7 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
-    otlphttp/observemetrics:
+    otlp_http/observemetrics:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -78,7 +78,7 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
-    otlphttp/observetracing:
+    otlp_http/observetracing:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -276,7 +276,7 @@ processors:
                 - truncate_all(attributes, 4095)
                 - truncate_all(resource.attributes, 4095)
 receivers:
-    filelog/host_monitoring:
+    file_log/host_monitoring:
         include:
             - /hostfs/var/log/**/*.log
             - /hostfs/var/log/syslog
@@ -288,7 +288,7 @@ receivers:
         retry_on_failure:
             enabled: true
         storage: file_storage
-    filestats/agent:
+    file_stats/agent:
         collection_interval: 5m
         include: /etc/observe-agent/observe-agent.yaml
         initial_delay: 60s
@@ -300,7 +300,7 @@ receivers:
         config_interval: 24h
         environment: docker
         interval: 10m
-    hostmetrics/host-monitoring-host:
+    host_metrics/host-monitoring-host:
         collection_interval: 60s
         root_path: /hostfs
         scrapers:
@@ -381,7 +381,7 @@ service:
                 - nop
         logs/agent-journald:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -394,7 +394,7 @@ service:
                 - journald/agent
         logs/forward:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -406,7 +406,7 @@ service:
                 - otlp
         logs/heartbeat:
             exporters:
-                - otlphttp/agentheartbeat
+                - otlp_http/agentheartbeat
             processors:
                 - resourcedetection
                 - resourcedetection/cloud
@@ -417,7 +417,7 @@ service:
                 - heartbeat
         logs/host_monitoring-file:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -426,10 +426,10 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - filelog/host_monitoring
+                - file_log/host_monitoring
         logs/host_monitoring-journald:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -448,7 +448,7 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - filestats/agent
+                - file_stats/agent
         metrics/agent-internal:
             exporters:
                 - prometheusremotewrite/observe
@@ -475,7 +475,7 @@ service:
                 - count
         metrics/forward:
             exporters:
-                - otlphttp/observemetrics
+                - otlp_http/observemetrics
             processors:
                 - memory_limiter
                 - resourcedetection
@@ -492,10 +492,10 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - hostmetrics/host-monitoring-host
+                - host_metrics/host-monitoring-host
         metrics/spanmetrics:
             exporters:
-                - otlphttp/observemetrics
+                - otlp_http/observemetrics
             processors:
                 - memory_limiter
                 - transform/remove_service_name_for_peer_metrics
@@ -505,7 +505,7 @@ service:
                 - spanmetrics
         metrics/spanmetrics/summary:
             exporters:
-                - otlphttp/observemetrics
+                - otlp_http/observemetrics
             processors:
                 - memory_limiter
                 - transform/remove_service_name_for_peer_metrics
@@ -516,7 +516,7 @@ service:
                 - spanmetrics/summary
         traces/forward:
             exporters:
-                - otlphttp/observetracing
+                - otlp_http/observetracing
             processors:
                 - memory_limiter
                 - filter/drop_long_spans
