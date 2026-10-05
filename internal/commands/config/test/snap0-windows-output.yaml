@@ -3,7 +3,7 @@ connectors:
 exporters:
     debug: null
     nop: null
-    otlphttp/observe:
+    otlp_http/observe:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -14,7 +14,7 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
-    otlphttp/observemetrics:
+    otlp_http/observemetrics:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -25,7 +25,7 @@ exporters:
         sending_queue:
             num_consumers: 4
             queue_size: 100
-    otlphttp/observetracing:
+    otlp_http/observetracing:
         compression: zstd
         endpoint: https://123456789.collect.observe-eng.com/v2/otel
         headers:
@@ -120,11 +120,11 @@ processors:
                 - truncate_all(attributes, 4095)
                 - truncate_all(resource.attributes, 4095)
 receivers:
-    filestats/agent:
+    file_stats/agent:
         collection_interval: 5m
         include: C:\Program Files\Observe\observe-agent\observe-agent.yaml
         initial_delay: 60s
-    hostmetrics/host-monitoring-host:
+    host_metrics/host-monitoring-host:
         collection_interval: 60s
         scrapers:
             cpu:
@@ -201,7 +201,7 @@ service:
                 - nop
         logs/agent-windowseventlog:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -213,7 +213,7 @@ service:
                 - windowseventlog/agent
         logs/forward:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -225,7 +225,7 @@ service:
                 - otlp
         logs/host_monitoring-windowsevents:
             exporters:
-                - otlphttp/observe
+                - otlp_http/observe
                 - count
             processors:
                 - memory_limiter
@@ -237,7 +237,7 @@ service:
                 - windowseventlog/host_monitoring-application
                 - windowseventlog/host_monitoring-security
                 - windowseventlog/host_monitoring-system
-        metrics/agent-filestats:
+        metrics/agent-file_stats:
             exporters:
                 - prometheusremotewrite/observe
             processors:
@@ -246,7 +246,7 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - filestats/agent
+                - file_stats/agent
         metrics/agent-internal:
             exporters:
                 - prometheusremotewrite/observe
@@ -272,7 +272,7 @@ service:
                 - count
         metrics/forward:
             exporters:
-                - otlphttp/observemetrics
+                - otlp_http/observemetrics
             processors:
                 - memory_limiter
                 - resourcedetection
@@ -289,10 +289,10 @@ service:
                 - resourcedetection/cloud
                 - batch
             receivers:
-                - hostmetrics/host-monitoring-host
+                - host_metrics/host-monitoring-host
         traces/forward:
             exporters:
-                - otlphttp/observetracing
+                - otlp_http/observetracing
             processors:
                 - memory_limiter
                 - transform/truncate
@@ -319,4 +319,6 @@ service:
                                 included:
                                     - observe.agent.instance.id
         resource:
-            observe.agent.instance.id: test-agent-instance-id
+            attributes:
+                - name: observe.agent.instance.id
+                  value: test-agent-instance-id

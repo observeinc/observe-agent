@@ -48,7 +48,7 @@ processors:
 {{- end }}
 
 exporters:
-  otlphttp/observetracing:
+  otlp_http/observetracing:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
@@ -67,7 +67,7 @@ exporters:
       enabled: true
     compression: zstd
 
-  otlphttp/observemetrics:
+  otlp_http/observemetrics:
     endpoint: ${env:OBSERVE_OTEL_ENDPOINT}
     headers:
       authorization: ${env:OBSERVE_AUTHORIZATION_HEADER}
@@ -111,7 +111,7 @@ service:
         {{- end }}
       exporters:
         {{- if .Forwarding.Metrics.OtlpMetrics }}
-        - otlphttp/observemetrics
+        - otlp_http/observemetrics
         {{- else }}
         - prometheusremotewrite/observe
         {{- end }}
@@ -132,7 +132,7 @@ service:
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
         {{- end }}
-      exporters: [otlphttp/observe, count]
+      exporters: [otlp_http/observe, count]
 
     traces/forward:
       receivers: [otlp]
@@ -155,4 +155,4 @@ service:
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
         {{- end }}
-      exporters: [otlphttp/observetracing]
+      exporters: [otlp_http/observetracing]

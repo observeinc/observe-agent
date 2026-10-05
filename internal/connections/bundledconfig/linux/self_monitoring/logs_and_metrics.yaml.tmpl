@@ -65,4 +65,4 @@ service:
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
         {{- end }}
-      exporters: [otlphttp/observe, count]
+      exporters: [otlp_http/observe, count]

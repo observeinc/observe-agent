@@ -235,7 +235,7 @@ service:
         {{- end }}
       exporters:
         {{- if .Application.REDMetrics.OnlyGenerateForAPMSpans }}
-        - otlphttp/observemetrics
+        - otlp_http/observemetrics
         {{- else }}
         # When only_generate_for_apm_spans is off, RED metrics are generated for span kinds that
         # would otherwise be dropped. Route them so the "internal" kinds can be renamed with an
@@ -250,7 +250,7 @@ service:
       processors:
         - memory_limiter
       exporters:
-        - otlphttp/observemetrics
+        - otlp_http/observemetrics
 
     metrics/spanmetrics/internal:
       receivers:
@@ -259,7 +259,7 @@ service:
         - memory_limiter
         - metricstransform/rename_internal_metrics
       exporters:
-        - otlphttp/observemetrics
+        - otlp_http/observemetrics
 
     # Intermediate pipeline: filters non-APM spans before feeding the summary connector.
     traces/spanmetrics/summary/filter:
@@ -290,4 +290,4 @@ service:
         - batch
         {{- end }}
       exporters:
-        - otlphttp/observemetrics
+        - otlp_http/observemetrics

@@ -7,7 +7,7 @@ services:
     #   - TOKEN=${TOKEN}
     #   - OBSERVE_URL=${OBSERVE_URL}
     volumes:
-      # Used for hostmetrics
+      # Used for host_metrics
       - type: bind
         source: /proc
         target: /hostfs/proc
@@ -20,7 +20,7 @@ services:
         source: /var/lib
         target: /hostfs/var/lib
         read_only: true
-      # Used for filelog
+      # Used for file_log
       - type: bind
         source: /var/log
         target: /hostfs/var/log
