@@ -150,6 +150,10 @@ type AgentConfig struct {
 	Attributes             map[string]string       `yaml:"attributes,omitempty" mapstructure:"attributes"`
 	ResourceAttributes     map[string]string       `yaml:"resource_attributes,omitempty" mapstructure:"resource_attributes"`
 	AgentLocalFilePath     string                  `yaml:"agent_local_file_path,omitempty" mapstructure:"agent_local_file_path"`
+	// AgentInstanceId identifies this agent process in Observe. It defaults to the
+	// hostname and can be overridden here or with the OBSERVE_AGENT_INSTANCE_ID
+	// environment variable when the hostname is not a stable, unique identity.
+	AgentInstanceId string `yaml:"agent_instance_id,omitempty" mapstructure:"agent_instance_id"`
 	Application            ApplicationConfig       `yaml:"application,omitempty" mapstructure:"application"`
 	HealthCheck            HealthCheckConfig       `yaml:"health_check" mapstructure:"health_check"`
 	Forwarding             ForwardingConfig        `yaml:"forwarding" mapstructure:"forwarding"`
