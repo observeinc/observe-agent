@@ -205,6 +205,10 @@ service:
         # Regroup by the peer attributes so we can override the service.name when we have a peer server.
         - groupbyattrs/peers
         - transform/promote_peer_to_service
+        - transform/sync_deployment_environment
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
         - transform/add_empty_service_attributes
       exporters:
         - spanmetrics

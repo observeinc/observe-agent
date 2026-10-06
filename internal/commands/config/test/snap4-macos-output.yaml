@@ -196,8 +196,6 @@ processors:
     transform/add_empty_service_attributes:
         error_mode: ignore
         trace_statements:
-            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
             - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
             - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
             - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
@@ -259,6 +257,17 @@ processors:
             - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
             - set(span.attributes["peer.messaging.system"], span.attributes["messaging.system"]) where span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] != nil
             - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
+    transform/sync_deployment_environment:
+        error_mode: ignore
+        log_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+        metric_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+        trace_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
     transform/truncate:
         log_statements:
             - context: log
@@ -367,6 +376,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - otlp
@@ -434,6 +444,7 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - otlp
@@ -478,6 +489,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
+                - transform/sync_deployment_environment
                 - transform/add_empty_service_attributes
                 - batch
             receivers:
@@ -496,6 +508,7 @@ service:
                 - transform/add_span_status_code
                 - groupbyattrs/peers
                 - transform/promote_peer_to_service
+                - transform/sync_deployment_environment
                 - transform/add_empty_service_attributes
             receivers:
                 - otlp

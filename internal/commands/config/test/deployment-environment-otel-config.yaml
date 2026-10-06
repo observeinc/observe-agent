@@ -1,0 +1,37 @@
+# Redirects the app-telemetry pipelines rendered from deployment-environment-agent-config.yaml
+# to local files so the test can inspect the resource attributes the agent emits.
+connectors:
+  spanmetrics:
+    metrics_flush_interval: 100ms
+  spanmetrics/summary:
+    metrics_flush_interval: 100ms
+
+exporters:
+  file/traces:
+    path: ${env:DEPLOYMENT_ENV_TEST_DIR}/traces.jsonl
+    flush_interval: 100ms
+  file/logs:
+    path: ${env:DEPLOYMENT_ENV_TEST_DIR}/logs.jsonl
+    flush_interval: 100ms
+  file/metrics:
+    path: ${env:DEPLOYMENT_ENV_TEST_DIR}/metrics.jsonl
+    flush_interval: 100ms
+  file/red_metrics:
+    path: ${env:DEPLOYMENT_ENV_TEST_DIR}/red_metrics.jsonl
+    flush_interval: 100ms
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    traces/forward:
+      exporters: [file/traces]
+    logs/forward:
+      exporters: [file/logs, count]
+    metrics/forward:
+      exporters: [file/metrics]
+    metrics/spanmetrics:
+      exporters: [file/red_metrics]
+    metrics/spanmetrics/summary:
+      exporters: [nop]

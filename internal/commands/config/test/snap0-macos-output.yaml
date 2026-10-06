@@ -115,8 +115,6 @@ processors:
     transform/add_empty_service_attributes:
         error_mode: ignore
         trace_statements:
-            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
             - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
             - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
             - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
@@ -129,6 +127,17 @@ processors:
             - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
             - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
+    transform/sync_deployment_environment:
+        error_mode: ignore
+        log_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+        metric_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+        trace_statements:
+            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
     transform/truncate:
         log_statements:
             - context: log
@@ -229,6 +238,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - otlp
@@ -284,6 +294,7 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - otlp
@@ -306,6 +317,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/add_span_status_code
+                - transform/sync_deployment_environment
                 - transform/add_empty_service_attributes
                 - batch
             receivers:
