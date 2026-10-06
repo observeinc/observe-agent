@@ -465,6 +465,7 @@ service:
                 - memory_limiter
                 - transform/remove_service_name_for_peer_metrics
                 - transform/fix_red_metrics_resource_attributes
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - spanmetrics
@@ -476,6 +477,7 @@ service:
                 - transform/remove_service_name_for_peer_metrics
                 - transform/fix_red_metrics_resource_attributes/summary
                 - metricstransform/rename_summary_metrics
+                - transform/sync_deployment_environment
                 - batch
             receivers:
                 - spanmetrics/summary

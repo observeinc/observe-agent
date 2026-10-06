@@ -78,10 +78,7 @@ func Test_DeploymentEnvironmentPrecedence(t *testing.T) {
 		assert.Equal(t, want, waitForResources(t, filepath.Join(outDir, "metrics.jsonl"), metricsResources))
 	})
 	t.Run("RED metrics", func(t *testing.T) {
-		got := waitForResources(t, filepath.Join(outDir, "red_metrics.jsonl"), metricsResources)
-		for service, env := range want {
-			assert.Equal(t, env.Name, got[service].Name, "RED metrics %s for service %q", envNameKey, service)
-		}
+		assert.Equal(t, want, waitForResources(t, filepath.Join(outDir, "red_metrics.jsonl"), metricsResources))
 	})
 }
 
