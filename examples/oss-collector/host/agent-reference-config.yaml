@@ -1,0 +1,36 @@
+# Observe Agent configuration that collector.yaml is generated from (make generate-oss-examples).
+# observe_url, token, and the deployment environment are placeholders that the generator replaces
+# with environment variable references.
+observe_url: https://123456.collect.observeinc.com/
+token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
+
+resource_attributes:
+  deployment.environment.name: oss-example-environment
+
+forwarding:
+  enabled: true
+  metrics:
+    output_format: otel
+
+host_monitoring:
+  enabled: true
+  logs:
+    enabled: false
+  metrics:
+    host:
+      enabled: true
+    process:
+      enabled: false
+
+self_monitoring:
+  enabled: false
+
+health_check:
+  enabled: false
+
+internal_telemetry:
+  enabled: false
+
+application:
+  RED_metrics:
+    enabled: true

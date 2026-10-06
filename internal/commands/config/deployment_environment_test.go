@@ -58,9 +58,9 @@ func Test_DeploymentEnvironmentPrecedence(t *testing.T) {
 	t.Setenv("FILESTORAGE_PATH", t.TempDir())
 	startCollector(t)
 
-	postOTLP(t, "/v1/traces", buildTraces(t))
-	postOTLP(t, "/v1/logs", buildLogs(t))
-	postOTLP(t, "/v1/metrics", buildMetrics(t))
+	postOTLP(t, otlpHTTPURL, "/v1/traces", buildTraces(t))
+	postOTLP(t, otlpHTTPURL, "/v1/logs", buildLogs(t))
+	postOTLP(t, otlpHTTPURL, "/v1/metrics", buildMetrics(t))
 
 	want := map[string]envAttrs{
 		"no-env":     {Name: "prod", Legacy: "prod"},
@@ -163,8 +163,8 @@ func buildMetrics(t *testing.T) []byte {
 	return body
 }
 
-func postOTLP(t *testing.T, path string, body []byte) {
-	resp, err := http.Post(otlpHTTPURL+path, "application/json", bytes.NewReader(body))
+func postOTLP(t *testing.T, baseURL, path string, body []byte) {
+	resp, err := http.Post(baseURL+path, "application/json", bytes.NewReader(body))
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode, "POST %s", path)
