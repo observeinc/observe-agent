@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=../../../../observe-agent.schema.json
+observe_url: https://test.collect.observeinc.com/
+token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
+
+cloud_resource_detectors:
+    - env
+
+resource_attributes:
+    deployment.environment.name: prod
+
+forwarding:
+    enabled: true
+    endpoints:
+        http: 127.0.0.1:24318
+        grpc: 127.0.0.1:24317
+    metrics:
+        output_format: otel
+
+health_check:
+    enabled: false
+
+internal_telemetry:
+    enabled: false
+
+host_monitoring:
+    enabled: false
+
+self_monitoring:
+    enabled: false
+
+application:
+    RED_metrics:
+        enabled: true

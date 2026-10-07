@@ -16,18 +16,28 @@ processors:
       - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
       - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
 
-  # Normalizes deployment environment (coalescing between the deprecated
-  # `deployment.environment` and `deployment.environment.name`) and defaults the
-  # service / environment resource attributes so they are always present on
-  # forwarded traces.
+  # Mirrors the app-provided deployment environment between the deprecated
+  # `deployment.environment` and `deployment.environment.name`. Must run before
+  # `resource/observe_global_resource_attributes` so the agent's configured
+  # environment is only used as a fallback for telemetry that declares neither key.
+  transform/sync_deployment_environment:
+    error_mode: ignore
+    trace_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+    log_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+    metric_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+
+  # Defaults the service / environment resource attributes so they are always
+  # present on forwarded traces. Must run after `resource/observe_global_resource_attributes`,
+  # otherwise the empty strings would block the agent's configured fallback values.
   transform/add_empty_service_attributes:
     error_mode: ignore
     trace_statements:
-      # deployment.environment.name = coalesce(deployment.environment.name, deployment.environment)
-      - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-      # deployment.environment = coalesce(deployment.environment, deployment.environment.name)
-      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
-      # Default any still-missing attributes to an empty string.
       - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
       - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
       - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
@@ -94,6 +104,7 @@ service:
         - memory_limiter
         - resourcedetection
         - resourcedetection/cloud
+        - transform/sync_deployment_environment
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
@@ -123,6 +134,7 @@ service:
         - transform/truncate
         - resourcedetection
         - resourcedetection/cloud
+        - transform/sync_deployment_environment
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
@@ -145,6 +157,7 @@ service:
         - resourcedetection
         - resourcedetection/cloud
         - transform/add_span_status_code
+        - transform/sync_deployment_environment
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
