@@ -15,6 +15,7 @@ type ConfigTemplates = map[string]embed.FS
 // TODO break up some of the larger connections in order to share more configs.
 var SharedTemplateFS = ConfigTemplates{
 	"application/RED_metrics.yaml.tmpl":          shared.REDMetrics,
+	"application/genai_metrics.yaml.tmpl":        shared.GenAIMetrics,
 	"common/attributes.yaml.tmpl":                shared.AttributesTemplateFS,
 	"common/internal_telemetry.yaml.tmpl":        shared.InternalTelemetryTemplateFS,
 	"common/health_check.yaml.tmpl":              shared.HealthCheckTemplateFS,

@@ -1,0 +1,237 @@
+{{- /*
+  Emits the GenAI metrics from both semantic convention versions:
+    - v1.41.0, the last release with GenAI, which current SDKs follow.
+    - The unreleased main branch of open-telemetry/semantic-conventions-genai.
+  `gen_ai.client.operation.duration` is the one metric both define differently. It keeps the
+  v1.41.0 meaning and includes inference calls.
+  Turn off the SDK's own GenAI metrics when enabling this, or tokens are counted twice.
+*/ -}}
+
+{{- $durationBuckets := list 0.01 0.02 0.04 0.08 0.16 0.32 0.64 1.28 2.56 5.12 10.24 20.48 40.96 81.92 }}
+{{- $tokenBuckets := list 1 4 16 64 256 1024 4096 16384 65536 262144 1048576 4194304 16777216 67108864 }}
+{{- $agentBuckets := list 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8 25.6 51.2 102.4 204.8 409.6 }}
+{{- $workflowBuckets := list 1 5 10 30 60 120 300 600 1800 3600 7200 }}
+
+{{- /* Client operations: inference, embeddings, retrieval and remote agents. Local agents, tools and workflows have their own metrics. */}}
+{{- $clientOperation := `attributes["gen_ai.operation.name"] != nil and attributes["gen_ai.operation.name"] != "execute_tool" and attributes["gen_ai.operation.name"] != "invoke_workflow" and not (attributes["gen_ai.operation.name"] == "invoke_agent" and kind == SPAN_KIND_INTERNAL)` }}
+{{- /* Client operations except agents. Agent spans carry the sum of their inner calls' tokens, so counting them would count tokens twice. */}}
+{{- $inferenceOperation := printf `%s and attributes["gen_ai.operation.name"] != "invoke_agent"` $clientOperation }}
+{{- /* Model calls that produce a response, i.e. the `gen_ai.client.inference` span. Embeddings and retrieval have their own spans. */}}
+{{- $inferenceCall := `(attributes["gen_ai.operation.name"] == "chat" or attributes["gen_ai.operation.name"] == "generate_content" or attributes["gen_ai.operation.name"] == "text_completion")` }}
+
+{{- define "genai_resource_attributes" }}
+        include_resource_attributes:
+          - key: service.name
+          - key: service.namespace
+          - key: service.version
+          - key: deployment.environment.name
+{{- end }}
+
+{{- define "genai_optional_attributes" }}
+          {{- range . }}
+          - key: {{ . }}
+            optional: true
+          {{- end }}
+{{- end }}
+
+{{- define "genai_client_attributes" }}
+        attributes:
+          - key: gen_ai.operation.name
+          {{- template "genai_optional_attributes" (list "gen_ai.provider.name" "gen_ai.request.model" "gen_ai.response.model" "server.address" "server.port" "gen_ai.agent.name" "error.type") }}
+{{- end }}
+
+{{- /* Opt-in breakdowns from the PrPr metrics proposal: conversation id on the duration and token metrics, user id on the duration metrics only. */}}
+{{- define "genai_conversation_id" }}
+          {{- if .Application.GenAIMetrics.IncludeConversationID }}
+          - key: gen_ai.conversation.id
+            optional: true
+          {{- end }}
+{{- end }}
+
+{{- define "genai_user_id" }}
+          {{- if .Application.GenAIMetrics.IncludeUserID }}
+          - key: user.id
+            optional: true
+          {{- end }}
+{{- end }}
+
+{{- define "genai_token_usage" }}
+      - name: gen_ai.client.token.usage
+        description: Number of input and output tokens used by GenAI clients
+        unit: "{token}"
+        conditions:
+          - attributes["gen_ai.usage.{{ .TokenType }}_tokens"] != nil and {{ .Condition }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+        {{- template "genai_conversation_id" .Config }}
+          - key: gen_ai.token.type
+            default_value: {{ .TokenType }}
+        histogram:
+          buckets: {{ .Buckets | toJson }}
+          value: Int(attributes["gen_ai.usage.{{ .TokenType }}_tokens"])
+{{- end }}
+
+connectors:
+  signal_to_metrics/genai:
+    error_mode: ignore
+    spans:
+      - name: gen_ai.client.operation.duration
+        description: Duration of GenAI client operation
+        unit: s
+        conditions:
+          - {{ $clientOperation }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $durationBuckets | toJson }}
+          value: Seconds(end_time - start_time)
+
+      {{- template "genai_token_usage" (dict "Config" $ "TokenType" "input" "Condition" $clientOperation "Buckets" $tokenBuckets) }}
+
+      {{- range (list
+            (list "input_tokens" "The number of input (prompt) tokens used, including cached tokens.")
+            (list "output_tokens" "The number of output (completion) tokens used, including reasoning tokens.")
+            (list "cache_read.input_tokens" "The number of input tokens served from a provider-managed cache.")
+            (list "cache_write.input_tokens" "The number of input tokens written to a provider-managed cache.")
+            (list "reasoning.output_tokens" "The number of output tokens used for reasoning (e.g. chain-of-thought, extended thinking).")) }}
+      {{- $tokens := printf `attributes["gen_ai.usage.%s"]` (index . 0) }}
+      {{- if eq (index . 0) "cache_write.input_tokens" }}
+      {{- /* semantic-conventions v1.41.0 calls this attribute `cache_creation`. */}}
+      {{- $tokens = `Coalesce([attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_creation.input_tokens"]])` }}
+      {{- end }}
+      - name: gen_ai.client.inference.usage.{{ index . 0 }}
+        description: {{ index . 1 }}
+        unit: "{token}"
+        conditions:
+          - {{ $tokens }} != nil and {{ $inferenceOperation }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+        {{- template "genai_conversation_id" $ }}
+          # Required on these counters. Spans don't split usage by modality, so this is always `unknown`.
+          - key: gen_ai.token.modality
+            default_value: unknown
+        sum:
+          value: Int({{ $tokens }})
+          monotonic: true
+      {{- end }}
+
+      {{- range (list
+            (list "input_tokens" "The number of input (prompt) tokens used per inference operation.")
+            (list "output_tokens" "The number of output (completion) tokens used per inference operation.")) }}
+      - name: gen_ai.client.inference.operation.{{ index . 0 }}
+        description: {{ index . 1 }}
+        unit: "{token}"
+        conditions:
+          - attributes["gen_ai.usage.{{ index . 0 }}"] != nil and {{ $inferenceOperation }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+        {{- template "genai_conversation_id" $ }}
+        histogram:
+          buckets: {{ $tokenBuckets | toJson }}
+          value: Int(attributes["gen_ai.usage.{{ index . 0 }}"])
+      {{- end }}
+
+      - name: gen_ai.client.inference.duration
+        description: GenAI client inference operation duration.
+        unit: s
+        conditions:
+          - {{ $inferenceCall }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $durationBuckets | toJson }}
+          value: Seconds(end_time - start_time)
+
+      - name: gen_ai.execute_tool.duration
+        description: Measures the duration of a tool execution.
+        unit: s
+        conditions:
+          - attributes["gen_ai.operation.name"] == "execute_tool"
+        {{- template "genai_resource_attributes" }}
+        attributes:
+          {{- template "genai_optional_attributes" (list "gen_ai.tool.name" "gen_ai.tool.type" "gen_ai.agent.name" "error.type") }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $durationBuckets | toJson }}
+          value: Seconds(end_time - start_time)
+
+      - name: gen_ai.invoke_agent.duration
+        description: Measures the duration of an in-process agent invocation.
+        unit: s
+        conditions:
+          - attributes["gen_ai.operation.name"] == "invoke_agent" and kind == SPAN_KIND_INTERNAL
+        {{- template "genai_resource_attributes" }}
+        attributes:
+          {{- template "genai_optional_attributes" (list "gen_ai.agent.name" "gen_ai.request.model" "error.type") }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $agentBuckets | toJson }}
+          value: Seconds(end_time - start_time)
+
+      - name: gen_ai.invoke_workflow.duration
+        description: Measures the duration of a workflow execution.
+        unit: s
+        conditions:
+          - attributes["gen_ai.operation.name"] == "invoke_workflow"
+        {{- template "genai_resource_attributes" }}
+        attributes:
+          {{- template "genai_optional_attributes" (list "gen_ai.workflow.name" "error.type") }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $workflowBuckets | toJson }}
+          value: Seconds(end_time - start_time)
+
+  # `gen_ai.client.token.usage` has one data point per token type. A connector can't define the same
+  # metric twice, so the output-token half lives in its own connector.
+  signal_to_metrics/genai_output_token_usage:
+    error_mode: ignore
+    spans:
+      {{- template "genai_token_usage" (dict "Config" $ "TokenType" "output" "Condition" $clientOperation "Buckets" $tokenBuckets) }}
+
+processors:
+  filter/genai_spans_only:
+    error_mode: ignore
+    traces:
+      span:
+        - span.attributes["gen_ai.operation.name"] == nil
+
+service:
+  pipelines:
+    # The connectors only aggregate within one batch, so batching before them means fewer data points.
+    traces/genai_metrics:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - filter/genai_spans_only
+        - transform/add_empty_service_attributes
+        - batch
+      exporters:
+        - signal_to_metrics/genai
+        - signal_to_metrics/genai_output_token_usage
+
+    metrics/genai_metrics:
+      receivers:
+        - signal_to_metrics/genai
+        - signal_to_metrics/genai_output_token_usage
+      processors:
+        - memory_limiter
+        {{- if .HasAttributes }}
+        - attributes/observe_global_attributes
+        {{- end }}
+        {{- if .HasResourceAttributes }}
+        # Added here rather than on the spans, since the connectors drop resource attributes they don't list.
+        - resource/observe_global_resource_attributes
+        {{- end }}
+        {{- if not .Exporters.SendingQueueBatch.Enabled }}
+        - batch
+        {{- end }}
+      exporters:
+        - otlphttp/observemetrics
