@@ -23,16 +23,14 @@ processors:
   transform/sync_deployment_environment:
     error_mode: ignore
     trace_statements:
-      # deployment.environment.name = coalesce(deployment.environment.name, deployment.environment)
-      - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-      # deployment.environment = coalesce(deployment.environment, deployment.environment.name)
-      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
     log_statements:
-      - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
     metric_statements:
-      - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-      - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
 
   # Defaults the service / environment resource attributes so they are always
   # present on forwarded traces. Must run after `resource/observe_global_resource_attributes`,
