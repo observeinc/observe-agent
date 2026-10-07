@@ -154,6 +154,14 @@ processors:
             - action: insert
               from_attribute: host.name
               key: observe.agent.hostname
+    resource/observe_global_resource_attributes:
+        attributes:
+            - action: insert
+              key: deployment.environment.name
+              value: production
+            - action: insert
+              key: deployment.environment
+              value: production
     resourcedetection:
         detectors:
             - env
@@ -208,6 +216,7 @@ processors:
         log_statements:
             - context: log
               statements:
+                - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
                 - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
                 - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
     transform/promote_peer_to_service:
@@ -239,14 +248,14 @@ processors:
     transform/sync_deployment_environment:
         error_mode: ignore
         log_statements:
-            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
         metric_statements:
-            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
         trace_statements:
-            - set(resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment.name"] == nil and resource.attributes["deployment.environment"] != nil
-            - set(resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment"] == nil and resource.attributes["deployment.environment.name"] != nil
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
     transform/truncate:
         log_statements:
             - context: log
@@ -355,6 +364,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/observe_global_resource_attributes
                 - resource/agent_instance
                 - batch
             receivers:
@@ -369,6 +379,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - otlp
@@ -377,6 +388,7 @@ service:
                 - otlphttp/agentheartbeat
             processors:
                 - resourcedetection
+                - resource/observe_global_resource_attributes
                 - resourcedetection/cloud
                 - resource/agent_instance
                 - resource/heartbeat
@@ -392,6 +404,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - windowseventlog/host_monitoring-application
@@ -404,6 +417,7 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - filestats/agent
@@ -415,6 +429,7 @@ service:
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/observe_global_resource_attributes
                 - resource/agent_instance
                 - deltatocumulative
                 - batch
@@ -439,6 +454,7 @@ service:
                 - resourcedetection
                 - resourcedetection/cloud
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - otlp
@@ -449,6 +465,7 @@ service:
                 - memory_limiter
                 - resourcedetection
                 - resourcedetection/cloud
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-host
@@ -460,6 +477,7 @@ service:
                 - transform/remove_service_name_for_peer_metrics
                 - transform/fix_red_metrics_resource_attributes
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - spanmetrics
@@ -472,6 +490,7 @@ service:
                 - transform/fix_red_metrics_resource_attributes/summary
                 - metricstransform/rename_summary_metrics
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - batch
             receivers:
                 - spanmetrics/summary
@@ -486,6 +505,7 @@ service:
                 - resourcedetection/cloud
                 - transform/add_span_status_code
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - transform/add_empty_service_attributes
                 - batch
             receivers:
@@ -505,6 +525,7 @@ service:
                 - groupbyattrs/peers
                 - transform/promote_peer_to_service
                 - transform/sync_deployment_environment
+                - resource/observe_global_resource_attributes
                 - transform/add_empty_service_attributes
             receivers:
                 - otlp
