@@ -709,6 +709,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconn
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0/go.mod h1:lwAkcuSXaKIgIxhYC7Xhyx7uc9Xfu6GxqvA8Hl4gTGw=
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0 h1:9/IVRBgdlHEwOFRHdjwCsvbhFO+BwFqPNkoedQ+RHPY=
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0/go.mod h1:yAHo76/6D/crwsJqPg/JVLb4qA7sVmz+rc5Qc/Uhufg=
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector v0.151.0 h1:Y/tj2UZ2AHKBmusQNaaZ4N1iFt639x1UjuRReYVLP/Y=
+github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector v0.151.0/go.mod h1:GsIOdq+ZkycixSAmIHarHyeAsOuDI8jT6/hlJ698BoQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0 h1:5cYe2dX+EwG0aNT58QLhARC5p8Ze52/7cvrtMOGJNnk=
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0/go.mod h1:bRSm+1iexAKystSys29/2ua+/Wc9dhM1U6Avom7mpt4=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0 h1:8+88Mpr9WwN58hXDfJvRepGD4PgdVIC87+2XV2ExGuw=

@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.151.0
@@ -583,3 +584,5 @@ replace github.com/observeinc/observe-agent/components/processors/observek8sattr
 replace github.com/observeinc/observe-agent => ../
 
 replace github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0 => github.com/prometheus/prometheus v0.311.2-0.20260410083055-07c6232d159b
+
+replace github.com/apache/thrift => github.com/apache/thrift v0.24.0
