@@ -127,8 +127,20 @@ type REDMetricsConfig struct {
 	SummaryMetrics REDSummaryMetricsConfig `yaml:"summary_metrics" mapstructure:"summary_metrics"`
 }
 
+type GenAIMetricsConfig struct {
+	// Builds GenAI metrics from spans, following the GenAI semantic conventions. Turn off the SDK's
+	// own GenAI metrics when enabling this, or tokens are counted twice.
+	Enabled bool `yaml:"enabled" mapstructure:"enabled" default:"false"`
+	// Adds `gen_ai.conversation.id` to the duration and token metrics. Each conversation becomes its
+	// own set of data points, so the number of series grows with the number of conversations.
+	IncludeConversationID bool `yaml:"include_conversation_id" mapstructure:"include_conversation_id" default:"false"`
+	// Adds `user.id` to the duration metrics. The number of series grows with the number of users.
+	IncludeUserID bool `yaml:"include_user_id" mapstructure:"include_user_id" default:"false"`
+}
+
 type ApplicationConfig struct {
-	REDMetrics REDMetricsConfig `yaml:"RED_metrics,omitempty" mapstructure:"RED_metrics" json:"RED_metrics"`
+	REDMetrics   REDMetricsConfig   `yaml:"RED_metrics,omitempty" mapstructure:"RED_metrics" json:"RED_metrics"`
+	GenAIMetrics GenAIMetricsConfig `yaml:"genai_metrics,omitempty" mapstructure:"genai_metrics" json:"genai_metrics"`
 }
 
 type SendingQueueBatchConfig struct {

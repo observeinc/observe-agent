@@ -31,4 +31,6 @@ var (
 	HeartbeatTemplateFS embed.FS
 	//go:embed application/RED_metrics.yaml.tmpl
 	REDMetrics embed.FS
+	//go:embed application/genai_metrics.yaml.tmpl
+	GenAIMetrics embed.FS
 )

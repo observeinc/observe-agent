@@ -88,6 +88,10 @@ application:
             - otel.status_description
             - observe.status_code
             - customer_id
+    genai_metrics:
+        enabled: true
+        include_conversation_id: true
+        include_user_id: true
 
 otel_config_overrides: {}
 
