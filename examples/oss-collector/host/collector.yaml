@@ -1,0 +1,389 @@
+# OpenTelemetry Collector configuration for sending host and application telemetry to Observe.
+#
+# GENERATED FILE, DO NOT EDIT. This file is generated from the Observe Agent configuration in
+# agent-reference-config.yaml. Run "make generate-oss-examples" to regenerate it.
+#
+# Set these environment variables before starting the collector:
+#   OBSERVE_COLLECTION_URL  Your collection URL, e.g. https://123456789012.collect.observeinc.com
+#   OBSERVE_TOKEN           An Observe ingest token
+#   DEPLOYMENT_ENVIRONMENT  Fallback deployment.environment.name for telemetry that does not set one
+connectors:
+  spanmetrics:
+    aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+    dimensions:
+      - name: service.namespace
+      - name: service.version
+      - name: deployment.environment.name
+      - name: host.name
+      - name: peer.db.name
+      - name: peer.messaging.system
+      - name: otel.status_description
+      - name: observe.status_code
+    histogram:
+      exponential:
+        max_size: 100
+    resource_metrics_key_attributes:
+      - service.name
+      - service.namespace
+      - service.version
+      - deployment.environment.name
+      - host.name
+  spanmetrics/summary:
+    aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+    dimensions:
+      - name: service.namespace
+      - name: service.version
+      - name: deployment.environment.name
+      - name: peer.db.name
+      - name: peer.messaging.system
+      - name: observe.status_code
+    histogram:
+      exponential:
+        max_size: 100
+    resource_metrics_key_attributes:
+      - service.name
+      - service.namespace
+      - service.version
+      - deployment.environment.name
+exporters:
+  otlphttp/observe:
+    compression: zstd
+    endpoint: ${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer ${env:OBSERVE_TOKEN}
+      x-observe-target-package: Host Explorer
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+  otlphttp/observemetrics:
+    compression: zstd
+    endpoint: ${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer ${env:OBSERVE_TOKEN}
+      x-observe-target-package: Metrics
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+  otlphttp/observetracing:
+    compression: zstd
+    endpoint: ${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer ${env:OBSERVE_TOKEN}
+      x-observe-target-package: Tracing
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      num_consumers: 4
+      queue_size: 100
+  prometheusremotewrite/observe:
+    endpoint: ${env:OBSERVE_COLLECTION_URL}/v1/prometheus
+    headers:
+      authorization: Bearer ${env:OBSERVE_TOKEN}
+      x-observe-target-package: Host Explorer
+    max_batch_request_parallelism: 5
+    remote_write_queue:
+      num_consumers: 5
+    resource_to_telemetry_conversion:
+      enabled: true
+    send_metadata: true
+    target_info:
+      enabled: false
+processors:
+  batch:
+    timeout: 5s
+  deltatocumulative: null
+  filter/drop_long_spans:
+    error_mode: ignore
+    traces:
+      span:
+        - (span.end_time - span.start_time) > Duration("1h")
+  filter/drop_non_apm_spans:
+    error_mode: ignore
+    traces:
+      span:
+        - span.kind == SPAN_KIND_CLIENT and span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] == nil and span.attributes["db.system"] == nil
+        - span.kind == SPAN_KIND_PRODUCER and span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] == nil
+        - span.kind == SPAN_KIND_UNSPECIFIED
+        - span.kind == SPAN_KIND_INTERNAL
+  groupbyattrs/peers:
+    keys:
+      - peer.db.name
+      - peer.messaging.system
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  metricstransform/rename_summary_metrics:
+    transforms:
+      - action: update
+        include: traces.span.metrics.calls
+        new_name: traces.span.metrics.calls.summary
+      - action: update
+        include: traces.span.metrics.duration
+        new_name: traces.span.metrics.duration.summary
+  resource/observe_global_resource_attributes:
+    attributes:
+      - action: insert
+        key: deployment.environment.name
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+      - action: insert
+        key: deployment.environment
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+  resourcedetection:
+    detectors:
+      - env
+      - system
+    system:
+      hostname_sources:
+        - dns
+        - os
+      resource_attributes:
+        host.arch:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.id:
+          enabled: false
+        host.name:
+          enabled: true
+        os.description:
+          enabled: true
+        os.type:
+          enabled: true
+  resourcedetection/cloud:
+    detectors:
+      - gcp
+      - ecs
+      - ec2
+      - azure
+    override: false
+    timeout: 2s
+  transform/add_empty_service_attributes:
+    error_mode: ignore
+    trace_statements:
+      - set(resource.attributes["service.name"], "") where resource.attributes["service.name"] == nil
+      - set(resource.attributes["service.namespace"], "") where resource.attributes["service.namespace"] == nil
+      - set(resource.attributes["deployment.environment.name"], "") where resource.attributes["deployment.environment.name"] == nil
+      - set(resource.attributes["deployment.environment"], "") where resource.attributes["deployment.environment"] == nil
+  transform/add_span_status_code:
+    error_mode: ignore
+    trace_statements:
+      - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.grpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.grpc.status_code"] != nil
+      - set(span.attributes["observe.status_code"], Int(span.attributes["grpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["grpc.status_code"] != nil
+      - set(span.attributes["observe.status_code"], Int(span.attributes["rpc.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["rpc.status_code"] != nil
+      - set(span.attributes["observe.status_code"], Int(span.attributes["http.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.status_code"] != nil
+      - set(span.attributes["observe.status_code"], Int(span.attributes["http.response.status_code"])) where span.attributes["observe.status_code"] == nil and span.attributes["http.response.status_code"] != nil
+  transform/fix_red_metrics_resource_attributes:
+    error_mode: ignore
+    metric_statements:
+      - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name)")
+      - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name|host.name)")
+      - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+      - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+      - delete_key(datapoint.attributes, "status.code")
+  transform/fix_red_metrics_resource_attributes/summary:
+    error_mode: ignore
+    metric_statements:
+      - keep_matching_keys(resource.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+      - delete_matching_keys(datapoint.attributes, "^(service.name|service.namespace|service.version|deployment.environment.name)")
+      - set(datapoint.attributes["otel.status_code"], "OK") where datapoint.attributes["status.code"] == "STATUS_CODE_OK"
+      - set(datapoint.attributes["otel.status_code"], "ERROR") where datapoint.attributes["status.code"] == "STATUS_CODE_ERROR"
+      - delete_key(datapoint.attributes, "status.code")
+  transform/promote_peer_to_service:
+    error_mode: ignore
+    trace_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.name"], attributes["peer.db.name"]) where attributes["peer.db.name"] != nil
+          - set(attributes["service.name"], attributes["peer.messaging.system"]) where attributes["peer.messaging.system"] != nil and attributes["peer.db.name"] == nil
+      - context: span
+        statements:
+          - set(attributes["peer.db.name"], resource.attributes["peer.db.name"]) where resource.attributes["peer.db.name"] != nil
+          - set(attributes["peer.messaging.system"], resource.attributes["peer.messaging.system"]) where resource.attributes["peer.messaging.system"] != nil
+      - context: resource
+        statements:
+          - delete_key(attributes, "peer.db.name")
+          - delete_key(attributes, "peer.messaging.system")
+  transform/remove_service_name_for_peer_metrics:
+    error_mode: ignore
+    metric_statements:
+      - delete_key(resource.attributes, "service.name") where datapoint.attributes["peer.db.name"] != nil or datapoint.attributes["peer.messaging.system"] != nil
+  transform/shape_spans_for_red_metrics:
+    error_mode: ignore
+    trace_statements:
+      - set(span.attributes["peer.db.name"], span.attributes["db.system.name"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system.name"] != nil
+      - set(span.attributes["peer.db.name"], span.attributes["db.system"]) where span.attributes["peer.db.name"] == nil and span.attributes["db.system"] != nil
+      - set(span.attributes["peer.messaging.system"], span.attributes["messaging.system"]) where span.attributes["peer.messaging.system"] == nil and span.attributes["messaging.system"] != nil
+      - set(span.attributes["otel.status_description"], span.status.message) where span.status.message != ""
+  transform/sync_deployment_environment:
+    error_mode: ignore
+    log_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+    metric_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+    trace_statements:
+      - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
+      - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+  transform/truncate:
+    log_statements:
+      - context: log
+        statements:
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+    trace_statements:
+      - context: span
+        statements:
+          - truncate_all(attributes, 4095)
+          - truncate_all(resource.attributes, 4095)
+receivers:
+  hostmetrics/host-monitoring-host:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.frequency:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.physical.count:
+            enabled: true
+          system.cpu.utilization:
+            enabled: true
+      disk: null
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load: null
+      memory:
+        metrics:
+          system.linux.memory.available:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
+      network: null
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      processes: null
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+service:
+  pipelines:
+    logs/forward:
+      exporters:
+        - otlphttp/observe
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - otlp
+    metrics/forward:
+      exporters:
+        - otlphttp/observemetrics
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - otlp
+    metrics/host_monitoring_host:
+      exporters:
+        - prometheusremotewrite/observe
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resourcedetection/cloud
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - hostmetrics/host-monitoring-host
+    metrics/spanmetrics:
+      exporters:
+        - otlphttp/observemetrics
+      processors:
+        - memory_limiter
+        - transform/remove_service_name_for_peer_metrics
+        - transform/fix_red_metrics_resource_attributes
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - spanmetrics
+    metrics/spanmetrics/summary:
+      exporters:
+        - otlphttp/observemetrics
+      processors:
+        - memory_limiter
+        - transform/remove_service_name_for_peer_metrics
+        - transform/fix_red_metrics_resource_attributes/summary
+        - metricstransform/rename_summary_metrics
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - spanmetrics/summary
+    traces/forward:
+      exporters:
+        - otlphttp/observetracing
+      processors:
+        - memory_limiter
+        - filter/drop_long_spans
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - transform/add_span_status_code
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - transform/add_empty_service_attributes
+        - batch
+      receivers:
+        - otlp
+    traces/spanmetrics:
+      exporters:
+        - spanmetrics
+        - spanmetrics/summary
+      processors:
+        - memory_limiter
+        - filter/drop_long_spans
+        - filter/drop_non_apm_spans
+        - resourcedetection
+        - resourcedetection/cloud
+        - transform/shape_spans_for_red_metrics
+        - transform/add_span_status_code
+        - groupbyattrs/peers
+        - transform/promote_peer_to_service
+        - transform/sync_deployment_environment
+        - resource/observe_global_resource_attributes
+        - transform/add_empty_service_attributes
+      receivers:
+        - otlp

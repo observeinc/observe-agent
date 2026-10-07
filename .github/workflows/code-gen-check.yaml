@@ -60,3 +60,25 @@ jobs:
           file-path: ./formatted_readme_diff.txt
           comment-tag: readme-changes
           reactions: eyes
+
+      - name: Check OSS collector examples are up to date
+        run: |
+          make generate-oss-examples
+          git add -N examples/oss-collector
+          git diff -- examples/oss-collector > oss_examples_diff.txt
+          if [ -s oss_examples_diff.txt ]; then
+            echo "The OSS collector examples are out of date, run \`make generate-oss-examples\` to update them." > formatted_oss_examples_diff.txt
+            echo "\`\`\`" >> formatted_oss_examples_diff.txt
+            cat oss_examples_diff.txt >> formatted_oss_examples_diff.txt
+            echo "\`\`\`" >> formatted_oss_examples_diff.txt
+            exit 1
+          fi
+
+      - name: Comment PR with OSS collector example changes needed
+        if: failure() && hashFiles('formatted_oss_examples_diff.txt') != ''
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file-path: ./formatted_oss_examples_diff.txt
+          comment-tag: oss-examples-changes
+          reactions: eyes

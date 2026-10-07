@@ -1,0 +1,46 @@
+name: OSS collector examples
+
+# Validates the plain OpenTelemetry Collector examples in examples/oss-collector with the upstream
+# otelcol-contrib distribution. Pull requests use the collector version the agent is built with;
+# the weekly run uses the latest release, so removed or renamed upstream components show up
+# before users hit them.
+on:
+  pull_request:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Choose the otelcol-contrib version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            version=$(gh release view --repo open-telemetry/opentelemetry-collector-releases --json tagName --jq .tagName)
+          else
+            version=$(awk '$1 == "go.opentelemetry.io/collector/otelcol" {print $2}' go.mod)
+          fi
+          echo "version=${version#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Install otelcol-contrib
+        run: |
+          v=${{ steps.version.outputs.version }}
+          curl -fsSL "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${v}/otelcol-contrib_${v}_linux_amd64.tar.gz" | tar -xz otelcol-contrib
+
+      - name: Validate examples
+        env:
+          OBSERVE_COLLECTION_URL: https://123456789012.collect.observeinc.com
+          OBSERVE_TOKEN: example-datastream:example-token
+          DEPLOYMENT_ENVIRONMENT: example
+        run: |
+          for config in examples/oss-collector/*/collector.yaml; do
+            echo "Validating $config with otelcol-contrib ${{ steps.version.outputs.version }}"
+            ./otelcol-contrib validate --config "$config"
+          done
