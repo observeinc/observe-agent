@@ -133,3 +133,12 @@ func (suite *ConnectionsTestSuite) TestConnectionType_GetConfigFilePaths() {
 	suite.NoError(err)
 	suite.Len(fragments, 0)
 }
+
+func (suite *ConnectionsTestSuite) TestApplicationConnectionType_GenAIMetricsEmptyInclude() {
+	var agentConfig config.AgentConfig
+	agentConfig.Application.GenAIMetrics.Enabled = true
+	agentConfig.Application.GenAIMetrics.Include = []config.GenAIMetricsInclude{{ServiceName: "chat-service"}, {}}
+
+	_, err := ApplicationConnectionType.GetBundledConfigs(suite.ctx, &agentConfig)
+	suite.ErrorContains(err, "application.genai_metrics.include[1] must set service_name, instrumentation_scope_name, or both")
+}

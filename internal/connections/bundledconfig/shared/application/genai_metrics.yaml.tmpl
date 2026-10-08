@@ -201,6 +201,18 @@ processors:
     traces:
       span:
         - span.attributes["gen_ai.operation.name"] == nil
+        {{- with .Application.GenAIMetrics.Include }}
+        {{- $entries := list }}
+        {{- range $i, $include := . }}
+        {{- $fields := list }}
+        {{- if $include.ServiceName }}{{ $fields = append $fields (printf `resource.attributes["service.name"] == %q` $include.ServiceName) }}{{ end }}
+        {{- if $include.InstrumentationScopeName }}{{ $fields = append $fields (printf `instrumentation_scope.name == %q` $include.InstrumentationScopeName) }}{{ end }}
+        {{- if not $fields }}{{ fail (printf "application.genai_metrics.include[%d] must set service_name, instrumentation_scope_name, or both" $i) }}{{ end }}
+        {{- $entries = append $entries (printf "(%s)" (join " and " $fields)) }}
+        {{- end }}
+        # Drops spans that match none of the `include` entries.
+        - {{ printf "not (%s)" (join " or " $entries) | toJson }}
+        {{- end }}
 
 service:
   pipelines:
