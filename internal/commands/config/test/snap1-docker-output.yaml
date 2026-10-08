@@ -726,6 +726,7 @@ processors:
         traces:
             span:
                 - span.attributes["gen_ai.operation.name"] == nil
+                - not ((resource.attributes["service.name"] == "chat-service" and instrumentation_scope.name == "@genai-otel/core") or (resource.attributes["service.name"] == "agent-service"))
     groupbyattrs/peers:
         keys:
             - peer.db.name

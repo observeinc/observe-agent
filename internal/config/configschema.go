@@ -136,6 +136,14 @@ type GenAIMetricsConfig struct {
 	IncludeConversationID bool `yaml:"include_conversation_id" mapstructure:"include_conversation_id" default:"false"`
 	// Adds `user.id` to the duration metrics. The number of series grows with the number of users.
 	IncludeUserID bool `yaml:"include_user_id" mapstructure:"include_user_id" default:"false"`
+	// Builds metrics only from spans that match at least one entry. Empty means all GenAI spans.
+	Include []GenAIMetricsInclude `yaml:"include,omitempty" mapstructure:"include"`
+}
+
+// A span matches when it has every field that is set. At least one field must be set.
+type GenAIMetricsInclude struct {
+	ServiceName              string `yaml:"service_name,omitempty" mapstructure:"service_name"`
+	InstrumentationScopeName string `yaml:"instrumentation_scope_name,omitempty" mapstructure:"instrumentation_scope_name"`
 }
 
 type ApplicationConfig struct {

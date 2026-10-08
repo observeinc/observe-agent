@@ -166,11 +166,29 @@
         "enabled": {
           "type": "boolean"
         },
+        "include": {
+          "items": {
+            "$ref": "#/$defs/GenAIMetricsInclude"
+          },
+          "type": "array"
+        },
         "include_conversation_id": {
           "type": "boolean"
         },
         "include_user_id": {
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GenAIMetricsInclude": {
+      "additionalProperties": false,
+      "properties": {
+        "instrumentation_scope_name": {
+          "type": "string"
+        },
+        "service_name": {
+          "type": "string"
         }
       },
       "type": "object"
