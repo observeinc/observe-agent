@@ -73,6 +73,9 @@
       "properties": {
         "RED_metrics": {
           "$ref": "#/$defs/REDMetricsConfig"
+        },
+        "genai_metrics": {
+          "$ref": "#/$defs/GenAIMetricsConfig"
         }
       },
       "type": "object"
@@ -152,6 +155,39 @@
       "properties": {
         "max_span_duration": {
           "pattern": "^(none|[0-9]+(ns|us|µs|ms|s|m|h))$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GenAIMetricsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "include": {
+          "items": {
+            "$ref": "#/$defs/GenAIMetricsInclude"
+          },
+          "type": "array"
+        },
+        "include_conversation_id": {
+          "type": "boolean"
+        },
+        "include_user_id": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GenAIMetricsInclude": {
+      "additionalProperties": false,
+      "properties": {
+        "instrumentation_scope_name": {
+          "type": "string"
+        },
+        "service_name": {
           "type": "string"
         }
       },

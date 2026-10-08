@@ -113,8 +113,7 @@ var SelfMonitoringConnectionType = MakeConnectionType(
 var ApplicationConnectionType = MakeConnectionType(
 	"application",
 	func(agentConfig *config.AgentConfig) bool {
-		// Make this check more broadly applicable when we have more than one application connection type.
-		return agentConfig.Application.REDMetrics.Enabled
+		return agentConfig.Application.REDMetrics.Enabled || agentConfig.Application.GenAIMetrics.Enabled
 	},
 	[]BundledConfigFragment{
 		{
@@ -122,6 +121,12 @@ var ApplicationConnectionType = MakeConnectionType(
 				return agentConfig.Application.REDMetrics.Enabled
 			},
 			colConfigFilePath: "RED_metrics.yaml.tmpl",
+		},
+		{
+			enabledCheck: func(agentConfig *config.AgentConfig) bool {
+				return agentConfig.Application.GenAIMetrics.Enabled
+			},
+			colConfigFilePath: "genai_metrics.yaml.tmpl",
 		},
 	},
 )
