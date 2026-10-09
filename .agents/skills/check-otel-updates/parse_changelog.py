@@ -8,8 +8,9 @@ NOTES_DIR holds core-<ver>.md and contrib-<ver>.md (bodies from `gh release view
 Scope comes from the modules required by observecol/go.mod, so shared pkg/* and
 internal/* packages are included, not only the components in builder-config.yaml.
 
-Writes OUT_DIR/ledger.json (every in-scope entry, with full body text) and
-OUT_DIR/compact.txt (one line per entry) for classification.
+Writes OUT_DIR/ledger.json (every in-scope entry, with full body text),
+OUT_DIR/compact.txt (one line per entry) for classification, and
+OUT_DIR/unparsed.txt (top-level bullets that didn't match the entry format).
 """
 import glob
 import json
@@ -66,11 +67,11 @@ def in_scope(repo, tags, contrib, core):
 
 
 def parse(notes_dir):
-    entries = []
+    entries, unparsed = [], []
     for path in sorted(glob.glob(os.path.join(notes_dir, "*-*.md"))):
         repo, ver = os.path.basename(path)[:-3].split("-", 1)
         block, heading, cur = "End User", "", None
-        for line in open(path):
+        for lineno, line in enumerate(open(path), 1):
             line = line.rstrip("\n")
             if line.startswith("## "):
                 low = line.lower()
@@ -93,14 +94,16 @@ def parse(notes_dir):
             elif cur is not None and (line.startswith("  ") or not line):
                 cur["body"] += line.strip() + "\n"
             else:
+                if line.startswith("- "):
+                    unparsed.append(dict(file=os.path.basename(path), line=lineno, block=block, text=line))
                 cur = None
-    return entries
+    return entries, unparsed
 
 
 def main():
     notes_dir, gomod, out = sys.argv[1:4]
     contrib, core = scope_from_gomod(gomod)
-    entries = parse(notes_dir)
+    entries, unparsed = parse(notes_dir)
     ours = [e for e in entries
             if e["block"] not in ("Unmaintained", "Repeat") and in_scope(e["repo"], e["tags"], contrib, core)]
     seen = set()
@@ -117,7 +120,13 @@ def main():
     with open(os.path.join(out, "compact.txt"), "w") as f:
         for e in ledger:
             f.write(f"{e['id']} {e['block']}/{e['heading']} {','.join(e['tags'])}: {e['title'][:170]}\n")
+    with open(os.path.join(out, "unparsed.txt"), "w") as f:
+        for u in unparsed:
+            f.write(f"{u['file']}:{u['line']} [{u['block']}] {u['text']}\n")
+    outside_unmaintained = sum(1 for u in unparsed if u["block"] != "Unmaintained")
     print(f"parsed {len(entries)} entries; {len(ledger)} in scope -> {out}/ledger.json, {out}/compact.txt")
+    print(f"{len(unparsed)} unparsed top-level bullets ({outside_unmaintained} outside Unmaintained sections) -> {out}/unparsed.txt",
+          file=sys.stderr)
 
 
 if __name__ == "__main__":
