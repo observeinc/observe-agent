@@ -1,10 +1,6 @@
 {{- /*
-  Emits the GenAI metrics from both semantic convention versions:
-    - v1.41.0, the last release with GenAI, which current SDKs follow.
-    - The unreleased main branch of open-telemetry/semantic-conventions-genai.
-  `gen_ai.client.operation.duration` is the one metric both define differently. It keeps the
-  v1.41.0 meaning and includes inference calls.
-  Turn off the SDK's own GenAI metrics when enabling this, or tokens are counted twice.
+  Follows the GenAI semantic conventions on the main branch of open-telemetry/semantic-conventions-genai.
+  Turn off the SDK's own GenAI metrics when enabling this, or the same calls are counted twice.
 */ -}}
 
 {{- $durationBuckets := list 0.01 0.02 0.04 0.08 0.16 0.32 0.64 1.28 2.56 5.12 10.24 20.48 40.96 81.92 }}
@@ -12,12 +8,10 @@
 {{- $agentBuckets := list 0.1 0.2 0.4 0.8 1.6 3.2 6.4 12.8 25.6 51.2 102.4 204.8 409.6 }}
 {{- $workflowBuckets := list 1 5 10 30 60 120 300 600 1800 3600 7200 }}
 
-{{- /* Client operations: inference, embeddings, retrieval and remote agents. Local agents, tools and workflows have their own metrics. */}}
-{{- $clientOperation := `attributes["gen_ai.operation.name"] != nil and attributes["gen_ai.operation.name"] != "execute_tool" and attributes["gen_ai.operation.name"] != "invoke_workflow" and not (attributes["gen_ai.operation.name"] == "invoke_agent" and kind == SPAN_KIND_INTERNAL)` }}
-{{- /* Client operations except agents. Agent spans carry the sum of their inner calls' tokens, so counting them would count tokens twice. */}}
-{{- $inferenceOperation := printf `%s and attributes["gen_ai.operation.name"] != "invoke_agent"` $clientOperation }}
-{{- /* Model calls that produce a response, i.e. the `gen_ai.client.inference` span. Embeddings and retrieval have their own spans. */}}
+{{- /* Model calls that produce a response, i.e. the `gen_ai.client.inference` span. */}}
 {{- $inferenceCall := `(attributes["gen_ai.operation.name"] == "chat" or attributes["gen_ai.operation.name"] == "generate_content" or attributes["gen_ai.operation.name"] == "text_completion")` }}
+{{- /* Other client operations, such as embeddings, retrieval and remote agents. Local agents, tools and workflows have their own metrics. */}}
+{{- $otherClientOperation := printf `attributes["gen_ai.operation.name"] != nil and not %s and attributes["gen_ai.operation.name"] != "execute_tool" and attributes["gen_ai.operation.name"] != "invoke_workflow" and not (attributes["gen_ai.operation.name"] == "invoke_agent" and kind == SPAN_KIND_INTERNAL)` $inferenceCall }}
 
 {{- define "genai_resource_attributes" }}
         include_resource_attributes:
@@ -37,7 +31,7 @@
 {{- define "genai_client_attributes" }}
         attributes:
           - key: gen_ai.operation.name
-          {{- template "genai_optional_attributes" (list "gen_ai.provider.name" "gen_ai.request.model" "gen_ai.response.model" "server.address" "server.port" "gen_ai.agent.name" "error.type") }}
+          {{- template "genai_optional_attributes" (list "gen_ai.provider.name" "gen_ai.request.model" "gen_ai.response.model" "server.address" "server.port" "gen_ai.agent.name") }}
 {{- end }}
 
 {{- /* Opt-in breakdowns from the PrPr metrics proposal: conversation id on the duration and token metrics, user id on the duration metrics only. */}}
@@ -55,65 +49,58 @@
           {{- end }}
 {{- end }}
 
-{{- define "genai_token_usage" }}
-      - name: gen_ai.client.token.usage
-        description: Number of input and output tokens used by GenAI clients
-        unit: "{token}"
-        conditions:
-          - attributes["gen_ai.usage.{{ .TokenType }}_tokens"] != nil and {{ .Condition }}
-        {{- template "genai_resource_attributes" }}
-        {{- template "genai_client_attributes" }}
-        {{- template "genai_conversation_id" .Config }}
-          - key: gen_ai.token.type
-            default_value: {{ .TokenType }}
-        histogram:
-          buckets: {{ .Buckets | toJson }}
-          value: Int(attributes["gen_ai.usage.{{ .TokenType }}_tokens"])
-{{- end }}
-
 connectors:
   signal_to_metrics/genai:
     error_mode: ignore
     spans:
-      - name: gen_ai.client.operation.duration
-        description: Duration of GenAI client operation
+      - name: gen_ai.client.inference.duration
+        description: GenAI client inference operation duration.
         unit: s
         conditions:
-          - {{ $clientOperation }}
+          - {{ $inferenceCall }}
         {{- template "genai_resource_attributes" }}
         {{- template "genai_client_attributes" }}
+          {{- template "genai_optional_attributes" (list "error.type") }}
         {{- template "genai_conversation_id" $ }}
         {{- template "genai_user_id" $ }}
         histogram:
           buckets: {{ $durationBuckets | toJson }}
           value: Seconds(end_time - start_time)
 
-      {{- template "genai_token_usage" (dict "Config" $ "TokenType" "input" "Condition" $clientOperation "Buckets" $tokenBuckets) }}
+      - name: gen_ai.client.operation.duration
+        description: GenAI operation duration.
+        unit: s
+        conditions:
+          - {{ $otherClientOperation }}
+        {{- template "genai_resource_attributes" }}
+        {{- template "genai_client_attributes" }}
+          {{- template "genai_optional_attributes" (list "error.type") }}
+        {{- template "genai_conversation_id" $ }}
+        {{- template "genai_user_id" $ }}
+        histogram:
+          buckets: {{ $durationBuckets | toJson }}
+          value: Seconds(end_time - start_time)
 
+      {{- /* Token metrics are recorded for every inference call, with 0 when the span has no usage. */}}
       {{- range (list
             (list "input_tokens" "The number of input (prompt) tokens used, including cached tokens.")
             (list "output_tokens" "The number of output (completion) tokens used, including reasoning tokens.")
             (list "cache_read.input_tokens" "The number of input tokens served from a provider-managed cache.")
             (list "cache_write.input_tokens" "The number of input tokens written to a provider-managed cache.")
             (list "reasoning.output_tokens" "The number of output tokens used for reasoning (e.g. chain-of-thought, extended thinking).")) }}
-      {{- $tokens := printf `attributes["gen_ai.usage.%s"]` (index . 0) }}
-      {{- if eq (index . 0) "cache_write.input_tokens" }}
-      {{- /* semantic-conventions v1.41.0 calls this attribute `cache_creation`. */}}
-      {{- $tokens = `Coalesce([attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_creation.input_tokens"]])` }}
-      {{- end }}
       - name: gen_ai.client.inference.usage.{{ index . 0 }}
         description: {{ index . 1 }}
         unit: "{token}"
         conditions:
-          - {{ $tokens }} != nil and {{ $inferenceOperation }}
+          - {{ $inferenceCall }}
         {{- template "genai_resource_attributes" }}
         {{- template "genai_client_attributes" }}
         {{- template "genai_conversation_id" $ }}
-          # Required on these counters. Spans don't split usage by modality, so this is always `unknown`.
+          # Spans don't split usage by modality, so this is always `unknown`.
           - key: gen_ai.token.modality
             default_value: unknown
         sum:
-          value: Int({{ $tokens }})
+          value: Int(Coalesce([attributes["gen_ai.usage.{{ index . 0 }}"], 0]))
           monotonic: true
       {{- end }}
 
@@ -124,27 +111,15 @@ connectors:
         description: {{ index . 1 }}
         unit: "{token}"
         conditions:
-          - attributes["gen_ai.usage.{{ index . 0 }}"] != nil and {{ $inferenceOperation }}
-        {{- template "genai_resource_attributes" }}
-        {{- template "genai_client_attributes" }}
-        {{- template "genai_conversation_id" $ }}
-        histogram:
-          buckets: {{ $tokenBuckets | toJson }}
-          value: Int(attributes["gen_ai.usage.{{ index . 0 }}"])
-      {{- end }}
-
-      - name: gen_ai.client.inference.duration
-        description: GenAI client inference operation duration.
-        unit: s
-        conditions:
           - {{ $inferenceCall }}
         {{- template "genai_resource_attributes" }}
         {{- template "genai_client_attributes" }}
+          {{- template "genai_optional_attributes" (list "error.type") }}
         {{- template "genai_conversation_id" $ }}
-        {{- template "genai_user_id" $ }}
         histogram:
-          buckets: {{ $durationBuckets | toJson }}
-          value: Seconds(end_time - start_time)
+          buckets: {{ $tokenBuckets | toJson }}
+          value: Int(Coalesce([attributes["gen_ai.usage.{{ index . 0 }}"], 0]))
+      {{- end }}
 
       - name: gen_ai.execute_tool.duration
         description: Measures the duration of a tool execution.
@@ -188,13 +163,6 @@ connectors:
           buckets: {{ $workflowBuckets | toJson }}
           value: Seconds(end_time - start_time)
 
-  # `gen_ai.client.token.usage` has one data point per token type. A connector can't define the same
-  # metric twice, so the output-token half lives in its own connector.
-  signal_to_metrics/genai_output_token_usage:
-    error_mode: ignore
-    spans:
-      {{- template "genai_token_usage" (dict "Config" $ "TokenType" "output" "Condition" $clientOperation "Buckets" $tokenBuckets) }}
-
 processors:
   filter/genai_spans_only:
     error_mode: ignore
@@ -227,12 +195,10 @@ service:
         - batch
       exporters:
         - signal_to_metrics/genai
-        - signal_to_metrics/genai_output_token_usage
 
     metrics/genai_metrics:
       receivers:
         - signal_to_metrics/genai
-        - signal_to_metrics/genai_output_token_usage
       processors:
         - memory_limiter
         {{- if .HasAttributes }}
