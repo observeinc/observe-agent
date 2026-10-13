@@ -190,6 +190,9 @@ service:
         - otlp
       processors:
         - memory_limiter
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
         - filter/genai_spans_only
         - transform/add_empty_service_attributes
         - batch
@@ -205,7 +208,7 @@ service:
         - attributes/observe_global_attributes
         {{- end }}
         {{- if .HasResourceAttributes }}
-        # Added here rather than on the spans, since the connectors drop resource attributes they don't list.
+        # Again here, since the connector drops resource attributes it doesn't list.
         - resource/observe_global_resource_attributes
         {{- end }}
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
