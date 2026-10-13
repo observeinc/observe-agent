@@ -1153,6 +1153,8 @@ service:
                 - signal_to_metrics/genai
             processors:
                 - memory_limiter
+                - resourcedetection
+                - resourcedetection/cloud
                 - resource/observe_global_resource_attributes
                 - filter/genai_spans_only
                 - transform/add_empty_service_attributes
