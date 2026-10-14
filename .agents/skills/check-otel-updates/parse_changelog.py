@@ -66,9 +66,9 @@ def in_scope(repo, tags, contrib, core):
     return False
 
 
-def parse(notes_dir):
+def parse(paths):
     entries, unparsed = [], []
-    for path in sorted(glob.glob(os.path.join(notes_dir, "*-*.md"))):
+    for path in paths:
         repo, ver = os.path.basename(path)[:-3].split("-", 1)
         block, heading, cur = "End User", "", None
         for lineno, line in enumerate(open(path), 1):
@@ -102,18 +102,24 @@ def parse(notes_dir):
 
 def main():
     notes_dir, gomod, out = sys.argv[1:4]
+    paths = sorted(glob.glob(os.path.join(notes_dir, "*-*.md")))
+    if not paths:
+        sys.exit(f"error: no release notes (core-<ver>.md / contrib-<ver>.md) found in {notes_dir}")
     contrib, core = scope_from_gomod(gomod)
-    entries, unparsed = parse(notes_dir)
+    entries, unparsed = parse(paths)
+    if not entries:
+        sys.exit(f"error: no changelog entries parsed from {len(paths)} file(s) in {notes_dir}; check the note format")
     ours = [e for e in entries
             if e["block"] not in ("Unmaintained", "Repeat") and in_scope(e["repo"], e["tags"], contrib, core)]
     seen = set()
     ledger = []
-    for i, e in enumerate(ours):
+    # The API changelog repeats End User entries; keep the End User copy.
+    for e in ours:
         key = (e["repo"], e["ver"], tuple(e["prs"]), e["title"][:60])
         if e["block"] == "API" and key in seen:
             continue
         seen.add(key)
-        e["id"] = f"{'core' if e['repo'] == 'core' else 'ctb'}{e['ver'].split('.')[1]}-{i:03d}"
+        e["id"] = f"{'core' if e['repo'] == 'core' else 'ctb'}{e['ver'].split('.')[1]}-{len(ledger):03d}"
         ledger.append(e)
     os.makedirs(out, exist_ok=True)
     json.dump(ledger, open(os.path.join(out, "ledger.json"), "w"), indent=1)
