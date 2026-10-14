@@ -94,5 +94,6 @@ Categories: Blocker · Breaks or changes something we ship · Silent telemetry c
 
 ## Notes
 
+- If you change `parse_changelog.py`, run `python3 -m unittest discover .agents/skills/check-otel-updates` (standard library only; CI doesn't run it).
 - `parse_changelog.py` derives scope from the *current* `observecol/go.mod`. Modules that only enter the dependency tree after the bump (for example a new `config/*` module) show up through the entries of the components that adopt them.
 - Recommend the full test suite, `/pre-commit-smoke-test` (including `observe-agent status`), and regenerated config snapshots after any upgrade.
