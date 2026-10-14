@@ -262,9 +262,9 @@ processors:
         log_statements:
             - context: log
               statements:
-                - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
-                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
-                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
+                - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil
+                - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil
+                - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"]) where resource.attributes["os.type"] != nil
     transform/promote_peer_to_service:
         error_mode: ignore
         trace_statements:
@@ -294,14 +294,14 @@ processors:
     transform/sync_deployment_environment:
         error_mode: ignore
         log_statements:
-            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
-            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
         metric_statements:
-            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
-            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
         trace_statements:
-            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]]))
-            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]]))
+            - set(resource.attributes["deployment.environment.name"], Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
+            - set(resource.attributes["deployment.environment"], Coalesce([resource.attributes["deployment.environment"], resource.attributes["deployment.environment.name"]])) where resource.attributes["deployment.environment.name"] != nil or resource.attributes["deployment.environment"] != nil
     transform/truncate:
         log_statements:
             - context: log
