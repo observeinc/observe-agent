@@ -11,6 +11,11 @@ service:
               prometheus:
                 host: {{ .InternalTelemetry.Metrics.Host }}
                 port: {{ .InternalTelemetry.Metrics.Port }}
+                # The collector defaults these to true when host is set, which strips the
+                # unit and _total suffixes from every metric name.
+                without_units: false
+                without_type_suffix: false
+                without_scope_info: false
                 with_resource_constant_labels:
                   included:
                     - observe.agent.instance.id
