@@ -257,7 +257,7 @@ github.com/apache/arrow-go/v18/internal/bitutils
 github.com/apache/arrow-go/v18/internal/hashing
 github.com/apache/arrow-go/v18/internal/json
 github.com/apache/arrow-go/v18/internal/utils
-# github.com/apache/thrift v0.24.0
+# github.com/apache/thrift v0.24.0 => github.com/apache/thrift v0.24.0
 ## explicit; go 1.25
 github.com/apache/thrift/lib/go/thrift
 # github.com/armon/go-metrics v0.4.1
@@ -314,7 +314,7 @@ github.com/aws/aws-sdk-go-v2/internal/shareddefaults
 github.com/aws/aws-sdk-go-v2/internal/strings
 github.com/aws/aws-sdk-go-v2/internal/sync/singleflight
 github.com/aws/aws-sdk-go-v2/internal/timeconv
-# github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8
+# github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.9
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream/eventstreamapi
@@ -370,13 +370,13 @@ github.com/aws/aws-sdk-go-v2/service/elasticache/types
 # github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.8
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding
-# github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.13
+# github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.14
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/internal/checksum
 # github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.22
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url
-# github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.21
+# github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.22
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared/arn
@@ -396,7 +396,7 @@ github.com/aws/aws-sdk-go-v2/service/lightsail/types
 github.com/aws/aws-sdk-go-v2/service/rds
 github.com/aws/aws-sdk-go-v2/service/rds/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/rds/types
-# github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3
+# github.com/aws/aws-sdk-go-v2/service/s3 v1.100.0
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/s3
 github.com/aws/aws-sdk-go-v2/service/s3/internal/arn
@@ -413,6 +413,11 @@ github.com/aws/aws-sdk-go-v2/service/servicediscovery/types
 github.com/aws/aws-sdk-go-v2/service/signin
 github.com/aws/aws-sdk-go-v2/service/signin/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/signin/types
+# github.com/aws/aws-sdk-go-v2/service/sqs v1.42.26
+## explicit; go 1.24
+github.com/aws/aws-sdk-go-v2/service/sqs
+github.com/aws/aws-sdk-go-v2/service/sqs/internal/endpoints
+github.com/aws/aws-sdk-go-v2/service/sqs/types
 # github.com/aws/aws-sdk-go-v2/service/sso v1.30.16
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/sso
@@ -990,6 +995,9 @@ github.com/invopop/jsonschema
 # github.com/ionos-cloud/sdk-go/v6 v6.3.6
 ## explicit; go 1.24
 github.com/ionos-cloud/sdk-go/v6
+# github.com/itchyny/timefmt-go v0.1.8
+## explicit; go 1.24
+github.com/itchyny/timefmt-go
 # github.com/jaegertracing/jaeger-idl v0.6.0
 ## explicit; go 1.23.6
 github.com/jaegertracing/jaeger-idl/model/v1
@@ -1248,6 +1256,11 @@ github.com/mwitkow/go-conntrack
 # github.com/oklog/ulid/v2 v2.1.1
 ## explicit; go 1.15
 github.com/oklog/ulid/v2
+# github.com/open-telemetry/opamp-go v0.23.0
+## explicit; go 1.24.0
+github.com/open-telemetry/opamp-go/client/internal/utils
+github.com/open-telemetry/opamp-go/client/types
+github.com/open-telemetry/opamp-go/protobufs
 # github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
@@ -1310,6 +1323,9 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthchecke
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.151.0
+## explicit; go 1.25.0
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
 # github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.151.0
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
@@ -1707,6 +1723,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformpro
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver v0.151.0
+## explicit; go 1.25.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.151.0
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
@@ -3796,3 +3816,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/apache/thrift => github.com/apache/thrift v0.24.0
