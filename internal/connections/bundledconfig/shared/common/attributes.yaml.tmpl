@@ -16,4 +16,16 @@ processors:
         value: {{ toYaml $value }}
         action: insert
     {{- end }}
+    {{- /* Keep both deployment environment keys in sync when only one is configured. */}}
+    {{- $envName := index .ResourceAttributes "deployment.environment.name" }}
+    {{- $envLegacy := index .ResourceAttributes "deployment.environment" }}
+    {{- if and $envName (not $envLegacy) }}
+      - key: deployment.environment
+        value: {{ toYaml $envName }}
+        action: insert
+    {{- else if and $envLegacy (not $envName) }}
+      - key: deployment.environment.name
+        value: {{ toYaml $envLegacy }}
+        action: insert
+    {{- end }}
   {{- end }}

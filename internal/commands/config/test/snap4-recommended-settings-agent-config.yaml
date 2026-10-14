@@ -5,6 +5,9 @@ observe_url: https://123456789.collect.observe-eng.com/
 # Observe data token
 token: abcdefghijklmnopqrst:OWt0SXV4YTlqYUhpSHZjSlhXUDVkRXpl
 
+resource_attributes:
+    deployment.environment.name: production
+
 forwarding:
     metrics:
         output_format: otel

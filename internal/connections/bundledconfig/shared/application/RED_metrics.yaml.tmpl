@@ -205,6 +205,10 @@ service:
         # Regroup by the peer attributes so we can override the service.name when we have a peer server.
         - groupbyattrs/peers
         - transform/promote_peer_to_service
+        - transform/sync_deployment_environment
+        {{- if .HasResourceAttributes }}
+        - resource/observe_global_resource_attributes
+        {{- end }}
         - transform/add_empty_service_attributes
       exporters:
         - spanmetrics
@@ -224,6 +228,7 @@ service:
         - memory_limiter
         - transform/remove_service_name_for_peer_metrics
         - transform/fix_red_metrics_resource_attributes
+        - transform/sync_deployment_environment
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
@@ -280,6 +285,7 @@ service:
         - transform/remove_service_name_for_peer_metrics
         - transform/fix_red_metrics_resource_attributes/summary
         - metricstransform/rename_summary_metrics
+        - transform/sync_deployment_environment
         {{- if .HasAttributes }}
         - attributes/observe_global_attributes
         {{- end }}
