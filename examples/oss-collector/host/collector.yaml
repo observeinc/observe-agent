@@ -1,12 +1,9 @@
-# OpenTelemetry Collector configuration for sending host and application telemetry to Observe.
+# OpenTelemetry Collector configuration for sending telemetry to Observe.
 #
-# GENERATED FILE, DO NOT EDIT. This file is generated from the Observe Agent configuration in
-# agent-reference-config.yaml. Run "make generate-oss-examples" to regenerate it.
+# GENERATED FILE, DO NOT EDIT. Run "make generate-oss-examples" to regenerate it from the Observe
+# Agent configuration.
 #
-# Set these environment variables before starting the collector:
-#   OBSERVE_COLLECTION_URL  Your collection URL, e.g. https://123456789012.collect.observeinc.com
-#   OBSERVE_TOKEN           An Observe ingest token
-#   DEPLOYMENT_ENVIRONMENT  Fallback deployment.environment.name for telemetry that does not set one
+# Environment variables it reads (see examples/oss-collector/README.md): DEPLOYMENT_ENVIRONMENT, OBSERVE_COLLECTION_URL, OBSERVE_TOKEN
 connectors:
   spanmetrics:
     aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
@@ -95,7 +92,6 @@ exporters:
 processors:
   batch:
     timeout: 5s
-  deltatocumulative: null
   filter/drop_long_spans:
     error_mode: ignore
     traces:

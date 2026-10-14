@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,81 +10,150 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var testReference = func() referenceValues {
-	ref := referenceValues{ObserveURL: "https://123456.collect.observeinc.com/", Token: "ds:secret"}
-	ref.ResourceEnv.Name = "oss-example-environment"
-	return ref
-}()
-
 const testRendered = `
 connectors:
   count: {}
+  spanmetrics: {}
 receivers:
   otlp: {}
   filestats/agent: {}
+  nop: {}
 processors:
   batch: {}
+  filter/count: {}
   resource/agent_instance: {}
-  resource/observe_global_resource_attributes:
-    attributes:
-      - key: deployment.environment.name
-        action: insert
-        value: oss-example-environment
 exporters:
-  otlphttp/observe:
-    endpoint: https://123456.collect.observeinc.com/v2/otel
-    headers:
-      authorization: Bearer ds:secret
-  debug: {}
+  otlphttp/observe: {}
+  nop: {}
 extensions:
   file_storage: {}
+  health_check: {}
 service:
-  extensions: [file_storage]
+  extensions: [file_storage, health_check]
   pipelines:
+    traces/spanmetrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      processors: [batch]
+      exporters: [otlphttp/observe]
     logs/forward:
       receivers: [otlp]
-      processors: [resource/agent_instance, resource/observe_global_resource_attributes, batch]
+      processors: [batch]
       exporters: [otlphttp/observe, count]
+    metrics/count-nop-in:
+      receivers: [nop]
+      exporters: [count]
+    metrics/count-nop-out:
+      receivers: [count]
+      processors: [filter/count]
+      exporters: [nop]
     metrics/agent-filestats:
       receivers: [filestats/agent]
-      processors: [batch]
+      processors: [resource/agent_instance, batch]
       exporters: [otlphttp/observe]
 `
 
-func Test_generate(t *testing.T) {
-	out, err := generate([]byte(testRendered), testReference)
-	require.NoError(t, err)
-
+func parse(t *testing.T, s string) map[string]any {
 	var cfg map[string]any
-	require.NoError(t, yaml.Unmarshal(out, &cfg))
+	require.NoError(t, yaml.Unmarshal([]byte(s), &cfg))
+	return cfg
+}
 
-	assert.NotContains(t, cfg, "connectors")
+func Test_pruneKeepsOnlyWhatKeptPipelinesUse(t *testing.T) {
+	cfg := parse(t, testRendered)
+	require.NoError(t, prune(cfg, []string{"traces/spanmetrics", "metrics/spanmetrics", "logs/forward"}, []string{"health_check"}))
+
+	assert.Equal(t, parse(t, `
+connectors:
+  spanmetrics: {}
+receivers:
+  otlp: {}
+processors:
+  batch: {}
+exporters:
+  otlphttp/observe: {}
+extensions:
+  health_check: {}
+service:
+  extensions: [health_check]
+  pipelines:
+    traces/spanmetrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      processors: [batch]
+      exporters: [otlphttp/observe]
+    logs/forward:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/observe]
+`), cfg, "count is dropped from logs/forward because no kept pipeline receives from it")
+}
+
+func Test_pruneWithoutExtensions(t *testing.T) {
+	cfg := parse(t, testRendered)
+	require.NoError(t, prune(cfg, []string{"logs/forward"}, nil))
 	assert.NotContains(t, cfg, "extensions")
-	assert.Equal(t, map[string]any{
-		"pipelines": map[string]any{
-			"logs/forward": map[string]any{
-				"receivers":  []any{"otlp"},
-				"processors": []any{"resource/observe_global_resource_attributes", "batch"},
-				"exporters":  []any{"otlphttp/observe"},
-			},
-		},
-	}, cfg["service"], "agent-only components and pipelines are removed")
-
-	exporter := cfg["exporters"].(map[string]any)["otlphttp/observe"].(map[string]any)
-	assert.Equal(t, "${env:OBSERVE_COLLECTION_URL}/v2/otel", exporter["endpoint"])
-	assert.Equal(t, "Bearer ${env:OBSERVE_TOKEN}", exporter["headers"].(map[string]any)["authorization"])
-
-	attrs := cfg["processors"].(map[string]any)["resource/observe_global_resource_attributes"].(map[string]any)["attributes"].([]any)
-	assert.Equal(t, "${env:DEPLOYMENT_ENVIRONMENT}", attrs[0].(map[string]any)["value"])
+	assert.NotContains(t, cfg["service"], "extensions")
+	assert.NotContains(t, cfg, "connectors")
 }
 
-func Test_generateRequiresReferenceValues(t *testing.T) {
-	_, err := generate([]byte(testRendered), referenceValues{ObserveURL: "https://x", Token: "ds:secret"})
-	require.Error(t, err)
+func Test_pruneErrors(t *testing.T) {
+	for name, tc := range map[string]struct {
+		rendered   string
+		pipelines  []string
+		extensions []string
+	}{
+		"missing pipeline":            {testRendered, []string{"traces/forward"}, nil},
+		"missing extension":           {testRendered, []string{"logs/forward"}, []string{"pprof"}},
+		"no service section":          {"receivers: {}", []string{"logs/forward"}, nil},
+		"pipeline list is not a list": {"service: {pipelines: {logs/forward: {receivers: otlp, exporters: [x]}}}", []string{"logs/forward"}, nil},
+		// metrics/spanmetrics alone receives from a connector that no kept pipeline exports to.
+		"pipeline left without receivers": {testRendered, []string{"metrics/spanmetrics"}, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Error(t, prune(parse(t, tc.rendered), tc.pipelines, tc.extensions))
+		})
+	}
 }
 
-func Test_generateRejectsTokenInKeys(t *testing.T) {
-	// Values are rewritten, keys are not; the final check must catch a token that survives.
-	_, err := generate([]byte(testRendered+"\nds:secret: leaked\n"), testReference)
-	require.Error(t, err)
+func Test_envVars(t *testing.T) {
+	assert.Equal(t, []string{"A", "B_2"}, envVars([]byte("x: ${env:B_2}\ny: ${env:A}/v2 ${env:B_2}\nz: $notenv")))
+}
+
+func Test_checkNoCredentials(t *testing.T) {
+	agentConfig := filepath.Join(t.TempDir(), "agent.yaml")
+	require.NoError(t, os.WriteFile(agentConfig, []byte("observe_url: https://123.collect.example.com/\ntoken: ds:secret\n"), 0o600))
+
+	assert.NoError(t, checkNoCredentials([]byte("endpoint: ${env:OBSERVE_COLLECTION_URL}/v2/otel"), agentConfig))
+	assert.Error(t, checkNoCredentials([]byte("endpoint: https://123.collect.example.com/v2/otel"), agentConfig))
+	assert.Error(t, checkNoCredentials([]byte("authorization: Bearer ds:secret"), agentConfig))
+}
+
+func Test_writeAtomically(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "collector.yaml")
+	require.NoError(t, writeAtomically(path, []byte("first")))
+	require.NoError(t, writeAtomically(path, []byte("second")))
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "second", string(content))
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Len(t, entries, 1, "no temporary files are left behind")
+}
+
+func Test_runRequiresOptions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("existing"), 0o600))
+	require.Error(t, run(options{out: path}))
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "existing", string(content), "a failed run leaves the existing example untouched")
 }

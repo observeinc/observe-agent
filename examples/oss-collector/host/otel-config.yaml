@@ -1,0 +1,22 @@
+# Merged on top of the agent's bundled configuration when generating collector.yaml. Values
+# written as "$${env:VAR}" appear in collector.yaml as "${env:VAR}", so the example reads them
+# from the collector's environment at startup:
+#   OBSERVE_COLLECTION_URL  Your collection URL, e.g. https://123456789012.collect.observeinc.com
+#   OBSERVE_TOKEN           An Observe ingest token
+exporters:
+  otlphttp/observe:
+    endpoint: $${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer $${env:OBSERVE_TOKEN}
+  otlphttp/observemetrics:
+    endpoint: $${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer $${env:OBSERVE_TOKEN}
+  otlphttp/observetracing:
+    endpoint: $${env:OBSERVE_COLLECTION_URL}/v2/otel
+    headers:
+      authorization: Bearer $${env:OBSERVE_TOKEN}
+  prometheusremotewrite/observe:
+    endpoint: $${env:OBSERVE_COLLECTION_URL}/v1/prometheus
+    headers:
+      authorization: Bearer $${env:OBSERVE_TOKEN}

@@ -30,7 +30,11 @@ The OTLP receiver listens on `localhost:4317` (gRPC) and `localhost:4318` (HTTP)
 
 ## How these examples stay up to date
 
-`host/collector.yaml` is generated, so don't edit it by hand. `make generate-oss-examples` renders the Observe Agent with [`host/agent-reference-config.yaml`](host/agent-reference-config.yaml) and removes the parts that only the agent needs, such as its self-monitoring pipelines and persistent queue storage. See [`scripts/generate_oss_examples`](../../scripts/generate_oss_examples/main.go) for the exact list.
+`host/collector.yaml` is generated, so don't edit it by hand. `make generate-oss-examples` runs [`scripts/generate_oss_examples`](../../scripts/generate_oss_examples/main.go), which:
+
+1. Renders the collector configuration the Observe Agent would run with [`host/agent-reference-config.yaml`](host/agent-reference-config.yaml), with [`host/otel-config.yaml`](host/otel-config.yaml) merged on top. The otel config sets the exporter endpoints and token to `${env:...}` references.
+2. Keeps only the pipelines listed in the `Makefile` target, and deletes every receiver, processor, exporter, connector, and extension those pipelines don't use. Agent-only parts such as the self-monitoring pipelines and persistent queue storage drop out this way.
+3. Fails without writing the file if the result still contains the reference collection URL or token.
 
 These checks run in CI:
 
@@ -38,4 +42,4 @@ These checks run in CI:
 - `Test_OSSHostExample` runs the example, sends traces, logs, and metrics, and checks the deployment environment on everything it forwards, including RED metrics.
 - The `OSS collector examples` workflow validates the examples with upstream `otelcol-contrib`: on pull requests with the collector version the agent is built with, and every week with the latest release.
 
-To change what the example contains, change the agent's bundled configuration or `agent-reference-config.yaml`, then run `make generate-oss-examples`.
+To change what the example contains, change the agent's bundled configuration, the reference configs, or the pipelines in the `Makefile` target, then run `make generate-oss-examples`.
