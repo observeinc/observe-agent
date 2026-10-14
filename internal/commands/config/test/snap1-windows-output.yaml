@@ -359,7 +359,14 @@ receivers:
         scrapers:
             cpu:
                 metrics:
+                    system.cpu.time:
+                        attributes:
+                            - cpu
+                            - state
                     system.cpu.utilization:
+                        attributes:
+                            - cpu
+                            - state
                         enabled: true
             disk: null
             filesystem:
