@@ -26,6 +26,7 @@ vendor:
 	cd components/processors/observek8sattributesprocessor && go mod tidy && go work vendor
 	cd patches/otel-collector && go mod tidy && go work vendor
 	cd patches/k8sattributesprocessor && go mod tidy && go work vendor
+	cd patches/automemlimit && go mod tidy && go work vendor
 	go mod tidy && go work vendor
 
 ## build: Build all Go packages

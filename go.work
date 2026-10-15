@@ -10,3 +10,6 @@ use (
 replace go.opentelemetry.io/collector v0.151.0 => ./patches/otel-collector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.151.0 => ./patches/k8sattributesprocessor
+
+// TODO: Remove once automemlimit skips unreadable cgroup mount candidates upstream.
+replace github.com/KimMachineGun/automemlimit v1.0.0 => ./patches/automemlimit
