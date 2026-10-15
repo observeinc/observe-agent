@@ -8,7 +8,7 @@ module go.opentelemetry.io/collector
 // For the OpenTelemetry Collector Core distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
-go 1.26.8
+go 1.26.9
 
 require (
 	github.com/golang/snappy v1.0.0
