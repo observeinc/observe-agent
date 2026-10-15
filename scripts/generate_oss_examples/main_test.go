@@ -149,11 +149,24 @@ func Test_writeAtomically(t *testing.T) {
 	assert.Len(t, entries, 1, "no temporary files are left behind")
 }
 
-func Test_runRequiresOptions(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "collector.yaml")
+func Test_runRejectsBadOptions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "collector.yaml")
 	require.NoError(t, os.WriteFile(path, []byte("existing"), 0o600))
-	require.Error(t, run(options{out: path}))
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	assert.Equal(t, "existing", string(content), "a failed run leaves the existing example untouched")
+	agentConfig := filepath.Join(dir, "agent.yaml")
+	require.NoError(t, os.WriteFile(agentConfig, []byte("token: x\n"), 0o600))
+
+	for name, opts := range map[string]options{
+		"missing options":      {out: path},
+		"invalid config mode":  {agentConfig: agentConfig, configMode: "solaris", pipelines: []string{"x"}, out: path},
+		"missing agent config": {agentConfig: filepath.Join(dir, "missing.yaml"), configMode: "linux", pipelines: []string{"x"}, out: path},
+		"missing otel config":  {agentConfig: agentConfig, otelConfig: filepath.Join(dir, "missing.yaml"), configMode: "linux", pipelines: []string{"x"}, out: path},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.Error(t, run(opts))
+			content, err := os.ReadFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, "existing", string(content), "a failed run leaves the existing example untouched")
+		})
+	}
 }

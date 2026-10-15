@@ -72,6 +72,19 @@ func run(opts options) error {
 	if opts.agentConfig == "" || opts.out == "" || len(opts.pipelines) == 0 {
 		return errors.New("-agent-config, -pipelines, and -out are required")
 	}
+	// root.InitConfig exits the process on an invalid mode and only prints config read errors, so
+	// check both before rendering.
+	if !slices.Contains([]string{"linux", "docker", "macos", "windows"}, strings.ToLower(opts.configMode)) {
+		return fmt.Errorf("invalid -config-mode %q: use linux, docker, macos, or windows", opts.configMode)
+	}
+	for _, path := range []string{opts.agentConfig, opts.otelConfig} {
+		if path == "" {
+			continue
+		}
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("reading config: %w", err)
+		}
+	}
 	rendered, err := render(opts)
 	if err != nil {
 		return err
@@ -313,9 +326,6 @@ func writeAtomically(path string, content []byte) error {
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
 		return err
 	}
 	return os.Rename(tmp.Name(), path)
