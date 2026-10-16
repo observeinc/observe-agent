@@ -88,6 +88,14 @@ application:
             - otel.status_description
             - observe.status_code
             - customer_id
+    genai_metrics:
+        enabled: true
+        include_conversation_id: true
+        include_user_id: true
+        include:
+            - service_name: chat-service
+              instrumentation_scope_name: "@genai-otel/core"
+            - service_name: agent-service
 
 otel_config_overrides: {}
 
