@@ -1,5 +1,5 @@
 receivers:
-  filelog/host_monitoring:
+  file_log/host_monitoring:
     include:
       {{- if .HostMonitoring.Logs.Include }}
       {{- range .HostMonitoring.Logs.Include }}
@@ -33,7 +33,7 @@ receivers:
 service:
   pipelines:
     logs/host_monitoring-file:
-      receivers: [filelog/host_monitoring]
+      receivers: [file_log/host_monitoring]
       processors:
         - memory_limiter
         - transform/truncate
@@ -48,4 +48,4 @@ service:
         {{- if not .Exporters.SendingQueueBatch.Enabled }}
         - batch
         {{- end }}
-      exporters: [otlphttp/observe, count]
+      exporters: [otlp_http/observe, count]
