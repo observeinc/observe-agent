@@ -87,7 +87,7 @@ func defaultCrossSiteNetworksRESTCallOptions() *CrossSiteNetworksCallOptions {
 	}
 }
 
-// internalCrossSiteNetworksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalCrossSiteNetworksClient is an interface that defines the methods available from Compute Engine API.
 type internalCrossSiteNetworksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -99,7 +99,7 @@ type internalCrossSiteNetworksClient interface {
 	Patch(context.Context, *computepb.PatchCrossSiteNetworkRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// CrossSiteNetworksClient is a client for interacting with Google Compute Engine API.
+// CrossSiteNetworksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The CrossSiteNetworks API.
@@ -113,7 +113,7 @@ type CrossSiteNetworksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *CrossSiteNetworksClient) Close() error {
 	return c.internalClient.Close()
@@ -267,7 +267,7 @@ func (c *crossSiteNetworksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *crossSiteNetworksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -483,7 +483,7 @@ func (c *crossSiteNetworksRESTClient) Insert(ctx context.Context, req *computepb
 // List lists the cross-site networks for a project in the given scope.
 func (c *crossSiteNetworksRESTClient) List(ctx context.Context, req *computepb.ListCrossSiteNetworksRequest, opts ...gax.CallOption) *CrossSiteNetworkIterator {
 	it := &CrossSiteNetworkIterator{}
-	req = proto.Clone(req).(*computepb.ListCrossSiteNetworksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.CrossSiteNetwork, string, error) {
 		resp := &computepb.CrossSiteNetworkList{}

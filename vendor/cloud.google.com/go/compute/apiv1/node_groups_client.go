@@ -146,7 +146,7 @@ func defaultNodeGroupsRESTCallOptions() *NodeGroupsCallOptions {
 	}
 }
 
-// internalNodeGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNodeGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalNodeGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -168,7 +168,7 @@ type internalNodeGroupsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsNodeGroupRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// NodeGroupsClient is a client for interacting with Google Compute Engine API.
+// NodeGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NodeGroups API.
@@ -182,7 +182,7 @@ type NodeGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NodeGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -403,7 +403,7 @@ func (c *nodeGroupsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *nodeGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -502,7 +502,7 @@ func (c *nodeGroupsRESTClient) AddNodes(ctx context.Context, req *computepb.AddN
 // returnPartialSuccess parameter to true.
 func (c *nodeGroupsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListNodeGroupsRequest, opts ...gax.CallOption) *NodeGroupsScopedListPairIterator {
 	it := &NodeGroupsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListNodeGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]NodeGroupsScopedListPair, string, error) {
 		resp := &computepb.NodeGroupAggregatedList{}
@@ -934,7 +934,7 @@ func (c *nodeGroupsRESTClient) Insert(ctx context.Context, req *computepb.Insert
 // Note: use nodeGroups.listNodes for more details about each group.
 func (c *nodeGroupsRESTClient) List(ctx context.Context, req *computepb.ListNodeGroupsRequest, opts ...gax.CallOption) *NodeGroupIterator {
 	it := &NodeGroupIterator{}
-	req = proto.Clone(req).(*computepb.ListNodeGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NodeGroup, string, error) {
 		resp := &computepb.NodeGroupList{}
@@ -1020,7 +1020,7 @@ func (c *nodeGroupsRESTClient) List(ctx context.Context, req *computepb.ListNode
 // ListNodes lists nodes in the node group.
 func (c *nodeGroupsRESTClient) ListNodes(ctx context.Context, req *computepb.ListNodesNodeGroupsRequest, opts ...gax.CallOption) *NodeGroupNodeIterator {
 	it := &NodeGroupNodeIterator{}
-	req = proto.Clone(req).(*computepb.ListNodesNodeGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NodeGroupNode, string, error) {
 		resp := &computepb.NodeGroupsListNodes{}

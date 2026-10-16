@@ -100,7 +100,7 @@ func defaultReservationBlocksRESTCallOptions() *ReservationBlocksCallOptions {
 	}
 }
 
-// internalReservationBlocksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalReservationBlocksClient is an interface that defines the methods available from Compute Engine API.
 type internalReservationBlocksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -113,7 +113,7 @@ type internalReservationBlocksClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsReservationBlockRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// ReservationBlocksClient is a client for interacting with Google Compute Engine API.
+// ReservationBlocksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The ReservationBlocks API.
@@ -127,7 +127,7 @@ type ReservationBlocksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ReservationBlocksClient) Close() error {
 	return c.internalClient.Close()
@@ -285,7 +285,7 @@ func (c *reservationBlocksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *reservationBlocksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -425,7 +425,7 @@ func (c *reservationBlocksRESTClient) GetIamPolicy(ctx context.Context, req *com
 // List retrieves a list of reservation blocks under a single reservation.
 func (c *reservationBlocksRESTClient) List(ctx context.Context, req *computepb.ListReservationBlocksRequest, opts ...gax.CallOption) *ReservationBlockIterator {
 	it := &ReservationBlockIterator{}
-	req = proto.Clone(req).(*computepb.ListReservationBlocksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.ReservationBlock, string, error) {
 		resp := &computepb.ReservationBlocksListResponse{}

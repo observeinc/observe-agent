@@ -171,7 +171,7 @@ func defaultRegionNetworkFirewallPoliciesRESTCallOptions() *RegionNetworkFirewal
 	}
 }
 
-// internalRegionNetworkFirewallPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionNetworkFirewallPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionNetworkFirewallPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -195,7 +195,7 @@ type internalRegionNetworkFirewallPoliciesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionNetworkFirewallPolicyRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionNetworkFirewallPoliciesClient is a client for interacting with Google Compute Engine API.
+// RegionNetworkFirewallPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionNetworkFirewallPolicies API.
@@ -209,7 +209,7 @@ type RegionNetworkFirewallPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionNetworkFirewallPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -434,7 +434,7 @@ func (c *regionNetworkFirewallPoliciesRESTClient) setGoogleClientInfo(keyval ...
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionNetworkFirewallPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -1111,7 +1111,7 @@ func (c *regionNetworkFirewallPoliciesRESTClient) Insert(ctx context.Context, re
 // for the specified project in the given region.
 func (c *regionNetworkFirewallPoliciesRESTClient) List(ctx context.Context, req *computepb.ListRegionNetworkFirewallPoliciesRequest, opts ...gax.CallOption) *FirewallPolicyIterator {
 	it := &FirewallPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionNetworkFirewallPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.FirewallPolicy, string, error) {
 		resp := &computepb.FirewallPolicyList{}

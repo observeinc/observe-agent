@@ -197,7 +197,7 @@ func defaultNetworkFirewallPoliciesRESTCallOptions() *NetworkFirewallPoliciesCal
 	}
 }
 
-// internalNetworkFirewallPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNetworkFirewallPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalNetworkFirewallPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -225,7 +225,7 @@ type internalNetworkFirewallPoliciesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsNetworkFirewallPolicyRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// NetworkFirewallPoliciesClient is a client for interacting with Google Compute Engine API.
+// NetworkFirewallPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NetworkFirewallPolicies API.
@@ -239,7 +239,7 @@ type NetworkFirewallPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NetworkFirewallPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -493,7 +493,7 @@ func (c *networkFirewallPoliciesRESTClient) setGoogleClientInfo(keyval ...string
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *networkFirewallPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -753,7 +753,7 @@ func (c *networkFirewallPoliciesRESTClient) AddRule(ctx context.Context, req *co
 // returnPartialSuccess parameter to true.
 func (c *networkFirewallPoliciesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListNetworkFirewallPoliciesRequest, opts ...gax.CallOption) *FirewallPoliciesScopedListPairIterator {
 	it := &FirewallPoliciesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListNetworkFirewallPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]FirewallPoliciesScopedListPair, string, error) {
 		resp := &computepb.NetworkFirewallPolicyAggregatedList{}
@@ -1350,7 +1350,7 @@ func (c *networkFirewallPoliciesRESTClient) Insert(ctx context.Context, req *com
 // List lists all the policies that have been configured for the specified project.
 func (c *networkFirewallPoliciesRESTClient) List(ctx context.Context, req *computepb.ListNetworkFirewallPoliciesRequest, opts ...gax.CallOption) *FirewallPolicyIterator {
 	it := &FirewallPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListNetworkFirewallPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.FirewallPolicy, string, error) {
 		resp := &computepb.FirewallPolicyList{}

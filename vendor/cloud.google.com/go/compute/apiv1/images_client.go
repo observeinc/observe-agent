@@ -129,7 +129,7 @@ func defaultImagesRESTCallOptions() *ImagesCallOptions {
 	}
 }
 
-// internalImagesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalImagesClient is an interface that defines the methods available from Compute Engine API.
 type internalImagesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -147,7 +147,7 @@ type internalImagesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsImageRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// ImagesClient is a client for interacting with Google Compute Engine API.
+// ImagesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Images API.
@@ -161,7 +161,7 @@ type ImagesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ImagesClient) Close() error {
 	return c.internalClient.Close()
@@ -363,7 +363,7 @@ func (c *imagesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *imagesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -774,7 +774,7 @@ func (c *imagesRESTClient) Insert(ctx context.Context, req *computepb.InsertImag
 // such as debian-cloud or windows-cloud.
 func (c *imagesRESTClient) List(ctx context.Context, req *computepb.ListImagesRequest, opts ...gax.CallOption) *ImageIterator {
 	it := &ImageIterator{}
-	req = proto.Clone(req).(*computepb.ListImagesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Image, string, error) {
 		resp := &computepb.ImageList{}

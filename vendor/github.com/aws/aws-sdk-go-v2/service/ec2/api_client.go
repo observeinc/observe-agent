@@ -17,6 +17,7 @@ import (
 	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	internalauthsmithy "github.com/aws/aws-sdk-go-v2/internal/auth/smithy"
 	internalConfig "github.com/aws/aws-sdk-go-v2/internal/configsources"
+	"github.com/aws/aws-sdk-go-v2/internal/timeouts"
 	acceptencodingcust "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding"
 	presignedurlcust "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"
 	smithy "github.com/aws/smithy-go"
@@ -267,6 +268,14 @@ func (c *Client) invokeOperation(
 
 	finalizeClientEndpointResolverOptions(&options)
 
+	ctx = setLoggerContext(ctx, options, opID)
+
+	ctx = resolveServiceMetadata(ctx, options, opID)
+
+	if err := c.addCommonMiddlewares(stack, options, opID); err != nil {
+		return nil, metadata, err
+	}
+
 	for _, fn := range stackFns {
 		if err := fn(stack, options); err != nil {
 			return nil, metadata, err
@@ -371,6 +380,46 @@ func addProtocolFinalizerMiddlewares(stack *middleware.Stack, options Options, o
 	}
 	return nil
 }
+
+func (c *Client) addCommonMiddlewares(stack *middleware.Stack, options Options, operation string) error {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, operation); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+	if err := addClientRequestID(stack); err != nil {
+		return err
+	}
+	if err := addRetry(stack, options, c); err != nil {
+		return err
+	}
+	if err := addRawResponseToMetadata(stack); err != nil {
+		return err
+	}
+	if err := addSpanRetryLoop(stack, options); err != nil {
+		return err
+	}
+	if err := addClientUserAgent(stack, options); err != nil {
+		return err
+	}
+	if err := addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
+	if err := addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err := addRecursionDetection(stack); err != nil {
+		return err
+	}
+	if err := addInterceptBeforeRetryLoop(stack, options); err != nil {
+		return err
+	}
+	if err := addInterceptAttempt(stack, options); err != nil {
+		return err
+	}
+	return nil
+}
 func resolveAuthSchemeResolver(options *Options) {
 	if options.AuthSchemeResolver == nil {
 		options.AuthSchemeResolver = &defaultAuthSchemeResolver{}
@@ -391,30 +440,6 @@ func resolveAuthSchemes(options *Options) {
 
 type noSmithyDocumentSerde = smithydocument.NoSerde
 
-type legacyEndpointContextSetter struct {
-	LegacyResolver EndpointResolver
-}
-
-func (*legacyEndpointContextSetter) ID() string {
-	return "legacyEndpointContextSetter"
-}
-
-func (m *legacyEndpointContextSetter) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
-	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
-) {
-	if m.LegacyResolver != nil {
-		ctx = awsmiddleware.SetRequiresLegacyEndpoints(ctx, true)
-	}
-
-	return next.HandleInitialize(ctx, in)
-
-}
-func addlegacyEndpointContextSetter(stack *middleware.Stack, o Options) error {
-	return stack.Initialize.Add(&legacyEndpointContextSetter{
-		LegacyResolver: o.EndpointResolver,
-	}, middleware.Before)
-}
-
 func resolveDefaultLogger(o *Options) {
 	if o.Logger != nil {
 		return
@@ -422,8 +447,9 @@ func resolveDefaultLogger(o *Options) {
 	o.Logger = logging.Nop{}
 }
 
-func addSetLoggerMiddleware(stack *middleware.Stack, o Options) error {
-	return middleware.AddSetLoggerMiddleware(stack, o.Logger)
+func setLoggerContext(ctx context.Context, options Options, operation string) context.Context {
+	_ = operation
+	return middleware.SetLogger(ctx, options.Logger)
 }
 
 func setResolvedDefaultsMode(o *Options) {
@@ -444,16 +470,17 @@ func setResolvedDefaultsMode(o *Options) {
 // NewFromConfig returns a new client from the provided config.
 func NewFromConfig(cfg aws.Config, optFns ...func(*Options)) *Client {
 	opts := Options{
-		Region:               cfg.Region,
-		DefaultsMode:         cfg.DefaultsMode,
-		RuntimeEnvironment:   cfg.RuntimeEnvironment,
-		HTTPClient:           cfg.HTTPClient,
-		Credentials:          cfg.Credentials,
-		APIOptions:           cfg.APIOptions,
-		Logger:               cfg.Logger,
-		ClientLogMode:        cfg.ClientLogMode,
-		AppID:                cfg.AppID,
-		AuthSchemePreference: cfg.AuthSchemePreference,
+		Region:                     cfg.Region,
+		DefaultsMode:               cfg.DefaultsMode,
+		RuntimeEnvironment:         cfg.RuntimeEnvironment,
+		HTTPClient:                 cfg.HTTPClient,
+		Credentials:                cfg.Credentials,
+		APIOptions:                 cfg.APIOptions,
+		Logger:                     cfg.Logger,
+		ClientLogMode:              cfg.ClientLogMode,
+		AppID:                      cfg.AppID,
+		DisableClockSkewCorrection: cfg.DisableClockSkewCorrection,
+		AuthSchemePreference:       cfg.AuthSchemePreference,
 	}
 	resolveAWSRetryerProvider(cfg, &opts)
 	resolveAWSRetryMaxAttempts(cfg, &opts)
@@ -499,6 +526,12 @@ func resolveHTTPClient(o *Options) {
 				transport.TLSHandshakeTimeout = tlsHandshakeTimeout
 			}
 		})
+	}
+
+	if _, ok := buildable.GetReadTimeout(); !ok {
+		if timeout, ok := timeouts.GetServiceReadTimeout(ServiceID); ok {
+			buildable = buildable.WithReadTimeout(timeout)
+		}
 	}
 
 	o.HTTPClient = buildable
@@ -642,16 +675,14 @@ func addClientRequestID(stack *middleware.Stack) error {
 	return stack.Build.Add(&awsmiddleware.ClientRequestID{}, middleware.After)
 }
 
-func addComputeContentLength(stack *middleware.Stack) error {
-	return stack.Build.Add(&smithyhttp.ComputeContentLength{}, middleware.After)
-}
-
 func addRawResponseToMetadata(stack *middleware.Stack) error {
 	return stack.Deserialize.Add(&awsmiddleware.AddRawResponse{}, middleware.Before)
 }
 
-func addRecordResponseTiming(stack *middleware.Stack) error {
-	return stack.Deserialize.Add(&awsmiddleware.RecordResponseTiming{}, middleware.After)
+func addRecordResponseTiming(stack *middleware.Stack, options Options) error {
+	return stack.Deserialize.Add(&awsmiddleware.RecordResponseTiming{
+		DisableClockSkewCorrection: options.DisableClockSkewCorrection,
+	}, middleware.After)
 }
 
 func addSpanRetryLoop(stack *middleware.Stack, options Options) error {
@@ -729,6 +760,7 @@ func addRetry(stack *middleware.Stack, o Options, c *Client) error {
 		m.LogAttempts = o.ClientLogMode.IsRetries()
 		m.OperationMeter = o.MeterProvider.Meter("github.com/aws/aws-sdk-go-v2/service/ec2")
 		m.ClientSkew = c.timeOffset
+		m.DisableClockSkewCorrection = o.DisableClockSkewCorrection
 	})
 	if err := stack.Finalize.Insert(attempt, "ResolveAuthScheme", middleware.Before); err != nil {
 		return err
@@ -834,6 +866,18 @@ func resolveMeterProvider(options *Options) {
 // IdempotencyTokenProvider interface for providing idempotency token
 type IdempotencyTokenProvider interface {
 	GetIdempotencyToken() (string, error)
+}
+
+func resolveServiceMetadata(ctx context.Context, options Options, operation string) context.Context {
+	ctx = awsmiddleware.SetServiceID(ctx, ServiceID)
+	if options.Region != "" {
+		ctx = awsmiddleware.SetRegion(ctx, options.Region)
+	}
+	ctx = awsmiddleware.SetOperationName(ctx, operation)
+	if options.EndpointResolver != nil {
+		ctx = awsmiddleware.SetRequiresLegacyEndpoints(ctx, true)
+	}
+	return ctx
 }
 
 func addRecursionDetection(stack *middleware.Stack) error {

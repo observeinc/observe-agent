@@ -63,7 +63,7 @@ func defaultSnapshotSettingsRESTCallOptions() *SnapshotSettingsCallOptions {
 	}
 }
 
-// internalSnapshotSettingsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalSnapshotSettingsClient is an interface that defines the methods available from Compute Engine API.
 type internalSnapshotSettingsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -72,7 +72,7 @@ type internalSnapshotSettingsClient interface {
 	Patch(context.Context, *computepb.PatchSnapshotSettingRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// SnapshotSettingsClient is a client for interacting with Google Compute Engine API.
+// SnapshotSettingsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The SnapshotSettings API.
@@ -86,7 +86,7 @@ type SnapshotSettingsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *SnapshotSettingsClient) Close() error {
 	return c.internalClient.Close()
@@ -218,7 +218,7 @@ func (c *snapshotSettingsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *snapshotSettingsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

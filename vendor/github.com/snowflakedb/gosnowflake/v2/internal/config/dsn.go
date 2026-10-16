@@ -43,6 +43,9 @@ const (
 
 const clientType = "Go"
 
+// envVarDisableOCSPChecks is the environment variable name for disabling OCSP certificate revocation checks.
+const envVarDisableOCSPChecks = "SF_DISABLE_OCSP_CHECKS"
+
 // GetFromEnv retrieves the value of an environment variable.
 // If failOnMissing is true and the variable is not set, an error is returned.
 func GetFromEnv(name string, failOnMissing bool) (string, error) {
@@ -137,6 +140,9 @@ func DSN(cfg *Config) (dsn string, err error) {
 	if len(cfg.WorkloadIdentityImpersonationPath) > 0 {
 		params.Add("workloadIdentityImpersonationPath", strings.Join(cfg.WorkloadIdentityImpersonationPath, ","))
 	}
+	if cfg.WorkloadIdentityAwsUseOutboundToken != BoolNotSet {
+		params.Add("workloadIdentityAwsUseOutboundToken", strconv.FormatBool(cfg.WorkloadIdentityAwsUseOutboundToken != BoolFalse))
+	}
 	if cfg.Authenticator != AuthTypeSnowflake {
 		if cfg.Authenticator == AuthTypeOkta {
 			params.Add("authenticator", strings.ToLower(cfg.OktaURL.String()))
@@ -177,6 +183,9 @@ func DSN(cfg *Config) (dsn string, err error) {
 	}
 	if cfg.CloudStorageTimeout != defaultCloudStorageTimeout {
 		params.Add("cloudStorageTimeout", strconv.FormatInt(int64(cfg.CloudStorageTimeout/time.Second), 10))
+	}
+	if cfg.CleanupTimeout != 0 {
+		params.Add("cleanupTimeout", strconv.FormatInt(int64(cfg.CleanupTimeout/time.Second), 10))
 	}
 	if cfg.MaxRetryCount != defaultMaxRetryCount {
 		params.Add("maxRetryCount", strconv.Itoa(cfg.MaxRetryCount))
@@ -304,12 +313,63 @@ func DSN(cfg *Config) (dsn string, err error) {
 	return
 }
 
+// recordAccountShape marks AccountProvided on shape and records whether the
+// raw account string carries a dot (region embedded) or a dash in its
+// account portion (org-prefixed). shape may be nil. rawAccount is the
+// user-supplied string before any normalization (truncation at the first
+// dot, dash stripping for .global, etc.).
+//
+// The org-account dash heuristic intentionally looks only at the substring
+// before the first dot, because a dash in the region portion (e.g.
+// "myacct.us-east-1") is not an org separator and would otherwise be
+// misclassified.
+func recordAccountShape(shape *ConnectionIdentifierShape, rawAccount string) {
+	if shape == nil || rawAccount == "" {
+		return
+	}
+	shape.AccountProvided = true
+	accountPortion := rawAccount
+	if i := strings.Index(rawAccount, "."); i > 0 {
+		shape.AccountWithRegion = true
+		accountPortion = rawAccount[:i]
+	}
+	if strings.Contains(accountPortion, "-") {
+		shape.AccountOrgProvided = true
+	}
+}
+
+// inferInputShapeIfMissing populates cfg.inputShape from the current Config
+// fields when shape capture has not already run (i.e. cfg was constructed
+// programmatically rather than via ParseDSN or LoadConnectionConfig). It is
+// a no-op when the shape is already non-nil.
+//
+// FillMissingConfigParameters runs this as its first step, before any field
+// mutation, so callers do not need to invoke it explicitly. The function
+// stays unexported because shape capture is an internal telemetry concern.
+func inferInputShapeIfMissing(cfg *Config) {
+	if cfg == nil || cfg.inputShape != nil {
+		return
+	}
+	shape := &ConnectionIdentifierShape{}
+	if cfg.Account != "" {
+		recordAccountShape(shape, cfg.Account)
+	}
+	if cfg.Region != "" {
+		shape.RegionProvided = true
+	}
+	if cfg.Host != "" {
+		shape.HostProvided = true
+	}
+	cfg.inputShape = shape
+}
+
 // ParseDSN parses the DSN string to a Config.
 func ParseDSN(dsn string) (cfg *Config, err error) {
 	// New config with some default values
 	cfg = &Config{
 		Params:        make(map[string]*string),
 		Authenticator: AuthTypeSnowflake, // Default to snowflake
+		inputShape:    &ConnectionIdentifierShape{},
 	}
 
 	// user[:password]@account/database/schema[?param1=value1&paramN=valueN]
@@ -464,7 +524,37 @@ func applyAccountFromHostIfMissing(cfg *Config) {
 
 // FillMissingConfigParameters fills in default values for missing config parameters.
 func FillMissingConfigParameters(cfg *Config) error {
+	// Capture user-supplied provenance before any field below normalizes the
+	// Config. Idempotent: ParseDSN and LoadConnectionConfig have already set
+	// cfg.inputShape, so this only matters for programmatic Configs handed
+	// to FillMissingConfigParameters directly (e.g. via database/sql
+	// Connector or driver.OpenWithConfig).
+	inferInputShapeIfMissing(cfg)
+
+	// Single choke point for the account/region hostname-component invariant.
+	// It must stay here — above applyAccountFromHostIfMissing and above every
+	// cfg.Host assignment this function makes — for two reasons:
+	//   1. cfg.Account is still the value the *user* supplied. Once
+	//      applyAccountFromHostIfMissing has run, Account may instead be the
+	//      first DNS label of an operator-supplied Host, and rejecting that
+	//      synthesized value would break working explicit-host connections.
+	//   2. It precedes the derivations that concatenate Account and Region into
+	//      a hostname (below, and in DSN/transformAccountToHost via the error
+	//      this returns), so no invalid identifier can reach the network.
+	// An empty account is not this function's business: the existing
+	// ErrEmptyAccount check below still owns that case and keeps its code.
+	if err := validateAccountAndRegion(cfg); err != nil {
+		return err
+	}
+
 	applyAccountFromHostIfMissing(cfg)
+
+	if cfg.Host != "" {
+		lower := strings.ToLower(cfg.Host)
+		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+			return sferrors.ErrHostWithScheme(cfg.Host)
+		}
+	}
 
 	posDash := strings.LastIndex(cfg.Account, "-")
 	if posDash > 0 {
@@ -499,8 +589,12 @@ func FillMissingConfigParameters(cfg *Config) error {
 	}
 
 	cfg.Region = strings.Trim(cfg.Region, " ")
-	if cfg.Region != "" {
-		// region is specified but not included in Host
+	if cfg.Region != "" && !hostProvidedByUser(cfg) {
+		// Region is specified but not included in Host. This only patches up a
+		// Host the driver itself synthesized from Account: transformAccountToHost
+		// builds Host before parseDSNParams reads the region parameter, so the
+		// region would otherwise be dropped. It must not run when the user gave
+		// Host explicitly — Host takes precedence over Region.
 		domain, i := extractDomainFromHost(cfg.Host)
 		if i >= 1 {
 			hostPrefix := cfg.Host[0:i]
@@ -520,6 +614,13 @@ func FillMissingConfigParameters(cfg *Config) error {
 				cfg.Host = cfg.Account + DefaultDomain
 			}
 		}
+	}
+	// Verify the host is a recognized Snowflake endpoint before fetching cloud credentials.
+	// Deliberately uses isSnowflakeHostForWorkloadIdentity (a label-boundary suffix match), not
+	// hostIncludesTopLevelDomain (a bare substring test used elsewhere for account/port inference),
+	// which has different, looser correctness requirements.
+	if cfg.Authenticator == AuthTypeWorkloadIdentityFederation && !isSnowflakeHostForWorkloadIdentity(cfg.Host) {
+		return sferrors.ErrWifNonSnowflakeHost(cfg.Host)
 	}
 	if cfg.LoginTimeout == 0 {
 		cfg.LoginTimeout = DefaultLoginTimeout
@@ -551,6 +652,17 @@ func FillMissingConfigParameters(cfg *Config) error {
 
 	if cfg.OCSPFailOpen == OCSPFailOpenNotSet {
 		cfg.OCSPFailOpen = OCSPFailOpenTrue
+	}
+
+	if val, _ := GetFromEnv(envVarDisableOCSPChecks, false); val != "" {
+		if v, err := strconv.ParseBool(val); err == nil && v {
+			if cfg.OCSPFailOpen == OCSPFailOpenFalse {
+				logger.Infof("%s environment variable is set, but OCSP fail-closed mode is active; the environment variable will be ignored", envVarDisableOCSPChecks)
+			} else {
+				cfg.DisableOCSPChecks = true
+				logger.Infof("Disabling OCSP checks from %s environment variable", envVarDisableOCSPChecks)
+			}
+		}
 	}
 
 	if cfg.ValidateDefaultParameters == BoolNotSet {
@@ -612,6 +724,145 @@ func hostIncludesTopLevelDomain(host string) bool {
 	return strings.Contains(strings.ToLower(host), topLevelDomainPrefix)
 }
 
+// hostProvidedByUser reports whether Host came from the user rather than from
+// driver-side synthesis out of Account and Region. Callers must run after
+// inferInputShapeIfMissing, which guarantees a non-nil shape.
+func hostProvidedByUser(cfg *Config) bool {
+	return cfg.inputShape != nil && cfg.inputShape.HostProvided
+}
+
+// wifAllowedHostSuffixesEnvVar is the ONLY escape hatch for the
+// isSnowflakeHostForWorkloadIdentity allowlist. Read only from the process
+// environment - never from the DSN, connection parameters or configuration
+// files - so connection configuration cannot influence the allowlist.
+// Entries are additive: they extend the recognized-host list and cannot
+// disable it.
+const wifAllowedHostSuffixesEnvVar = "SNOWFLAKE_WIF_ALLOWED_HOST_SUFFIXES"
+
+// wifAllowedHostSuffixes are the Snowflake-owned domain suffixes that the
+// WORKLOAD_IDENTITY authenticator is permitted to send ambient cloud
+// credentials to. Apex (no subdomain) is accepted for parity with the other
+// drivers' equivalent check.
+var wifAllowedHostSuffixes = []string{
+	"snowflakecomputing.com",
+	"snowflakecomputing.cn",
+	"snowflakecomputing.mil",
+}
+
+// NormalizeHost normalizes a host string for allow-list matching and URL
+// construction. It trims whitespace, lowercases ASCII A–Z only (to avoid
+// Unicode case-folding surprises such as the Kelvin sign U+212A folding to
+// 'k'), strips everything from the first ':' onward (port), then strips
+// exactly one trailing '.'. Non-ASCII characters are left unchanged so that
+// IsLdhHost can reject them.
+//
+// The port must be stripped before the trailing dot: a host in FQDN form
+// with an explicit port (e.g. "acct.snowflakecomputing.com.:443") carries
+// the dot immediately before the colon, so removing the colon-and-tail
+// first leaves the trailing dot to be stripped in the next step.
+func NormalizeHost(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.Map(func(r rune) rune {
+		if r >= 'A' && r <= 'Z' {
+			return r + 32
+		}
+		return r
+	}, s)
+	if idx := strings.IndexByte(s, ':'); idx >= 0 {
+		s = s[:idx]
+	}
+	s = strings.TrimSuffix(s, ".")
+	return s
+}
+
+// IsLdhHost returns true if the already-normalized host contains only
+// LDH characters ([a-z0-9_-] per label, separated by '.'). Each label must
+// be non-empty.
+//
+// This is an allow-list, not a block-list. Enumerating forbidden characters
+// does not work: URL parsers variously terminate the authority at a space,
+// semicolon, quote, percent-escape, or a full-width look-alike of '.', '#',
+// or '?'. A host whose trailing labels are a recognized Snowflake domain can
+// still begin with an unrelated name, so a parser stopping early resolves
+// that unrelated name instead.
+func IsLdhHost(normalized string) bool {
+	if normalized == "" {
+		return false
+	}
+	labelLen := 0
+	for _, c := range normalized {
+		switch {
+		case c == '.':
+			if labelLen == 0 {
+				return false
+			}
+			labelLen = 0
+		case (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_':
+			labelLen++
+		default:
+			return false
+		}
+	}
+	return labelLen > 0
+}
+
+// IsSnowflakeHost returns true if the already-normalized host ends at a
+// recognized Snowflake domain suffix, anchored at a label boundary. Unlike
+// isSnowflakeHostForWorkloadIdentity it does not consult the
+// SNOWFLAKE_WIF_ALLOWED_HOST_SUFFIXES escape hatch.
+func IsSnowflakeHost(normalized string) bool {
+	for _, s := range wifAllowedHostSuffixes {
+		if normalized == s || strings.HasSuffix(normalized, "."+s) {
+			return true
+		}
+	}
+	return false
+}
+
+// extraWifAllowedHostSuffixesFromEnv parses the additive escape-hatch
+// suffixes from SNOWFLAKE_WIF_ALLOWED_HOST_SUFFIXES (comma-separated), normalizing
+// each entry and dropping empty ones. It never disables the check - it can
+// only widen the allowlist.
+func extraWifAllowedHostSuffixesFromEnv() []string {
+	raw := os.Getenv(wifAllowedHostSuffixesEnvVar)
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var extra []string
+	for part := range strings.SplitSeq(raw, ",") {
+		s := NormalizeHost(part)
+		if s != "" {
+			extra = append(extra, s)
+		}
+	}
+	if len(extra) > 0 {
+		logger.Infof("WORKLOAD_IDENTITY host allowlist extended via %v with additional suffixes: %v", wifAllowedHostSuffixesEnvVar, extra)
+	}
+	return extra
+}
+
+// isSnowflakeHostForWorkloadIdentity is a suffix-anchored allowlist that
+// restricts Workload Identity attestation to recognized Snowflake hosts
+// before any cloud credential is fetched. Unlike hostIncludesTopLevelDomain
+// (a substring test used elsewhere for account/port inference), matching
+// here is anchored to a label boundary at the end of the host, so only the
+// listed suffixes and their subdomains are recognized.
+func isSnowflakeHostForWorkloadIdentity(host string) bool {
+	h := NormalizeHost(host)
+	if h == "" {
+		return false
+	}
+	if IsSnowflakeHost(h) {
+		return true
+	}
+	for _, s := range extraWifAllowedHostSuffixesFromEnv() {
+		if h == s || strings.HasSuffix(h, "."+s) {
+			return true
+		}
+	}
+	return false
+}
+
 func buildHostFromAccountAndRegion(account, region string) string {
 	return account + "." + region + getDomainBasedOnRegion(region)
 }
@@ -650,6 +901,10 @@ func transformAccountToHost(cfg *Config) (err error) {
 	if cfg.Port == 0 && cfg.Host != "" && !hostIncludesTopLevelDomain(cfg.Host) {
 		// account name is specified instead of host:port
 		cfg.Account = cfg.Host
+		// Capture the user-supplied account shape before normalization
+		// truncates/rewrites it. A dot signals "account.region" form; a dash
+		// signals "org-account" form.
+		recordAccountShape(cfg.inputShape, cfg.Account)
 		region, posDot := extractRegionFromAccount(cfg.Account)
 		if strings.ToLower(region) == "us-west-2" {
 			region = ""
@@ -687,6 +942,20 @@ func parseAccountHostPort(cfg *Config, posAt, posSlash int, dsn string) (err err
 		}
 	}
 	cfg.Host = dsn[posAt+1 : k]
+	// The DSN carries a real host (not an account-form authority that
+	// transformAccountToHost will rewrite) when cfg.Host is non-empty AND
+	// either of:
+	//   1) the authority contains the Snowflake TLD, e.g. "myacct.snowflakecomputing.com", or
+	//   2) the authority carries an explicit port, e.g. "localhost:443" — the
+	//      transformAccountToHost guard only fires when Port == 0, so any
+	//      explicit port means we never rewrite Host out from under the user.
+	// The Host-non-empty check guards against degenerate forms like
+	// "u:p@:8080/db" where the port is set but the host slice is empty.
+	// Capture HostProvided in both real cases so non-Snowflake-TLD targets
+	// (localhost, IP, private DNS) aren't silently misclassified as host-not-provided.
+	if cfg.inputShape != nil && cfg.Host != "" && (hostIncludesTopLevelDomain(cfg.Host) || cfg.Port != 0) {
+		cfg.inputShape.HostProvided = true
+	}
 	return transformAccountToHost(cfg)
 }
 
@@ -734,6 +1003,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 		// Disable INFILE whitelist / enable all files
 		case "account":
 			cfg.Account = value
+			recordAccountShape(cfg.inputShape, value)
 		case "warehouse":
 			cfg.Warehouse = value
 		case "database":
@@ -744,6 +1014,9 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			cfg.Role = value
 		case "region":
 			cfg.Region = value
+			if cfg.inputShape != nil {
+				cfg.inputShape.RegionProvided = true
+			}
 		case "protocol":
 			cfg.Protocol = value
 		case "singleAuthenticationPrompt":
@@ -820,6 +1093,11 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			if err != nil {
 				return err
 			}
+		case "cleanupTimeout":
+			cfg.CleanupTimeout, err = parseTimeout(value)
+			if err != nil {
+				return err
+			}
 		case "maxRetryCount":
 			cfg.MaxRetryCount, err = strconv.Atoi(value)
 			if err != nil {
@@ -870,6 +1148,17 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			cfg.WorkloadIdentityEntraResource = value
 		case "workloadIdentityImpersonationPath":
 			cfg.WorkloadIdentityImpersonationPath = strings.Split(value, ",")
+		case "workloadIdentityAwsUseOutboundToken":
+			var vv bool
+			vv, err = strconv.ParseBool(value)
+			if err != nil {
+				return
+			}
+			if vv {
+				cfg.WorkloadIdentityAwsUseOutboundToken = BoolTrue
+			} else {
+				cfg.WorkloadIdentityAwsUseOutboundToken = BoolFalse
+			}
 		case "privateKey":
 			var decodeErr error
 			block, decodeErr := base64.URLEncoding.DecodeString(value)

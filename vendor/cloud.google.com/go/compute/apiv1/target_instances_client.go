@@ -105,7 +105,7 @@ func defaultTargetInstancesRESTCallOptions() *TargetInstancesCallOptions {
 	}
 }
 
-// internalTargetInstancesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalTargetInstancesClient is an interface that defines the methods available from Compute Engine API.
 type internalTargetInstancesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalTargetInstancesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsTargetInstanceRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// TargetInstancesClient is a client for interacting with Google Compute Engine API.
+// TargetInstancesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The TargetInstances API.
@@ -133,7 +133,7 @@ type TargetInstancesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *TargetInstancesClient) Close() error {
 	return c.internalClient.Close()
@@ -302,7 +302,7 @@ func (c *targetInstancesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *targetInstancesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -326,7 +326,7 @@ func (c *targetInstancesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *targetInstancesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListTargetInstancesRequest, opts ...gax.CallOption) *TargetInstancesScopedListPairIterator {
 	it := &TargetInstancesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListTargetInstancesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]TargetInstancesScopedListPair, string, error) {
 		resp := &computepb.TargetInstanceAggregatedList{}
@@ -620,7 +620,7 @@ func (c *targetInstancesRESTClient) Insert(ctx context.Context, req *computepb.I
 // project and zone.
 func (c *targetInstancesRESTClient) List(ctx context.Context, req *computepb.ListTargetInstancesRequest, opts ...gax.CallOption) *TargetInstanceIterator {
 	it := &TargetInstanceIterator{}
-	req = proto.Clone(req).(*computepb.ListTargetInstancesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.TargetInstance, string, error) {
 		resp := &computepb.TargetInstanceList{}

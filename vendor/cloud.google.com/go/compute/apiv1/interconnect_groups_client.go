@@ -125,7 +125,7 @@ func defaultInterconnectGroupsRESTCallOptions() *InterconnectGroupsCallOptions {
 	}
 }
 
-// internalInterconnectGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInterconnectGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalInterconnectGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -142,7 +142,7 @@ type internalInterconnectGroupsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsInterconnectGroupRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// InterconnectGroupsClient is a client for interacting with Google Compute Engine API.
+// InterconnectGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InterconnectGroups API.
@@ -156,7 +156,7 @@ type InterconnectGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InterconnectGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -344,7 +344,7 @@ func (c *interconnectGroupsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *interconnectGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -737,7 +737,7 @@ func (c *interconnectGroupsRESTClient) Insert(ctx context.Context, req *computep
 // List lists the InterconnectGroups for a project in the given scope.
 func (c *interconnectGroupsRESTClient) List(ctx context.Context, req *computepb.ListInterconnectGroupsRequest, opts ...gax.CallOption) *InterconnectGroupIterator {
 	it := &InterconnectGroupIterator{}
-	req = proto.Clone(req).(*computepb.ListInterconnectGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InterconnectGroup, string, error) {
 		resp := &computepb.InterconnectGroupsListResponse{}

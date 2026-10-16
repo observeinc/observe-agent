@@ -118,7 +118,7 @@ func defaultInstanceTemplatesRESTCallOptions() *InstanceTemplatesCallOptions {
 	}
 }
 
-// internalInstanceTemplatesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInstanceTemplatesClient is an interface that defines the methods available from Compute Engine API.
 type internalInstanceTemplatesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -133,7 +133,7 @@ type internalInstanceTemplatesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsInstanceTemplateRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// InstanceTemplatesClient is a client for interacting with Google Compute Engine API.
+// InstanceTemplatesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InstanceTemplates API.
@@ -147,7 +147,7 @@ type InstanceTemplatesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InstanceTemplatesClient) Close() error {
 	return c.internalClient.Close()
@@ -328,7 +328,7 @@ func (c *instanceTemplatesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *instanceTemplatesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -353,7 +353,7 @@ func (c *instanceTemplatesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *instanceTemplatesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceTemplatesRequest, opts ...gax.CallOption) *InstanceTemplatesScopedListPairIterator {
 	it := &InstanceTemplatesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListInstanceTemplatesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]InstanceTemplatesScopedListPair, string, error) {
 		resp := &computepb.InstanceTemplateAggregatedList{}
@@ -710,7 +710,7 @@ func (c *instanceTemplatesRESTClient) Insert(ctx context.Context, req *computepb
 // the specified project.
 func (c *instanceTemplatesRESTClient) List(ctx context.Context, req *computepb.ListInstanceTemplatesRequest, opts ...gax.CallOption) *InstanceTemplateIterator {
 	it := &InstanceTemplateIterator{}
-	req = proto.Clone(req).(*computepb.ListInstanceTemplatesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InstanceTemplate, string, error) {
 		resp := &computepb.InstanceTemplateList{}

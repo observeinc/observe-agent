@@ -95,7 +95,7 @@ func defaultRegionHealthChecksRESTCallOptions() *RegionHealthChecksCallOptions {
 	}
 }
 
-// internalRegionHealthChecksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionHealthChecksClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionHealthChecksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalRegionHealthChecksClient interface {
 	Update(context.Context, *computepb.UpdateRegionHealthCheckRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionHealthChecksClient is a client for interacting with Google Compute Engine API.
+// RegionHealthChecksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionHealthChecks API.
@@ -123,7 +123,7 @@ type RegionHealthChecksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionHealthChecksClient) Close() error {
 	return c.internalClient.Close()
@@ -291,7 +291,7 @@ func (c *regionHealthChecksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionHealthChecksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -507,7 +507,7 @@ func (c *regionHealthChecksRESTClient) Insert(ctx context.Context, req *computep
 // project.
 func (c *regionHealthChecksRESTClient) List(ctx context.Context, req *computepb.ListRegionHealthChecksRequest, opts ...gax.CallOption) *HealthCheckIterator {
 	it := &HealthCheckIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionHealthChecksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.HealthCheck, string, error) {
 		resp := &computepb.HealthCheckList{}

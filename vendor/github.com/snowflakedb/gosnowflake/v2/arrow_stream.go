@@ -11,6 +11,8 @@ import (
 	"maps"
 	"net/http"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
@@ -55,28 +57,56 @@ type QueryResultFormatProvider interface {
 // QueryResultFormat: Arrow IPC record batches (use ipc.NewReader) when
 // the format is "arrow", or JSON (row fragments) when it is "json".
 type ArrowStreamBatch struct {
-	idx     int
-	numrows int64
-	scd     *snowflakeArrowStreamChunkDownloader
-	Loc     *time.Location
-	rr      io.ReadCloser
+	idx        int
+	numrows    int64
+	scd        *snowflakeArrowStreamChunkDownloader
+	Loc        *time.Location
+	rr         io.ReadCloser
+	inlineData []byte // non-nil for inline (RowSetBase64) batches
 }
 
 // NumRows returns the total number of rows that the metadata stated should
 // be in this stream of record batches.
 func (asb *ArrowStreamBatch) NumRows() int64 { return asb.numrows }
 
+// Reset closes any existing stream and clears the cached reader, allowing
+// GetStream to re-download the chunk on the next call. This enables callers
+// to retry after a mid-stream failure (e.g. TCP RST) without re-executing
+// the entire query.
+//
+// For inline batches (those produced from RowSetBase64 in the initial
+// query response), there is no remote chunk to re-download. In that
+// case Reset rewinds the reader by re-wrapping the cached inline bytes
+// so the batch can be read again from the beginning. This is done
+// even when the underlying Close returns an error, so the batch is
+// always left in a usable state for retry; the close error is still
+// returned to the caller.
+func (asb *ArrowStreamBatch) Reset() error {
+	var closeErr error
+	if asb.rr != nil {
+		closeErr = asb.rr.Close()
+		asb.rr = nil
+	}
+	if asb.inlineData != nil {
+		asb.rr = io.NopCloser(bytes.NewReader(asb.inlineData))
+	}
+	return closeErr
+}
+
 // GetStream downloads the chunk (if not already cached) and returns a
 // stream of bytes. The content may be Arrow IPC or JSON (row fragments)
 // depending on the current QueryResultFormat. Close should be called
 // on the returned stream when done to ensure no leaked memory.
+//
+// If a previous stream failed mid-read, call Reset() first to clear the
+// cached reader and allow re-download.
 func (asb *ArrowStreamBatch) GetStream(ctx context.Context) (io.ReadCloser, error) {
 	if asb.rr == nil {
 		if err := asb.downloadChunkStreamHelper(ctx); err != nil {
 			return nil, err
 		}
 	}
-	return asb.rr, nil
+	return newCancelableStream(ctx, asb.rr), nil
 }
 
 // streamWrapReader wraps an io.Reader so that Close closes the underlying body.
@@ -92,6 +122,118 @@ func (w *streamWrapReader) Close() error {
 		}
 	}
 	return w.wrapped.Close()
+}
+
+// interrupt closes the raw response body directly. This bypasses gzip.Reader
+// cleanup because the gzip layer may still be blocked waiting for more bytes,
+// while closing the transport body is what unblocks the in-flight read.
+func (w *streamWrapReader) interrupt() error {
+	return w.wrapped.Close()
+}
+
+// interruptibleReader lets cancelableStream bypass wrapper cleanup and close
+// the raw transport body that actually unblocks a stalled read.
+type interruptibleReader interface {
+	interrupt() error
+}
+
+// cancelableStream watches the stream context so cancellation can interrupt a
+// stalled read, normalizes terminal transport errors caused by that interrupt
+// to ctx.Err(), and still preserves true successful completion and EOF.
+type cancelableStream struct {
+	ctx context.Context
+
+	inner     io.ReadCloser
+	interrupt func() error
+
+	done          chan struct{}
+	stopOnce      sync.Once
+	interruptOnce sync.Once
+	completed     atomic.Bool
+}
+
+func newCancelableStream(ctx context.Context, inner io.ReadCloser) io.ReadCloser {
+	out := &cancelableStream{
+		ctx:       ctx,
+		inner:     inner,
+		interrupt: inner.Close,
+		done:      make(chan struct{}),
+	}
+	if interruptible, ok := inner.(interruptibleReader); ok {
+		out.interrupt = interruptible.interrupt
+	}
+	if ctx.Done() == nil {
+		return out
+	}
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			if out.watchingStopped() || out.completed.Load() {
+				return
+			}
+			out.interruptOnce.Do(func() {
+				_ = out.interrupt()
+			})
+		case <-out.done:
+		}
+	}()
+	return out
+}
+
+func (r *cancelableStream) stopWatching() {
+	r.stopOnce.Do(func() {
+		close(r.done)
+	})
+}
+
+func (r *cancelableStream) watchingStopped() bool {
+	select {
+	case <-r.done:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *cancelableStream) Read(p []byte) (int, error) {
+	n, err := r.inner.Read(p)
+	if err == nil {
+		return n, nil
+	}
+	defer r.stopWatching()
+
+	// Preserve the successful final read where io.Reader returns payload and EOF
+	// together. Only terminal reads with no delivered bytes are candidates for
+	// cancellation rewriting.
+	if err == io.EOF && n > 0 {
+		r.completed.Store(true)
+		return n, err
+	}
+
+	if normalized := r.canceledReadErr(); normalized != nil {
+		return n, normalized
+	}
+
+	if err == io.EOF {
+		r.completed.Store(true)
+	}
+	return n, err
+}
+
+func (r *cancelableStream) canceledReadErr() error {
+	ctxErr := r.ctx.Err()
+	if ctxErr == nil || r.completed.Load() {
+		return nil
+	}
+	// A canceled context wins over terminal transport errors even if the watcher
+	// goroutine has not yet unblocked the read before the terminal error arrives.
+	return ctxErr
+}
+
+func (r *cancelableStream) Close() error {
+	r.stopWatching()
+	return r.inner.Close()
 }
 
 func (asb *ArrowStreamBatch) downloadChunkStreamHelper(ctx context.Context) error {
@@ -220,9 +362,10 @@ func (scd *snowflakeArrowStreamChunkDownloader) GetBatches() (out []ArrowStreamB
 	if len(rowSetBytes) > 0 {
 		out = out[:chunkMetaLen+1]
 		out[0] = ArrowStreamBatch{
-			scd: scd,
-			Loc: loc,
-			rr:  io.NopCloser(bytes.NewReader(rowSetBytes)),
+			scd:        scd,
+			Loc:        loc,
+			rr:         io.NopCloser(bytes.NewReader(rowSetBytes)),
+			inlineData: rowSetBytes,
 		}
 		toFill = out[1:]
 	}

@@ -95,7 +95,7 @@ func defaultGlobalNetworkEndpointGroupsRESTCallOptions() *GlobalNetworkEndpointG
 	}
 }
 
-// internalGlobalNetworkEndpointGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalGlobalNetworkEndpointGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalGlobalNetworkEndpointGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalGlobalNetworkEndpointGroupsClient interface {
 	ListNetworkEndpoints(context.Context, *computepb.ListNetworkEndpointsGlobalNetworkEndpointGroupsRequest, ...gax.CallOption) *NetworkEndpointWithHealthStatusIterator
 }
 
-// GlobalNetworkEndpointGroupsClient is a client for interacting with Google Compute Engine API.
+// GlobalNetworkEndpointGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The GlobalNetworkEndpointGroups API.
@@ -123,7 +123,7 @@ type GlobalNetworkEndpointGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *GlobalNetworkEndpointGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -290,7 +290,7 @@ func (c *globalNetworkEndpointGroupsRESTClient) setGoogleClientInfo(keyval ...st
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *globalNetworkEndpointGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -653,7 +653,7 @@ func (c *globalNetworkEndpointGroupsRESTClient) Insert(ctx context.Context, req 
 // specified project.
 func (c *globalNetworkEndpointGroupsRESTClient) List(ctx context.Context, req *computepb.ListGlobalNetworkEndpointGroupsRequest, opts ...gax.CallOption) *NetworkEndpointGroupIterator {
 	it := &NetworkEndpointGroupIterator{}
-	req = proto.Clone(req).(*computepb.ListGlobalNetworkEndpointGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NetworkEndpointGroup, string, error) {
 		resp := &computepb.NetworkEndpointGroupList{}
@@ -739,7 +739,7 @@ func (c *globalNetworkEndpointGroupsRESTClient) List(ctx context.Context, req *c
 // ListNetworkEndpoints lists the network endpoints in the specified network endpoint group.
 func (c *globalNetworkEndpointGroupsRESTClient) ListNetworkEndpoints(ctx context.Context, req *computepb.ListNetworkEndpointsGlobalNetworkEndpointGroupsRequest, opts ...gax.CallOption) *NetworkEndpointWithHealthStatusIterator {
 	it := &NetworkEndpointWithHealthStatusIterator{}
-	req = proto.Clone(req).(*computepb.ListNetworkEndpointsGlobalNetworkEndpointGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NetworkEndpointWithHealthStatus, string, error) {
 		resp := &computepb.NetworkEndpointGroupsListNetworkEndpoints{}

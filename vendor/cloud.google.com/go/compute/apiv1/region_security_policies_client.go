@@ -116,7 +116,7 @@ func defaultRegionSecurityPoliciesRESTCallOptions() *RegionSecurityPoliciesCallO
 	}
 }
 
-// internalRegionSecurityPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionSecurityPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionSecurityPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -133,7 +133,7 @@ type internalRegionSecurityPoliciesClient interface {
 	SetLabels(context.Context, *computepb.SetLabelsRegionSecurityPolicyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionSecurityPoliciesClient is a client for interacting with Google Compute Engine API.
+// RegionSecurityPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionSecurityPolicies API.
@@ -147,7 +147,7 @@ type RegionSecurityPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionSecurityPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -336,7 +336,7 @@ func (c *regionSecurityPoliciesRESTClient) setGoogleClientInfo(keyval ...string)
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionSecurityPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -688,7 +688,7 @@ func (c *regionSecurityPoliciesRESTClient) Insert(ctx context.Context, req *comp
 // and region.
 func (c *regionSecurityPoliciesRESTClient) List(ctx context.Context, req *computepb.ListRegionSecurityPoliciesRequest, opts ...gax.CallOption) *SecurityPolicyIterator {
 	it := &SecurityPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionSecurityPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.SecurityPolicy, string, error) {
 		resp := &computepb.SecurityPolicyList{}

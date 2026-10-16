@@ -344,7 +344,7 @@ func defaultInstancesRESTCallOptions() *InstancesCallOptions {
 	}
 }
 
-// internalInstancesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInstancesClient is an interface that defines the methods available from Compute Engine API.
 type internalInstancesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -402,7 +402,7 @@ type internalInstancesClient interface {
 	UpdateShieldedInstanceConfig(context.Context, *computepb.UpdateShieldedInstanceConfigInstanceRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// InstancesClient is a client for interacting with Google Compute Engine API.
+// InstancesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Instances API.
@@ -416,7 +416,7 @@ type InstancesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InstancesClient) Close() error {
 	return c.internalClient.Close()
@@ -927,7 +927,7 @@ func (c *instancesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *instancesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -1180,7 +1180,7 @@ func (c *instancesRESTClient) AddResourcePolicies(ctx context.Context, req *comp
 // returnPartialSuccess parameter to true.
 func (c *instancesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstancesRequest, opts ...gax.CallOption) *InstancesScopedListPairIterator {
 	it := &InstancesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListInstancesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]InstancesScopedListPair, string, error) {
 		resp := &computepb.InstanceAggregatedList{}
@@ -1442,6 +1442,9 @@ func (c *instancesRESTClient) Delete(ctx context.Context, req *computepb.DeleteI
 	baseUrl.Path += fmt.Sprintf("/compute/v1/projects/%v/zones/%v/instances/%v", req.GetProject(), req.GetZone(), req.GetInstance())
 
 	params := url.Values{}
+	if req != nil && req.NoGracefulShutdown != nil {
+		params.Add("noGracefulShutdown", fmt.Sprintf("%v", req.GetNoGracefulShutdown()))
+	}
 	if req != nil && req.RequestId != nil {
 		params.Add("requestId", fmt.Sprintf("%v", req.GetRequestId()))
 	}
@@ -2193,7 +2196,7 @@ func (c *instancesRESTClient) Insert(ctx context.Context, req *computepb.InsertI
 // the specified zone.
 func (c *instancesRESTClient) List(ctx context.Context, req *computepb.ListInstancesRequest, opts ...gax.CallOption) *InstanceIterator {
 	it := &InstanceIterator{}
-	req = proto.Clone(req).(*computepb.ListInstancesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Instance, string, error) {
 		resp := &computepb.InstanceList{}
@@ -2283,7 +2286,7 @@ func (c *instancesRESTClient) List(ctx context.Context, req *computepb.ListInsta
 // referrers to VM instances.
 func (c *instancesRESTClient) ListReferrers(ctx context.Context, req *computepb.ListReferrersInstancesRequest, opts ...gax.CallOption) *ReferenceIterator {
 	it := &ReferenceIterator{}
-	req = proto.Clone(req).(*computepb.ListReferrersInstancesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Reference, string, error) {
 		resp := &computepb.InstanceListReferrers{}
@@ -4034,6 +4037,9 @@ func (c *instancesRESTClient) Stop(ctx context.Context, req *computepb.StopInsta
 	params := url.Values{}
 	if req != nil && req.DiscardLocalSsd != nil {
 		params.Add("discardLocalSsd", fmt.Sprintf("%v", req.GetDiscardLocalSsd()))
+	}
+	if req != nil && req.NoGracefulShutdown != nil {
+		params.Add("noGracefulShutdown", fmt.Sprintf("%v", req.GetNoGracefulShutdown()))
 	}
 	if req != nil && req.RequestId != nil {
 		params.Add("requestId", fmt.Sprintf("%v", req.GetRequestId()))

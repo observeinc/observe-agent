@@ -135,7 +135,7 @@ func defaultStoragePoolsRESTCallOptions() *StoragePoolsCallOptions {
 	}
 }
 
-// internalStoragePoolsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalStoragePoolsClient is an interface that defines the methods available from Compute Engine API.
 type internalStoragePoolsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -152,7 +152,7 @@ type internalStoragePoolsClient interface {
 	Update(context.Context, *computepb.UpdateStoragePoolRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// StoragePoolsClient is a client for interacting with Google Compute Engine API.
+// StoragePoolsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The StoragePools API.
@@ -166,7 +166,7 @@ type StoragePoolsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *StoragePoolsClient) Close() error {
 	return c.internalClient.Close()
@@ -362,7 +362,7 @@ func (c *storagePoolsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *storagePoolsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -386,7 +386,7 @@ func (c *storagePoolsRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *storagePoolsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListStoragePoolsRequest, opts ...gax.CallOption) *StoragePoolsScopedListPairIterator {
 	it := &StoragePoolsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListStoragePoolsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]StoragePoolsScopedListPair, string, error) {
 		resp := &computepb.StoragePoolAggregatedList{}
@@ -745,7 +745,7 @@ func (c *storagePoolsRESTClient) Insert(ctx context.Context, req *computepb.Inse
 // the specified zone.
 func (c *storagePoolsRESTClient) List(ctx context.Context, req *computepb.ListStoragePoolsRequest, opts ...gax.CallOption) *StoragePoolIterator {
 	it := &StoragePoolIterator{}
-	req = proto.Clone(req).(*computepb.ListStoragePoolsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.StoragePool, string, error) {
 		resp := &computepb.StoragePoolList{}
@@ -831,7 +831,7 @@ func (c *storagePoolsRESTClient) List(ctx context.Context, req *computepb.ListSt
 // ListDisks lists the disks in a specified storage pool.
 func (c *storagePoolsRESTClient) ListDisks(ctx context.Context, req *computepb.ListDisksStoragePoolsRequest, opts ...gax.CallOption) *StoragePoolDiskIterator {
 	it := &StoragePoolDiskIterator{}
-	req = proto.Clone(req).(*computepb.ListDisksStoragePoolsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.StoragePoolDisk, string, error) {
 		resp := &computepb.StoragePoolListDisks{}

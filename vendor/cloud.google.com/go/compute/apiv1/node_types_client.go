@@ -88,7 +88,7 @@ func defaultNodeTypesRESTCallOptions() *NodeTypesCallOptions {
 	}
 }
 
-// internalNodeTypesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNodeTypesClient is an interface that defines the methods available from Compute Engine API.
 type internalNodeTypesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -98,7 +98,7 @@ type internalNodeTypesClient interface {
 	List(context.Context, *computepb.ListNodeTypesRequest, ...gax.CallOption) *NodeTypeIterator
 }
 
-// NodeTypesClient is a client for interacting with Google Compute Engine API.
+// NodeTypesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NodeTypes API.
@@ -112,7 +112,7 @@ type NodeTypesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NodeTypesClient) Close() error {
 	return c.internalClient.Close()
@@ -241,7 +241,7 @@ func (c *nodeTypesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *nodeTypesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -262,7 +262,7 @@ func (c *nodeTypesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *nodeTypesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListNodeTypesRequest, opts ...gax.CallOption) *NodeTypesScopedListPairIterator {
 	it := &NodeTypesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListNodeTypesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]NodeTypesScopedListPair, string, error) {
 		resp := &computepb.NodeTypeAggregatedList{}
@@ -414,7 +414,7 @@ func (c *nodeTypesRESTClient) Get(ctx context.Context, req *computepb.GetNodeTyp
 // project.
 func (c *nodeTypesRESTClient) List(ctx context.Context, req *computepb.ListNodeTypesRequest, opts ...gax.CallOption) *NodeTypeIterator {
 	it := &NodeTypeIterator{}
-	req = proto.Clone(req).(*computepb.ListNodeTypesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NodeType, string, error) {
 		resp := &computepb.NodeTypeList{}

@@ -10,7 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -123,6 +125,7 @@ type awsAttestationMetadataProvider interface {
 	awsCredentials() (aws.Credentials, error)
 	awsCredentialsViaRoleChaining() (aws.Credentials, error)
 	awsRegion() string
+	awsWebIdentityToken(creds aws.Credentials, region string) (string, error)
 }
 
 type defaultAwsAttestationMetadataProvider struct {
@@ -189,6 +192,26 @@ func (s *defaultAwsAttestationMetadataProvider) awsRegion() string {
 	return s.awsCfg.Region
 }
 
+func (s *defaultAwsAttestationMetadataProvider) awsWebIdentityToken(creds aws.Credentials, region string) (string, error) {
+	awsCfg := s.awsCfg
+	awsCfg.Credentials = credentials.StaticCredentialsProvider{Value: creds}
+	awsCfg.Region = region
+	stsClient := sts.NewFromConfig(awsCfg)
+
+	resp, err := stsClient.GetWebIdentityToken(s.ctx, &sts.GetWebIdentityTokenInput{
+		Audience:         []string{snowflakeAudience},
+		SigningAlgorithm: aws.String("ES384"),
+	})
+	if err != nil {
+		logger.Debugf("failed to obtain AWS web identity token from STS: %v", err)
+		return "", err
+	}
+	if resp.WebIdentityToken == nil {
+		return "", nil
+	}
+	return *resp.WebIdentityToken, nil
+}
+
 func (c *awsIdentityAttestationCreator) createAttestation() (*wifAttestation, error) {
 	logger.Debug("Creating AWS identity attestation...")
 
@@ -221,6 +244,15 @@ func (c *awsIdentityAttestationCreator) createAttestation() (*wifAttestation, er
 		return nil, fmt.Errorf("no AWS region was found")
 	}
 
+	if c.cfg.WorkloadIdentityAwsUseOutboundToken == ConfigBoolTrue {
+		return c.createOutboundIdentityAttestation(attestationService, creds, region)
+	}
+	return c.createCallerIdentityAttestation(creds, region)
+}
+
+// createCallerIdentityAttestation produces the attestation as a base64-encoded,
+// SigV4-signed STS GetCallerIdentity request envelope.
+func (c *awsIdentityAttestationCreator) createCallerIdentityAttestation(creds aws.Credentials, region string) (*wifAttestation, error) {
 	stsHostname := stsHostname(region)
 	req, err := c.createStsRequest(stsHostname)
 	if err != nil {
@@ -240,6 +272,23 @@ func (c *awsIdentityAttestationCreator) createAttestation() (*wifAttestation, er
 	return &wifAttestation{
 		ProviderType: string(awsWif),
 		Credential:   credential,
+		Metadata:     map[string]string{},
+	}, nil
+}
+
+// createOutboundIdentityAttestation produces the attestation as a signed JWT
+// obtained from the STS GetWebIdentityToken API.
+func (c *awsIdentityAttestationCreator) createOutboundIdentityAttestation(attestationService awsAttestationMetadataProvider, creds aws.Credentials, region string) (*wifAttestation, error) {
+	token, err := attestationService.awsWebIdentityToken(creds, region)
+	if err != nil {
+		return nil, err
+	}
+	if token == "" {
+		return nil, errors.New("failed to obtain AWS web identity token from STS")
+	}
+	return &wifAttestation{
+		ProviderType: string(awsWif),
+		Credential:   token,
 		Metadata:     map[string]string{},
 	}, nil
 }
@@ -350,7 +399,7 @@ func (c *gcpIdentityAttestationCreator) createGcpIdentityViaImpersonation() (*wi
 	// map paths to full service account paths
 	var fullServiceAccountPaths []string
 	for _, path := range c.cfg.WorkloadIdentityImpersonationPath {
-		fullServiceAccountPaths = append(fullServiceAccountPaths, fmt.Sprintf("projects/-/serviceAccounts/%s", path))
+		fullServiceAccountPaths = append(fullServiceAccountPaths, "projects/-/serviceAccounts/"+path)
 	}
 	targetServiceAccount := fullServiceAccountPaths[len(fullServiceAccountPaths)-1]
 	delegates := fullServiceAccountPaths[:len(fullServiceAccountPaths)-1]
@@ -649,13 +698,27 @@ func extractTokenFromJSON(tokenJSON string) (string, error) {
 }
 
 func (a *azureIdentityAttestationCreator) azureFunctionsIdentityRequest(identityEndpoint, identityHeader, managedIdentityClientID string) (*http.Request, error) {
-	queryParams := fmt.Sprintf("api-version=2019-08-01&resource=%s", a.workloadIdentityEntraResource)
-	if managedIdentityClientID != "" {
-		queryParams += fmt.Sprintf("&client_id=%s", managedIdentityClientID)
+	// IDENTITY_ENDPOINT comes from the process environment. Azure's contract
+	// places it on a loopback / link-local address (App Service, Functions and
+	// Arc all expose MSI on localhost). Verify that before the IDENTITY_HEADER
+	// value is attached and the request is issued.
+	if err := validateLocalMetadataEndpoint(identityEndpoint); err != nil {
+		return nil, err
 	}
 
-	url := fmt.Sprintf("%s?%s", identityEndpoint, queryParams)
-	req, err := http.NewRequest("GET", url, nil)
+	// Build the query with url.Values so the Entra resource and the
+	// managed-identity client id are percent-encoded. With raw interpolation a
+	// value such as "api://app&client_id=<other>" would add or replace other
+	// IMDS query parameters instead of staying confined to its own.
+	values := url.Values{}
+	values.Set("api-version", "2019-08-01")
+	values.Set("resource", a.workloadIdentityEntraResource)
+	if managedIdentityClientID != "" {
+		values.Set("client_id", managedIdentityClientID)
+	}
+
+	requestURL := fmt.Sprintf("%s?%s", identityEndpoint, values.Encode())
+	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -664,12 +727,48 @@ func (a *azureIdentityAttestationCreator) azureFunctionsIdentityRequest(identity
 	return req, nil
 }
 
-func (a *azureIdentityAttestationCreator) azureVMIdentityRequest() (*http.Request, error) {
-	urlWithoutQuery := a.azureMetadataServiceBaseURL + "/metadata/identity/oauth2/token?"
-	queryParams := fmt.Sprintf("api-version=2018-02-01&resource=%s", a.workloadIdentityEntraResource)
+// validateLocalMetadataEndpoint requires the identity endpoint URL to address
+// the local metadata service (loopback or link-local) before any platform value
+// is attached to a request sent to it. Remote hosts are rejected.
+func validateLocalMetadataEndpoint(endpoint string) error {
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("invalid identity endpoint URL: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("identity endpoint must use http or https scheme, got %q", parsed.Scheme)
+	}
+	host := parsed.Hostname()
+	if !isLoopbackOrLinkLocalHost(host) {
+		return fmt.Errorf("identity endpoint host %q is not a permitted local metadata address", host)
+	}
+	return nil
+}
 
-	url := urlWithoutQuery + queryParams
-	req, err := http.NewRequest("GET", url, nil)
+// isLoopbackOrLinkLocalHost reports whether host is the loopback hostname or a
+// loopback / link-local IP literal: localhost, 127.0.0.0/8, ::1,
+// 169.254.0.0/16 and fe80::/10.
+func isLoopbackOrLinkLocalHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsLinkLocalUnicast()
+}
+
+func (a *azureIdentityAttestationCreator) azureVMIdentityRequest() (*http.Request, error) {
+	// Percent-encode the query so the Entra resource cannot inject additional
+	// IMDS parameters (e.g. client_id/object_id/mi_res_id) that would select a
+	// different managed identity attached to the same VM.
+	values := url.Values{}
+	values.Set("api-version", "2018-02-01")
+	values.Set("resource", a.workloadIdentityEntraResource)
+
+	requestURL := a.azureMetadataServiceBaseURL + "/metadata/identity/oauth2/token?" + values.Encode()
+	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		return nil, err
 	}

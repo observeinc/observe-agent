@@ -114,7 +114,7 @@ func defaultSslPoliciesRESTCallOptions() *SslPoliciesCallOptions {
 	}
 }
 
-// internalSslPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalSslPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalSslPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -128,7 +128,7 @@ type internalSslPoliciesClient interface {
 	Patch(context.Context, *computepb.PatchSslPolicyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// SslPoliciesClient is a client for interacting with Google Compute Engine API.
+// SslPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The SslPolicies API.
@@ -142,7 +142,7 @@ type SslPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *SslPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -312,7 +312,7 @@ func (c *sslPoliciesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *sslPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -337,7 +337,7 @@ func (c *sslPoliciesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *sslPoliciesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListSslPoliciesRequest, opts ...gax.CallOption) *SslPoliciesScopedListPairIterator {
 	it := &SslPoliciesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListSslPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]SslPoliciesScopedListPair, string, error) {
 		resp := &computepb.SslPoliciesAggregatedList{}
@@ -630,7 +630,7 @@ func (c *sslPoliciesRESTClient) Insert(ctx context.Context, req *computepb.Inser
 // project.
 func (c *sslPoliciesRESTClient) List(ctx context.Context, req *computepb.ListSslPoliciesRequest, opts ...gax.CallOption) *SslPolicyIterator {
 	it := &SslPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListSslPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.SslPolicy, string, error) {
 		resp := &computepb.SslPoliciesList{}

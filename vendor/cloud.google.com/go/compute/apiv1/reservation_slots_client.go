@@ -83,7 +83,7 @@ func defaultReservationSlotsRESTCallOptions() *ReservationSlotsCallOptions {
 	}
 }
 
-// internalReservationSlotsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalReservationSlotsClient is an interface that defines the methods available from Compute Engine API.
 type internalReservationSlotsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -94,7 +94,7 @@ type internalReservationSlotsClient interface {
 	Update(context.Context, *computepb.UpdateReservationSlotRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// ReservationSlotsClient is a client for interacting with Google Compute Engine API.
+// ReservationSlotsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The ReservationSlots API.
@@ -108,7 +108,7 @@ type ReservationSlotsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ReservationSlotsClient) Close() error {
 	return c.internalClient.Close()
@@ -252,7 +252,7 @@ func (c *reservationSlotsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *reservationSlotsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -399,7 +399,7 @@ func (c *reservationSlotsRESTClient) GetVersion(ctx context.Context, req *comput
 // List retrieves a list of reservation slots under a single reservation.
 func (c *reservationSlotsRESTClient) List(ctx context.Context, req *computepb.ListReservationSlotsRequest, opts ...gax.CallOption) *ReservationSlotIterator {
 	it := &ReservationSlotIterator{}
-	req = proto.Clone(req).(*computepb.ListReservationSlotsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.ReservationSlot, string, error) {
 		resp := &computepb.ReservationSlotsListResponse{}

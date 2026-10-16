@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	p "github.com/SAP/go-hdb/driver/internal/protocol"
-	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
 	"github.com/SAP/go-hdb/driver/unicode/cesu8"
 )
 
@@ -44,7 +43,7 @@ func pipeData(conn net.Conn, dbConn net.Conn, wr io.Writer) {
 
 func readMsg(ctx context.Context, prd *p.Reader) error {
 	// TODO complete for non generic parts, see internal/protocol/parts/newGenPartReader for details
-	_, err := prd.IterateParts(ctx, 0, nil)
+	err := prd.SkipParts(ctx)
 	// _, err := prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes, read func(part p.Part)) {})
 	return err
 }
@@ -75,13 +74,9 @@ func (s *Sniffer) Run() error {
 		pipeData(s.dbConn, s.conn, dbWr)
 	})
 
-	defaultDecoder := cesu8.DefaultDecoder()
-
-	clientDec := encoding.NewDecoder(clientRd, defaultDecoder, false)
-	dbDec := encoding.NewDecoder(dbRd, defaultDecoder, false)
-
-	pClientRd := p.NewClientReader(clientDec, defaultDecoder, true, s.logger, defaultLobChunkSize)
-	pDBRd := p.NewDBReader(dbDec, defaultDecoder, true, s.logger, defaultLobChunkSize)
+	readerAttrs := p.NewReaderAttrs(true, s.logger, cesu8.DefaultDecoder(), defaultLobChunkSize, false, nil)
+	pClientRd := p.NewClientReader(clientRd, readerAttrs)
+	pDBRd := p.NewDBReader(dbRd, readerAttrs)
 
 	wg.Go(func() {
 		logData(ctx, pClientRd)

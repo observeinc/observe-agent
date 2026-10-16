@@ -121,7 +121,7 @@ func defaultInterconnectAttachmentGroupsRESTCallOptions() *InterconnectAttachmen
 	}
 }
 
-// internalInterconnectAttachmentGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInterconnectAttachmentGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalInterconnectAttachmentGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -137,7 +137,7 @@ type internalInterconnectAttachmentGroupsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsInterconnectAttachmentGroupRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// InterconnectAttachmentGroupsClient is a client for interacting with Google Compute Engine API.
+// InterconnectAttachmentGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InterconnectAttachmentGroups API.
@@ -151,7 +151,7 @@ type InterconnectAttachmentGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InterconnectAttachmentGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -333,7 +333,7 @@ func (c *interconnectAttachmentGroupsRESTClient) setGoogleClientInfo(keyval ...s
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *interconnectAttachmentGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -660,7 +660,7 @@ func (c *interconnectAttachmentGroupsRESTClient) Insert(ctx context.Context, req
 // List lists the InterconnectAttachmentGroups for a project in the given scope.
 func (c *interconnectAttachmentGroupsRESTClient) List(ctx context.Context, req *computepb.ListInterconnectAttachmentGroupsRequest, opts ...gax.CallOption) *InterconnectAttachmentGroupIterator {
 	it := &InterconnectAttachmentGroupIterator{}
-	req = proto.Clone(req).(*computepb.ListInterconnectAttachmentGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InterconnectAttachmentGroup, string, error) {
 		resp := &computepb.InterconnectAttachmentGroupsListResponse{}

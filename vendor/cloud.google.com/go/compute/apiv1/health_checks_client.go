@@ -109,7 +109,7 @@ func defaultHealthChecksRESTCallOptions() *HealthChecksCallOptions {
 	}
 }
 
-// internalHealthChecksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalHealthChecksClient is an interface that defines the methods available from Compute Engine API.
 type internalHealthChecksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -124,7 +124,7 @@ type internalHealthChecksClient interface {
 	Update(context.Context, *computepb.UpdateHealthCheckRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// HealthChecksClient is a client for interacting with Google Compute Engine API.
+// HealthChecksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The HealthChecks API.
@@ -138,7 +138,7 @@ type HealthChecksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *HealthChecksClient) Close() error {
 	return c.internalClient.Close()
@@ -316,7 +316,7 @@ func (c *healthChecksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *healthChecksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -341,7 +341,7 @@ func (c *healthChecksRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *healthChecksRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListHealthChecksRequest, opts ...gax.CallOption) *HealthChecksScopedListPairIterator {
 	it := &HealthChecksScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListHealthChecksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]HealthChecksScopedListPair, string, error) {
 		resp := &computepb.HealthChecksAggregatedList{}
@@ -633,7 +633,7 @@ func (c *healthChecksRESTClient) Insert(ctx context.Context, req *computepb.Inse
 // project.
 func (c *healthChecksRESTClient) List(ctx context.Context, req *computepb.ListHealthChecksRequest, opts ...gax.CallOption) *HealthCheckIterator {
 	it := &HealthCheckIterator{}
-	req = proto.Clone(req).(*computepb.ListHealthChecksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.HealthCheck, string, error) {
 		resp := &computepb.HealthCheckList{}

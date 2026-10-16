@@ -95,7 +95,7 @@ func defaultRegionUrlMapsRESTCallOptions() *RegionUrlMapsCallOptions {
 	}
 }
 
-// internalRegionUrlMapsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionUrlMapsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionUrlMapsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalRegionUrlMapsClient interface {
 	Validate(context.Context, *computepb.ValidateRegionUrlMapRequest, ...gax.CallOption) (*computepb.UrlMapsValidateResponse, error)
 }
 
-// RegionUrlMapsClient is a client for interacting with Google Compute Engine API.
+// RegionUrlMapsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionUrlMaps API.
@@ -123,7 +123,7 @@ type RegionUrlMapsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionUrlMapsClient) Close() error {
 	return c.internalClient.Close()
@@ -293,7 +293,7 @@ func (c *regionUrlMapsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionUrlMapsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -509,7 +509,7 @@ func (c *regionUrlMapsRESTClient) Insert(ctx context.Context, req *computepb.Ins
 // project in the specified region.
 func (c *regionUrlMapsRESTClient) List(ctx context.Context, req *computepb.ListRegionUrlMapsRequest, opts ...gax.CallOption) *UrlMapIterator {
 	it := &UrlMapIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionUrlMapsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.UrlMap, string, error) {
 		resp := &computepb.UrlMapList{}

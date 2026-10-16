@@ -206,9 +206,28 @@ func postRestfulQuery(
 
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		// For context cancel/timeout cases, a special cancel request needs to be sent.
-		if cancelErr := sr.FuncCancelQuery(context.Background(), sr, requestID, timeout); cancelErr != nil {
-			// Wrap the original error with the cancel error.
-			err = fmt.Errorf("failed to cancel query. cancelErr: %w, queryErr: %w", cancelErr, err)
+		if cfg.CleanupTimeout > 0 {
+			// Bounded cleanup: detach the abort onto its own goroutine with a hard
+			// deadline so the caller regains control at its own deadline instead of
+			// blocking until the abort (and its internal retries) finish.
+			// WithoutCancel keeps the caller ctx's values (logging/trace correlation)
+			// while dropping its cancellation and deadline. We reset the request ID so
+			// the abort gets its own fresh one instead of reusing the aborted query's
+			// ID (which WithRequestID would otherwise leak into the abort request URL).
+			detachedCtx := context.WithValue(context.WithoutCancel(ctx), snowflakeRequestIDKey, nilUUID)
+			cleanupCtx, cancel := context.WithTimeout(detachedCtx, cfg.CleanupTimeout)
+			go func() {
+				defer cancel()
+				if cancelErr := sr.FuncCancelQuery(cleanupCtx, sr, requestID, timeout); cancelErr != nil {
+					logger.Warnf("failed to cancel query (async cleanup): %v", cancelErr)
+				}
+			}()
+		} else {
+			// Legacy behavior: synchronous, unbounded cleanup on the caller's goroutine.
+			if cancelErr := sr.FuncCancelQuery(context.Background(), sr, requestID, timeout); cancelErr != nil {
+				// Wrap the original error with the cancel error.
+				err = fmt.Errorf("failed to cancel query. cancelErr: %w, queryErr: %w", cancelErr, err)
+			}
 		}
 	}
 
@@ -310,7 +329,7 @@ func postRestfulQueryHelper(
 		return nil, err
 	}
 	logger.WithContext(ctx).Infof("HTTP: %v, URL: %v, Body: %v", resp.StatusCode, fullURL, b)
-	logger.WithContext(ctx).Infof("Header: %v", resp.Header)
+	logger.WithContext(ctx).Infof("Header names: %v", headerNames(resp.Header))
 	return nil, &SnowflakeError{
 		Number:      ErrFailedToPostQuery,
 		SQLState:    SQLStateConnectionFailure,
@@ -364,7 +383,7 @@ func closeSession(ctx context.Context, sr *snowflakeRestful, timeout time.Durati
 		return err
 	}
 	logger.WithContext(ctx).Infof("HTTP: %v, URL: %v, Body: %v", resp.StatusCode, fullURL, b)
-	logger.WithContext(ctx).Infof("Header: %v", resp.Header)
+	logger.WithContext(ctx).Infof("Header names: %v", headerNames(resp.Header))
 	return &SnowflakeError{
 		Number:      ErrFailedToCloseSession,
 		SQLState:    SQLStateConnectionFailure,
@@ -431,7 +450,7 @@ func renewRestfulSession(ctx context.Context, sr *snowflakeRestful, timeout time
 		return err
 	}
 	logger.WithContext(ctx).Infof("HTTP: %v, URL: %v, Body: %v", resp.StatusCode, fullURL, b)
-	logger.WithContext(ctx).Infof("Header: %v", resp.Header)
+	logger.WithContext(ctx).Infof("Header names: %v", headerNames(resp.Header))
 	return &SnowflakeError{
 		Number:      ErrFailedToRenewSession,
 		SQLState:    SQLStateConnectionFailure,
@@ -520,7 +539,7 @@ func cancelQuery(ctx context.Context, sr *snowflakeRestful, requestID UUID, time
 		return err
 	}
 	logger.WithContext(ctx).Infof("HTTP: %v, URL: %v, Body: %v", resp.StatusCode, fullURL, b)
-	logger.WithContext(ctx).Infof("Header: %v", resp.Header)
+	logger.WithContext(ctx).Infof("Header names: %v", headerNames(resp.Header))
 	return &SnowflakeError{
 		Number:      ErrFailedToCancelQuery,
 		SQLState:    SQLStateConnectionFailure,

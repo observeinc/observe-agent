@@ -105,7 +105,7 @@ func defaultFutureReservationsRESTCallOptions() *FutureReservationsCallOptions {
 	}
 }
 
-// internalFutureReservationsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalFutureReservationsClient is an interface that defines the methods available from Compute Engine API.
 type internalFutureReservationsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalFutureReservationsClient interface {
 	Update(context.Context, *computepb.UpdateFutureReservationRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// FutureReservationsClient is a client for interacting with Google Compute Engine API.
+// FutureReservationsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The FutureReservations API.
@@ -133,7 +133,7 @@ type FutureReservationsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *FutureReservationsClient) Close() error {
 	return c.internalClient.Close()
@@ -299,7 +299,7 @@ func (c *futureReservationsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *futureReservationsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -323,7 +323,7 @@ func (c *futureReservationsRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *futureReservationsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListFutureReservationsRequest, opts ...gax.CallOption) *FutureReservationsScopedListPairIterator {
 	it := &FutureReservationsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListFutureReservationsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]FutureReservationsScopedListPair, string, error) {
 		resp := &computepb.FutureReservationsAggregatedListResponse{}
@@ -683,7 +683,7 @@ func (c *futureReservationsRESTClient) Insert(ctx context.Context, req *computep
 // specified project in specified zone.
 func (c *futureReservationsRESTClient) List(ctx context.Context, req *computepb.ListFutureReservationsRequest, opts ...gax.CallOption) *FutureReservationIterator {
 	it := &FutureReservationIterator{}
-	req = proto.Clone(req).(*computepb.ListFutureReservationsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.FutureReservation, string, error) {
 		resp := &computepb.FutureReservationsListResponse{}

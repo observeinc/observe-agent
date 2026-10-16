@@ -109,7 +109,7 @@ func defaultAddressesRESTCallOptions() *AddressesCallOptions {
 	}
 }
 
-// internalAddressesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalAddressesClient is an interface that defines the methods available from Compute Engine API.
 type internalAddressesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -124,7 +124,7 @@ type internalAddressesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsAddressRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// AddressesClient is a client for interacting with Google Compute Engine API.
+// AddressesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Addresses API.
@@ -138,7 +138,7 @@ type AddressesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *AddressesClient) Close() error {
 	return c.internalClient.Close()
@@ -312,7 +312,7 @@ func (c *addressesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *addressesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -336,7 +336,7 @@ func (c *addressesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *addressesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListAddressesRequest, opts ...gax.CallOption) *AddressesScopedListPairIterator {
 	it := &AddressesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListAddressesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]AddressesScopedListPair, string, error) {
 		resp := &computepb.AddressAggregatedList{}
@@ -630,7 +630,7 @@ func (c *addressesRESTClient) Insert(ctx context.Context, req *computepb.InsertA
 // the specified region.
 func (c *addressesRESTClient) List(ctx context.Context, req *computepb.ListAddressesRequest, opts ...gax.CallOption) *AddressIterator {
 	it := &AddressIterator{}
-	req = proto.Clone(req).(*computepb.ListAddressesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Address, string, error) {
 		resp := &computepb.AddressList{}
