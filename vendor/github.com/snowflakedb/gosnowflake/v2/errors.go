@@ -123,6 +123,8 @@ const (
 	ErrCodeEmptyToken = sferrors.ErrCodeEmptyToken
 	// ErrCodeEmptyOAuthParameters is an error code for the case where the client ID or client secret are not provided for OAuth flows.
 	ErrCodeEmptyOAuthParameters = sferrors.ErrCodeEmptyOAuthParameters
+	// ErrCodeHostWithScheme is an error code for the case where the host includes a URL scheme (e.g. "https://")
+	ErrCodeHostWithScheme = sferrors.ErrCodeHostWithScheme
 	// ErrMissingAccessATokenButRefreshTokenPresent is an error code for the case when access token is not found in cache, but the refresh token is present.
 	ErrMissingAccessATokenButRefreshTokenPresent = sferrors.ErrMissingAccessATokenButRefreshTokenPresent
 	// ErrCodeMissingTLSConfig is an error code for the case where the TLS config is missing.
@@ -193,6 +195,10 @@ const (
 	ErrNotImplemented = sferrors.ErrNotImplemented
 	// ErrInvalidPadding is an error code denoting the invalid padding of decryption key
 	ErrInvalidPadding = sferrors.ErrInvalidPadding
+	// ErrGetStreamMultipleFiles is an error code denoting a streaming GET whose stage path
+	// matched more than one file, so it cannot be streamed into a single writer. Narrow the
+	// GET with its PATTERN argument so it matches exactly one file.
+	ErrGetStreamMultipleFiles = sferrors.ErrGetStreamMultipleFiles
 
 	/* binding */
 
