@@ -209,11 +209,7 @@ func setupConfig(t *testing.T, test snapshotTest) {
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	observecol.AddConfigFlags(flags)
 	if test.otelConfigPath != "" {
-		otelConfigPath := test.otelConfigPath
-		if !filepath.IsAbs(otelConfigPath) {
-			otelConfigPath = filepath.Join(curPath, otelConfigPath)
-		}
-		flags.Parse([]string{"--config", otelConfigPath})
+		flags.Parse([]string{"--config", filepath.Join(curPath, test.otelConfigPath)})
 	}
 	viper.Reset()
 

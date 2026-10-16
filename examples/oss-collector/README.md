@@ -39,7 +39,7 @@ The OTLP receiver listens on `localhost:4317` (gRPC) and `localhost:4318` (HTTP)
 These checks run in CI:
 
 - `code-gen-check` regenerates the examples and fails if the committed files differ, so a change to the agent's bundled configuration also updates the examples.
-- `Test_OSSHostExample` runs the example, sends traces, logs, and metrics, and checks the deployment environment on everything it forwards, including RED metrics.
+- `Test_DeploymentEnvironmentPrecedence` checks how the agent's configuration, which the example is generated from, handles the deployment environment on traces, logs, metrics, and RED metrics.
 - The `OSS collector examples` workflow validates the examples with upstream `otelcol-contrib`: on pull requests with the collector version the agent is built with, and every week with the latest release.
 
 To change what the example contains, change the agent's bundled configuration, the reference configs, or the pipelines in the `Makefile` target, then run `make generate-oss-examples`.

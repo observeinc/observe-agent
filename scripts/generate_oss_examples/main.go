@@ -11,15 +11,14 @@
 //
 // Usage:
 //
-//	go run ./scripts/generate_oss_examples -agent-config <file> [-otel-config <file>] \
-//	  -config-mode linux -pipelines traces/forward,logs/forward [-extensions <ids>] -out <file>
+//	go run ./scripts/generate_oss_examples --agent-config <file> [--otel-config <file>] \
+//	  --config-mode linux --pipelines traces/forward,logs/forward [--extensions <ids>] --out <file>
 package main
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/commands/config"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/root"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -50,17 +50,29 @@ type options struct {
 }
 
 func main() {
-	var opts options
-	var pipelines, extensions string
-	flag.StringVar(&opts.agentConfig, "agent-config", "", "observe-agent configuration to render (required)")
-	flag.StringVar(&opts.otelConfig, "otel-config", "", "OpenTelemetry Collector configuration to merge on top of the bundled configuration")
-	flag.StringVar(&opts.configMode, "config-mode", "linux", "bundled configuration mode: linux, docker, macos, or windows")
-	flag.StringVar(&pipelines, "pipelines", "", "comma-separated pipelines to keep (required)")
-	flag.StringVar(&extensions, "extensions", "", "comma-separated extensions to keep")
-	flag.StringVar(&opts.out, "out", "", "file to write the example to (required)")
-	flag.Parse()
-	opts.pipelines = splitList(pipelines)
-	opts.extensions = splitList(extensions)
+	flags := pflag.NewFlagSet("generate_oss_examples", pflag.ExitOnError)
+	flags.String("agent-config", "", "observe-agent configuration to render (required)")
+	flags.String("otel-config", "", "OpenTelemetry Collector configuration to merge on top of the bundled configuration")
+	flags.String("config-mode", "linux", "bundled configuration mode: linux, docker, macos, or windows")
+	flags.StringSlice("pipelines", nil, "comma-separated pipelines to keep (required)")
+	flags.StringSlice("extensions", nil, "comma-separated extensions to keep")
+	flags.String("out", "", "file to write the example to (required)")
+	_ = flags.Parse(os.Args[1:])
+
+	// A separate instance from the global one that root.InitConfig loads the agent config into.
+	v := viper.New()
+	if err := v.BindPFlags(flags); err != nil {
+		fmt.Fprintln(os.Stderr, "generate_oss_examples:", err)
+		os.Exit(1)
+	}
+	opts := options{
+		agentConfig: v.GetString("agent-config"),
+		otelConfig:  v.GetString("otel-config"),
+		configMode:  v.GetString("config-mode"),
+		pipelines:   v.GetStringSlice("pipelines"),
+		extensions:  v.GetStringSlice("extensions"),
+		out:         v.GetString("out"),
+	}
 
 	if err := run(opts); err != nil {
 		fmt.Fprintln(os.Stderr, "generate_oss_examples:", err)
@@ -70,12 +82,12 @@ func main() {
 
 func run(opts options) error {
 	if opts.agentConfig == "" || opts.out == "" || len(opts.pipelines) == 0 {
-		return errors.New("-agent-config, -pipelines, and -out are required")
+		return errors.New("--agent-config, --pipelines, and --out are required")
 	}
 	// root.InitConfig exits the process on an invalid mode and only prints config read errors, so
 	// check both before rendering.
 	if !slices.Contains([]string{"linux", "docker", "macos", "windows"}, strings.ToLower(opts.configMode)) {
-		return fmt.Errorf("invalid -config-mode %q: use linux, docker, macos, or windows", opts.configMode)
+		return fmt.Errorf("invalid --config-mode %q: use linux, docker, macos, or windows", opts.configMode)
 	}
 	for _, path := range []string{opts.agentConfig, opts.otelConfig} {
 		if path == "" {
@@ -307,7 +319,7 @@ func checkNoCredentials(example []byte, agentConfigPath string) error {
 	}
 	for name, value := range map[string]string{"observe_url": strings.TrimSuffix(agentCfg.ObserveURL, "/"), "token": agentCfg.Token} {
 		if value != "" && bytes.Contains(example, []byte(value)) {
-			return fmt.Errorf("example contains the agent config's %s; set the values that reference it in -otel-config", name)
+			return fmt.Errorf("example contains the agent config's %s; set the values that reference it in --otel-config", name)
 		}
 	}
 	return nil
@@ -369,16 +381,6 @@ func toAnyList(ids []string) []any {
 	out := make([]any, len(ids))
 	for i, id := range ids {
 		out[i] = id
-	}
-	return out
-}
-
-func splitList(s string) []string {
-	var out []string
-	for _, item := range strings.Split(s, ",") {
-		if item = strings.TrimSpace(item); item != "" {
-			out = append(out, item)
-		}
 	}
 	return out
 }
