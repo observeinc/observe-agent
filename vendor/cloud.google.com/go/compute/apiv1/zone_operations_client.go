@@ -82,7 +82,7 @@ func defaultZoneOperationsRESTCallOptions() *ZoneOperationsCallOptions {
 	}
 }
 
-// internalZoneOperationsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalZoneOperationsClient is an interface that defines the methods available from Compute Engine API.
 type internalZoneOperationsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -93,7 +93,7 @@ type internalZoneOperationsClient interface {
 	Wait(context.Context, *computepb.WaitZoneOperationRequest, ...gax.CallOption) (*computepb.Operation, error)
 }
 
-// ZoneOperationsClient is a client for interacting with Google Compute Engine API.
+// ZoneOperationsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The ZoneOperations API.
@@ -107,7 +107,7 @@ type ZoneOperationsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ZoneOperationsClient) Close() error {
 	return c.internalClient.Close()
@@ -245,7 +245,7 @@ func (c *zoneOperationsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *zoneOperationsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -368,7 +368,7 @@ func (c *zoneOperationsRESTClient) Get(ctx context.Context, req *computepb.GetZo
 // the specified zone.
 func (c *zoneOperationsRESTClient) List(ctx context.Context, req *computepb.ListZoneOperationsRequest, opts ...gax.CallOption) *OperationIterator {
 	it := &OperationIterator{}
-	req = proto.Clone(req).(*computepb.ListZoneOperationsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Operation, string, error) {
 		resp := &computepb.OperationList{}

@@ -44,11 +44,21 @@ type ActionResourceType string
 
 // List of action resource reference types.
 const (
-	ActionResourceTypeServer     ActionResourceType = "server"
-	ActionResourceTypeImage      ActionResourceType = "image"
-	ActionResourceTypeISO        ActionResourceType = "iso"
-	ActionResourceTypeFloatingIP ActionResourceType = "floating_ip"
-	ActionResourceTypeVolume     ActionResourceType = "volume"
+	ActionResourceTypeServer               ActionResourceType = "server"
+	ActionResourceTypeImage                ActionResourceType = "image"
+	ActionResourceTypeISO                  ActionResourceType = "iso"
+	ActionResourceTypeFloatingIP           ActionResourceType = "floating_ip"
+	ActionResourceTypeVolume               ActionResourceType = "volume"
+	ActionResourceTypeNetwork              ActionResourceType = "network"
+	ActionResourceTypeCertificate          ActionResourceType = "certificate"
+	ActionResourceTypeLoadBalancer         ActionResourceType = "load_balancer"
+	ActionResourceTypeFirewall             ActionResourceType = "firewall"
+	ActionResourceTypePlacementGroup       ActionResourceType = "placement_group"
+	ActionResourceTypePrimaryIP            ActionResourceType = "primary_ip"
+	ActionResourceTypeZone                 ActionResourceType = "zone"
+	ActionResourceTypeStorageBox           ActionResourceType = "storage_box"
+	ActionResourceTypeStorageBoxSnapshot   ActionResourceType = "storage_box_snapshot"
+	ActionResourceTypeStorageBoxSubaccount ActionResourceType = "storage_box_subaccount"
 )
 
 // ActionError is the error of an action.
@@ -109,7 +119,7 @@ type ActionListOpts struct {
 	Sort   []string
 }
 
-func (l ActionListOpts) values() url.Values {
+func (l ActionListOpts) Values() url.Values {
 	vals := l.ListOpts.Values()
 	for _, id := range l.ID {
 		vals.Add("id", fmt.Sprintf("%d", id))
@@ -188,7 +198,7 @@ func (c *ResourceActionClient[R]) List(ctx context.Context, opts ActionListOpts)
 	opPath := c.getBaseURL() + "/actions?%s"
 	ctx = ctxutil.SetOpPath(ctx, opPath)
 
-	reqPath := fmt.Sprintf(opPath, opts.values().Encode())
+	reqPath := fmt.Sprintf(opPath, opts.Values().Encode())
 
 	respBody, resp, err := getRequest[schema.ActionListResponse](ctx, c.client, reqPath)
 	if err != nil {
@@ -232,7 +242,7 @@ func (c *ResourceActionClient[R]) ListFor(ctx context.Context, resource R, opts 
 		return nil, nil, invalidArgument("resource", resource, err)
 	}
 
-	reqPath := fmt.Sprintf(opPath, id, opts.values().Encode())
+	reqPath := fmt.Sprintf(opPath, id, opts.Values().Encode())
 
 	respBody, resp, err := getRequest[schema.ActionListResponse](ctx, c.client, reqPath)
 	if err != nil {

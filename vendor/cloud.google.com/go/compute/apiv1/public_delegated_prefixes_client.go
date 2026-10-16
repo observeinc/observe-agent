@@ -109,7 +109,7 @@ func defaultPublicDelegatedPrefixesRESTCallOptions() *PublicDelegatedPrefixesCal
 	}
 }
 
-// internalPublicDelegatedPrefixesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalPublicDelegatedPrefixesClient is an interface that defines the methods available from Compute Engine API.
 type internalPublicDelegatedPrefixesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -124,7 +124,7 @@ type internalPublicDelegatedPrefixesClient interface {
 	Withdraw(context.Context, *computepb.WithdrawPublicDelegatedPrefixeRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// PublicDelegatedPrefixesClient is a client for interacting with Google Compute Engine API.
+// PublicDelegatedPrefixesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The PublicDelegatedPrefixes API.
@@ -138,7 +138,7 @@ type PublicDelegatedPrefixesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *PublicDelegatedPrefixesClient) Close() error {
 	return c.internalClient.Close()
@@ -314,7 +314,7 @@ func (c *publicDelegatedPrefixesRESTClient) setGoogleClientInfo(keyval ...string
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *publicDelegatedPrefixesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -339,7 +339,7 @@ func (c *publicDelegatedPrefixesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *publicDelegatedPrefixesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListPublicDelegatedPrefixesRequest, opts ...gax.CallOption) *PublicDelegatedPrefixesScopedListPairIterator {
 	it := &PublicDelegatedPrefixesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListPublicDelegatedPrefixesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]PublicDelegatedPrefixesScopedListPair, string, error) {
 		resp := &computepb.PublicDelegatedPrefixAggregatedList{}
@@ -699,7 +699,7 @@ func (c *publicDelegatedPrefixesRESTClient) Insert(ctx context.Context, req *com
 // List lists the PublicDelegatedPrefixes for a project in the given region.
 func (c *publicDelegatedPrefixesRESTClient) List(ctx context.Context, req *computepb.ListPublicDelegatedPrefixesRequest, opts ...gax.CallOption) *PublicDelegatedPrefixIterator {
 	it := &PublicDelegatedPrefixIterator{}
-	req = proto.Clone(req).(*computepb.ListPublicDelegatedPrefixesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.PublicDelegatedPrefix, string, error) {
 		resp := &computepb.PublicDelegatedPrefixList{}

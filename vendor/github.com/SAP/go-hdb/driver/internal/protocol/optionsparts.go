@@ -1,10 +1,15 @@
 package protocol
 
 import (
+	"cmp"
+	"errors"
 	"fmt"
+	"net"
 	"slices"
+	"strconv"
 
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
+	"golang.org/x/text/transform"
 )
 
 // ClientContextOption represents a client context option.
@@ -27,13 +32,17 @@ type ClientContext struct {
 }
 
 // SetVersion sets the client version option.
-func (cc *ClientContext) SetVersion(v string) { cc.options.set(ccoVersion, v) }
+func (cc *ClientContext) SetVersion(v string) { cc.set(ccoVersion, v) }
 
 // SetType sets the client type option.
-func (cc *ClientContext) SetType(v string) { cc.options.set(ccoType, v) }
+func (cc *ClientContext) SetType(v string) { cc.set(ccoType, v) }
 
 // SetApplicationProgram sets the client application program option.
-func (cc *ClientContext) SetApplicationProgram(v string) { cc.options.set(ccoApplicationProgram, v) }
+func (cc *ClientContext) SetApplicationProgram(v string) { cc.set(ccoApplicationProgram, v) }
+
+func (cc *ClientContext) decode(dec *encoding.Decoder, header *PartHeader, _ *ReaderAttrs) error {
+	return cc.options.decode(dec, header.numArg())
+}
 
 // Cdm represents a ConnectOption ClientDistributionMode.
 type Cdm byte
@@ -138,41 +147,84 @@ type ConnectOptions struct {
 // DataFormatVersion2OrZero returns the data format version2 option if available, the zero value otherwise.
 func (co *ConnectOptions) DataFormatVersion2OrZero() int {
 	var v int32
-	co.options.get(coDataFormatVersion2, &v)
+	co.get(coDataFormatVersion2, &v)
 	return int(v)
 }
 
 // SetDataFormatVersion2 sets the data format version 2 option.
 func (co *ConnectOptions) SetDataFormatVersion2(v int) {
-	co.options.set(coDataFormatVersion2, int32(v)) //nolint: gosec
+	co.set(coDataFormatVersion2, int32(v)) //nolint: gosec
 }
 
 // SetClientDistributionMode sets the client distribution mode option.
 func (co *ConnectOptions) SetClientDistributionMode(v Cdm) {
-	co.options.set(coClientDistributionMode, int32(v))
+	co.set(coClientDistributionMode, int32(v))
+}
+
+// ClientDistributionModeOrZero returns the client distribution mode option if available, the zero value otherwise.
+func (co *ConnectOptions) ClientDistributionModeOrZero() Cdm {
+	var v int32
+	co.get(coClientDistributionMode, &v)
+	return Cdm(v) //nolint: gosec
+}
+
+// SystemIDOrZero returns the system ID option if available, the zero value otherwise.
+func (co *ConnectOptions) SystemIDOrZero() string {
+	var v string
+	co.get(coSystemID, &v)
+	return v
+}
+
+// SetUpdateTopologyAnywhere sets the update topology anywhere option.
+func (co *ConnectOptions) SetUpdateTopologyAnywhere(v bool) {
+	co.set(coUpdateTopologyAnywhere, v)
 }
 
 // SetSelectForUpdateSupported sets the select for update supported option.
 func (co *ConnectOptions) SetSelectForUpdateSupported(v bool) {
-	co.options.set(coSelectForUpdateSupported, v)
+	co.set(coSelectForUpdateSupported, v)
+}
+
+// Compression flag bits in the int32 value of coCompressionLevelAndFlags.
+// See the negotiation doc in session.go for how these are used.
+const (
+	CoCompressionLZ4Supported int32 = 0x00000100 // sender can decompress LZ4
+	CoCompressionLZ4Enabled   int32 = 0x00000200 // sender wants compression on
+)
+
+// CompressionLevelAndFlagsOrZero gets the compression level/flags option if available,
+// the zero value otherise.
+func (co *ConnectOptions) CompressionLevelAndFlagsOrZero() int32 {
+	var v int32
+	co.get(coCompressionLevelAndFlags, &v)
+	return v
+}
+
+// SetCompressionLevelAndFlags sets the compression level/flags option.
+func (co *ConnectOptions) SetCompressionLevelAndFlags(v int32) {
+	co.set(coCompressionLevelAndFlags, v)
 }
 
 // DatabaseNameOrZero returns the database name option if available, the zero value otherwise.
 func (co *ConnectOptions) DatabaseNameOrZero() string {
 	var v string
-	co.options.get(coDatabaseName, &v)
+	co.get(coDatabaseName, &v)
 	return v
 }
 
 // FullVersionOrZero returns the full version option if available, the zero value otherwise.
 func (co *ConnectOptions) FullVersionOrZero() string {
 	var v string
-	co.options.get(coFullVersionString, &v)
+	co.get(coFullVersionString, &v)
 	return v
 }
 
 // SetClientLocale sets the client locale option.
-func (co *ConnectOptions) SetClientLocale(v string) { co.options.set(coClientLocale, v) }
+func (co *ConnectOptions) SetClientLocale(v string) { co.set(coClientLocale, v) }
+
+func (co *ConnectOptions) decode(dec *encoding.Decoder, header *PartHeader, _ *ReaderAttrs) error {
+	return co.options.decode(dec, header.numArg())
+}
 
 // DBConnectInfoType represents a database connect info type.
 type dbConnectInfoType int8
@@ -195,19 +247,23 @@ type DBConnectInfo struct {
 }
 
 // SetDatabaseName sets the database name option.
-func (ci *DBConnectInfo) SetDatabaseName(v string) { ci.options.set(ciDatabaseName, v) }
+func (ci *DBConnectInfo) SetDatabaseName(v string) { ci.set(ciDatabaseName, v) }
 
 // HostOrZero returns the host option, the zero value otherwise.
-func (ci *DBConnectInfo) HostOrZero() string { var v string; ci.options.get(ciHost, &v); return v }
+func (ci *DBConnectInfo) HostOrZero() string { var v string; ci.get(ciHost, &v); return v }
 
 // PortOrZero returns the port option, the zero value otherwise.
-func (ci *DBConnectInfo) PortOrZero() int { var v int32; ci.options.get(ciPort, &v); return int(v) }
+func (ci *DBConnectInfo) PortOrZero() int { var v int32; ci.get(ciPort, &v); return int(v) }
 
 // IsConnectedOrZero returns this IsConnected option, the zero value otherwise.
 func (ci *DBConnectInfo) IsConnectedOrZero() bool {
 	var v bool
-	ci.options.get(ciIsConnected, &v)
+	ci.get(ciIsConnected, &v)
 	return v
+}
+
+func (ci *DBConnectInfo) decode(dec *encoding.Decoder, header *PartHeader, _ *ReaderAttrs) error {
+	return ci.options.decode(dec, header.numArg())
 }
 
 type statementContextType int8
@@ -231,6 +287,10 @@ type statementContext struct {
 	options[statementContextType]
 }
 
+func (sc *statementContext) decode(dec *encoding.Decoder, header *PartHeader, _ *ReaderAttrs) error {
+	return sc.options.decode(dec, header.numArg())
+}
+
 // transaction flags.
 type transactionFlagType int8
 
@@ -252,6 +312,10 @@ const (
 
 type transactionFlags struct {
 	options[transactionFlagType]
+}
+
+func (tf *transactionFlags) decode(dec *encoding.Decoder, header *PartHeader, _ *ReaderAttrs) error {
+	return tf.options.decode(dec, header.numArg())
 }
 
 type topologyOption int8
@@ -301,24 +365,196 @@ const (
 	StScriptServer     ServiceType = 11
 )
 
-// TopologyInformation represents a topology information part.
-type TopologyInformation struct {
-	hosts []*options[topologyOption]
+// SiteType represents the HSR (HANA System Replication) site type of a topology
+// host. Mirrors the reference client's SiteType enum (Layout.hpp).
+type SiteType int32
+
+// Site type constants.
+const (
+	SiteTypeNone      SiteType = 0 // no HSR
+	SiteTypePrimary   SiteType = 1
+	SiteTypeSecondary SiteType = 2
+	SiteTypeTertiary  SiteType = 3
+)
+
+// SiteVolumeID is the packed site + volume identifier the server reports for a
+// topology host (topologyOption toVolumeID): site ID in the high 8 bits, volume
+// ID in the low 24 bits. Mirrors the reference client's SiteVolumeID.
+type SiteVolumeID uint32
+
+const (
+	volumeIDMask = 0x00FFFFFF // low 24 bits
+	siteIDMask   = 0xFF000000 // high 8 bits
+)
+
+// SiteID returns the site id (high 8 bits).
+func (id SiteVolumeID) SiteID() uint8 { return uint8(id >> 24) }
+
+// VolumeID returns the volume id (low 24 bits).
+func (id SiteVolumeID) VolumeID() uint32 { return uint32(id) & volumeIDMask }
+
+// IsInvalid reports whether either the site id or the volume id is the reserved
+// all-ones invalid value (site 0xFF or volume 0xFFFFFF). The server must never
+// send such a record; the reference client rejects the whole topology if it
+// does.
+func (id SiteVolumeID) IsInvalid() bool {
+	return uint32(id)&volumeIDMask == volumeIDMask || uint32(id)&siteIDMask == siteIDMask
 }
 
-func (ti TopologyInformation) String() string { return fmt.Sprintf("%v", ti.hosts) }
+// RoutingNode holds the topology data of a routing node.
+type RoutingNode struct {
+	SiteVolumeID SiteVolumeID
+	SiteType     SiteType
+	// Host is the dial address (host+port). It is the reachability key: routing
+	// marks every topology entry with the same host reachable or unreachable.
+	// It is not the state identity: routing state is preserved by site volume
+	// identity (SiteVolumeID, SiteType), so the server must not list the same
+	// host with conflicting routing attributes.
+	Host    string
+	Standby bool // node is a standby node
+}
 
-func (ti *TopologyInformation) decodeNumArg(dec *encoding.Decoder, numArg int) error {
-	ti.hosts = resizeSlice(ti.hosts, numArg)
+func (n *RoutingNode) sortKey() uint64 {
+	return uint64(n.SiteVolumeID)<<32 | uint64(n.SiteType) //nolint:gosec // SiteType enum values 0-3 fit in uint64
+}
+
+// Compare compares two routing nodes by their state identity (SiteVolumeID,
+// then SiteType), matching the sort order of SortedNodeList.
+func (n *RoutingNode) Compare(o *RoutingNode) int {
+	return cmp.Compare(n.sortKey(), o.sortKey())
+}
+
+// RoutingNodeList is a topology node list.
+type RoutingNodeList []*RoutingNode
+
+// Equal reports whether two topologies are equal: the same nodes in the same
+// order with equal routing attributes.
+func (n RoutingNodeList) Equal(o RoutingNodeList) bool {
+	if len(n) != len(o) {
+		return false
+	}
+	for i := range n {
+		if *n[i] != *o[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// RoutingNodes defines the interface to fetch routing nodes.
+type RoutingNodes interface {
+	SortedNodeList(host *string) (RoutingNodeList, error)
+}
+
+var _ RoutingNodes = (*TopologyInformation)(nil)
+
+// TopologyInformation represents a topology information part.
+type TopologyInformation struct {
+	nodes []*options[topologyOption]
+}
+
+func (ti TopologyInformation) String() string { return fmt.Sprintf("%v", ti.nodes) }
+
+func (ti *TopologyInformation) decode(dec *encoding.Decoder, header *PartHeader, attrs *ReaderAttrs) error {
+	numArg := header.numArg()
+
+	ti.nodes = slices.Grow(ti.nodes, numArg)[:numArg]
 	for i := range numArg {
-		host := &options[topologyOption]{}
-		ti.hosts[i] = host
+		node := &options[topologyOption]{}
+		ti.nodes[i] = node
 		hostNumArg := int(dec.Int16())
-		if err := host.decodeNumArg(dec, hostNumArg); err != nil {
+		if err := node.decode(dec, hostNumArg); err != nil {
 			return err
 		}
 	}
-	return dec.Error()
+	return nil
+}
+
+var errInvalidSiteVolumeID = errors.New("invalid site volume id")
+var errPortForwarded = errors.New("port forwarded")
+var errBadTopologyNoOwnRecord = errors.New("bad topology error - no own record")
+var errBadTopologyDuplicateKey = errors.New("bad topology error - duplicate key")
+
+// SortedNodeList implements the RoutingNodes interface.
+func (ti TopologyInformation) SortedNodeList(routingHost *string) (RoutingNodeList, error) {
+	rnl := make(RoutingNodeList, 0, len(ti.nodes))
+
+	currentSessionFound := false
+
+	for _, node := range ti.nodes {
+		var serviceType int32
+		node.get(toServiceType, &serviceType)
+		if ServiceType(serviceType) != StIndexServer {
+			continue
+		}
+		var isCurrentSession bool
+		node.get(toIsCurrentSession, &isCurrentSession)
+		if isCurrentSession {
+			currentSessionFound = true
+		}
+
+		var host string
+		node.get(toHostName, &host)
+		var i32 int32
+		node.get(toHostPortnumber, &i32)
+		port := strconv.Itoa(int(i32))
+
+		// if host provided check port forwarding
+		if isCurrentSession && routingHost != nil {
+			// check if port forwarded (connection is behind a port-remapping proxy)
+			// in which case the routing node addresses are unreachable and routing must be
+			// disabled.
+			// It checks the server's own record (IsCurrentSession) and compares the port the
+			// server reports for itself against the port we actually connected on. Host is
+			// deliberately NOT compared: the routing host is the server's internal name and
+			// legitimately differs from the dialed address on healthy direct connections. A
+			// port mismatch is the signature of an HA-proxy / port-forward remapping the
+			// listener port.
+			// This is an intentionally incomplete heuristic, matching the C++ reference.
+			// It only detects proxies that REMAP THE PORT. A NAT/proxy that rewrites the host but
+			// preserves the port (client port == internal port) is a false negative.
+			_, routingPort, err := net.SplitHostPort(*routingHost)
+			if err != nil {
+				return nil, err
+			}
+			if port != routingPort {
+				return nil, errPortForwarded
+			}
+		}
+
+		rn := new(RoutingNode)
+
+		rn.Host = net.JoinHostPort(host, port)
+
+		var volumeID int32 // sign
+		node.get(toVolumeID, &volumeID)
+		rn.SiteVolumeID = SiteVolumeID(volumeID) //nolint: gosec // unsigned - see C++)
+
+		var isStandby bool
+		node.get(toIsStandby, &isStandby)
+		rn.Standby = isStandby
+
+		var siteType int32
+		node.get(toSiteType, &siteType)
+		rn.SiteType = SiteType(siteType)
+
+		if rn.SiteVolumeID.IsInvalid() {
+			return nil, errInvalidSiteVolumeID
+		}
+
+		// build sorted routingNodes
+		n, found := slices.BinarySearchFunc(rnl, rn, func(a, b *RoutingNode) int {
+			return cmp.Compare(a.sortKey(), b.sortKey())
+		})
+		if found {
+			return nil, errBadTopologyDuplicateKey
+		}
+		rnl = slices.Insert(rnl, n, rn)
+	}
+	if !currentSessionFound {
+		return nil, errBadTopologyNoOwnRecord
+	}
+	return rnl, nil
 }
 
 type optionsType interface {
@@ -330,7 +566,7 @@ type optionsType interface {
 type options[K optionsType] map[K]any
 
 func (ops options[K]) String() string {
-	s := []string{}
+	s := make([]string, 0, len(ops))
 	for k, v := range ops {
 		s = append(s, k.valueString(v))
 	}
@@ -353,6 +589,8 @@ func (ops *options[K]) get(k K, v any) bool {
 		*v = mv.(bool)
 	case *int32:
 		*v = mv.(int32)
+	case *float64:
+		*v = mv.(float64)
 	default:
 		panic("invalid option type")
 	}
@@ -366,34 +604,68 @@ func (ops *options[K]) set(k K, v any) {
 	(*ops)[k] = v
 }
 
-func (ops options[K]) size() int {
-	size := 2 * len(ops) // option + type
-	for _, v := range ops {
-		ot := optTypeViaType(v)
-		size += ot.size(v)
-	}
-	return size
-}
-
 func (ops options[K]) numArg() int { return len(ops) }
 
-func (ops *options[K]) decodeNumArg(dec *encoding.Decoder, numArg int) error {
+func (ops *options[K]) decode(dec *encoding.Decoder, numArg int) error {
 	*ops = options[K]{} // no reuse of maps - create new one
 	for range numArg {
 		k := K(dec.Int8())
-		tc := typeCode(dec.Byte())
-		ot := optTypeViaTypeCode(tc)
-		(*ops)[k] = ot.decode(dec)
+
+		switch typeCode(dec.Byte()) {
+		case tcBoolean:
+			(*ops)[k] = dec.Bool()
+		case tcTinyint:
+			(*ops)[k] = dec.Int8()
+		case tcInteger:
+			(*ops)[k] = dec.Int32()
+		case tcBigint:
+			(*ops)[k] = dec.Int64()
+		case tcDouble:
+			(*ops)[k] = dec.Float64()
+		case tcString:
+			size := int(dec.Int16())
+			(*ops)[k] = dec.Str(size)
+		case tcBstring:
+			size := int(dec.Int16())
+			(*ops)[k] = dec.Bytes(size)
+		default:
+			panic("unknown option typeCode") // should never happen
+		}
 	}
-	return dec.Error()
+	return nil
 }
 
-func (ops options[K]) encode(enc *encoding.Encoder) error {
+func (ops options[K]) encode(enc *encoding.Encoder, _ transform.Transformer) error {
 	for k, v := range ops {
 		enc.Int8(int8(k))
-		ot := optTypeViaType(v)
-		enc.Int8(int8(ot.typeCode()))
-		ot.encode(enc, v)
+
+		switch v := v.(type) {
+		case bool:
+			enc.Byte(byte(tcBoolean))
+			enc.Bool(v)
+		case int8:
+			enc.Byte(byte(tcTinyint))
+			enc.Int8(v)
+		case int32:
+			enc.Byte(byte(tcInteger))
+			enc.Int32(v)
+		case int64:
+			enc.Byte(byte(tcBigint))
+			enc.Int64(v)
+		case float64:
+			enc.Byte(byte(tcDouble))
+			enc.Float64(v)
+		case string:
+			enc.Byte(byte(tcString))
+			enc.Int16(int16(len(v))) //nolint: gosec
+			enc.Bytes([]byte(v))
+		case []byte:
+			enc.Byte(byte(tcBstring))
+			enc.Int16(int16(len(v))) //nolint: gosec
+			enc.Bytes(v)
+		default:
+			panic("option type not implemented") // should never happen
+		}
 	}
 	return nil
 }

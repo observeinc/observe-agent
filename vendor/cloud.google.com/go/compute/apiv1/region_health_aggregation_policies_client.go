@@ -105,7 +105,7 @@ func defaultRegionHealthAggregationPoliciesRESTCallOptions() *RegionHealthAggreg
 	}
 }
 
-// internalRegionHealthAggregationPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionHealthAggregationPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionHealthAggregationPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalRegionHealthAggregationPoliciesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionHealthAggregationPolicyRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionHealthAggregationPoliciesClient is a client for interacting with Google Compute Engine API.
+// RegionHealthAggregationPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionHealthAggregationPolicies API.
@@ -133,7 +133,7 @@ type RegionHealthAggregationPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionHealthAggregationPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -303,7 +303,7 @@ func (c *regionHealthAggregationPoliciesRESTClient) setGoogleClientInfo(keyval .
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionHealthAggregationPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -328,7 +328,7 @@ func (c *regionHealthAggregationPoliciesRESTClient) Connection() *grpc.ClientCon
 // returnPartialSuccess parameter to true.
 func (c *regionHealthAggregationPoliciesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListRegionHealthAggregationPoliciesRequest, opts ...gax.CallOption) *HealthAggregationPoliciesScopedListPairIterator {
 	it := &HealthAggregationPoliciesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListRegionHealthAggregationPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]HealthAggregationPoliciesScopedListPair, string, error) {
 		resp := &computepb.HealthAggregationPolicyAggregatedList{}
@@ -621,7 +621,7 @@ func (c *regionHealthAggregationPoliciesRESTClient) Insert(ctx context.Context, 
 // List lists the HealthAggregationPolicies for a project in the given region.
 func (c *regionHealthAggregationPoliciesRESTClient) List(ctx context.Context, req *computepb.ListRegionHealthAggregationPoliciesRequest, opts ...gax.CallOption) *HealthAggregationPolicyIterator {
 	it := &HealthAggregationPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionHealthAggregationPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.HealthAggregationPolicy, string, error) {
 		resp := &computepb.HealthAggregationPolicyList{}

@@ -97,7 +97,7 @@ func defaultRegionCommitmentsRESTCallOptions() *RegionCommitmentsCallOptions {
 	}
 }
 
-// internalRegionCommitmentsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionCommitmentsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionCommitmentsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalRegionCommitmentsClient interface {
 	Update(context.Context, *computepb.UpdateRegionCommitmentRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionCommitmentsClient is a client for interacting with Google Compute Engine API.
+// RegionCommitmentsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionCommitments API.
@@ -123,7 +123,7 @@ type RegionCommitmentsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionCommitmentsClient) Close() error {
 	return c.internalClient.Close()
@@ -280,7 +280,7 @@ func (c *regionCommitmentsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionCommitmentsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -304,7 +304,7 @@ func (c *regionCommitmentsRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *regionCommitmentsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListRegionCommitmentsRequest, opts ...gax.CallOption) *CommitmentsScopedListPairIterator {
 	it := &CommitmentsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListRegionCommitmentsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]CommitmentsScopedListPair, string, error) {
 		resp := &computepb.CommitmentAggregatedList{}
@@ -531,7 +531,7 @@ func (c *regionCommitmentsRESTClient) Insert(ctx context.Context, req *computepb
 // the specified region.
 func (c *regionCommitmentsRESTClient) List(ctx context.Context, req *computepb.ListRegionCommitmentsRequest, opts ...gax.CallOption) *CommitmentIterator {
 	it := &CommitmentIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionCommitmentsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Commitment, string, error) {
 		resp := &computepb.CommitmentList{}

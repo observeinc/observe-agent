@@ -129,7 +129,7 @@ func defaultTargetPoolsRESTCallOptions() *TargetPoolsCallOptions {
 	}
 }
 
-// internalTargetPoolsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalTargetPoolsClient is an interface that defines the methods available from Compute Engine API.
 type internalTargetPoolsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -149,7 +149,7 @@ type internalTargetPoolsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsTargetPoolRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// TargetPoolsClient is a client for interacting with Google Compute Engine API.
+// TargetPoolsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The TargetPools API.
@@ -163,7 +163,7 @@ type TargetPoolsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *TargetPoolsClient) Close() error {
 	return c.internalClient.Close()
@@ -369,7 +369,7 @@ func (c *targetPoolsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *targetPoolsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -541,7 +541,7 @@ func (c *targetPoolsRESTClient) AddInstance(ctx context.Context, req *computepb.
 // returnPartialSuccess parameter to true.
 func (c *targetPoolsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListTargetPoolsRequest, opts ...gax.CallOption) *TargetPoolsScopedListPairIterator {
 	it := &TargetPoolsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListTargetPoolsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]TargetPoolsScopedListPair, string, error) {
 		resp := &computepb.TargetPoolAggregatedList{}
@@ -895,7 +895,7 @@ func (c *targetPoolsRESTClient) Insert(ctx context.Context, req *computepb.Inser
 // project and region.
 func (c *targetPoolsRESTClient) List(ctx context.Context, req *computepb.ListTargetPoolsRequest, opts ...gax.CallOption) *TargetPoolIterator {
 	it := &TargetPoolIterator{}
-	req = proto.Clone(req).(*computepb.ListTargetPoolsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.TargetPool, string, error) {
 		resp := &computepb.TargetPoolList{}

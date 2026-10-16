@@ -109,7 +109,7 @@ func defaultForwardingRulesRESTCallOptions() *ForwardingRulesCallOptions {
 	}
 }
 
-// internalForwardingRulesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalForwardingRulesClient is an interface that defines the methods available from Compute Engine API.
 type internalForwardingRulesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -124,7 +124,7 @@ type internalForwardingRulesClient interface {
 	SetTarget(context.Context, *computepb.SetTargetForwardingRuleRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// ForwardingRulesClient is a client for interacting with Google Compute Engine API.
+// ForwardingRulesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The ForwardingRules API.
@@ -138,7 +138,7 @@ type ForwardingRulesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ForwardingRulesClient) Close() error {
 	return c.internalClient.Close()
@@ -318,7 +318,7 @@ func (c *forwardingRulesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *forwardingRulesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -342,7 +342,7 @@ func (c *forwardingRulesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *forwardingRulesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListForwardingRulesRequest, opts ...gax.CallOption) *ForwardingRulesScopedListPairIterator {
 	it := &ForwardingRulesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListForwardingRulesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]ForwardingRulesScopedListPair, string, error) {
 		resp := &computepb.ForwardingRuleAggregatedList{}
@@ -513,6 +513,13 @@ func (c *forwardingRulesRESTClient) Get(ctx context.Context, req *computepb.GetF
 	}
 	baseUrl.Path += fmt.Sprintf("/compute/v1/projects/%v/regions/%v/forwardingRules/%v", req.GetProject(), req.GetRegion(), req.GetForwardingRule())
 
+	params := url.Values{}
+	if req != nil && req.View != nil {
+		params.Add("view", fmt.Sprintf("%v", req.GetView()))
+	}
+
+	baseUrl.RawQuery = params.Encode()
+
 	// Build HTTP headers from client and context metadata.
 	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v&%s=%v&%s=%v", "project", url.QueryEscape(req.GetProject()), "region", url.QueryEscape(req.GetRegion()), "forwarding_rule", url.QueryEscape(req.GetForwardingRule()))}
 
@@ -636,7 +643,7 @@ func (c *forwardingRulesRESTClient) Insert(ctx context.Context, req *computepb.I
 // project and region.
 func (c *forwardingRulesRESTClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) *ForwardingRuleIterator {
 	it := &ForwardingRuleIterator{}
-	req = proto.Clone(req).(*computepb.ListForwardingRulesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.ForwardingRule, string, error) {
 		resp := &computepb.ForwardingRuleList{}

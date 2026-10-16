@@ -118,7 +118,7 @@ func defaultNodeTemplatesRESTCallOptions() *NodeTemplatesCallOptions {
 	}
 }
 
-// internalNodeTemplatesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNodeTemplatesClient is an interface that defines the methods available from Compute Engine API.
 type internalNodeTemplatesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -133,7 +133,7 @@ type internalNodeTemplatesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsNodeTemplateRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// NodeTemplatesClient is a client for interacting with Google Compute Engine API.
+// NodeTemplatesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NodeTemplates API.
@@ -147,7 +147,7 @@ type NodeTemplatesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NodeTemplatesClient) Close() error {
 	return c.internalClient.Close()
@@ -322,7 +322,7 @@ func (c *nodeTemplatesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *nodeTemplatesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -346,7 +346,7 @@ func (c *nodeTemplatesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *nodeTemplatesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListNodeTemplatesRequest, opts ...gax.CallOption) *NodeTemplatesScopedListPairIterator {
 	it := &NodeTemplatesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListNodeTemplatesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]NodeTemplatesScopedListPair, string, error) {
 		resp := &computepb.NodeTemplateAggregatedList{}
@@ -700,7 +700,7 @@ func (c *nodeTemplatesRESTClient) Insert(ctx context.Context, req *computepb.Ins
 // project.
 func (c *nodeTemplatesRESTClient) List(ctx context.Context, req *computepb.ListNodeTemplatesRequest, opts ...gax.CallOption) *NodeTemplateIterator {
 	it := &NodeTemplateIterator{}
-	req = proto.Clone(req).(*computepb.ListNodeTemplatesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NodeTemplate, string, error) {
 		resp := &computepb.NodeTemplateList{}

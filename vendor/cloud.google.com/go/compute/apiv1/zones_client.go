@@ -74,7 +74,7 @@ func defaultZonesRESTCallOptions() *ZonesCallOptions {
 	}
 }
 
-// internalZonesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalZonesClient is an interface that defines the methods available from Compute Engine API.
 type internalZonesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -83,7 +83,7 @@ type internalZonesClient interface {
 	List(context.Context, *computepb.ListZonesRequest, ...gax.CallOption) *ZoneIterator
 }
 
-// ZonesClient is a client for interacting with Google Compute Engine API.
+// ZonesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Zones API.
@@ -97,7 +97,7 @@ type ZonesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ZonesClient) Close() error {
 	return c.internalClient.Close()
@@ -216,7 +216,7 @@ func (c *zonesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *zonesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -286,7 +286,7 @@ func (c *zonesRESTClient) Get(ctx context.Context, req *computepb.GetZoneRequest
 // List retrieves the list of Zone resources available to the specified project.
 func (c *zonesRESTClient) List(ctx context.Context, req *computepb.ListZonesRequest, opts ...gax.CallOption) *ZoneIterator {
 	it := &ZoneIterator{}
-	req = proto.Clone(req).(*computepb.ListZonesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Zone, string, error) {
 		resp := &computepb.ZoneList{}

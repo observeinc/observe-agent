@@ -95,7 +95,7 @@ func defaultRegionAutoscalersRESTCallOptions() *RegionAutoscalersCallOptions {
 	}
 }
 
-// internalRegionAutoscalersClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionAutoscalersClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionAutoscalersClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalRegionAutoscalersClient interface {
 	Update(context.Context, *computepb.UpdateRegionAutoscalerRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionAutoscalersClient is a client for interacting with Google Compute Engine API.
+// RegionAutoscalersClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionAutoscalers API.
@@ -123,7 +123,7 @@ type RegionAutoscalersClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionAutoscalersClient) Close() error {
 	return c.internalClient.Close()
@@ -291,7 +291,7 @@ func (c *regionAutoscalersRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionAutoscalersRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -507,7 +507,7 @@ func (c *regionAutoscalersRESTClient) Insert(ctx context.Context, req *computepb
 // the specified region.
 func (c *regionAutoscalersRESTClient) List(ctx context.Context, req *computepb.ListRegionAutoscalersRequest, opts ...gax.CallOption) *AutoscalerIterator {
 	it := &AutoscalerIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionAutoscalersRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Autoscaler, string, error) {
 		resp := &computepb.RegionAutoscalerList{}

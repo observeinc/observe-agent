@@ -133,7 +133,7 @@ func defaultRegionBackendServicesRESTCallOptions() *RegionBackendServicesCallOpt
 	}
 }
 
-// internalRegionBackendServicesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionBackendServicesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionBackendServicesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -152,7 +152,7 @@ type internalRegionBackendServicesClient interface {
 	Update(context.Context, *computepb.UpdateRegionBackendServiceRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionBackendServicesClient is a client for interacting with Google Compute Engine API.
+// RegionBackendServicesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionBackendServices API.
@@ -166,7 +166,7 @@ type RegionBackendServicesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionBackendServicesClient) Close() error {
 	return c.internalClient.Close()
@@ -222,8 +222,10 @@ func (c *RegionBackendServicesClient) List(ctx context.Context, req *computepb.L
 	return c.internalClient.List(ctx, req, opts...)
 }
 
-// ListUsable retrieves a list of all usable backend services in the specified project in
-// the given region.
+// ListUsable retrieves a list of all usable backend services for Application Load
+// Balancers and Proxy Network Load Balancers in the specified project in the
+// given region. Backend services for external and internal passthrough
+// Network Load Balancers are not included in the response.
 func (c *RegionBackendServicesClient) ListUsable(ctx context.Context, req *computepb.ListUsableRegionBackendServicesRequest, opts ...gax.CallOption) *BackendServiceIterator {
 	return c.internalClient.ListUsable(ctx, req, opts...)
 }
@@ -374,7 +376,7 @@ func (c *regionBackendServicesRESTClient) setGoogleClientInfo(keyval ...string) 
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionBackendServicesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -711,7 +713,7 @@ func (c *regionBackendServicesRESTClient) Insert(ctx context.Context, req *compu
 // specified project in the given region.
 func (c *regionBackendServicesRESTClient) List(ctx context.Context, req *computepb.ListRegionBackendServicesRequest, opts ...gax.CallOption) *BackendServiceIterator {
 	it := &BackendServiceIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionBackendServicesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.BackendService, string, error) {
 		resp := &computepb.BackendServiceList{}
@@ -794,11 +796,13 @@ func (c *regionBackendServicesRESTClient) List(ctx context.Context, req *compute
 	return it
 }
 
-// ListUsable retrieves a list of all usable backend services in the specified project in
-// the given region.
+// ListUsable retrieves a list of all usable backend services for Application Load
+// Balancers and Proxy Network Load Balancers in the specified project in the
+// given region. Backend services for external and internal passthrough
+// Network Load Balancers are not included in the response.
 func (c *regionBackendServicesRESTClient) ListUsable(ctx context.Context, req *computepb.ListUsableRegionBackendServicesRequest, opts ...gax.CallOption) *BackendServiceIterator {
 	it := &BackendServiceIterator{}
-	req = proto.Clone(req).(*computepb.ListUsableRegionBackendServicesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.BackendService, string, error) {
 		resp := &computepb.BackendServiceListUsable{}

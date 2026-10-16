@@ -79,7 +79,7 @@ func defaultPreviewFeaturesRESTCallOptions() *PreviewFeaturesCallOptions {
 	}
 }
 
-// internalPreviewFeaturesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalPreviewFeaturesClient is an interface that defines the methods available from Compute Engine API.
 type internalPreviewFeaturesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -89,7 +89,7 @@ type internalPreviewFeaturesClient interface {
 	Update(context.Context, *computepb.UpdatePreviewFeatureRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// PreviewFeaturesClient is a client for interacting with Google Compute Engine API.
+// PreviewFeaturesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The PreviewFeatures API.
@@ -103,7 +103,7 @@ type PreviewFeaturesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *PreviewFeaturesClient) Close() error {
 	return c.internalClient.Close()
@@ -242,7 +242,7 @@ func (c *previewFeaturesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *previewFeaturesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -315,7 +315,7 @@ func (c *previewFeaturesRESTClient) Get(ctx context.Context, req *computepb.GetP
 // List returns the details of the given PreviewFeature.
 func (c *previewFeaturesRESTClient) List(ctx context.Context, req *computepb.ListPreviewFeaturesRequest, opts ...gax.CallOption) *PreviewFeatureIterator {
 	it := &PreviewFeatureIterator{}
-	req = proto.Clone(req).(*computepb.ListPreviewFeaturesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.PreviewFeature, string, error) {
 		resp := &computepb.PreviewFeatureList{}

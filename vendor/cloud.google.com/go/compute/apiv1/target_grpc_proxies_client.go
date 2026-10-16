@@ -87,7 +87,7 @@ func defaultTargetGrpcProxiesRESTCallOptions() *TargetGrpcProxiesCallOptions {
 	}
 }
 
-// internalTargetGrpcProxiesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalTargetGrpcProxiesClient is an interface that defines the methods available from Compute Engine API.
 type internalTargetGrpcProxiesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -99,7 +99,7 @@ type internalTargetGrpcProxiesClient interface {
 	Patch(context.Context, *computepb.PatchTargetGrpcProxyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// TargetGrpcProxiesClient is a client for interacting with Google Compute Engine API.
+// TargetGrpcProxiesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The TargetGrpcProxies API.
@@ -113,7 +113,7 @@ type TargetGrpcProxiesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *TargetGrpcProxiesClient) Close() error {
 	return c.internalClient.Close()
@@ -267,7 +267,7 @@ func (c *targetGrpcProxiesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *targetGrpcProxiesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -480,7 +480,7 @@ func (c *targetGrpcProxiesRESTClient) Insert(ctx context.Context, req *computepb
 // List lists the TargetGrpcProxies for a project in the given scope.
 func (c *targetGrpcProxiesRESTClient) List(ctx context.Context, req *computepb.ListTargetGrpcProxiesRequest, opts ...gax.CallOption) *TargetGrpcProxyIterator {
 	it := &TargetGrpcProxyIterator{}
-	req = proto.Clone(req).(*computepb.ListTargetGrpcProxiesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.TargetGrpcProxy, string, error) {
 		resp := &computepb.TargetGrpcProxyList{}

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/http/httpproxy"
@@ -71,9 +72,13 @@ func (tf *transportFactory) createProxy(transportConfig *transportConfig) func(*
 		return http.ProxyFromEnvironment
 	}
 
+	// JoinHostPort brackets literal IPv6 addresses, which a plain "host:port"
+	// concatenation would leave unparseable. Users who already bracketed the
+	// address themselves must not end up double-bracketed.
+	proxyHost := strings.Trim(tf.config.ProxyHost, "[]")
 	connectionProxy := &url.URL{
 		Scheme: tf.config.ProxyProtocol,
-		Host:   fmt.Sprintf("%s:%d", tf.config.ProxyHost, tf.config.ProxyPort),
+		Host:   net.JoinHostPort(proxyHost, strconv.Itoa(tf.config.ProxyPort)),
 	}
 	if tf.config.ProxyUser != "" && tf.config.ProxyPassword != "" {
 		connectionProxy.User = url.UserPassword(tf.config.ProxyUser, tf.config.ProxyPassword)
@@ -95,8 +100,16 @@ func (tf *transportFactory) createProxy(transportConfig *transportConfig) func(*
 }
 
 // createBaseTransport creates a base HTTP transport with the given configuration
-func (tf *transportFactory) createBaseTransport(transportConfig *transportConfig, tlsConfig *tls.Config) *http.Transport {
+func (tf *transportFactory) createBaseTransport(transportConfig *transportConfig, tlsConfig *tls.Config) (*http.Transport, error) {
 	logger.Debugf("Create a new Base Transport with transportConfig %v", transportConfig.String())
+
+	// Apply minimum TLS version from environment variable
+	var err error
+	tlsConfig, err = sfconfig.ApplyMinTLSVersion(tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	dialer := &net.Dialer{
 		Timeout:   transportConfig.DialTimeout,
 		KeepAlive: transportConfig.KeepAlive,
@@ -110,7 +123,7 @@ func (tf *transportFactory) createBaseTransport(transportConfig *transportConfig
 		IdleConnTimeout:     cmp.Or(transportConfig.IdleConnTimeout, defaultTransport.IdleConnTimeout),
 		Proxy:               tf.createProxy(transportConfig),
 		DialContext:         dialer.DialContext,
-	}
+	}, nil
 }
 
 // createOCSPTransport creates a transport with OCSP validation
@@ -125,13 +138,13 @@ func (tf *transportFactory) createOCSPTransport(transportConfig *transportConfig
 			VerifyPeerCertificate: ov.verifyPeerCertificateSerial,
 		}
 	}
-	return tf.createBaseTransport(transportConfig, tlsConfig), nil
+	return tf.createBaseTransport(transportConfig, tlsConfig)
 }
 
 // createNoRevocationTransport creates a transport without certificate revocation checking
-func (tf *transportFactory) createNoRevocationTransport(transportConfig *transportConfig) http.RoundTripper {
+func (tf *transportFactory) createNoRevocationTransport(transportConfig *transportConfig) (http.RoundTripper, error) {
 	if tf.config != nil && tf.config.Transporter != nil {
-		return tf.config.Transporter
+		return tf.config.Transporter, nil
 	}
 	return tf.createBaseTransport(transportConfig, nil)
 }
@@ -139,9 +152,13 @@ func (tf *transportFactory) createNoRevocationTransport(transportConfig *transpo
 // createCRLValidator creates a CRL validator
 func (tf *transportFactory) createCRLValidator() (*crlValidator, error) {
 	allowCertificatesWithoutCrlURL := tf.config.CrlAllowCertificatesWithoutCrlURL == ConfigBoolTrue
+	transport, err := tf.createNoRevocationTransport(transportConfigFor(transportTypeCRL))
+	if err != nil {
+		return nil, err
+	}
 	client := &http.Client{
 		Timeout:   cmp.Or(tf.config.CrlHTTPClientTimeout, defaultCrlHTTPClientTimeout),
-		Transport: tf.createNoRevocationTransport(transportConfigFor(transportTypeCRL)),
+		Transport: transport,
 	}
 	return newCrlValidator(
 		tf.config.CertRevocationCheckMode,
@@ -159,12 +176,20 @@ func (tf *transportFactory) createTransport(transportConfig *transportConfig) (h
 	if tf.config == nil {
 		// should never happen in production, only in tests
 		logger.Warn("createTransport: got nil Config, using default one")
-		return tf.createNoRevocationTransport(transportConfig), nil
+		return tf.createNoRevocationTransport(transportConfig)
 	}
 
 	// if user configured a custom Transporter, prioritize that
 	if tf.config.Transporter != nil {
 		logger.Debug("createTransport: using Transporter configured by the user")
+		// If it's an *http.Transport, try to apply MinTLSVersion to its TLS config
+		if httpTransport, ok := tf.config.Transporter.(*http.Transport); ok {
+			var err error
+			httpTransport.TLSClientConfig, err = sfconfig.ApplyMinTLSVersion(httpTransport.TLSClientConfig)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return tf.config.Transporter, nil
 	}
 
@@ -192,13 +217,23 @@ func (tf *transportFactory) createTransport(transportConfig *transportConfig) (h
 			}
 		}
 
-		return tf.createBaseTransport(transportConfig, tlsConfig), nil
+		return tf.createBaseTransport(transportConfig, tlsConfig)
 	}
 
 	// Handle no revocation checking path
 	if tf.config.DisableOCSPChecks {
 		logger.Debug("createTransport: skipping OCSP validation")
-		return tf.createNoRevocationTransport(transportConfig), nil
+		// A user-registered TLS config (e.g. certificate pinning via
+		// RegisterTLSConfig + tlsConfigName) must still be applied even when
+		// revocation checking is disabled, so that disabling OCSP does not also
+		// drop the registered configuration and fall back to Go's default
+		// verification (SNOW-3649867). Transporter precedence is handled above,
+		// so here config is non-nil and Transporter is nil. GetTLSConfig returns
+		// a clone, so it is safe to use directly.
+		if tlsConfig, ok := sfconfig.GetTLSConfig(tf.config.TLSConfigName); ok && tlsConfig != nil {
+			return tf.createBaseTransport(transportConfig, tlsConfig)
+		}
+		return tf.createNoRevocationTransport(transportConfig)
 	}
 
 	logger.Debug("createTransport: will perform OCSP validation")

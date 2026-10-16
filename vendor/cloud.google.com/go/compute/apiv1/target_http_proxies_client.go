@@ -105,7 +105,7 @@ func defaultTargetHttpProxiesRESTCallOptions() *TargetHttpProxiesCallOptions {
 	}
 }
 
-// internalTargetHttpProxiesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalTargetHttpProxiesClient is an interface that defines the methods available from Compute Engine API.
 type internalTargetHttpProxiesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalTargetHttpProxiesClient interface {
 	SetUrlMap(context.Context, *computepb.SetUrlMapTargetHttpProxyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// TargetHttpProxiesClient is a client for interacting with Google Compute Engine API.
+// TargetHttpProxiesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The TargetHttpProxies API.
@@ -133,7 +133,7 @@ type TargetHttpProxiesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *TargetHttpProxiesClient) Close() error {
 	return c.internalClient.Close()
@@ -304,7 +304,7 @@ func (c *targetHttpProxiesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *targetHttpProxiesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -329,7 +329,7 @@ func (c *targetHttpProxiesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *targetHttpProxiesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListTargetHttpProxiesRequest, opts ...gax.CallOption) *TargetHttpProxiesScopedListPairIterator {
 	it := &TargetHttpProxiesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListTargetHttpProxiesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]TargetHttpProxiesScopedListPair, string, error) {
 		resp := &computepb.TargetHttpProxyAggregatedList{}
@@ -621,7 +621,7 @@ func (c *targetHttpProxiesRESTClient) Insert(ctx context.Context, req *computepb
 // to the specified project.
 func (c *targetHttpProxiesRESTClient) List(ctx context.Context, req *computepb.ListTargetHttpProxiesRequest, opts ...gax.CallOption) *TargetHttpProxyIterator {
 	it := &TargetHttpProxyIterator{}
-	req = proto.Clone(req).(*computepb.ListTargetHttpProxiesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.TargetHttpProxy, string, error) {
 		resp := &computepb.TargetHttpProxyList{}

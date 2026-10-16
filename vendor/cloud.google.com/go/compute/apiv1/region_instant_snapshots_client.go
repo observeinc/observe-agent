@@ -108,7 +108,7 @@ func defaultRegionInstantSnapshotsRESTCallOptions() *RegionInstantSnapshotsCallO
 	}
 }
 
-// internalRegionInstantSnapshotsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionInstantSnapshotsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionInstantSnapshotsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -123,7 +123,7 @@ type internalRegionInstantSnapshotsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionInstantSnapshotRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionInstantSnapshotsClient is a client for interacting with Google Compute Engine API.
+// RegionInstantSnapshotsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionInstantSnapshots API.
@@ -137,7 +137,7 @@ type RegionInstantSnapshotsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionInstantSnapshotsClient) Close() error {
 	return c.internalClient.Close()
@@ -317,7 +317,7 @@ func (c *regionInstantSnapshotsRESTClient) setGoogleClientInfo(keyval ...string)
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionInstantSnapshotsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -599,7 +599,7 @@ func (c *regionInstantSnapshotsRESTClient) Insert(ctx context.Context, req *comp
 // the specified region.
 func (c *regionInstantSnapshotsRESTClient) List(ctx context.Context, req *computepb.ListRegionInstantSnapshotsRequest, opts ...gax.CallOption) *InstantSnapshotIterator {
 	it := &InstantSnapshotIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionInstantSnapshotsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InstantSnapshot, string, error) {
 		resp := &computepb.InstantSnapshotList{}

@@ -74,7 +74,7 @@ func defaultRegionsRESTCallOptions() *RegionsCallOptions {
 	}
 }
 
-// internalRegionsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -83,7 +83,7 @@ type internalRegionsClient interface {
 	List(context.Context, *computepb.ListRegionsRequest, ...gax.CallOption) *RegionIterator
 }
 
-// RegionsClient is a client for interacting with Google Compute Engine API.
+// RegionsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Regions API.
@@ -97,7 +97,7 @@ type RegionsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionsClient) Close() error {
 	return c.internalClient.Close()
@@ -251,7 +251,7 @@ func (c *regionsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -356,7 +356,7 @@ func (c *regionsRESTClient) Get(ctx context.Context, req *computepb.GetRegionReq
 // behaviour for this method.
 func (c *regionsRESTClient) List(ctx context.Context, req *computepb.ListRegionsRequest, opts ...gax.CallOption) *RegionIterator {
 	it := &RegionIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Region, string, error) {
 		resp := &computepb.RegionList{}

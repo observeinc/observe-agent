@@ -105,7 +105,7 @@ func defaultInterconnectAttachmentsRESTCallOptions() *InterconnectAttachmentsCal
 	}
 }
 
-// internalInterconnectAttachmentsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInterconnectAttachmentsClient is an interface that defines the methods available from Compute Engine API.
 type internalInterconnectAttachmentsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalInterconnectAttachmentsClient interface {
 	SetLabels(context.Context, *computepb.SetLabelsInterconnectAttachmentRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// InterconnectAttachmentsClient is a client for interacting with Google Compute Engine API.
+// InterconnectAttachmentsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InterconnectAttachments API.
@@ -133,7 +133,7 @@ type InterconnectAttachmentsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InterconnectAttachmentsClient) Close() error {
 	return c.internalClient.Close()
@@ -305,7 +305,7 @@ func (c *interconnectAttachmentsRESTClient) setGoogleClientInfo(keyval ...string
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *interconnectAttachmentsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -329,7 +329,7 @@ func (c *interconnectAttachmentsRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *interconnectAttachmentsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInterconnectAttachmentsRequest, opts ...gax.CallOption) *InterconnectAttachmentsScopedListPairIterator {
 	it := &InterconnectAttachmentsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListInterconnectAttachmentsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]InterconnectAttachmentsScopedListPair, string, error) {
 		resp := &computepb.InterconnectAttachmentAggregatedList{}
@@ -626,7 +626,7 @@ func (c *interconnectAttachmentsRESTClient) Insert(ctx context.Context, req *com
 // the specified region.
 func (c *interconnectAttachmentsRESTClient) List(ctx context.Context, req *computepb.ListInterconnectAttachmentsRequest, opts ...gax.CallOption) *InterconnectAttachmentIterator {
 	it := &InterconnectAttachmentIterator{}
-	req = proto.Clone(req).(*computepb.ListInterconnectAttachmentsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InterconnectAttachment, string, error) {
 		resp := &computepb.InterconnectAttachmentList{}

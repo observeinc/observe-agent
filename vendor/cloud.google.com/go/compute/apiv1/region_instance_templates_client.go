@@ -83,7 +83,7 @@ func defaultRegionInstanceTemplatesRESTCallOptions() *RegionInstanceTemplatesCal
 	}
 }
 
-// internalRegionInstanceTemplatesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionInstanceTemplatesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionInstanceTemplatesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -94,7 +94,7 @@ type internalRegionInstanceTemplatesClient interface {
 	List(context.Context, *computepb.ListRegionInstanceTemplatesRequest, ...gax.CallOption) *InstanceTemplateIterator
 }
 
-// RegionInstanceTemplatesClient is a client for interacting with Google Compute Engine API.
+// RegionInstanceTemplatesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionInstanceTemplates API.
@@ -108,7 +108,7 @@ type RegionInstanceTemplatesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionInstanceTemplatesClient) Close() error {
 	return c.internalClient.Close()
@@ -255,7 +255,7 @@ func (c *regionInstanceTemplatesRESTClient) setGoogleClientInfo(keyval ...string
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionInstanceTemplatesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -472,7 +472,7 @@ func (c *regionInstanceTemplatesRESTClient) Insert(ctx context.Context, req *com
 // specified project and region.
 func (c *regionInstanceTemplatesRESTClient) List(ctx context.Context, req *computepb.ListRegionInstanceTemplatesRequest, opts ...gax.CallOption) *InstanceTemplateIterator {
 	it := &InstanceTemplateIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionInstanceTemplatesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InstanceTemplate, string, error) {
 		resp := &computepb.InstanceTemplateList{}

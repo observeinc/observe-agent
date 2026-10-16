@@ -74,7 +74,7 @@ func defaultNetworkProfilesRESTCallOptions() *NetworkProfilesCallOptions {
 	}
 }
 
-// internalNetworkProfilesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNetworkProfilesClient is an interface that defines the methods available from Compute Engine API.
 type internalNetworkProfilesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -83,7 +83,7 @@ type internalNetworkProfilesClient interface {
 	List(context.Context, *computepb.ListNetworkProfilesRequest, ...gax.CallOption) *NetworkProfileIterator
 }
 
-// NetworkProfilesClient is a client for interacting with Google Compute Engine API.
+// NetworkProfilesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NetworkProfiles API.
@@ -97,7 +97,7 @@ type NetworkProfilesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NetworkProfilesClient) Close() error {
 	return c.internalClient.Close()
@@ -217,7 +217,7 @@ func (c *networkProfilesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *networkProfilesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -288,7 +288,7 @@ func (c *networkProfilesRESTClient) Get(ctx context.Context, req *computepb.GetN
 // project.
 func (c *networkProfilesRESTClient) List(ctx context.Context, req *computepb.ListNetworkProfilesRequest, opts ...gax.CallOption) *NetworkProfileIterator {
 	it := &NetworkProfileIterator{}
-	req = proto.Clone(req).(*computepb.ListNetworkProfilesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.NetworkProfile, string, error) {
 		resp := &computepb.NetworkProfilesListResponse{}

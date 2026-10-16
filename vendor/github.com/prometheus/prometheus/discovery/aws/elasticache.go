@@ -192,6 +192,7 @@ type ElasticacheSDConfig struct {
 	SecretKey       config.Secret  `yaml:"secret_key,omitempty"`
 	Profile         string         `yaml:"profile,omitempty"`
 	RoleARN         string         `yaml:"role_arn,omitempty"`
+	ExternalID      string         `yaml:"external_id,omitempty"`
 	Clusters        []string       `yaml:"clusters,omitempty"`
 	Port            int            `yaml:"port"`
 	RefreshInterval model.Duration `yaml:"refresh_interval,omitempty"`
@@ -217,18 +218,19 @@ func (c *ElasticacheSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (d
 	return NewElasticacheDiscovery(c, opts)
 }
 
+// SetDirectory joins any relative file paths with dir.
+func (c *ElasticacheSDConfig) SetDirectory(dir string) {
+	c.HTTPClientConfig.SetDirectory(dir)
+}
+
 // UnmarshalYAML implements the yaml.Unmarshaler interface for the Elasticache Config.
+// Region resolution is deferred to initElasticacheClient; see loadRegion.
 func (c *ElasticacheSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultElasticacheSDConfig
 	type plain ElasticacheSDConfig
 	err := unmarshal((*plain)(c))
 	if err != nil {
 		return err
-	}
-
-	c.Region, err = loadRegion(context.Background(), c.Region)
-	if err != nil {
-		return fmt.Errorf("could not determine AWS region: %w", err)
 	}
 
 	return c.HTTPClientConfig.Validate()
@@ -240,6 +242,37 @@ type elasticacheClient interface {
 	ListTagsForResource(ctx context.Context, params *elasticache.ListTagsForResourceInput, optFns ...func(*elasticache.Options)) (*elasticache.ListTagsForResourceOutput, error)
 }
 
+// elasticacheClientAdapter captures only the ElastiCache API calls AWS
+// discovery uses as method-value closures, keeping the concrete
+// *elasticache.Client out of any interface-boxed struct field. See
+// ec2ClientAdapter for the full rationale: this stops the linker from retaining
+// the entire ElastiCache API surface (~2.5 MB).
+type elasticacheClientAdapter struct {
+	describeServerlessCaches func(ctx context.Context, params *elasticache.DescribeServerlessCachesInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeServerlessCachesOutput, error)
+	describeCacheClusters    func(ctx context.Context, params *elasticache.DescribeCacheClustersInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeCacheClustersOutput, error)
+	listTagsForResource      func(ctx context.Context, params *elasticache.ListTagsForResourceInput, optFns ...func(*elasticache.Options)) (*elasticache.ListTagsForResourceOutput, error)
+}
+
+func newElastiCacheClientAdapter(c *elasticache.Client) elasticacheClientAdapter {
+	return elasticacheClientAdapter{
+		describeServerlessCaches: c.DescribeServerlessCaches,
+		describeCacheClusters:    c.DescribeCacheClusters,
+		listTagsForResource:      c.ListTagsForResource,
+	}
+}
+
+func (a elasticacheClientAdapter) DescribeServerlessCaches(ctx context.Context, params *elasticache.DescribeServerlessCachesInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeServerlessCachesOutput, error) {
+	return a.describeServerlessCaches(ctx, params, optFns...)
+}
+
+func (a elasticacheClientAdapter) DescribeCacheClusters(ctx context.Context, params *elasticache.DescribeCacheClustersInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeCacheClustersOutput, error) {
+	return a.describeCacheClusters(ctx, params, optFns...)
+}
+
+func (a elasticacheClientAdapter) ListTagsForResource(ctx context.Context, params *elasticache.ListTagsForResourceInput, optFns ...func(*elasticache.Options)) (*elasticache.ListTagsForResourceOutput, error) {
+	return a.listTagsForResource(ctx, params, optFns...)
+}
+
 // ElasticacheDiscovery periodically performs Elasticache-SD requests.
 // It implements the Discoverer interface.
 type ElasticacheDiscovery struct {
@@ -247,6 +280,10 @@ type ElasticacheDiscovery struct {
 	logger            *slog.Logger
 	cfg               *ElasticacheSDConfig
 	elasticacheClient elasticacheClient
+
+	// region is the resolved region used for the AWS client and for the
+	// Source label. Lazily populated by initElasticacheClient.
+	region string
 }
 
 // NewElasticacheDiscovery returns a new ElasticacheDiscovery which periodically refreshes its targets.
@@ -280,19 +317,21 @@ func (d *ElasticacheDiscovery) initElasticacheClient(ctx context.Context) error 
 		return nil
 	}
 
-	if d.cfg.Region == "" {
-		return errors.New("region must be set for Elasticache service discovery")
-	}
-
 	// Build the HTTP client from the provided HTTPClientConfig.
 	client, err := config.NewClientFromConfig(d.cfg.HTTPClientConfig, "elasticache_sd")
 	if err != nil {
 		return err
 	}
 
-	// Build the AWS config with the provided region.
+	// Resolve the region lazily. See ElasticacheSDConfig.UnmarshalYAML.
+	d.region, err = loadRegion(ctx, d.cfg.Region)
+	if err != nil {
+		return err
+	}
+
+	// Build the AWS config with the resolved region.
 	var configOptions []func(*awsConfig.LoadOptions) error
-	configOptions = append(configOptions, awsConfig.WithRegion(d.cfg.Region))
+	configOptions = append(configOptions, awsConfig.WithRegion(d.region))
 	configOptions = append(configOptions, awsConfig.WithHTTPClient(client))
 
 	// Only set static credentials if both access key and secret key are provided
@@ -314,16 +353,20 @@ func (d *ElasticacheDiscovery) initElasticacheClient(ctx context.Context) error 
 
 	// If the role ARN is set, assume the role to get credentials and set the credentials provider in the config.
 	if d.cfg.RoleARN != "" {
-		assumeProvider := stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), d.cfg.RoleARN)
+		assumeProvider := stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), d.cfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+			if d.cfg.ExternalID != "" {
+				o.ExternalID = aws.String(d.cfg.ExternalID)
+			}
+		})
 		cfg.Credentials = aws.NewCredentialsCache(assumeProvider)
 	}
 
-	d.elasticacheClient = elasticache.NewFromConfig(cfg, func(options *elasticache.Options) {
+	d.elasticacheClient = newElastiCacheClientAdapter(elasticache.NewFromConfig(cfg, func(options *elasticache.Options) {
 		if d.cfg.Endpoint != "" {
 			options.BaseEndpoint = &d.cfg.Endpoint
 		}
 		options.HTTPClient = client
-	})
+	}))
 
 	// Test credentials by making a simple API call
 	testCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -515,7 +558,7 @@ func (d *ElasticacheDiscovery) refresh(ctx context.Context) ([]*targetgroup.Grou
 	}
 
 	tg := &targetgroup.Group{
-		Source: d.cfg.Region,
+		Source: d.region,
 	}
 
 	errg, ectx := errgroup.WithContext(ctx)

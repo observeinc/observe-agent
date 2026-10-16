@@ -139,7 +139,7 @@ func (scd *snowflakeChunkDownloader) start() error {
 				scd.getQueryResultFormat(), i+1, chunk.URL, chunk.RowCount, chunk.UncompressedSize, scd.QueryResultFormat)
 			scd.ChunksChan <- i
 		}
-		for i := 0; i < intMin(chunkDownloadWorkers, chunkMetaLen); i++ {
+		for i := 0; i < min(chunkDownloadWorkers, chunkMetaLen); i++ {
 			scd.schedule()
 		}
 	}
@@ -412,7 +412,7 @@ func downloadChunkHelper(ctx context.Context, scd *snowflakeChunkDownloader, idx
 	if len(scd.ChunkHeader) > 0 {
 		logger.WithContext(ctx).Debug("chunk header is provided.")
 		for k, v := range scd.ChunkHeader {
-			logger.WithContext(ctx).Debugf("adding header: %v, value: %v", k, v)
+			logger.WithContext(ctx).Debugf("adding header: %v", k)
 
 			headers[k] = v
 		}
@@ -425,14 +425,15 @@ func downloadChunkHelper(ctx context.Context, scd *snowflakeChunkDownloader, idx
 	if err != nil {
 		return fmt.Errorf("getting chunk: %w", err)
 	}
+	body := newCancelableStream(ctx, resp.Body)
 	defer func() {
-		if err = resp.Body.Close(); err != nil {
+		if err = body.Close(); err != nil {
 			logger.Warnf("downloadChunkHelper: closing response body %v: %v", scd.ChunkMetas[idx].URL, err)
 		}
 	}()
 	logger.WithContext(ctx).Debugf("response returned chunk: %v for URL: %v", idx+1, scd.ChunkMetas[idx].URL)
 	if resp.StatusCode != http.StatusOK {
-		b, err := io.ReadAll(resp.Body)
+		b, err := io.ReadAll(body)
 		if err != nil {
 			logger.WithContext(ctx).Errorf("reading response body: %v", err)
 		}
@@ -445,7 +446,7 @@ func downloadChunkHelper(ctx context.Context, scd *snowflakeChunkDownloader, idx
 		}
 	}
 
-	bufStream := bufio.NewReader(resp.Body)
+	bufStream := bufio.NewReader(body)
 	return decodeChunk(ctx, scd, idx, bufStream)
 }
 

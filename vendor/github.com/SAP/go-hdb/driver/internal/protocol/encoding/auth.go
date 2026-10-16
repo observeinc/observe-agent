@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/SAP/go-hdb/driver/internal/unsafe"
+	"golang.org/x/text/transform"
 )
 
 /*
@@ -41,7 +42,7 @@ func AuthVarFieldSize(size int) int {
 func (e *Encoder) AuthVarFieldInd(size int) error {
 	switch {
 	case size <= authMaxFieldSize1ByteLen:
-		e.Byte(byte(size))
+		e.Byte(byte(size)) //nolint: gosec
 	case size <= math.MaxUint16:
 		e.Byte(authFieldSize2ByteIndicator)
 		e.Uint16ByteOrder(uint16(size), binary.BigEndian)
@@ -70,9 +71,7 @@ func (d *Decoder) AuthBytes() []byte {
 	if size == 0 {
 		return nil
 	}
-	b := make([]byte, size)
-	d.Bytes(b)
-	return b
+	return d.Bytes(size)
 }
 
 // AuthString decodes an auth variable string field.
@@ -81,18 +80,16 @@ func (d *Decoder) AuthString() string {
 	if size == 0 {
 		return ""
 	}
-	b := make([]byte, size)
-	d.Bytes(b)
-	return unsafe.ByteSlice2String(b)
+	return unsafe.ByteSlice2String(d.Bytes(size))
 }
 
 // AuthCesu8String decodes an auth variable cesu8 string field.
-func (d *Decoder) AuthCesu8String() (string, error) {
+func (d *Decoder) AuthCesu8String(tr transform.Transformer) (string, error) {
 	size := d.AuthVarFieldInd()
 	if size == 0 {
 		return "", nil
 	}
-	b, err := d.CESU8Bytes(size)
+	b, err := d.CESU8Bytes(tr, size)
 	if err != nil {
 		return "", err
 	}

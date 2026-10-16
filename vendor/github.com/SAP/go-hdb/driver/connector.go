@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -19,6 +20,7 @@ import (
 	"time"
 	"unique"
 
+	"github.com/SAP/go-hdb/driver/compress"
 	"github.com/SAP/go-hdb/driver/dial"
 	p "github.com/SAP/go-hdb/driver/internal/protocol"
 	"github.com/SAP/go-hdb/driver/internal/protocol/auth"
@@ -31,6 +33,22 @@ type redirectCacheKey struct {
 }
 
 var redirectCache sync.Map
+
+func redirectHost(host, databaseName string) (string, bool) {
+	redirectHost, ok := redirectCache.Load(redirectCacheKey{host: host, databaseName: databaseName})
+	if !ok || redirectHost == nil {
+		return "", false
+	}
+	return redirectHost.(string), true
+}
+
+func setRedirectHost(host, databaseName, redirectHost string) {
+	redirectCache.Store(redirectCacheKey{host: host, databaseName: databaseName}, redirectHost)
+}
+
+func deleteRedirectHost(host, databaseName string) {
+	redirectCache.Delete(redirectCacheKey{host: host, databaseName: databaseName})
+}
 
 /*
 SessionVariables maps session variables to their values.
@@ -87,6 +105,8 @@ type connAttrs struct {
 	cesu8Decoder       transform.Transformer
 	cesu8Encoder       transform.Transformer
 	emptyDateAsNull    bool
+	compressor         compress.Compressor
+	connectionRouting  bool
 	logger             *slog.Logger
 }
 
@@ -116,6 +136,7 @@ A Connector can be passed to sql.OpenDB allowing users to bypass a string based 
 type Connector struct {
 	_host         string
 	_databaseName string
+	_routing      *routing
 
 	mu sync.RWMutex
 
@@ -137,6 +158,8 @@ type Connector struct {
 	_cesu8DecoderFn     func() transform.Transformer
 	_cesu8EncoderFn     func() transform.Transformer
 	_emptyDateAsNull    bool
+	_compressor         compress.Compressor
+	_connectionRouting  bool
 	_logger             *slog.Logger
 
 	hasCookie            atomic.Bool
@@ -157,6 +180,7 @@ type Connector struct {
 // NewConnector returns a new Connector instance with default values.
 func NewConnector() *Connector {
 	return &Connector{
+		_routing:            new(routing),
 		_timeout:            defaultTimeout,
 		_bufferSize:         defaultBufferSize,
 		_bulkSize:           defaultBulkSize,
@@ -169,6 +193,7 @@ func NewConnector() *Connector {
 		_dfv:                defaultDfv,
 		_cesu8DecoderFn:     cesu8.DefaultDecoder,
 		_cesu8EncoderFn:     cesu8.DefaultEncoder,
+		_compressor:         compress.DefaultCompressor,
 		_logger:             slog.Default(),
 		metrics:             stdHdbDriver.metrics, // use default stdHdbDriver metrics
 	}
@@ -262,13 +287,13 @@ func (c *Connector) Host() string { return c._host }
 // DatabaseName returns the tenant database name of the connector.
 func (c *Connector) DatabaseName() string { return c._databaseName }
 
-func (c *Connector) fetchRedirectHost(ctx context.Context) (string, error) {
-	conn, err := newConn(ctx, c._host, c.metrics, c.connAttrs(), nil)
+func (c *Connector) fetchRedirectHost(ctx context.Context, databaseName string) (string, error) {
+	conn, err := newConn(ctx, c._host, c.metrics, c._routing, c.connAttrs())
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
-	dbi, err := conn.session.dbConnectInfo(ctx, c._databaseName)
+	dbi, err := conn.session.dbConnectInfo(ctx, databaseName)
 	if err != nil {
 		return "", err
 	}
@@ -278,17 +303,35 @@ func (c *Connector) fetchRedirectHost(ctx context.Context) (string, error) {
 	return net.JoinHostPort(dbi.Host, strconv.Itoa(dbi.Port)), nil
 }
 
-func (c *Connector) connect(ctx context.Context, host string) (driver.Conn, error) {
-	var connAttrs = c.connAttrs()
+// connect returns a connection or an error; the bool is true if the transport to
+// host was reached, so routing state is kept even when authentication fails.
+func (c *Connector) connect(ctx context.Context, host string) (driver.Conn, bool, error) {
+	// isRealAuthError returns true in case of X509 certificate validation errors or hdb authentication errors, else otherwise.
+	isRealAuthError := func(err error) bool {
+		if _, ok := errors.AsType[*auth.CertValidationError](err); ok {
+			return true
+		}
+		if hdbErrors, ok := errors.AsType[*p.HdbErrors](err); ok {
+			return hdbErrors.Code() == p.HdbErrAuthenticationFailed
+		}
+		return false
+	}
+
+	attrs := c.connAttrs()
 
 	// can we connect via cookie?
 	if auth := c.cookieAuth(); auth != nil {
-		conn, err := newConn(ctx, host, c.metrics, connAttrs, auth)
-		if err == nil {
-			return conn, nil
+		conn, connErr := newConn(ctx, host, c.metrics, c._routing, attrs)
+		if connErr != nil {
+			return nil, false, connErr
 		}
-		if !isAuthError(err) {
-			return nil, err
+		authErr := conn.authenticate(ctx, host, auth)
+		if authErr == nil {
+			return conn, true, nil
+		}
+		conn.Close()
+		if !isRealAuthError(authErr) {
+			return nil, false, authErr
 		}
 		c.invalidateCookie() // cookie auth was not successful - do not try again with the same data
 	}
@@ -298,54 +341,60 @@ func (c *Connector) connect(ctx context.Context, host string) (driver.Conn, erro
 	for {
 		authHnd := c.authHnd()
 
-		conn, connErr := newConn(ctx, host, c.metrics, connAttrs, authHnd)
-		if connErr == nil {
+		conn, connErr := newConn(ctx, host, c.metrics, c._routing, attrs)
+		if connErr != nil {
+			return nil, false, connErr
+		}
+		authErr := conn.authenticate(ctx, host, authHnd)
+		if authErr == nil {
 			if method, ok := authHnd.Selected().(auth.CookieGetter); ok {
 				c.setCookie(method.Cookie())
 			}
-			return conn, nil
+			return conn, true, nil
 		}
-		if !isAuthError(connErr) {
-			return nil, connErr
+		conn.Close()
+		if !isRealAuthError(authErr) {
+			return nil, false, authErr
 		}
 
-		ok, err := c.refresh()
-		if err != nil {
-			return nil, err
+		// err is auth error - connection itself is ok
+		ok, refreshErr := c.refresh()
+		if refreshErr != nil {
+			return nil, true, refreshErr
 		}
 		if !ok { // no connection retry in case no refresh took place
-			return nil, connErr
+			return nil, true, authErr
 		}
 	}
-}
-
-func (c *Connector) redirect(ctx context.Context) (driver.Conn, error) {
-	if redirectHost, found := redirectCache.Load(redirectCacheKey{host: c._host, databaseName: c._databaseName}); found {
-		if conn, err := c.connect(ctx, redirectHost.(string)); err == nil {
-			return conn, nil
-		}
-	}
-
-	redirectHost, err := c.fetchRedirectHost(ctx)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := c.connect(ctx, redirectHost)
-	if err != nil {
-		return nil, err
-	}
-
-	redirectCache.Store(redirectCacheKey{host: c._host, databaseName: c._databaseName}, redirectHost)
-
-	return conn, err
 }
 
 // Connect implements the database/sql/driver/Connector interface.
 func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 	if c._databaseName != "" {
-		return c.redirect(ctx)
+		if cached, ok := redirectHost(c._host, c._databaseName); ok {
+			host := c._routing.pick(cached)
+			conn, connectSuccess, err := c.connect(ctx, host)
+			if !connectSuccess {
+				deleteRedirectHost(c._host, c._databaseName)
+			}
+			c._routing.setReachable(host, connectSuccess)
+			return conn, err
+		}
+		redirectHost, err := c.fetchRedirectHost(ctx, c._databaseName)
+		if err != nil {
+			return nil, err
+		}
+		conn, connectSuccess, err := c.connect(ctx, redirectHost)
+		if connectSuccess {
+			setRedirectHost(c._host, c._databaseName, redirectHost)
+		}
+		c._routing.setReachable(redirectHost, connectSuccess)
+		return conn, err
 	}
-	return c.connect(ctx, c._host)
+	host := c._routing.pick(c._host)
+	conn, connectSuccess, err := c.connect(ctx, host)
+	c._routing.setReachable(host, connectSuccess)
+	return conn, err
 }
 
 // Driver implements the database/sql/driver/Connector interface.
@@ -358,6 +407,7 @@ func (c *Connector) clone() *Connector {
 	return &Connector{
 		_host:         c._host,
 		_databaseName: c._databaseName,
+		_routing:      c._routing,
 
 		_timeout:            c._timeout,
 		_pingInterval:       c._pingInterval,
@@ -377,6 +427,8 @@ func (c *Connector) clone() *Connector {
 		_cesu8DecoderFn:     c._cesu8DecoderFn,
 		_cesu8EncoderFn:     c._cesu8EncoderFn,
 		_emptyDateAsNull:    c._emptyDateAsNull,
+		_compressor:         c._compressor,
+		_connectionRouting:  c._connectionRouting,
 		_logger:             c._logger,
 
 		_username:            c._username,
@@ -397,6 +449,7 @@ func (c *Connector) clone() *Connector {
 func (c *Connector) WithDatabase(databaseName string) *Connector {
 	nc := c.clone()
 	nc._databaseName = databaseName
+	nc._routing = new(routing)
 	return nc
 }
 
@@ -424,6 +477,8 @@ func (c *Connector) connAttrs() *connAttrs {
 		cesu8Decoder:       c._cesu8DecoderFn(),
 		cesu8Encoder:       c._cesu8EncoderFn(),
 		emptyDateAsNull:    c._emptyDateAsNull,
+		compressor:         c._compressor,
+		connectionRouting:  c._connectionRouting,
 		logger:             c._logger,
 	}
 }
@@ -452,15 +507,6 @@ func (c *Connector) setTimeout(timeout time.Duration) {
 	}
 	c._timeout = timeout
 }
-func (c *Connector) setBulkSize(bulkSize int) {
-	switch {
-	case bulkSize < minBulkSize:
-		bulkSize = minBulkSize
-	case bulkSize > maxBulkSize:
-		bulkSize = maxBulkSize
-	}
-	c._bulkSize = bulkSize
-}
 func (c *Connector) setTLS(serverName string, insecureSkipVerify bool, rootCAFiles []string) error {
 	c._tlsConfig = &tls.Config{
 		ServerName:         serverName,
@@ -483,33 +529,6 @@ func (c *Connector) setTLS(serverName string, insecureSkipVerify bool, rootCAFil
 		c._tlsConfig.RootCAs = certPool
 	}
 	return nil
-}
-func (c *Connector) setDialer(dialer dial.Dialer) {
-	if dialer == nil {
-		dialer = dial.DefaultDialer
-	}
-	c._dialer = dialer
-}
-func (c *Connector) setFetchSize(fetchSize int) {
-	if fetchSize < minFetchSize {
-		fetchSize = minFetchSize
-	}
-	c._fetchSize = fetchSize
-}
-func (c *Connector) setLobChunkSize(lobChunkSize int) {
-	switch {
-	case lobChunkSize < minLobChunkSize:
-		lobChunkSize = minLobChunkSize
-	case lobChunkSize > maxLobChunkSize:
-		lobChunkSize = maxLobChunkSize
-	}
-	c._lobChunkSize = lobChunkSize
-}
-func (c *Connector) setDfv(dfv int) {
-	if !p.IsSupportedDfv(dfv) {
-		dfv = defaultDfv
-	}
-	c._dfv = dfv
 }
 
 // Timeout returns the timeout of the connector.
@@ -570,7 +589,13 @@ func (c *Connector) BulkSize() int { c.mu.RLock(); defer c.mu.RUnlock(); return 
 func (c *Connector) SetBulkSize(bulkSize int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.setBulkSize(bulkSize)
+	switch {
+	case bulkSize < minBulkSize:
+		bulkSize = minBulkSize
+	case bulkSize > maxBulkSize:
+		bulkSize = maxBulkSize
+	}
+	c._bulkSize = bulkSize
 }
 
 // TCPKeepAlive returns the tcp keep-alive value of the connector.
@@ -633,7 +658,10 @@ func (c *Connector) Dialer() dial.Dialer { c.mu.RLock(); defer c.mu.RUnlock(); r
 func (c *Connector) SetDialer(dialer dial.Dialer) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.setDialer(dialer)
+	if dialer == nil {
+		dialer = dial.DefaultDialer
+	}
+	c._dialer = dialer
 }
 
 // ApplicationName returns the application name of the connector.
@@ -685,7 +713,10 @@ For more information please see DSNFetchSize.
 func (c *Connector) SetFetchSize(fetchSize int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.setFetchSize(fetchSize)
+	if fetchSize < minFetchSize {
+		fetchSize = minFetchSize
+	}
+	c._fetchSize = fetchSize
 }
 
 // LobChunkSize returns the lobChunkSize of the connector.
@@ -695,14 +726,27 @@ func (c *Connector) LobChunkSize() int { c.mu.RLock(); defer c.mu.RUnlock(); ret
 func (c *Connector) SetLobChunkSize(lobChunkSize int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.setLobChunkSize(lobChunkSize)
+	switch {
+	case lobChunkSize < minLobChunkSize:
+		lobChunkSize = minLobChunkSize
+	case lobChunkSize > maxLobChunkSize:
+		lobChunkSize = maxLobChunkSize
+	}
+	c._lobChunkSize = lobChunkSize
 }
 
 // Dfv returns the client data format version of the connector.
 func (c *Connector) Dfv() int { c.mu.RLock(); defer c.mu.RUnlock(); return c._dfv }
 
 // SetDfv sets the client data format version of the connector.
-func (c *Connector) SetDfv(dfv int) { c.mu.Lock(); defer c.mu.Unlock(); c.setDfv(dfv) }
+func (c *Connector) SetDfv(dfv int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !p.IsSupportedDfv(dfv) {
+		dfv = defaultDfv
+	}
+	c._dfv = dfv
+}
 
 // CESU8Decoder returns the CESU-8 decoder of the connector.
 func (c *Connector) CESU8Decoder() func() transform.Transformer {
@@ -759,6 +803,41 @@ func (c *Connector) SetEmptyDateAsNull(emptyDateAsNull bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c._emptyDateAsNull = emptyDateAsNull
+}
+
+// Compressor returns the lz4 compressor of the connector.
+func (c *Connector) Compressor() compress.Compressor {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c._compressor
+}
+
+// SetCompressor sets the lz4 compressor of the connector.
+func (c *Connector) SetCompressor(compressor compress.Compressor) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if compressor == nil {
+		compressor = compress.DefaultCompressor
+	}
+	c._compressor = compressor
+}
+
+// ConnectionRouting reports whether the client requests connection routing.
+// The server may not support it; the effective routing state depends on
+// the value negotiated during authentication.
+func (c *Connector) ConnectionRouting() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c._connectionRouting
+}
+
+// SetConnectionRouting sets the client's request for connection routing.
+// The server may not support it; the effective routing state depends on
+// the value negotiated during authentication.
+func (c *Connector) SetConnectionRouting(v bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c._connectionRouting = v
 }
 
 // Logger returns the Logger instance of the connector.

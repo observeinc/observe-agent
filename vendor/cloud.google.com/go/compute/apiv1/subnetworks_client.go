@@ -143,7 +143,7 @@ func defaultSubnetworksRESTCallOptions() *SubnetworksCallOptions {
 	}
 }
 
-// internalSubnetworksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalSubnetworksClient is an interface that defines the methods available from Compute Engine API.
 type internalSubnetworksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -162,7 +162,7 @@ type internalSubnetworksClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsSubnetworkRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// SubnetworksClient is a client for interacting with Google Compute Engine API.
+// SubnetworksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Subnetworks API.
@@ -176,7 +176,7 @@ type SubnetworksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *SubnetworksClient) Close() error {
 	return c.internalClient.Close()
@@ -380,7 +380,7 @@ func (c *subnetworksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *subnetworksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -404,7 +404,7 @@ func (c *subnetworksRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *subnetworksRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListSubnetworksRequest, opts ...gax.CallOption) *SubnetworksScopedListPairIterator {
 	it := &SubnetworksScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListSubnetworksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]SubnetworksScopedListPair, string, error) {
 		resp := &computepb.SubnetworkAggregatedList{}
@@ -842,7 +842,7 @@ func (c *subnetworksRESTClient) Insert(ctx context.Context, req *computepb.Inser
 // project.
 func (c *subnetworksRESTClient) List(ctx context.Context, req *computepb.ListSubnetworksRequest, opts ...gax.CallOption) *SubnetworkIterator {
 	it := &SubnetworkIterator{}
-	req = proto.Clone(req).(*computepb.ListSubnetworksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Subnetwork, string, error) {
 		resp := &computepb.SubnetworkList{}
@@ -931,7 +931,7 @@ func (c *subnetworksRESTClient) List(ctx context.Context, req *computepb.ListSub
 // ListUsable retrieves an aggregated list of all usable subnetworks in the project.
 func (c *subnetworksRESTClient) ListUsable(ctx context.Context, req *computepb.ListUsableSubnetworksRequest, opts ...gax.CallOption) *UsableSubnetworkIterator {
 	it := &UsableSubnetworkIterator{}
-	req = proto.Clone(req).(*computepb.ListUsableSubnetworksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.UsableSubnetwork, string, error) {
 		resp := &computepb.UsableSubnetworksAggregatedList{}

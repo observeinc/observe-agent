@@ -105,7 +105,7 @@ func defaultRegionHealthCheckServicesRESTCallOptions() *RegionHealthCheckService
 	}
 }
 
-// internalRegionHealthCheckServicesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionHealthCheckServicesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionHealthCheckServicesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalRegionHealthCheckServicesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionHealthCheckServiceRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionHealthCheckServicesClient is a client for interacting with Google Compute Engine API.
+// RegionHealthCheckServicesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionHealthCheckServices API.
@@ -133,7 +133,7 @@ type RegionHealthCheckServicesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionHealthCheckServicesClient) Close() error {
 	return c.internalClient.Close()
@@ -304,7 +304,7 @@ func (c *regionHealthCheckServicesRESTClient) setGoogleClientInfo(keyval ...stri
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionHealthCheckServicesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -329,7 +329,7 @@ func (c *regionHealthCheckServicesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *regionHealthCheckServicesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListRegionHealthCheckServicesRequest, opts ...gax.CallOption) *HealthCheckServicesScopedListPairIterator {
 	it := &HealthCheckServicesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListRegionHealthCheckServicesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]HealthCheckServicesScopedListPair, string, error) {
 		resp := &computepb.HealthCheckServiceAggregatedList{}
@@ -623,7 +623,7 @@ func (c *regionHealthCheckServicesRESTClient) Insert(ctx context.Context, req *c
 // configured for the specified project in the given region.
 func (c *regionHealthCheckServicesRESTClient) List(ctx context.Context, req *computepb.ListRegionHealthCheckServicesRequest, opts ...gax.CallOption) *HealthCheckServiceIterator {
 	it := &HealthCheckServiceIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionHealthCheckServicesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.HealthCheckService, string, error) {
 		resp := &computepb.HealthCheckServicesList{}

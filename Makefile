@@ -24,8 +24,6 @@ vendor:
 	go mod tidy && go work vendor
 	cd observecol && go mod tidy && go work vendor
 	cd components/processors/observek8sattributesprocessor && go mod tidy && go work vendor
-	cd patches/otel-collector && go mod tidy && go work vendor
-	cd patches/k8sattributesprocessor && go mod tidy && go work vendor
 	go mod tidy && go work vendor
 
 ## build: Build all Go packages
@@ -59,6 +57,7 @@ build-ocb:
 	sed -i -e 's/\/home\/.*observe-agent\//..\//g' ocb-build/go.mod
 	sed -i -e 's/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 =>/observek8sattributesprocessor =>/g' ocb-build/go.mod
 	sed -i -e 's/heartbeatreceiver v0.0.0-00010101000000-000000000000 =>/heartbeatreceiver =>/g' ocb-build/go.mod
+	sed -i -e 's/jmxreceiver v0.0.0-00010101000000-000000000000 =>/jmxreceiver =>/g' ocb-build/go.mod
 	cp ./ocb-build/components.go ./observecol/components.go
 	cp ./ocb-build/go.mod ./observecol/go.mod
 	cp ./ocb-build/go.sum ./observecol/go.sum

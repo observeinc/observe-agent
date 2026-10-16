@@ -101,7 +101,7 @@ func defaultVpnTunnelsRESTCallOptions() *VpnTunnelsCallOptions {
 	}
 }
 
-// internalVpnTunnelsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalVpnTunnelsClient is an interface that defines the methods available from Compute Engine API.
 type internalVpnTunnelsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -114,7 +114,7 @@ type internalVpnTunnelsClient interface {
 	SetLabels(context.Context, *computepb.SetLabelsVpnTunnelRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// VpnTunnelsClient is a client for interacting with Google Compute Engine API.
+// VpnTunnelsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The VpnTunnels API.
@@ -128,7 +128,7 @@ type VpnTunnelsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *VpnTunnelsClient) Close() error {
 	return c.internalClient.Close()
@@ -290,7 +290,7 @@ func (c *vpnTunnelsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *vpnTunnelsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -314,7 +314,7 @@ func (c *vpnTunnelsRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *vpnTunnelsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListVpnTunnelsRequest, opts ...gax.CallOption) *VpnTunnelsScopedListPairIterator {
 	it := &VpnTunnelsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListVpnTunnelsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]VpnTunnelsScopedListPair, string, error) {
 		resp := &computepb.VpnTunnelAggregatedList{}
@@ -608,7 +608,7 @@ func (c *vpnTunnelsRESTClient) Insert(ctx context.Context, req *computepb.Insert
 // project and region.
 func (c *vpnTunnelsRESTClient) List(ctx context.Context, req *computepb.ListVpnTunnelsRequest, opts ...gax.CallOption) *VpnTunnelIterator {
 	it := &VpnTunnelIterator{}
-	req = proto.Clone(req).(*computepb.ListVpnTunnelsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.VpnTunnel, string, error) {
 		resp := &computepb.VpnTunnelList{}

@@ -95,7 +95,7 @@ func defaultRegionTargetHttpsProxiesRESTCallOptions() *RegionTargetHttpsProxiesC
 	}
 }
 
-// internalRegionTargetHttpsProxiesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionTargetHttpsProxiesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionTargetHttpsProxiesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalRegionTargetHttpsProxiesClient interface {
 	SetUrlMap(context.Context, *computepb.SetUrlMapRegionTargetHttpsProxyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionTargetHttpsProxiesClient is a client for interacting with Google Compute Engine API.
+// RegionTargetHttpsProxiesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionTargetHttpsProxies API.
@@ -123,7 +123,7 @@ type RegionTargetHttpsProxiesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionTargetHttpsProxiesClient) Close() error {
 	return c.internalClient.Close()
@@ -290,7 +290,7 @@ func (c *regionTargetHttpsProxiesRESTClient) setGoogleClientInfo(keyval ...strin
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionTargetHttpsProxiesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -506,7 +506,7 @@ func (c *regionTargetHttpsProxiesRESTClient) Insert(ctx context.Context, req *co
 // to the specified project in the specified region.
 func (c *regionTargetHttpsProxiesRESTClient) List(ctx context.Context, req *computepb.ListRegionTargetHttpsProxiesRequest, opts ...gax.CallOption) *TargetHttpsProxyIterator {
 	it := &TargetHttpsProxyIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionTargetHttpsProxiesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.TargetHttpsProxy, string, error) {
 		resp := &computepb.TargetHttpsProxyList{}

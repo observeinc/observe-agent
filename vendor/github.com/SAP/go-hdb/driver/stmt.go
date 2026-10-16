@@ -162,16 +162,16 @@ func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.
 		scanArgs[i] = new(sql.Rows)
 	}
 
-	// no table output parameters -> QueryRow
+	// no table output parameters -> convert scalar output parameters
 	if len(callArgs.outFields) == numOutArgs {
-		if err := stdConnTracker.callDB().QueryRow("", cr).Scan(scanArgs...); err != nil {
+		if err := convertCallResult(cr, scanArgs); err != nil {
 			return nil, nil, err
 		}
 		return driver.RowsAffected(numRow), nil, nil
 	}
 
 	// table output parameters -> Query (needs to kept open)
-	rows, err := stdConnTracker.callDB().Query("", cr)
+	rows, err := stdConnTracker.callDB().QueryContext(context.Background(), "", cr)
 	if err != nil {
 		return nil, rows, err
 	}
@@ -343,10 +343,7 @@ func (s *stmt) execMany(ctx context.Context, nvargs []driver.NamedValue) (driver
 
 	for i := range numBatch {
 		from := i * numField * bulkSize
-		to := (i + 1) * numField * bulkSize
-		if to > numNVArg {
-			to = numNVArg
-		}
+		to := min((i+1)*numField*bulkSize, numNVArg)
 		r, err := s.exec(ctx, s.pr, nvargs[from:to], i*bulkSize)
 		totalRowsAffected.add(r)
 		if err != nil {

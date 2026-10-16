@@ -108,7 +108,7 @@ func defaultReservationSubBlocksRESTCallOptions() *ReservationSubBlocksCallOptio
 	}
 }
 
-// internalReservationSubBlocksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalReservationSubBlocksClient is an interface that defines the methods available from Compute Engine API.
 type internalReservationSubBlocksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -123,7 +123,7 @@ type internalReservationSubBlocksClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsReservationSubBlockRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// ReservationSubBlocksClient is a client for interacting with Google Compute Engine API.
+// ReservationSubBlocksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The ReservationSubBlocks API.
@@ -137,7 +137,7 @@ type ReservationSubBlocksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *ReservationSubBlocksClient) Close() error {
 	return c.internalClient.Close()
@@ -307,7 +307,7 @@ func (c *reservationSubBlocksRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *reservationSubBlocksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -521,7 +521,7 @@ func (c *reservationSubBlocksRESTClient) GetVersion(ctx context.Context, req *co
 // List retrieves a list of reservation subBlocks under a single reservation.
 func (c *reservationSubBlocksRESTClient) List(ctx context.Context, req *computepb.ListReservationSubBlocksRequest, opts ...gax.CallOption) *ReservationSubBlockIterator {
 	it := &ReservationSubBlockIterator{}
-	req = proto.Clone(req).(*computepb.ListReservationSubBlocksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.ReservationSubBlock, string, error) {
 		resp := &computepb.ReservationSubBlocksListResponse{}

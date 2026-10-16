@@ -117,7 +117,7 @@ func defaultInstanceGroupsRESTCallOptions() *InstanceGroupsCallOptions {
 	}
 }
 
-// internalInstanceGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInstanceGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalInstanceGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -134,7 +134,7 @@ type internalInstanceGroupsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsInstanceGroupRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// InstanceGroupsClient is a client for interacting with Google Compute Engine API.
+// InstanceGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InstanceGroups API.
@@ -148,7 +148,7 @@ type InstanceGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InstanceGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -357,7 +357,7 @@ func (c *instanceGroupsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *instanceGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -458,7 +458,7 @@ func (c *instanceGroupsRESTClient) AddInstances(ctx context.Context, req *comput
 // returnPartialSuccess parameter to true.
 func (c *instanceGroupsRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupsRequest, opts ...gax.CallOption) *InstanceGroupsScopedListPairIterator {
 	it := &InstanceGroupsScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListInstanceGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]InstanceGroupsScopedListPair, string, error) {
 		resp := &computepb.InstanceGroupAggregatedList{}
@@ -764,7 +764,7 @@ func (c *instanceGroupsRESTClient) Insert(ctx context.Context, req *computepb.In
 // methods instead.
 func (c *instanceGroupsRESTClient) List(ctx context.Context, req *computepb.ListInstanceGroupsRequest, opts ...gax.CallOption) *InstanceGroupIterator {
 	it := &InstanceGroupIterator{}
-	req = proto.Clone(req).(*computepb.ListInstanceGroupsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InstanceGroup, string, error) {
 		resp := &computepb.InstanceGroupList{}
@@ -853,7 +853,7 @@ func (c *instanceGroupsRESTClient) List(ctx context.Context, req *computepb.List
 // expressions that use eq (equal) or ne (not equal) operators.
 func (c *instanceGroupsRESTClient) ListInstances(ctx context.Context, req *computepb.ListInstancesInstanceGroupsRequest, opts ...gax.CallOption) *InstanceWithNamedPortsIterator {
 	it := &InstanceWithNamedPortsIterator{}
-	req = proto.Clone(req).(*computepb.ListInstancesInstanceGroupsRequest)
+	req = proto.CloneOf(req)
 	m := protojson.MarshalOptions{AllowPartial: true}
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.InstanceWithNamedPorts, string, error) {

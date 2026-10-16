@@ -143,7 +143,7 @@ func defaultSecurityPoliciesRESTCallOptions() *SecurityPoliciesCallOptions {
 	}
 }
 
-// internalSecurityPoliciesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalSecurityPoliciesClient is an interface that defines the methods available from Compute Engine API.
 type internalSecurityPoliciesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -162,7 +162,7 @@ type internalSecurityPoliciesClient interface {
 	SetLabels(context.Context, *computepb.SetLabelsSecurityPolicyRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// SecurityPoliciesClient is a client for interacting with Google Compute Engine API.
+// SecurityPoliciesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The SecurityPolicies API.
@@ -176,7 +176,7 @@ type SecurityPoliciesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *SecurityPoliciesClient) Close() error {
 	return c.internalClient.Close()
@@ -381,7 +381,7 @@ func (c *securityPoliciesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *securityPoliciesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -479,7 +479,7 @@ func (c *securityPoliciesRESTClient) AddRule(ctx context.Context, req *computepb
 // returnPartialSuccess parameter to true.
 func (c *securityPoliciesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListSecurityPoliciesRequest, opts ...gax.CallOption) *SecurityPoliciesScopedListPairIterator {
 	it := &SecurityPoliciesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListSecurityPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]SecurityPoliciesScopedListPair, string, error) {
 		resp := &computepb.SecurityPoliciesAggregatedList{}
@@ -832,7 +832,7 @@ func (c *securityPoliciesRESTClient) Insert(ctx context.Context, req *computepb.
 // List list all the policies that have been configured for the specified project.
 func (c *securityPoliciesRESTClient) List(ctx context.Context, req *computepb.ListSecurityPoliciesRequest, opts ...gax.CallOption) *SecurityPolicyIterator {
 	it := &SecurityPolicyIterator{}
-	req = proto.Clone(req).(*computepb.ListSecurityPoliciesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.SecurityPolicy, string, error) {
 		resp := &computepb.SecurityPolicyList{}
