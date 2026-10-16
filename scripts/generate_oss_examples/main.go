@@ -110,7 +110,7 @@ func run(opts options) error {
 	var out bytes.Buffer
 	out.WriteString(header)
 	if vars := envVars(body.Bytes()); len(vars) > 0 {
-		out.WriteString("#\n# Environment variables it reads (see examples/oss-collector/README.md): " + strings.Join(vars, ", ") + "\n")
+		out.WriteString("#\n# Set these environment variables before starting the collector; it doesn't start without them\n# (see examples/oss-collector/README.md): " + strings.Join(vars, ", ") + "\n")
 	}
 	out.Write(body.Bytes())
 	return writeAtomically(opts.out, out.Bytes())
@@ -313,15 +313,30 @@ func checkNoCredentials(example []byte, agentConfigPath string) error {
 	return nil
 }
 
+// newExampleMode is the mode of a newly generated example: it is committed documentation, so
+// everyone may read it.
+const newExampleMode os.FileMode = 0o644
+
 // writeAtomically replaces path only once the full content is written, so a failed run leaves
-// the existing file untouched.
+// the existing file untouched. A replaced file keeps its mode.
 func writeAtomically(path string, content []byte) error {
+	mode := newExampleMode
+	if info, err := os.Stat(path); err == nil {
+		mode = info.Mode().Perm()
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
 	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmp.Name())
 	if _, err := tmp.Write(content); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(mode); err != nil {
 		tmp.Close()
 		return err
 	}

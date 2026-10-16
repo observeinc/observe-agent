@@ -10,7 +10,7 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 ## Run the host example
 
 1. Create an ingest token in Observe. See [Configure your own OTel collector without Kubernetes](https://docs.observeinc.com/docs/configure-your-own-otel-collector-in-a-non-kubernetes-environment#/).
-2. Set the environment variables that the configuration reads:
+2. Set the environment variables that the configuration reads. All three are required; the collector doesn't start if one is missing.
 
    ```sh
    export OBSERVE_COLLECTION_URL=https://123456789012.collect.observeinc.com
@@ -18,7 +18,7 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
    export DEPLOYMENT_ENVIRONMENT=prod
    ```
 
-   `DEPLOYMENT_ENVIRONMENT` is a fallback: telemetry that already sets `deployment.environment.name` (or the deprecated `deployment.environment`) keeps its own value. See [Set the deployment environment](https://docs.observeinc.com/docs/set-the-deployment-environment#/).
+   `DEPLOYMENT_ENVIRONMENT` is the environment for telemetry that doesn't set its own: telemetry that already sets `deployment.environment.name` (or the deprecated `deployment.environment`) keeps its value. It is still required, even if all your applications set their own environment. See [Set the deployment environment](https://docs.observeinc.com/docs/set-the-deployment-environment#/).
 
 3. Start the collector:
 

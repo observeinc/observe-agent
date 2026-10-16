@@ -3,7 +3,8 @@
 # GENERATED FILE, DO NOT EDIT. Run "make generate-oss-examples" to regenerate it from the Observe
 # Agent configuration.
 #
-# Environment variables it reads (see examples/oss-collector/README.md): DEPLOYMENT_ENVIRONMENT, OBSERVE_COLLECTION_URL, OBSERVE_TOKEN
+# Set these environment variables before starting the collector; it doesn't start without them
+# (see examples/oss-collector/README.md): DEPLOYMENT_ENVIRONMENT, OBSERVE_COLLECTION_URL, OBSERVE_TOKEN
 connectors:
   spanmetrics:
     aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA

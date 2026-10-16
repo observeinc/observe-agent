@@ -149,6 +149,24 @@ func Test_writeAtomically(t *testing.T) {
 	assert.Len(t, entries, 1, "no temporary files are left behind")
 }
 
+func Test_writeAtomicallyFileMode(t *testing.T) {
+	dir := t.TempDir()
+
+	newFile := filepath.Join(dir, "new.yaml")
+	require.NoError(t, writeAtomically(newFile, []byte("x")))
+	info, err := os.Stat(newFile)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm(), "a new example is readable by everyone")
+
+	existing := filepath.Join(dir, "existing.yaml")
+	require.NoError(t, os.WriteFile(existing, []byte("x"), 0o600))
+	require.NoError(t, os.Chmod(existing, 0o640))
+	require.NoError(t, writeAtomically(existing, []byte("y")))
+	info, err = os.Stat(existing)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm(), "replacing an example keeps its mode")
+}
+
 func Test_runRejectsBadOptions(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "collector.yaml")
