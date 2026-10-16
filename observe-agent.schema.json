@@ -3,6 +3,9 @@
     "AgentConfig": {
       "additionalProperties": false,
       "properties": {
+        "agent_instance_id": {
+          "type": "string"
+        },
         "agent_local_file_path": {
           "type": "string"
         },
