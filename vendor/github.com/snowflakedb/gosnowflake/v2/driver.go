@@ -52,6 +52,16 @@ func (d SnowflakeDriver) OpenWithConfig(ctx context.Context, config Config) (dri
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
+	// Catch-all minicore kickoff for connection paths that bypass
+	// NewConnector (e.g. SnowflakeDriver.Open(dsn) or a direct OpenWithConfig
+	// caller). Idempotent via sync.Once (SNOW-3561155 / #1800).
+	_ = getMiniCore()
+	// Shape capture for the post-login client_connection_identifier_shape
+	// telemetry happens inside FillMissingConfigParameters; callers that
+	// reach OpenWithConfig via ParseDSN / LoadConnectionConfig /
+	// Connector.Connect have already invoked it. Direct OpenWithConfig
+	// callers that skip FillMissingConfigParameters will simply emit no
+	// shape record (the telemetry hook is a no-op when shape is unset).
 	if config.Params == nil {
 		config.Params = make(map[string]*string)
 	}
@@ -86,6 +96,10 @@ func (d SnowflakeDriver) OpenWithConfig(ctx context.Context, config Config) (dri
 		logger.WithContext(ctx).Errorf("Failed to authenticate. Connection failed after %v milliseconds", time.Since(timer).String())
 		return nil, err
 	}
+	// Queue the connection-identifier-shape record first so it is flushed in
+	// the same batch as connectionTelemetry's sendBatch call (one HTTP request,
+	// not two).
+	sc.connectionIdentifierShapeTelemetry(&config)
 	sc.connectionTelemetry(&config)
 
 	sc.startHeartBeat()

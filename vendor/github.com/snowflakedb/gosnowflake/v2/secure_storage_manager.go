@@ -14,6 +14,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+
+	sfconfig "github.com/snowflakedb/gosnowflake/v2/internal/config"
 )
 
 type tokenType string
@@ -41,51 +44,130 @@ var defaultLinuxCacheDirConf = []cacheDirConf{
 	{envVar: "HOME", pathSegments: []string{".cache", "snowflake"}},
 }
 
-type secureTokenSpec struct {
-	host, user string
-	tokenType  tokenType
+type secureTokenSpec interface {
+	buildKey() (string, error)
 }
 
-func (t *secureTokenSpec) buildKey() (string, error) {
-	return buildCredentialsKey(t.host, t.user, t.tokenType)
+// Fields must remain in lexicographic order to match the cross-driver hash contract.
+type mfaIDKeyData struct {
+	Snowflake string `json:"snowflake"`
+	Username  string `json:"username"`
 }
 
-func newMfaTokenSpec(host, user string) *secureTokenSpec {
-	return &secureTokenSpec{
-		host,
-		user,
-		mfaToken,
+// Fields must remain in lexicographic order to match the cross-driver hash contract.
+type oauthKeyData struct {
+	Idp       string `json:"idp"`
+	Role      string `json:"role"`
+	Snowflake string `json:"snowflake"`
+	Username  string `json:"username"`
+}
+
+type hostUserTokenSpec struct {
+	tokenType tokenType
+	snowflake string
+	username  string
+}
+
+func (s *hostUserTokenSpec) buildKey() (string, error) {
+	if s.snowflake == "" {
+		return "", errors.New("snowflake URL is required for token cache key")
+	}
+	if s.username == "" {
+		return "", errors.New("username is required for token cache key")
+	}
+	return marshalAndFinalize(s.tokenType, mfaIDKeyData{
+		Snowflake: normalizeURL(s.snowflake),
+		Username:  normalizeIdentifier(s.username),
+	})
+}
+
+type oauthTokenSpec struct {
+	tokenType tokenType
+	idp       string
+	snowflake string
+	username  string
+	role      string
+}
+
+func (s *oauthTokenSpec) buildKey() (string, error) {
+	if s.snowflake == "" {
+		return "", errors.New("snowflake URL is required for token cache key")
+	}
+	if s.username == "" {
+		return "", errors.New("username is required for token cache key")
+	}
+	if s.idp == "" {
+		return "", errors.New("idp URL is required for OAuth token cache key")
+	}
+	return marshalAndFinalize(s.tokenType, oauthKeyData{
+		Idp:       normalizeURL(s.idp),
+		Role:      normalizeIdentifier(s.role),
+		Snowflake: normalizeURL(s.snowflake),
+		Username:  normalizeIdentifier(s.username),
+	})
+}
+
+// finalizeCacheKey produces the versioned, SHA-256-hashed cache key
+//
+//	SnowflakeTokenCache.v2.<TOKEN_TYPE>.<lowercase_sha256(canonical_json(keyData))>
+//
+// The token type lives in the readable key prefix and is never part of keyData.
+// The canonical JSON (compact, keys sorted lexicographically) is identical across
+// all Snowflake drivers, enabling cross-driver token reuse.
+func finalizeCacheKey(tt tokenType, jsonBytes []byte) string {
+	sum := sha256.Sum256(jsonBytes)
+	hexHash := hex.EncodeToString(sum[:])
+	return "SnowflakeTokenCache.v2." + string(tt) + "." + hexHash
+}
+
+func marshalAndFinalize(tt tokenType, keyData any) (string, error) {
+	jsonBytes, err := json.Marshal(keyData)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize cache key: %w", err)
+	}
+	return finalizeCacheKey(tt, jsonBytes), nil
+}
+
+func newMfaTokenSpec(cfg *Config) *hostUserTokenSpec {
+	return &hostUserTokenSpec{
+		tokenType: mfaToken,
+		snowflake: cfg.Host,
+		username:  cfg.User,
 	}
 }
 
-func newIDTokenSpec(host, user string) *secureTokenSpec {
-	return &secureTokenSpec{
-		host,
-		user,
-		idToken,
+func newIDTokenSpec(cfg *Config) *hostUserTokenSpec {
+	return &hostUserTokenSpec{
+		tokenType: idToken,
+		snowflake: cfg.Host,
+		username:  cfg.User,
 	}
 }
 
-func newOAuthAccessTokenSpec(host, user string) *secureTokenSpec {
-	return &secureTokenSpec{
-		host,
-		user,
-		oauthAccessToken,
+func newOAuthAccessTokenSpec(cfg *Config) *oauthTokenSpec {
+	return &oauthTokenSpec{
+		tokenType: oauthAccessToken,
+		idp:       oauthTokenRequestURL(cfg),
+		snowflake: cfg.Host,
+		username:  cfg.User,
+		role:      cfg.Role,
 	}
 }
 
-func newOAuthRefreshTokenSpec(host, user string) *secureTokenSpec {
-	return &secureTokenSpec{
-		host,
-		user,
-		oauthRefreshToken,
+func newOAuthRefreshTokenSpec(cfg *Config) *oauthTokenSpec {
+	return &oauthTokenSpec{
+		tokenType: oauthRefreshToken,
+		idp:       oauthTokenRequestURL(cfg),
+		snowflake: cfg.Host,
+		username:  cfg.User,
+		role:      cfg.Role,
 	}
 }
 
 type secureStorageManager interface {
-	setCredential(tokenSpec *secureTokenSpec, value string)
-	getCredential(tokenSpec *secureTokenSpec) string
-	deleteCredential(tokenSpec *secureTokenSpec)
+	setCredential(tokenSpec secureTokenSpec, value string)
+	getCredential(tokenSpec secureTokenSpec) string
+	deleteCredential(tokenSpec secureTokenSpec)
 }
 
 var credentialsStorage = newSecureStorageManager()
@@ -200,6 +282,12 @@ func (ssm *fileBasedSecureStorageManager) withCacheFile(action func(*os.File)) {
 		}
 	}(cacheDir)
 
+	if sfconfig.ShouldSkipTokenFilePermissionsVerification() {
+		logger.Debugf("Skipping credential cache permission verification because SKIP_TOKEN_FILE_PERMISSIONS_VERIFICATION=true")
+		action(cacheFile)
+		return
+	}
+
 	if err := ensureFileOwner(cacheFile); err != nil {
 		logger.Warnf("failed to ensure owner for temporary cache file. %v", err)
 		return
@@ -220,7 +308,7 @@ func (ssm *fileBasedSecureStorageManager) withCacheFile(action func(*os.File)) {
 	action(cacheFile)
 }
 
-func (ssm *fileBasedSecureStorageManager) setCredential(tokenSpec *secureTokenSpec, value string) {
+func (ssm *fileBasedSecureStorageManager) setCredential(tokenSpec secureTokenSpec, value string) {
 	if value == "" {
 		logger.Debug("no token provided")
 		return
@@ -244,7 +332,7 @@ func (ssm *fileBasedSecureStorageManager) setCredential(tokenSpec *secureTokenSp
 		if err != nil {
 			logger.Warnf("Set credential failed. Unable to write cache. %v", err)
 		} else {
-			logger.Debugf("Set credential succeeded. Authentication type: %v, User: %v,  file location: %v", tokenSpec.tokenType, tokenSpec.user, ssm.credFilePath())
+			logger.Debugf("Set credential succeeded. Key: %v, file location: %v", credentialsKey, ssm.credFilePath())
 		}
 	})
 }
@@ -277,16 +365,18 @@ func (ssm *fileBasedSecureStorageManager) lockFile() error {
 			return fmt.Errorf("failed to stat %v and determine if lock is stale. err: %v", lockPath, err)
 		}
 
-		ownerUID, err := provideFileOwner(lockFile)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		currentUser, err := user.Current()
-		if err != nil {
-			return err
-		}
-		if strconv.Itoa(int(ownerUID)) != currentUser.Uid {
-			return errors.New("incorrect owner of " + lockFile.Name())
+		if !sfconfig.ShouldSkipTokenFilePermissionsVerification() {
+			ownerUID, err := provideFileOwner(lockFile)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			currentUser, err := user.Current()
+			if err != nil {
+				return err
+			}
+			if strconv.Itoa(int(ownerUID)) != currentUser.Uid {
+				return errors.New("incorrect owner of " + lockFile.Name())
+			}
 		}
 
 		// removing stale lock
@@ -327,7 +417,7 @@ func (ssm *fileBasedSecureStorageManager) unlockFile() {
 	}
 }
 
-func (ssm *fileBasedSecureStorageManager) getCredential(tokenSpec *secureTokenSpec) string {
+func (ssm *fileBasedSecureStorageManager) getCredential(tokenSpec secureTokenSpec) string {
 	credentialsKey, err := tokenSpec.buildKey()
 	if err != nil {
 		logger.Warnf("cannot build token spec: %v", err)
@@ -414,7 +504,7 @@ func (ssm *fileBasedSecureStorageManager) readTemporaryCacheFile(cacheFile *os.F
 	return credentialsMap, nil
 }
 
-func (ssm *fileBasedSecureStorageManager) deleteCredential(tokenSpec *secureTokenSpec) {
+func (ssm *fileBasedSecureStorageManager) deleteCredential(tokenSpec secureTokenSpec) {
 	credentialsKey, err := tokenSpec.buildKey()
 	if err != nil {
 		logger.Warnf("cannot build token spec: %v", err)
@@ -433,7 +523,7 @@ func (ssm *fileBasedSecureStorageManager) deleteCredential(tokenSpec *secureToke
 		if err != nil {
 			logger.Warnf("Set credential failed. Unable to write cache. %v", err)
 		} else {
-			logger.Debugf("Deleted credential succeeded. Authentication type: %v, User: %v,  file location: %v", tokenSpec.tokenType, tokenSpec.user, ssm.credFilePath())
+			logger.Debugf("Deleted credential succeeded. Key: %v, file location: %v", credentialsKey, ssm.credFilePath())
 		}
 	})
 }
@@ -454,17 +544,39 @@ func (ssm *fileBasedSecureStorageManager) writeTemporaryCacheFile(cache map[stri
 	return nil
 }
 
-func buildCredentialsKey(host, user string, credType tokenType) (string, error) {
-	if host == "" {
-		return "", errors.New("host is not provided to store in token cache, skipping")
+// normalizeURL strips the scheme and userinfo, drops query/fragment,
+// trims a root-only trailing slash, and uppercases the remainder.
+func normalizeURL(rawURL string) string {
+	s := rawURL
+	if idx := strings.Index(s, "://"); idx >= 0 {
+		s = s[idx+3:]
 	}
-	if user == "" {
-		return "", errors.New("user is not provided to store in token cache, skipping")
+	if idx := strings.Index(s, "@"); idx >= 0 {
+		s = s[idx+1:]
 	}
-	plainCredKey := host + ":" + user + ":" + string(credType)
-	checksum := sha256.New()
-	checksum.Write([]byte(plainCredKey))
-	return hex.EncodeToString(checksum.Sum(nil)), nil
+	s = strings.SplitN(s, "?", 2)[0]
+	s = strings.SplitN(s, "#", 2)[0]
+	s = strings.TrimRight(s, "/")
+	return strings.ToUpper(s)
+}
+
+// normalizeIdentifier uppercases characters outside double-quoted segments
+// and preserves the contents of "..." segments verbatim.
+func normalizeIdentifier(id string) string {
+	var b strings.Builder
+	inQuotes := false
+	for _, ch := range id {
+		switch {
+		case ch == '"':
+			inQuotes = !inQuotes
+			b.WriteRune(ch)
+		case inQuotes:
+			b.WriteRune(ch)
+		default:
+			b.WriteRune(unicode.ToUpper(ch))
+		}
+	}
+	return b.String()
 }
 
 type noopSecureStorageManager struct {
@@ -474,14 +586,14 @@ func newNoopSecureStorageManager() *noopSecureStorageManager {
 	return &noopSecureStorageManager{}
 }
 
-func (ssm *noopSecureStorageManager) setCredential(_ *secureTokenSpec, _ string) {
+func (ssm *noopSecureStorageManager) setCredential(_ secureTokenSpec, _ string) {
 }
 
-func (ssm *noopSecureStorageManager) getCredential(_ *secureTokenSpec) string {
+func (ssm *noopSecureStorageManager) getCredential(_ secureTokenSpec) string {
 	return ""
 }
 
-func (ssm *noopSecureStorageManager) deleteCredential(_ *secureTokenSpec) {
+func (ssm *noopSecureStorageManager) deleteCredential(_ secureTokenSpec) {
 }
 
 type threadSafeSecureStorageManager struct {
@@ -489,19 +601,19 @@ type threadSafeSecureStorageManager struct {
 	delegate secureStorageManager
 }
 
-func (ssm *threadSafeSecureStorageManager) setCredential(tokenSpec *secureTokenSpec, value string) {
+func (ssm *threadSafeSecureStorageManager) setCredential(tokenSpec secureTokenSpec, value string) {
 	ssm.mu.Lock()
 	defer ssm.mu.Unlock()
 	ssm.delegate.setCredential(tokenSpec, value)
 }
 
-func (ssm *threadSafeSecureStorageManager) getCredential(tokenSpec *secureTokenSpec) string {
+func (ssm *threadSafeSecureStorageManager) getCredential(tokenSpec secureTokenSpec) string {
 	ssm.mu.Lock()
 	defer ssm.mu.Unlock()
 	return ssm.delegate.getCredential(tokenSpec)
 }
 
-func (ssm *threadSafeSecureStorageManager) deleteCredential(tokenSpec *secureTokenSpec) {
+func (ssm *threadSafeSecureStorageManager) deleteCredential(tokenSpec secureTokenSpec) {
 	ssm.mu.Lock()
 	defer ssm.mu.Unlock()
 	ssm.delegate.deleteCredential(tokenSpec)

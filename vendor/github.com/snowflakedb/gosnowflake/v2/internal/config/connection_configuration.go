@@ -24,6 +24,8 @@ const (
 	executableFilePermission     = os.FileMode(0111)
 
 	skipWarningForReadPermissionsEnv = "SF_SKIP_WARNING_FOR_READ_PERMISSIONS_ON_CONFIG_FILE"
+	// SkipTokenFilePermissionsVerificationEnv keeps an env name for skipping token file permission and user verification
+	SkipTokenFilePermissionsVerificationEnv = "SKIP_TOKEN_FILE_PERMISSIONS_VERIFICATION"
 )
 
 // LoadConnectionConfig returns connection configs loaded from the toml file.
@@ -34,6 +36,7 @@ func LoadConnectionConfig() (*Config, error) {
 	cfg := &Config{
 		Params:        make(map[string]*string),
 		Authenticator: AuthTypeSnowflake, // Default to snowflake
+		inputShape:    &ConnectionIdentifierShape{},
 	}
 	dsn := getConnectionDSN(os.Getenv(snowflakeConnectionName))
 	snowflakeConfigDir, err := GetTomlFilePath(os.Getenv(snowflakeHome))
@@ -42,9 +45,13 @@ func LoadConnectionConfig() (*Config, error) {
 	}
 	logger.Debugf("Looking for connection file in directory %v", snowflakeConfigDir)
 	tomlFilePath := path.Join(snowflakeConfigDir, "connections.toml")
-	err = ValidateFilePermission(tomlFilePath)
-	if err != nil {
-		return nil, err
+	if ShouldSkipTokenFilePermissionsVerification() {
+		logger.Debugf("Skipping permission verification for %v because %v=true", tomlFilePath, SkipTokenFilePermissionsVerificationEnv)
+	} else {
+		err = ValidateFilePermission(tomlFilePath)
+		if err != nil {
+			return nil, err
+		}
 	}
 	tomlInfo := make(map[string]any)
 	_, err = toml.DecodeFile(tomlFilePath, &tomlInfo)
@@ -99,8 +106,14 @@ func HandleSingleParam(cfg *Config, key string, value any) error {
 		cfg.Password, err = parseString(value)
 	case "host":
 		cfg.Host, err = parseString(value)
+		if err == nil && cfg.Host != "" && cfg.inputShape != nil {
+			cfg.inputShape.HostProvided = true
+		}
 	case "account":
 		cfg.Account, err = parseString(value)
+		if err == nil {
+			recordAccountShape(cfg.inputShape, cfg.Account)
+		}
 	case "warehouse":
 		cfg.Warehouse, err = parseString(value)
 	case "database":
@@ -111,6 +124,9 @@ func HandleSingleParam(cfg *Config, key string, value any) error {
 		cfg.Role, err = parseString(value)
 	case "region":
 		cfg.Region, err = parseString(value)
+		if err == nil && cfg.Region != "" && cfg.inputShape != nil {
+			cfg.inputShape.RegionProvided = true
+		}
 	case "protocol":
 		cfg.Protocol, err = parseString(value)
 	case "passcode":
@@ -167,6 +183,13 @@ func HandleSingleParam(cfg *Config, key string, value any) error {
 			}
 		}
 		cfg.PrivateKey, err = ParsePKCS8PrivateKey(block)
+	case "privatekeypath", "privatekeyfile":
+		var keyPath string
+		keyPath, err = parseString(value)
+		if err = checkParsingError(err, key, value); err != nil {
+			return err
+		}
+		cfg.PrivateKey, err = parsePrivateKeyFromFile(keyPath)
 	case "validatedefaultparameters":
 		cfg.ValidateDefaultParameters, err = parseConfigBool(value)
 	case "clientrequestmfatoken":
@@ -209,6 +232,8 @@ func HandleSingleParam(cfg *Config, key string, value any) error {
 		cfg.WorkloadIdentityEntraResource, err = parseString(value)
 	case "workloadidentityimpersonatinpath":
 		cfg.WorkloadIdentityImpersonationPath, err = parseStrings(value)
+	case "workloadidentityawsuseoutboundtoken":
+		cfg.WorkloadIdentityAwsUseOutboundToken, err = parseConfigBool(value)
 	case "tokenfilepath":
 		cfg.TokenFilePath, err = parseString(value)
 		if err = checkParsingError(err, key, value); err != nil {
@@ -247,10 +272,12 @@ func checkParsingError(err error, key string, value any) error {
 			Message:     sferrors.ErrMsgFailedToParseTomlFile,
 			MessageArgs: []any{key, value},
 		}
-		logger.Errorf("Parsed key: %s, value: %v is not an option for the connection config", key, value)
+		// Log the setting name only: TOML values may hold credentials, and the
+		// "Parsed key: <k>, value: <v>" layout is not covered by MaskSecrets (SNOW-3649818).
+		logger.Errorf("Parsed key: %s is not an option for the connection config", key)
 		return err
 	}
-	logger.Warnf("Parsed key: %s, value: %v — cannot be parsed as string", key, value)
+	logger.Warnf("Parsed key: %s — cannot be parsed as string", key)
 	return nil
 }
 
@@ -407,4 +434,13 @@ func ValidateFilePermission(filePath string) error {
 
 func shouldSkipWarningForReadPermissions() bool {
 	return os.Getenv(skipWarningForReadPermissionsEnv) != ""
+}
+
+// ShouldSkipTokenFilePermissionsVerification reports whether the user has
+// requested bypassing owner/permission checks for connections.toml and the
+// credential cache (file, directory, and lock file). Set the
+// SF_SKIP_TOKEN_FILE_PERMISSIONS_VERIFICATION environment variable to "true"
+// to enable the bypass.
+func ShouldSkipTokenFilePermissionsVerification() bool {
+	return strings.EqualFold(os.Getenv(SkipTokenFilePermissionsVerificationEnv), "true")
 }

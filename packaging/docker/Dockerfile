@@ -14,6 +14,8 @@ RUN apk --update add ca-certificates
 
 FROM alpine:3.24.2
 
+RUN apk upgrade --no-cache zlib
+
 ARG USER_UID=10001
 ARG USER_GID=10001
 
