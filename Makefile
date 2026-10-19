@@ -77,11 +77,11 @@ generate-jsonschema:
 ## generate-oss-examples: Generates the OpenTelemetry Collector examples in examples/oss-collector from the agent configuration
 generate-oss-examples:
 	go run ./scripts/generate_oss_examples \
-		--agent-config examples/oss-collector/host/agent-reference-config.yaml \
-		--otel-config examples/oss-collector/host/otel-config.yaml \
+		--agent-config scripts/generate_oss_examples/host/agent-reference-config.yaml \
+		--otel-config scripts/generate_oss_examples/host/otel-config.yaml \
 		--config-mode linux \
 		--pipelines traces/forward,logs/forward,metrics/forward,traces/spanmetrics,metrics/spanmetrics,metrics/spanmetrics/summary,metrics/host_monitoring_host \
-		--out examples/oss-collector/host/collector.yaml
+		--out examples/oss-collector/collector/host.yaml
 
 ## generate-readme: Generates README.md from README.md.tmpl
 generate-readme:
