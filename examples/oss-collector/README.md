@@ -5,7 +5,7 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 | Example | Use it for |
 | :------ | :--------- |
 | [`collector/host.yaml`](collector/host.yaml) | A collector on a Linux host: application traces, logs, and metrics over OTLP, RED (request rate, error, and duration) metrics generated from traces, and host metrics. On Windows and macOS, remove the `hostmetrics` scrapers your platform doesn't support, such as `processes` on Windows |
-| [Kubernetes examples](https://github.com/observeinc/helm-charts/tree/main/examples/oss-collector) | Collectors running in Kubernetes, with the OpenTelemetry Collector Helm chart or your own manifests, in the `observeinc/helm-charts` repository |
+| [Kubernetes example](https://github.com/observeinc/helm-charts/tree/main/charts/agent/examples/oss-collector) | Collectors running in Kubernetes with the OpenTelemetry Collector Helm chart, in the `observeinc/helm-charts` repository |
 
 ## Run the host example
 
