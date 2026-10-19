@@ -4,7 +4,7 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 
 | Example | Use it for |
 | :------ | :--------- |
-| [`collector/host.yaml`](collector/host.yaml) | A collector on a Linux host: application traces, logs, and metrics over OTLP, RED (request rate, error, and duration) metrics generated from traces, and host metrics. On Windows and macOS, remove the `hostmetrics` scrapers your platform doesn't support, such as `processes` on Windows |
+| [`collector/host.yaml`](collector/host.yaml) | A collector on a Linux host: host metrics, host logs from `/var/log` and journald, application traces, logs, and metrics over OTLP, RED (request rate, error, and duration) metrics generated from traces, and the collector's own internal metrics. On Windows and macOS, remove the receivers and `hostmetrics` scrapers your platform doesn't support, such as journald and `processes` |
 | [Kubernetes example](https://github.com/observeinc/helm-charts/tree/main/charts/agent/examples/oss-collector) | Collectors running in Kubernetes with the OpenTelemetry Collector Helm chart, in the `observeinc/helm-charts` repository |
 
 ## Run the host example
@@ -20,13 +20,18 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 
    `DEPLOYMENT_ENVIRONMENT` is the environment for telemetry that doesn't set its own: telemetry that already sets `deployment.environment.name` (or the deprecated `deployment.environment`) keeps its value. It is still required, even if all your applications set their own environment. See [Set the deployment environment](https://docs.observeinc.com/docs/set-the-deployment-environment#/).
 
-3. Start the collector:
+3. Start the collector with the `otelcol-contrib` version named at the top of `collector/host.yaml`, the collector version the Observe Agent is built with:
 
    ```sh
    otelcol-contrib --config collector/host.yaml
    ```
 
 The OTLP receiver listens on `localhost:4317` (gRPC) and `localhost:4318` (HTTP). To receive telemetry from other machines, change the endpoints to `0.0.0.0`.
+
+The collector also needs:
+
+- Read access to `/var/log` and to the systemd journal, and the `journalctl` binary, for host logs. Running it as root, or as a user in the `adm` and `systemd-journal` groups, gives it both.
+- A writable `/var/lib/otelcol/file_storage`, where it keeps its log read positions across restarts. It creates the directory if it can.
 
 ## Where these files come from
 

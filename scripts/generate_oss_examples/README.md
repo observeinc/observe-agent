@@ -7,6 +7,7 @@ This generator writes the OpenTelemetry Collector examples in [`examples/oss-col
 1. Renders the collector configuration the Observe Agent would run with [`host/agent-reference-config.yaml`](host/agent-reference-config.yaml), with [`host/otel-config.yaml`](host/otel-config.yaml) merged on top. The otel config sets the exporter endpoints and token to `${env:...}` references.
 2. Keeps only the pipelines listed in the `Makefile` target, and deletes every receiver, processor, exporter, connector, and extension those pipelines don't use. Agent-only parts such as the self-monitoring pipelines and persistent queue storage drop out this way.
 3. Fails without writing the file if the result still contains the reference collection URL or token.
+4. Names, in the file's header, the `otelcol-contrib` version to run it with: the `go.opentelemetry.io/collector/otelcol` version in `go.mod`, which the agent is built with. `code-gen-check` fails when a collector upgrade doesn't regenerate the example.
 
 These checks run in CI:
 

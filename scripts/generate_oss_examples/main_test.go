@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,6 +121,17 @@ func Test_pruneErrors(t *testing.T) {
 			assert.Error(t, prune(parse(t, tc.rendered), tc.pipelines, tc.extensions))
 		})
 	}
+}
+
+func Test_collectorVersionMatchesGoMod(t *testing.T) {
+	goMod, err := os.ReadFile("../../go.mod")
+	require.NoError(t, err)
+	m := regexp.MustCompile(`(?m)^\s*go\.opentelemetry\.io/collector/otelcol v(\S+)`).FindSubmatch(goMod)
+	require.NotNil(t, m)
+
+	version, err := collectorVersion()
+	require.NoError(t, err)
+	assert.Equal(t, string(m[1]), version)
 }
 
 func Test_envVars(t *testing.T) {

@@ -10,13 +10,11 @@ resource_attributes:
 
 forwarding:
   enabled: true
-  metrics:
-    output_format: otel
 
 host_monitoring:
   enabled: true
   logs:
-    enabled: false
+    enabled: true
   metrics:
     host:
       enabled: true
@@ -24,13 +22,15 @@ host_monitoring:
       enabled: false
 
 self_monitoring:
-  enabled: false
+  enabled: true
+  fleet:
+    enabled: false
 
 health_check:
-  enabled: false
+  enabled: true
 
 internal_telemetry:
-  enabled: false
+  enabled: true
 
 application:
   RED_metrics:

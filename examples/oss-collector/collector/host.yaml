@@ -3,9 +3,12 @@
 # GENERATED FILE, DO NOT EDIT. Run "make generate-oss-examples" to regenerate it from the Observe
 # Agent configuration.
 #
+# Run it with otelcol-contrib 0.151.0, the collector version the Observe Agent is built with.
+#
 # Set these environment variables before starting the collector; it doesn't start without them
 # (see examples/oss-collector/README.md): DEPLOYMENT_ENVIRONMENT, OBSERVE_COLLECTION_URL, OBSERVE_TOKEN
 connectors:
+  count: null
   spanmetrics:
     aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
     dimensions:
@@ -90,9 +93,17 @@ exporters:
     send_metadata: true
     target_info:
       enabled: false
+extensions:
+  file_storage:
+    create_directory: true
+    directory: /var/lib/otelcol/file_storage
+  health_check:
+    endpoint: localhost:13133
+    path: /status
 processors:
   batch:
     timeout: 5s
+  deltatocumulative: null
   filter/drop_long_spans:
     error_mode: ignore
     traces:
@@ -249,6 +260,18 @@ processors:
           - truncate_all(attributes, 4095)
           - truncate_all(resource.attributes, 4095)
 receivers:
+  filelog/host_monitoring:
+    include:
+      - /var/log/**/*.log
+      - /var/log/syslog
+    include_file_path: true
+    max_log_size: 4MiB
+    operators:
+      - expr: body matches "otel-contrib"
+        type: filter
+    retry_on_failure:
+      enabled: true
+    storage: file_storage
   hostmetrics/host-monitoring-host:
     collection_interval: 60s
     scrapers:
@@ -280,17 +303,46 @@ receivers:
           system.paging.utilization:
             enabled: true
       processes: null
+  journald/host_monitoring:
+    priority: info
+    units:
+      - cron
+      - ssh
+      - systemd-networkd
+      - systemd-resolved
+      - systemd-login
+      - multipathd
+      - systemd-user-sessions
+      - ufw
+      - observe-agent
   otlp:
     protocols:
       grpc:
         endpoint: localhost:4317
       http:
         endpoint: localhost:4318
+  prometheus/agent:
+    config:
+      scrape_configs:
+        - job_name: otelcol
+          metric_relabel_configs:
+            - action: drop
+              regex: .*grpc_io.*
+              source_labels:
+                - __name__
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+                - localhost:8888
 service:
+  extensions:
+    - health_check
+    - file_storage
   pipelines:
     logs/forward:
       exporters:
         - otlphttp/observe
+        - count
       processors:
         - memory_limiter
         - transform/truncate
@@ -301,15 +353,56 @@ service:
         - batch
       receivers:
         - otlp
+    logs/host_monitoring-file:
+      exporters:
+        - otlphttp/observe
+        - count
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - filelog/host_monitoring
+    logs/host_monitoring-journald:
+      exporters:
+        - otlphttp/observe
+        - count
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - resource/observe_global_resource_attributes
+        - batch
+      receivers:
+        - journald/host_monitoring
+    metrics/agent-internal:
+      exporters:
+        - prometheusremotewrite/observe
+      processors:
+        - memory_limiter
+        - transform/truncate
+        - resourcedetection
+        - resourcedetection/cloud
+        - resource/observe_global_resource_attributes
+        - deltatocumulative
+        - batch
+      receivers:
+        - prometheus/agent
+        - count
     metrics/forward:
       exporters:
-        - otlphttp/observemetrics
+        - prometheusremotewrite/observe
       processors:
         - memory_limiter
         - resourcedetection
         - resourcedetection/cloud
         - transform/sync_deployment_environment
         - resource/observe_global_resource_attributes
+        - deltatocumulative
         - batch
       receivers:
         - otlp
@@ -384,3 +477,20 @@ service:
         - transform/add_empty_service_attributes
       receivers:
         - otlp
+  telemetry:
+    logs:
+      encoding: console
+      level: INFO
+    metrics:
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                port: 8888
+                with_resource_constant_labels:
+                  included:
+                    - observe.agent.instance.id
+    resource:
+      observe.agent.instance.id: ${env:HOSTNAME:-otelcol-contrib}

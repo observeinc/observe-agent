@@ -20,3 +20,14 @@ exporters:
     endpoint: $${env:OBSERVE_COLLECTION_URL}/v1/prometheus
     headers:
       authorization: Bearer $${env:OBSERVE_TOKEN}
+extensions:
+  # Persists filelog read positions across restarts, in otelcol-contrib's directory rather than the
+  # Observe Agent's.
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+service:
+  telemetry:
+    # The Observe Agent labels its internal metrics with a generated instance ID; use the host name.
+    resource:
+      observe.agent.instance.id: $${env:HOSTNAME:-otelcol-contrib}

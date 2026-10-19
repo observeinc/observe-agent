@@ -80,7 +80,8 @@ generate-oss-examples:
 		--agent-config scripts/generate_oss_examples/host/agent-reference-config.yaml \
 		--otel-config scripts/generate_oss_examples/host/otel-config.yaml \
 		--config-mode linux \
-		--pipelines traces/forward,logs/forward,metrics/forward,traces/spanmetrics,metrics/spanmetrics,metrics/spanmetrics/summary,metrics/host_monitoring_host \
+		--pipelines traces/forward,logs/forward,metrics/forward,traces/spanmetrics,metrics/spanmetrics,metrics/spanmetrics/summary,metrics/host_monitoring_host,logs/host_monitoring-file,logs/host_monitoring-journald,metrics/agent-internal \
+		--extensions health_check,file_storage \
 		--out examples/oss-collector/collector/host.yaml
 
 ## generate-readme: Generates README.md from README.md.tmpl

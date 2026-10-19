@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strings"
 
@@ -119,13 +120,37 @@ func run(opts options) error {
 		return err
 	}
 
+	version, err := collectorVersion()
+	if err != nil {
+		return err
+	}
+
 	var out bytes.Buffer
 	out.WriteString(header)
+	fmt.Fprintf(&out, "#\n# Run it with otelcol-contrib %s, the collector version the Observe Agent is built with.\n", version)
 	if vars := envVars(body.Bytes()); len(vars) > 0 {
 		out.WriteString("#\n# Set these environment variables before starting the collector; it doesn't start without them\n# (see examples/oss-collector/README.md): " + strings.Join(vars, ", ") + "\n")
 	}
 	out.Write(body.Bytes())
 	return writeAtomically(opts.out, out.Bytes())
+}
+
+// collectorVersion returns the OpenTelemetry Collector version that the generator, like the agent,
+// is built with.
+func collectorVersion() (string, error) {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "", errors.New("reading the collector version: no build information")
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == "go.opentelemetry.io/collector/otelcol" {
+			if dep.Replace != nil {
+				dep = dep.Replace
+			}
+			return strings.TrimPrefix(dep.Version, "v"), nil
+		}
+	}
+	return "", errors.New("reading the collector version: go.opentelemetry.io/collector/otelcol is not a dependency")
 }
 
 var envVarPattern = regexp.MustCompile(`\$\{env:([A-Za-z0-9_]+)\}`)
