@@ -24,3 +24,4 @@ jobs:
           args: changelog
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
