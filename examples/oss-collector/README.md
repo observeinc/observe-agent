@@ -4,7 +4,7 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 
 | Example | Use it for |
 | :------ | :--------- |
-| [`collector/host.yaml`](collector/host.yaml) | A collector on a Linux host: host metrics, host logs from `/var/log` and journald, application traces, logs, and metrics over OTLP, RED (request rate, error, and duration) metrics generated from traces, and the collector's own internal metrics. On Windows and macOS, remove the receivers and `hostmetrics` scrapers your platform doesn't support, such as journald and `processes` |
+| [`collector.yaml`](collector.yaml) | A collector on a Linux host: host metrics, host logs from `/var/log` and journald, application traces, logs, and metrics over OTLP, RED (request rate, error, and duration) metrics generated from traces, and the collector's own internal metrics. On Windows and macOS, remove the receivers and `hostmetrics` scrapers your platform doesn't support, such as journald and `processes` |
 | [Kubernetes example](https://github.com/observeinc/helm-charts/tree/main/charts/agent/examples/oss-collector) | Collectors running in Kubernetes with the OpenTelemetry Collector Helm chart, in the `observeinc/helm-charts` repository |
 
 ## Run the host example
@@ -20,10 +20,10 @@ These examples show how to send telemetry to Observe with a plain [OpenTelemetry
 
    `DEPLOYMENT_ENVIRONMENT` is the environment for telemetry that doesn't set its own: telemetry that already sets `deployment.environment.name` (or the deprecated `deployment.environment`) keeps its value. It is still required, even if all your applications set their own environment. See [Set the deployment environment](https://docs.observeinc.com/docs/set-the-deployment-environment#/).
 
-3. Start the collector with the `otelcol-contrib` version named at the top of `collector/host.yaml`, the collector version the Observe Agent is built with:
+3. Start the collector with the `otelcol-contrib` version named at the top of `collector.yaml`, the collector version the Observe Agent is built with:
 
    ```sh
-   otelcol-contrib --config collector/host.yaml
+   otelcol-contrib --config collector.yaml
    ```
 
 The OTLP receiver listens on `localhost:4317` (gRPC) and `localhost:4318` (HTTP). To receive telemetry from other machines, change the endpoints to `0.0.0.0`.
@@ -35,4 +35,4 @@ The collector also needs:
 
 ## Where these files come from
 
-The files in `collector/` are generated from the Observe Agent's configuration and checked in CI, so don't edit them by hand. See [`scripts/generate_oss_examples`](../../scripts/generate_oss_examples/).
+`collector.yaml` is generated from the Observe Agent's configuration and checked in CI, so don't edit it by hand. See [`scripts/generate_oss_examples`](../../scripts/generate_oss_examples/).

@@ -51,7 +51,7 @@ jobs:
           OBSERVE_TOKEN: example-datastream:example-token
           DEPLOYMENT_ENVIRONMENT: example
         run: |
-          for config in examples/oss-collector/collector/*.yaml; do
+          for config in examples/oss-collector/collector.yaml; do
             echo "Validating $config with otelcol-contrib $OTELCOL_VERSION"
             ./otelcol-contrib validate --config "$config"
           done

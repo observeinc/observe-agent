@@ -2,7 +2,7 @@
 
 This generator writes the OpenTelemetry Collector examples in [`examples/oss-collector`](../../examples/oss-collector/) from the Observe Agent's bundled configuration. Customers use those files; this directory is only how they're made.
 
-`make generate-oss-examples` runs [`main.go`](main.go), which writes `examples/oss-collector/collector/host.yaml`:
+`make generate-oss-examples` runs [`main.go`](main.go), which writes `examples/oss-collector/collector.yaml`:
 
 1. Renders the collector configuration the Observe Agent would run with [`host/agent-reference-config.yaml`](host/agent-reference-config.yaml), with [`host/otel-config.yaml`](host/otel-config.yaml) merged on top. The otel config sets the exporter endpoints and token to `${env:...}` references.
 2. Keeps only the pipelines listed in the `Makefile` target, and deletes every receiver, processor, exporter, connector, and extension those pipelines don't use. Agent-only parts such as the self-monitoring pipelines and persistent queue storage drop out this way.

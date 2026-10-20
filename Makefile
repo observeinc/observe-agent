@@ -82,7 +82,7 @@ generate-oss-examples:
 		--config-mode linux \
 		--pipelines traces/forward,logs/forward,metrics/forward,traces/spanmetrics,metrics/spanmetrics,metrics/spanmetrics/summary,metrics/host_monitoring_host,logs/host_monitoring-file,logs/host_monitoring-journald,metrics/agent-internal \
 		--extensions health_check,file_storage \
-		--out examples/oss-collector/collector/host.yaml
+		--out examples/oss-collector/collector.yaml
 
 ## generate-readme: Generates README.md from README.md.tmpl
 generate-readme:
