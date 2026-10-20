@@ -1,0 +1,37 @@
+# Observe Agent configuration that examples/oss-collector/collector.yaml is generated from
+# (make generate-oss-examples). observe_url and token are placeholders: otel-config.yaml replaces
+# the exporter values that use them, and the generator fails if either one is left in collector.yaml.
+observe_url: https://123456.collect.observeinc.com/
+token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
+
+resource_attributes:
+  # Fallback environment for telemetry that doesn't set one; read from the environment at startup.
+  deployment.environment.name: $${env:DEPLOYMENT_ENVIRONMENT}
+
+forwarding:
+  enabled: true
+
+host_monitoring:
+  enabled: true
+  logs:
+    enabled: true
+  metrics:
+    host:
+      enabled: true
+    process:
+      enabled: false
+
+self_monitoring:
+  enabled: true
+  fleet:
+    enabled: false
+
+health_check:
+  enabled: true
+
+internal_telemetry:
+  enabled: true
+
+application:
+  RED_metrics:
+    enabled: true
