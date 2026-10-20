@@ -147,6 +147,36 @@ func Test_checkNoCredentials(t *testing.T) {
 	assert.Error(t, checkNoCredentials([]byte("authorization: Bearer ds:secret"), agentConfig))
 }
 
+func Test_dropAgentInstanceID(t *testing.T) {
+	var cfg map[string]any
+	require.NoError(t, yaml.Unmarshal([]byte(`
+service:
+  telemetry:
+    resource:
+      observe.agent.instance.id: abc
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                with_resource_constant_labels:
+                  included:
+                    - observe.agent.instance.id
+`), &cfg))
+	dropAgentInstanceID(cfg)
+	telemetry := cfg["service"].(map[string]any)["telemetry"].(map[string]any)
+	assert.NotContains(t, telemetry, "resource")
+	prometheus := telemetry["metrics"].(map[string]any)["readers"].([]any)[0].(map[string]any)["pull"].(map[string]any)["exporter"].(map[string]any)["prometheus"].(map[string]any)
+	assert.Equal(t, map[string]any{"host": "localhost"}, prometheus)
+}
+
+func Test_checkNoAgentFields(t *testing.T) {
+	assert.NoError(t, checkNoAgentFields([]byte("host.name: ${env:HOST}")))
+	assert.Error(t, checkNoAgentFields([]byte("observe.agent.instance.id: abc")))
+	assert.Error(t, checkNoAgentFields([]byte("value: ${env:OBSERVE_AGENT_INSTANCE_ID}")))
+}
+
 func Test_writeAtomically(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "collector.yaml")

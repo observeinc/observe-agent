@@ -109,6 +109,7 @@ func run(opts options) error {
 	if err := prune(cfg, opts.pipelines, opts.extensions); err != nil {
 		return err
 	}
+	dropAgentInstanceID(cfg)
 
 	var body bytes.Buffer
 	enc := yaml.NewEncoder(&body)
@@ -117,6 +118,9 @@ func run(opts options) error {
 		return fmt.Errorf("encoding example: %w", err)
 	}
 	if err := checkNoCredentials(body.Bytes(), opts.agentConfig); err != nil {
+		return err
+	}
+	if err := checkNoAgentFields(body.Bytes()); err != nil {
 		return err
 	}
 
@@ -346,6 +350,53 @@ func checkNoCredentials(example []byte, agentConfigPath string) error {
 		if value != "" && bytes.Contains(example, []byte(value)) {
 			return fmt.Errorf("example contains the agent config's %s; set the values that reference it in --otel-config", name)
 		}
+	}
+	return nil
+}
+
+// agentInstanceIDKey identifies an Observe Agent by an ID the agent generates for itself, so a
+// plain collector has nothing to set it to.
+const agentInstanceIDKey = "observe.agent.instance.id"
+
+// dropAgentInstanceID removes the agent's instance ID from the internal telemetry resource and
+// from the labels the internal metrics carry.
+func dropAgentInstanceID(cfg map[string]any) {
+	service, _ := cfg["service"].(map[string]any)
+	telemetry, _ := service["telemetry"].(map[string]any)
+	if resource, ok := telemetry["resource"].(map[string]any); ok {
+		delete(resource, agentInstanceIDKey)
+		if len(resource) == 0 {
+			delete(telemetry, "resource")
+		}
+	}
+	metrics, _ := telemetry["metrics"].(map[string]any)
+	readers, _ := metrics["readers"].([]any)
+	for _, r := range readers {
+		reader, _ := r.(map[string]any)
+		pull, _ := reader["pull"].(map[string]any)
+		exporter, _ := pull["exporter"].(map[string]any)
+		prometheus, _ := exporter["prometheus"].(map[string]any)
+		labels, ok := prometheus["with_resource_constant_labels"].(map[string]any)
+		if !ok {
+			continue
+		}
+		included, _ := labels["included"].([]any)
+		included = slices.DeleteFunc(included, func(v any) bool { return v == agentInstanceIDKey })
+		if len(included) == 0 {
+			delete(prometheus, "with_resource_constant_labels")
+		} else {
+			labels["included"] = included
+		}
+	}
+}
+
+var agentFieldPattern = regexp.MustCompile(`observe\.agent\.[A-Za-z0-9_.]+|OBSERVE_AGENT_[A-Z0-9_]+`)
+
+// checkNoAgentFields fails if the example still contains a field or variable that only the
+// Observe Agent sets.
+func checkNoAgentFields(example []byte) error {
+	if field := agentFieldPattern.Find(example); field != nil {
+		return fmt.Errorf("example contains %q, which only the Observe Agent sets", field)
 	}
 	return nil
 }
