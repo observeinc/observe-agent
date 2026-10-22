@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   update-tag:
-    if: contains('["obs-gh-mattcotter", "obs-gh-enricogiorio", "obs-gh-jabernet", "obs-gh-abhishekrao" ,"obs-gh-virjramakrishnan", "sfc-gh-zeningchen"]', github.actor)
+    if: contains('["obs-gh-mattcotter", "obs-gh-enricogiorio", "obs-gh-jabernet", "obs-gh-abhishekrao" ,"obs-gh-virjramakrishnan", "sfc-gh-zeningchen", "sfc-gh-abrao", "sfc-gh-kvishwanathan", "sfc-gh-macotter", "sfc-gh-vramakrishnan", "sfc-gh-xyan"]', github.actor)
     runs-on: ubuntu-observe-agent-8cpu
     steps:
       - name: Checkout
