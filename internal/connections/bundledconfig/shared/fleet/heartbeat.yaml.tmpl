@@ -19,10 +19,10 @@ processors:
     - context: log
       statements:
         {{- if .HasResourceAttributes }}
-        - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"])
+        - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil
         {{- end }}
-        - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"])
-        - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"])
+        - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil
+        - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"]) where resource.attributes["os.type"] != nil
 exporters:
   otlphttp/agentheartbeat:
       compression: zstd
