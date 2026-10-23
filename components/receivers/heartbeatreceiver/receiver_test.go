@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -1131,12 +1132,18 @@ func TestGenerateConfigHeartbeatFromSetConfigs(t *testing.T) {
 // configBodyField decodes a base64 encoded config field from the first emitted log record body.
 func configBodyField(t *testing.T, sink *consumertest.LogsSink, field string) string {
 	t.Helper()
-	body := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
-	v, found := body.Get(field)
+	v, found := firstRecordBody(t, sink).Get(field)
 	require.True(t, found)
 	decoded, err := base64.StdEncoding.DecodeString(v.Str())
 	require.NoError(t, err)
 	return string(decoded)
+}
+
+// firstRecordBody returns the body map of the first emitted log record.
+func firstRecordBody(t *testing.T, sink *consumertest.LogsSink) pcommon.Map {
+	t.Helper()
+	require.NotEmpty(t, sink.AllLogs())
+	return sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
 }
 
 func newConfigTestReceiver(t *testing.T) (*HeartbeatReceiver, *consumertest.LogsSink) {
@@ -1158,8 +1165,7 @@ func TestGenerateConfigHeartbeatAgentConfigOnly(t *testing.T) {
 	require.NoError(t, receiver.generateConfigHeartbeat(context.Background()))
 	require.Equal(t, 1, sink.LogRecordCount(), "partial heartbeat must be sent")
 	assert.Contains(t, configBodyField(t, sink, "observeAgentConfig"), "self_monitoring")
-	body := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
-	otel, found := body.Get("otelConfig")
+	otel, found := firstRecordBody(t, sink).Get("otelConfig")
 	require.True(t, found)
 	assert.Empty(t, otel.Str())
 }

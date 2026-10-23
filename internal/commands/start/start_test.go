@@ -144,3 +144,16 @@ func TestSetHeartbeatConfigsAgentConfigFailure(t *testing.T) {
 	assert.Empty(t, agentConfigYaml)
 	assert.Empty(t, otelConfigYaml)
 }
+
+func TestSetHeartbeatConfigsValidateFailure(t *testing.T) {
+	// A token without ':' decodes fine but fails Validate. Validate failures are only logged,
+	// so the configs must still be handed to the receiver in full.
+	setupTest(t, "notatoken", "https://example.observeinc.com")
+
+	require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+	agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+	require.True(t, ok)
+	assert.Contains(t, agentConfigYaml, "notatoken")
+	assert.NotEmpty(t, otelConfigYaml)
+}
