@@ -277,34 +277,11 @@ func (r *HeartbeatReceiver) generateConfigHeartbeat(ctx context.Context) error {
 		zap.String("agent_instance_id", r.state.AgentInstanceId))
 
 	// Prefer configs handed over in-process; fall back to the legacy base64 encoded env vars.
-	agentConfigYaml, otelConfigYaml, fromEnv := getConfigs()
-
-	if agentConfigYaml == "" {
-		r.settings.Logger.Error("observe-agent config is not set")
-	}
-
-	if otelConfigYaml == "" {
-		r.settings.Logger.Error("OTel config is not set")
-	}
+	agentConfigYaml, otelConfigYaml := getConfigs(r.settings.Logger)
 
 	if agentConfigYaml == "" && otelConfigYaml == "" {
 		r.settings.Logger.Error("Both observe-agent and OTel configs were not set, skipping heartbeat")
 		return nil // Don't crash, just skip this heartbeat
-	}
-
-	if fromEnv {
-		var err error
-		agentConfigYaml, err = decodeBase64Config(agentConfigYaml)
-		if err != nil {
-			r.settings.Logger.Error("failed to decode OBSERVE_AGENT_CONFIG from base64", zap.Error(err))
-			agentConfigYaml = "" // Continue with empty config
-		}
-
-		otelConfigYaml, err = decodeBase64Config(otelConfigYaml)
-		if err != nil {
-			r.settings.Logger.Error("failed to decode OBSERVE_AGENT_OTEL_CONFIG from base64", zap.Error(err))
-			otelConfigYaml = "" // Continue with empty config
-		}
 	}
 
 	// Redact and encode configs

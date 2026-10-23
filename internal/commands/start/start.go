@@ -40,6 +40,9 @@ func setHeartbeatConfigs(ctx context.Context) error {
 	// Set the full OTel config
 	var output bytes.Buffer
 	if err := configcmd.PrintShortOtelConfig(ctx, &output); err != nil {
+		// Still send a partial heartbeat with the agent config; Fleet needs it most when
+		// rendering fails.
+		heartbeatreceiver.SetConfigs(string(yamlBytes), "")
 		return err
 	}
 	heartbeatreceiver.SetConfigs(string(yamlBytes), output.String())

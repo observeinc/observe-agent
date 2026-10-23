@@ -1092,7 +1092,7 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 }
 
 func TestGenerateConfigHeartbeatFromSetConfigs(t *testing.T) {
-	t.Cleanup(resetConfigs)
+	t.Cleanup(ResetConfigs)
 	t.Setenv("OBSERVE_AGENT_CONFIG", "")
 	t.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "")
 
