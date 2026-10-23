@@ -3,6 +3,7 @@ package heartbeatreceiver
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -1088,4 +1089,30 @@ func TestConfigHeartbeatTimer(t *testing.T) {
 			t.Fatal("Shutdown took too long - timers may not have stopped properly")
 		}
 	})
+}
+
+func TestGenerateConfigHeartbeatFromSetConfigs(t *testing.T) {
+	t.Cleanup(resetConfigs)
+	t.Setenv("OBSERVE_AGENT_CONFIG", "")
+	t.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "")
+
+	// Configs handed over in-process (raw YAML, no env vars) must produce a heartbeat, including
+	// when the OTel config is larger than MAX_ARG_STRLEN (128 KiB), which env vars cannot carry
+	// to child processes (OB-70021).
+	big := "receivers:\n"
+	for i := 0; len(big) < 200*1024; i++ {
+		big += fmt.Sprintf("  filelog/r%d:\n    include: [/var/log/app%d.log]\n", i, i)
+	}
+	SetConfigs("self_monitoring:\n  enabled: true\n", big)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+	sink := &consumertest.LogsSink{}
+	receiver, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, receiver.InitializeReceiverState(context.Background()))
+
+	require.NoError(t, receiver.generateConfigHeartbeat(context.Background()))
+	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
 }
