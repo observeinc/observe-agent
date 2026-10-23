@@ -118,3 +118,29 @@ func TestSetHeartbeatConfigsIntegration(t *testing.T) {
 		assert.Equal(t, validConfig.ObserveURL, parsed.ObserveURL)
 	})
 }
+
+func TestSetHeartbeatConfigsClearsLegacyEnvVars(t *testing.T) {
+	setupTest(t, "test:token123456789", "https://example.observeinc.com")
+	t.Setenv("OBSERVE_AGENT_CONFIG", "aW5oZXJpdGVk")
+	t.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "aW5oZXJpdGVk")
+
+	require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+	_, found := os.LookupEnv("OBSERVE_AGENT_CONFIG")
+	assert.False(t, found)
+	_, found = os.LookupEnv("OBSERVE_AGENT_OTEL_CONFIG")
+	assert.False(t, found)
+}
+
+func TestSetHeartbeatConfigsAgentConfigFailure(t *testing.T) {
+	setupTest(t, "test:token123456789", "https://example.observeinc.com")
+	// A map cannot be decoded into the string token field, so AgentConfigFromViper fails.
+	viper.Set("token", map[string]int{"a": 1})
+
+	require.Error(t, setHeartbeatConfigs(context.Background()))
+
+	agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+	require.True(t, ok, "configs must be marked set so the env var fallback is skipped")
+	assert.Empty(t, agentConfigYaml)
+	assert.Empty(t, otelConfigYaml)
+}

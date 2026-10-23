@@ -3,6 +3,7 @@ package start
 import (
 	"bytes"
 	"context"
+	"os"
 
 	"github.com/goccy/go-yaml"
 	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver"
@@ -24,9 +25,15 @@ func DefaultLoggerCtx() context.Context {
 // not be put in env vars: child processes (e.g. journalctl) inherit the environment, and a single
 // env string over 128 KiB makes execve fail with E2BIG ("argument list too long").
 func setHeartbeatConfigs(ctx context.Context) error {
+	// Clear inherited legacy values so they cannot reach child processes.
+	os.Unsetenv("OBSERVE_AGENT_CONFIG")
+	os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+
 	// Set the observe-agent config
 	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
 	if err != nil {
+		// Mark configs as set so the receiver skips the env var fallback and its misleading errors.
+		heartbeatreceiver.SetConfigs("", "")
 		return err
 	}
 	if err := agentConfig.Validate(); err != nil {
@@ -34,6 +41,7 @@ func setHeartbeatConfigs(ctx context.Context) error {
 	}
 	yamlBytes, err := yaml.Marshal(agentConfig)
 	if err != nil {
+		heartbeatreceiver.SetConfigs("", "")
 		return err
 	}
 

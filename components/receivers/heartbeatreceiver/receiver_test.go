@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -1099,10 +1102,14 @@ func TestGenerateConfigHeartbeatFromSetConfigs(t *testing.T) {
 	// Configs handed over in-process (raw YAML, no env vars) must produce a heartbeat, including
 	// when the OTel config is larger than MAX_ARG_STRLEN (128 KiB), which env vars cannot carry
 	// to child processes (OB-70021).
-	big := "receivers:\n"
-	for i := 0; len(big) < 200*1024; i++ {
-		big += fmt.Sprintf("  filelog/r%d:\n    include: [/var/log/app%d.log]\n", i, i)
+	var b strings.Builder
+	b.WriteString("receivers:\n")
+	last := ""
+	for i := 0; b.Len() < 200*1024; i++ {
+		last = fmt.Sprintf("filelog/r%d", i)
+		fmt.Fprintf(&b, "  %s:\n    include: [/var/log/app%d.log]\n", last, i)
 	}
+	big := b.String()
 	SetConfigs("self_monitoring:\n  enabled: true\n", big)
 
 	factory := NewFactory()
@@ -1115,4 +1122,111 @@ func TestGenerateConfigHeartbeatFromSetConfigs(t *testing.T) {
 
 	require.NoError(t, receiver.generateConfigHeartbeat(context.Background()))
 	require.Equal(t, 1, sink.LogRecordCount(), "Should have one log record")
+
+	// The last receiver must survive, proving the large config was not truncated.
+	otelConfig := configBodyField(t, sink, "otelConfig")
+	assert.Contains(t, otelConfig, last+":")
+}
+
+// configBodyField decodes a base64 encoded config field from the first emitted log record body.
+func configBodyField(t *testing.T, sink *consumertest.LogsSink, field string) string {
+	t.Helper()
+	body := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
+	v, found := body.Get(field)
+	require.True(t, found)
+	decoded, err := base64.StdEncoding.DecodeString(v.Str())
+	require.NoError(t, err)
+	return string(decoded)
+}
+
+func newConfigTestReceiver(t *testing.T) (*HeartbeatReceiver, *consumertest.LogsSink) {
+	t.Helper()
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Environment = "linux"
+	sink := &consumertest.LogsSink{}
+	receiver, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, receiver.InitializeReceiverState(context.Background()))
+	return receiver, sink
+}
+
+func TestGenerateConfigHeartbeatAgentConfigOnly(t *testing.T) {
+	t.Cleanup(ResetConfigs)
+	SetConfigs("self_monitoring:\n  enabled: true\n", "")
+
+	receiver, sink := newConfigTestReceiver(t)
+	require.NoError(t, receiver.generateConfigHeartbeat(context.Background()))
+	require.Equal(t, 1, sink.LogRecordCount(), "partial heartbeat must be sent")
+	assert.Contains(t, configBodyField(t, sink, "observeAgentConfig"), "self_monitoring")
+	body := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
+	otel, found := body.Get("otelConfig")
+	require.True(t, found)
+	assert.Empty(t, otel.Str())
+}
+
+func TestGenerateConfigHeartbeatEmptySetConfigs(t *testing.T) {
+	t.Cleanup(ResetConfigs)
+	// Valid env vars must be ignored once SetConfigs has been called.
+	t.Setenv(agentConfigEnvVar, base64.StdEncoding.EncodeToString([]byte("a: 1\n")))
+	t.Setenv(otelConfigEnvVar, base64.StdEncoding.EncodeToString([]byte("b: 2\n")))
+	SetConfigs("", "")
+
+	receiver, sink := newConfigTestReceiver(t)
+	require.NoError(t, receiver.generateConfigHeartbeat(context.Background()))
+	assert.Equal(t, 0, sink.LogRecordCount())
+}
+
+func TestGetConfigs(t *testing.T) {
+	logger := zap.NewNop()
+	enc := func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
+
+	t.Run("SetConfigs wins over env vars", func(t *testing.T) {
+		t.Cleanup(ResetConfigs)
+		t.Setenv(agentConfigEnvVar, enc("env-agent"))
+		t.Setenv(otelConfigEnvVar, enc("env-otel"))
+		SetConfigs("set-agent", "set-otel")
+		agent, otel := getConfigs(logger)
+		assert.Equal(t, "set-agent", agent)
+		assert.Equal(t, "set-otel", otel)
+	})
+
+	t.Run("falls back to valid env vars", func(t *testing.T) {
+		t.Cleanup(ResetConfigs)
+		t.Setenv(agentConfigEnvVar, enc("env-agent"))
+		t.Setenv(otelConfigEnvVar, enc("env-otel"))
+		agent, otel := getConfigs(logger)
+		assert.Equal(t, "env-agent", agent)
+		assert.Equal(t, "env-otel", otel)
+	})
+
+	t.Run("invalid base64 env var yields empty", func(t *testing.T) {
+		t.Setenv(agentConfigEnvVar, "not base64!!")
+		assert.Empty(t, getEnvConfig(logger, agentConfigEnvVar))
+	})
+
+	t.Run("unset env var yields empty", func(t *testing.T) {
+		t.Setenv(agentConfigEnvVar, "")
+		os.Unsetenv(agentConfigEnvVar)
+		assert.Empty(t, getEnvConfig(logger, agentConfigEnvVar))
+	})
+}
+
+func TestConfigsConcurrentAccess(t *testing.T) {
+	t.Cleanup(ResetConfigs)
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(2)
+		go func(i int) {
+			defer wg.Done()
+			SetConfigs(fmt.Sprintf("agent-%d", i), fmt.Sprintf("otel-%d", i))
+		}(i)
+		go func() {
+			defer wg.Done()
+			_, _, _ = Configs()
+		}()
+	}
+	wg.Wait()
+	agent, otel, ok := Configs()
+	require.True(t, ok)
+	assert.Equal(t, strings.TrimPrefix(agent, "agent-"), strings.TrimPrefix(otel, "otel-"), "agent and otel must be set atomically")
 }

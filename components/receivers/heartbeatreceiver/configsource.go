@@ -7,12 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// The config heartbeat needs the resolved observe-agent and OTel configs. These used to be passed
-// only via the OBSERVE_AGENT_CONFIG / OBSERVE_AGENT_OTEL_CONFIG env vars, but every child process
-// (e.g. journalctl spawned by the journald receiver) inherits the environment, and Linux rejects
-// any single env string over MAX_ARG_STRLEN (128 KiB) with E2BIG. Large configs therefore broke
-// any receiver that execs a child. The configs are now handed over in-process instead.
-
+// Configs are handed over in-process rather than via env vars, which child processes inherit and
+// which fail execve with E2BIG when over 128 KiB (OB-70021). The env vars remain a legacy fallback.
 const (
 	agentConfigEnvVar = "OBSERVE_AGENT_CONFIG"
 	otelConfigEnvVar  = "OBSERVE_AGENT_OTEL_CONFIG"
@@ -27,7 +23,7 @@ var (
 
 // SetConfigs stores the raw (not base64 encoded) observe-agent and OTel config YAML for the
 // config heartbeat. Either may be empty, in which case a partial heartbeat is sent. It must be
-// called before the collector starts.
+// called before the collector starts; the start command does this.
 func SetConfigs(agentConfig, otelConfig string) {
 	configsMu.Lock()
 	defer configsMu.Unlock()
@@ -69,12 +65,12 @@ func getConfigs(logger *zap.Logger) (agentConfig, otelConfig string) {
 func getEnvConfig(logger *zap.Logger, envVar string) string {
 	encoded := os.Getenv(envVar)
 	if encoded == "" {
-		logger.Error(envVar + " environment variable is not set")
+		logger.Error("environment variable is not set", zap.String("env", envVar))
 		return ""
 	}
 	decoded, err := decodeBase64Config(encoded)
 	if err != nil {
-		logger.Error("failed to decode "+envVar+" from base64", zap.Error(err))
+		logger.Error("failed to decode environment variable from base64", zap.String("env", envVar), zap.Error(err))
 		return ""
 	}
 	return decoded
