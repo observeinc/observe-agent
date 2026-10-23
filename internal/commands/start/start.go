@@ -3,10 +3,10 @@ package start
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"os"
 
 	"github.com/goccy/go-yaml"
+	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver"
 	configcmd "github.com/observeinc/observe-agent/internal/commands/config"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/observeinc/observe-agent/internal/config"
@@ -21,7 +21,16 @@ func DefaultLoggerCtx() context.Context {
 	return logger.WithCtx(context.Background(), logger.Get())
 }
 
-func setConfigEnvVars(ctx context.Context) error {
+// setHeartbeatConfigs hands the resolved configs to the heartbeat receiver in-process. They must
+// not be put in env vars: child processes (e.g. journalctl) inherit the environment, and a single
+// env string over 128 KiB makes execve fail with E2BIG ("argument list too long").
+func setHeartbeatConfigs(ctx context.Context) error {
+	// Clear inherited legacy values so they cannot reach child processes.
+	os.Unsetenv("OBSERVE_AGENT_CONFIG")
+	os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
+	// Mark configs as set up front so every early return skips the receiver's env var fallback.
+	heartbeatreceiver.SetConfigs("", "")
+
 	// Set the observe-agent config
 	agentConfig, err := config.AgentConfigFromViper(viper.GetViper())
 	if err != nil {
@@ -34,18 +43,16 @@ func setConfigEnvVars(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// Base64 encode to avoid shell escaping issues
-	agentConfigEncoded := base64.StdEncoding.EncodeToString(yamlBytes)
-	os.Setenv("OBSERVE_AGENT_CONFIG", agentConfigEncoded)
 
 	// Set the full OTel config
 	var output bytes.Buffer
 	if err := configcmd.PrintShortOtelConfig(ctx, &output); err != nil {
+		// Still send a partial heartbeat with the agent config; Fleet needs it most when
+		// rendering fails.
+		heartbeatreceiver.SetConfigs(string(yamlBytes), "")
 		return err
 	}
-	// Base64 encode to avoid shell escaping issues
-	otelConfigEncoded := base64.StdEncoding.EncodeToString(output.Bytes())
-	os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", otelConfigEncoded)
+	heartbeatreceiver.SetConfigs(string(yamlBytes), output.String())
 	return nil
 }
 
@@ -59,8 +66,8 @@ collector on the current host.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := DefaultLoggerCtx()
-			if err := setConfigEnvVars(ctx); err != nil {
-				logger.FromCtx(ctx).Error("failed to set observe-agent config env vars, attempting to start anyway", zap.Error(err))
+			if err := setHeartbeatConfigs(ctx); err != nil {
+				logger.FromCtx(ctx).Error("failed to set observe-agent heartbeat configs, attempting to start anyway", zap.Error(err))
 			}
 			col, err := observecol.GetOtelCollector(ctx)
 			if err != nil {
