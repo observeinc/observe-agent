@@ -222,10 +222,9 @@ github.com/alecthomas/units
 github.com/alexbrainman/sspi
 github.com/alexbrainman/sspi/internal/common
 github.com/alexbrainman/sspi/ntlm
-# github.com/andybalholm/brotli v1.2.2
+# github.com/andybalholm/brotli v1.2.7
 ## explicit; go 1.22
 github.com/andybalholm/brotli
-github.com/andybalholm/brotli/flate
 github.com/andybalholm/brotli/matchfinder
 # github.com/antchfx/xmlquery v1.5.1
 ## explicit; go 1.14
