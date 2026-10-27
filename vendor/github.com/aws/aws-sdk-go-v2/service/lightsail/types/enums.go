@@ -1318,6 +1318,8 @@ const (
 	MetricNameFreeStorageSpace               MetricName = "FreeStorageSpace"
 	MetricNameNetworkReceiveThroughput       MetricName = "NetworkReceiveThroughput"
 	MetricNameNetworkTransmitThroughput      MetricName = "NetworkTransmitThroughput"
+	MetricNameFreeableMemory                 MetricName = "FreeableMemory"
+	MetricNameSwapUsage                      MetricName = "SwapUsage"
 	MetricNameBurstCapacityTime              MetricName = "BurstCapacityTime"
 	MetricNameBurstCapacityPercentage        MetricName = "BurstCapacityPercentage"
 )
@@ -1351,6 +1353,8 @@ func (MetricName) Values() []MetricName {
 		"FreeStorageSpace",
 		"NetworkReceiveThroughput",
 		"NetworkTransmitThroughput",
+		"FreeableMemory",
+		"SwapUsage",
 		"BurstCapacityTime",
 		"BurstCapacityPercentage",
 	}
@@ -1610,6 +1614,7 @@ const (
 	OperationTypeStartGUISession                      OperationType = "StartGUISession"
 	OperationTypeStopGUISession                       OperationType = "StopGUISession"
 	OperationTypeSetupInstanceHttps                   OperationType = "SetupInstanceHttps"
+	OperationTypeGetProfile                           OperationType = "GetProfile"
 )
 
 // Values returns all known values for OperationType. Note that this can be
@@ -1701,6 +1706,28 @@ func (OperationType) Values() []OperationType {
 		"StartGUISession",
 		"StopGUISession",
 		"SetupInstanceHttps",
+		"GetProfile",
+	}
+}
+
+type OriginIpAddressTypeEnum string
+
+// Enum values for OriginIpAddressTypeEnum
+const (
+	OriginIpAddressTypeEnumIpv4      OriginIpAddressTypeEnum = "ipv4"
+	OriginIpAddressTypeEnumIpv6      OriginIpAddressTypeEnum = "ipv6"
+	OriginIpAddressTypeEnumDualstack OriginIpAddressTypeEnum = "dualstack"
+)
+
+// Values returns all known values for OriginIpAddressTypeEnum. Note that this can
+// be expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
+func (OriginIpAddressTypeEnum) Values() []OriginIpAddressTypeEnum {
+	return []OriginIpAddressTypeEnum{
+		"ipv4",
+		"ipv6",
+		"dualstack",
 	}
 }
 
@@ -1720,6 +1747,25 @@ func (OriginProtocolPolicyEnum) Values() []OriginProtocolPolicyEnum {
 	return []OriginProtocolPolicyEnum{
 		"http-only",
 		"https-only",
+	}
+}
+
+type PartnerStatus string
+
+// Enum values for PartnerStatus
+const (
+	PartnerStatusActive    PartnerStatus = "Active"
+	PartnerStatusSuspended PartnerStatus = "Suspended"
+)
+
+// Values returns all known values for PartnerStatus. Note that this can be
+// expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
+func (PartnerStatus) Values() []PartnerStatus {
+	return []PartnerStatus{
+		"Active",
+		"Suspended",
 	}
 }
 
@@ -1809,6 +1855,25 @@ func (PricingUnit) Values() []PricingUnit {
 	}
 }
 
+type ProfileType string
+
+// Enum values for ProfileType
+const (
+	ProfileTypeLightsailor      ProfileType = "Lightsailor"
+	ProfileTypeLightsailPartner ProfileType = "LightsailPartner"
+)
+
+// Values returns all known values for ProfileType. Note that this can be expanded
+// in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
+func (ProfileType) Values() []ProfileType {
+	return []ProfileType{
+		"Lightsailor",
+		"LightsailPartner",
+	}
+}
+
 type R53HostedZoneDeletionStateCode string
 
 // Enum values for R53HostedZoneDeletionStateCode
@@ -1866,14 +1931,18 @@ const (
 	RegionNameEuWest2      RegionName = "eu-west-2"
 	RegionNameEuWest3      RegionName = "eu-west-3"
 	RegionNameEuCentral1   RegionName = "eu-central-1"
+	RegionNameEuNorth1     RegionName = "eu-north-1"
+	RegionNameEuSouth2     RegionName = "eu-south-2"
 	RegionNameCaCentral1   RegionName = "ca-central-1"
+	RegionNameApEast1      RegionName = "ap-east-1"
 	RegionNameApSouth1     RegionName = "ap-south-1"
 	RegionNameApSoutheast1 RegionName = "ap-southeast-1"
 	RegionNameApSoutheast2 RegionName = "ap-southeast-2"
 	RegionNameApNortheast1 RegionName = "ap-northeast-1"
 	RegionNameApNortheast2 RegionName = "ap-northeast-2"
-	RegionNameEuNorth1     RegionName = "eu-north-1"
 	RegionNameApSoutheast3 RegionName = "ap-southeast-3"
+	RegionNameApSoutheast5 RegionName = "ap-southeast-5"
+	RegionNameSaEast1      RegionName = "sa-east-1"
 )
 
 // Values returns all known values for RegionName. Note that this can be expanded
@@ -1890,14 +1959,18 @@ func (RegionName) Values() []RegionName {
 		"eu-west-2",
 		"eu-west-3",
 		"eu-central-1",
+		"eu-north-1",
+		"eu-south-2",
 		"ca-central-1",
+		"ap-east-1",
 		"ap-south-1",
 		"ap-southeast-1",
 		"ap-southeast-2",
 		"ap-northeast-1",
 		"ap-northeast-2",
-		"eu-north-1",
 		"ap-southeast-3",
+		"ap-southeast-5",
+		"sa-east-1",
 	}
 }
 
@@ -1928,6 +2001,8 @@ const (
 	RelationalDatabaseMetricNameFreeStorageSpace          RelationalDatabaseMetricName = "FreeStorageSpace"
 	RelationalDatabaseMetricNameNetworkReceiveThroughput  RelationalDatabaseMetricName = "NetworkReceiveThroughput"
 	RelationalDatabaseMetricNameNetworkTransmitThroughput RelationalDatabaseMetricName = "NetworkTransmitThroughput"
+	RelationalDatabaseMetricNameFreeableMemory            RelationalDatabaseMetricName = "FreeableMemory"
+	RelationalDatabaseMetricNameSwapUsage                 RelationalDatabaseMetricName = "SwapUsage"
 )
 
 // Values returns all known values for RelationalDatabaseMetricName. Note that
@@ -1943,6 +2018,8 @@ func (RelationalDatabaseMetricName) Values() []RelationalDatabaseMetricName {
 		"FreeStorageSpace",
 		"NetworkReceiveThroughput",
 		"NetworkTransmitThroughput",
+		"FreeableMemory",
+		"SwapUsage",
 	}
 }
 
@@ -2137,6 +2214,29 @@ func (StatusType) Values() []StatusType {
 	return []StatusType{
 		"Active",
 		"Inactive",
+	}
+}
+
+type TierName string
+
+// Enum values for TierName
+const (
+	TierNameEssential  TierName = "Essential"
+	TierNameGrowth     TierName = "Growth"
+	TierNameAccelerate TierName = "Accelerate"
+	TierNamePremier    TierName = "Premier"
+)
+
+// Values returns all known values for TierName. Note that this can be expanded in
+// the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
+func (TierName) Values() []TierName {
+	return []TierName{
+		"Essential",
+		"Growth",
+		"Accelerate",
+		"Premier",
 	}
 }
 

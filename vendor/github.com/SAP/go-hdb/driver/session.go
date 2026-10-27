@@ -13,7 +13,8 @@ import (
 	"time"
 
 	p "github.com/SAP/go-hdb/driver/internal/protocol"
-	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
+	"github.com/SAP/go-hdb/driver/internal/trace"
+	"golang.org/x/text/transform"
 )
 
 // SessionUser provides the fields for a hdb 'connect' (switch user) statement.
@@ -48,15 +49,30 @@ func WithUserSwitch(ctx context.Context, u *SessionUser) context.Context {
 }
 
 type session struct {
-	dbConn  dbConn
-	metrics *metrics
-	attrs   *connAttrs
+	metrics        *metrics
+	routing        *routing
+	routingVersion int64
+	attrs          *connAttrs
+
+	readerAttrs *p.ReaderAttrs
+	writerAttrs *p.WriterAttrs
+
+	// reusable decoder for reading lob values (cesu8 -> utf8). Reads on a
+	// connection are strictly sequential (database/sql serializes per connection
+	// and each lob read completes within one Scan call), so there is never
+	// concurrent access to reset/clobber and a single instance can be reused
+	// instead of minting one per lob read. Only the encode-side lob path, where
+	// readers can interleave, needs its own instance per use (see
+	// p.LobInDescr.FetchFirst).
+	lobReadDecoder transform.Transformer
 
 	prd *p.Reader
 	pwr *p.Writer
 
 	hdbVersion   *Version
 	databaseName string
+	host         string // HANA server dialed host and port.
+	serverConnID int    // HANA server connection id (connect option coConnectionID).
 
 	user *SessionUser // session user
 
@@ -70,157 +86,214 @@ type session struct {
 		we cannot work with nested errors containing driver.ErrBadConn
 		as go sql retries these statements.
 	*/
-	canceled bool
+	canceled atomic.Bool // set off-goroutine by terminateSession, read by the exec attach guard.
 }
 
-func newSession(ctx context.Context, host string, logger *slog.Logger, metrics *metrics, attrs *connAttrs, authHnd *p.AuthHnd) (*session, error) {
-	dbConn, err := newDBConn(ctx, logger, host, metrics, attrs)
-	if err != nil {
-		return nil, err
-	}
+func newSession(ctx context.Context, conn io.ReadWriter, logger *slog.Logger, metrics *metrics, routing *routing, attrs *connAttrs) (*session, error) {
+	readerAttrs := p.NewReaderAttrs(attrs.protTrace.Enabled, logger, attrs.cesu8DecoderFn, attrs.lobChunkSize, attrs.emptyDateAsNull, attrs.compressor)
+	writerAttrs := p.NewWriterAttrs(attrs.protTrace.Enabled, logger, attrs.cesu8EncoderFn, attrs.sessionVariables, attrs.compressor)
 
-	rd := bufio.NewReaderSize(dbConn, attrs.bufferSize)
-	wr := bufio.NewWriterSize(dbConn, attrs.bufferSize)
-
-	dec := encoding.NewDecoder(rd, attrs.cesu8Decoder, attrs.emptyDateAsNull)
-	enc := encoding.NewEncoder(wr, attrs.cesu8Encoder)
-
-	protTrace := protTrace.Load()
-
-	prd := p.NewDBReader(dec, attrs.cesu8Decoder, protTrace, logger, attrs.lobChunkSize)
-	pwr := p.NewWriter(wr, enc, protTrace, logger, attrs.sessionVariables)
+	// buffer reader
+	prd := p.NewDBReader(bufio.NewReaderSize(conn, attrs.bufferSize), readerAttrs)
+	pwr := p.NewWriter(conn, writerAttrs)
 
 	// prolog
 	if err := pwr.WriteProlog(ctx); err != nil {
-		dbConn.Close()
 		return nil, err
 	}
 	if err := prd.ReadProlog(ctx); err != nil {
-		dbConn.Close()
 		return nil, err
 	}
 
-	var sqlTracer *sqlTracer
-	if sqlTrace.Load() {
-		sqlTracer = newSQLTracer(logger, 0)
+	sqlTracer := newSQLTracer(logger, 0, attrs.sqlTrace)
+
+	return &session{
+		metrics:        metrics,
+		routing:        routing,
+		routingVersion: -1,
+		attrs:          attrs,
+		readerAttrs:    readerAttrs,
+		writerAttrs:    writerAttrs,
+		lobReadDecoder: attrs.cesu8DecoderFn(),
+		prd:            prd,
+		pwr:            pwr,
+		sqlTracer:      sqlTracer,
+	}, nil
+}
+
+func (s *session) authenticate(ctx context.Context, host string, authHnd *p.AuthHnd) error {
+	cco := &p.ConnectOptions{} // client connect options
+	cco.SetDataFormatVersion2(s.attrs.dfv)
+	if s.attrs.connectionRouting {
+		cco.SetClientDistributionMode(p.CdmConnection)
+		cco.SetUpdateTopologyAnywhere(true)
+	} else {
+		cco.SetClientDistributionMode(p.CdmOff)
 	}
-	s := &session{dbConn: dbConn, metrics: metrics, attrs: attrs, prd: prd, pwr: pwr, sqlTracer: sqlTracer}
 
-	if authHnd != nil { // authenticate
-		serverOptions, err := s.authenticate(ctx, authHnd, attrs)
-		if err != nil {
-			dbConn.Close()
-			return nil, err
-		}
-		s.hdbVersion = parseVersion(serverOptions.FullVersionOrZero())
-		s.databaseName = serverOptions.DatabaseNameOrZero()
+	if s.attrs.locale != "" {
+		cco.SetClientLocale(s.attrs.locale)
+	}
 
-		dec.SetAlphanumDfv1(serverOptions.DataFormatVersion2OrZero() == p.DfvLevel1)
-
-		if err := s.setSchema(ctx); err != nil {
-			dbConn.Close()
-			return nil, err
+	// Compression negotiation.
+	//
+	// This driver mirrors the SAP HANA C++ client (hdbcli) and node-hdb
+	// reference implementations.
+	//
+	// The connect option coCompressionLevelAndFlags carries an int32
+	// bitfield with two relevant flags:
+	//
+	//   coCompressionLZ4Supported  (0x00000100) -- sender can decompress LZ4
+	//   coCompressionLZ4Enabled    (0x00000200) -- sender wants compression on
+	//
+	// Receive side. No per-session decision is needed: every inbound packet
+	// carries an isCompressed bit in the message header, which we honour
+	// individually.
+	//
+	// Connect request. Mirrors the C++ and node-hdb clients:
+	//   - CompressDisabled     -> option omitted entirely; server cannot
+	//                            send compressed packets because we did
+	//                            not advertise LZ4Supported.
+	//   - CompressEnabled      -> send LZ4Supported | LZ4Enabled.
+	//   - CompressDefault      -> send LZ4Supported only; let the server
+	//                            decide.
+	//
+	// Send side. We compress our outbound packets iff the server's connect
+	// reply has coCompressionLZ4Supported
+	//
+	// Bits 0..7 (level), bit 10 (ForceLocal) are unused by this driver.
+	// ForceLocal exists in the C++ client as an internal undocumented
+	// option (SQLDBC_INTERNAL_CONNECTPROPERTY_COMPRESSLOCAL) to force
+	// compression on loopback connections; node-hdb does not implement
+	// it. We do not support it for now; can be added later if a concrete
+	// need arises.
+	if s.attrs.compressor != nil {
+		if s.attrs.compressor.EnableWrite() {
+			cco.SetCompressionLevelAndFlags(p.CoCompressionLZ4Supported | p.CoCompressionLZ4Enabled)
+		} else {
+			cco.SetCompressionLevelAndFlags(p.CoCompressionLZ4Supported)
 		}
 	}
-	return s, nil
+	// else disable compression: option omitted entirely
+
+	sco, ti, err := s._authenticate(ctx, authHnd, cco)
+	if err != nil {
+		return err
+	}
+
+	enabled := sco.ClientDistributionModeOrZero() != p.CdmOff
+	s.routingVersion = s.routing.updateFromConnect(enabled, host, sco.DatabaseNameOrZero(), sco.SystemIDOrZero(), ti)
+
+	s.hdbVersion = parseVersion(sco.FullVersionOrZero())
+	s.databaseName = sco.DatabaseNameOrZero()
+	s.host = host
+	s.serverConnID = sco.ServerConnectionIDOrZero()
+
+	s.readerAttrs.SetAlphanumDfv1(sco.DataFormatVersion2OrZero() == p.DfvLevel1)
+
+	compressLevelAndFlags := sco.CompressionLevelAndFlagsOrZero()
+	if compressLevelAndFlags&p.CoCompressionLZ4Supported != 0 {
+		s.writerAttrs.SetCompressEnableWrite(s.attrs.compressor != nil && s.attrs.compressor.EnableWrite())
+	}
+
+	return s.setSchema(ctx)
 }
 
 // we cannot work with nested errors containing driver.ErrBadConn
 // as go sql retries these statements.
-func (s *session) isBad() bool { return s.canceled || s.pwr.HasError() }
-func (s *session) cancel()     { s.canceled = true }
+func (s *session) isBad() bool { return s.canceled.Load() || s.pwr.HasError() }
+func (s *session) cancel()     { s.canceled.Store(true) }
 
 func (s *session) close() error {
 	// do not disconnect if isBad.
-	var disconnectErr error
 	if !s.isBad() {
-		disconnectErr = s.disconnect(context.Background())
+		return s.disconnect(context.Background())
 	}
-	closeErr := s.dbConn.Close()
-	return errors.Join(disconnectErr, closeErr)
+	return nil
 }
 
-func (s *session) authenticate(ctx context.Context, authHnd *p.AuthHnd, attrs *connAttrs) (*p.ConnectOptions, error) {
-	defer metricsAddTimeValue(s.metrics, time.Now(), timeAuth)
+func (s *session) _authenticate(ctx context.Context, authHnd *p.AuthHnd, co *p.ConnectOptions) (*p.ConnectOptions, *p.TopologyInformation, error) {
+	defer s.metrics.addTimeValue(timeAuth, time.Now())
 
 	// client context
 	clientContext := &p.ClientContext{}
 	clientContext.SetVersion(DriverVersion)
 	clientContext.SetType(clientType)
-	clientContext.SetApplicationProgram(attrs.applicationName)
+	clientContext.SetApplicationProgram(s.attrs.applicationName)
 
 	initRequest, err := authHnd.InitRequest()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := s.pwr.Write(ctx, p.MtAuthenticate, false, clientContext, initRequest); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	initReply, err := authHnd.InitReply()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		if kind == p.PkAuthentication {
-			return s.prd.ReadPart(ctx, initReply, nil)
+
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, nil, err
 		}
-		return p.ErrSkipped
-	}); err != nil {
-		return nil, err
+		switch pi.Header.Kind() {
+		case p.PkError:
+			err = pi.ReadHDBErrors(ctx)
+		case p.PkAuthentication:
+			err = pi.ReadPart(ctx, initReply)
+		default:
+			err = pi.SkipPart(ctx)
+		}
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	finalRequest, err := authHnd.FinalRequest()
 	if err != nil {
-		return nil, err
-	}
-
-	co := &p.ConnectOptions{}
-	co.SetDataFormatVersion2(attrs.dfv)
-	co.SetClientDistributionMode(p.CdmOff)
-	// co.SetClientDistributionMode(p.CdmConnectionStatement)
-	// co.SetSelectForUpdateSupported(true) // doesn't seem to make a difference
-	/*
-		p.CoSplitBatchCommands:          true,
-		p.CoCompleteArrayExecution:      true,
-	*/
-
-	if attrs.locale != "" {
-		co.SetClientLocale(attrs.locale)
+		return nil, nil, err
 	}
 
 	if err := s.pwr.Write(ctx, p.MtConnect, false, finalRequest, p.ClientID(clientID), co); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	finalReply, err := authHnd.FinalReply()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ti := new(p.TopologyInformation)
 
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
-		case p.PkAuthentication:
-			return s.prd.ReadPart(ctx, finalReply, nil)
-		case p.PkConnectOptions:
-			return s.prd.ReadPart(ctx, co, nil)
-		case p.PkTopologyInformation:
-			return s.prd.ReadPart(ctx, ti, nil)
-		default:
-			return p.ErrSkipped
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, nil, err
 		}
-	}); err != nil {
-		return nil, err
+		switch pi.Header.Kind() {
+		case p.PkError:
+			err = pi.ReadHDBErrors(ctx)
+		case p.PkAuthentication:
+			err = pi.ReadPart(ctx, finalReply)
+		case p.PkConnectOptions:
+			err = pi.ReadPart(ctx, co)
+		case p.PkTopologyInformation:
+			err = pi.ReadPart(ctx, ti)
+		default:
+			err = pi.SkipPart(ctx)
+		}
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	sessionID := s.prd.SessionID()
 	if sessionID <= 0 {
-		return nil, fmt.Errorf("invalid session id %d", sessionID)
+		return nil, nil, fmt.Errorf("invalid session id %d", sessionID)
 	}
 	s.pwr.SetSessionID(sessionID)
-	return co, nil
+	return co, ti, nil
 }
 
 func (s *session) setSchema(ctx context.Context) error {
@@ -236,8 +309,6 @@ func (s *session) setSchema(ctx context.Context) error {
 	}
 }
 
-const passwordRedacted = "***"
-
 // ErrSwitchUser is the error raised if a switch user is requested in a disallowed context.
 var ErrSwitchUser = errors.New("switch user inside transaction or in statement scope (prepared query) is not allowed")
 
@@ -249,14 +320,14 @@ func (s *session) switchUser(ctx context.Context) error {
 	if s.inTx.Load() {
 		return ErrSwitchUser
 	}
-	s.user = user.clone()
 	connectQuery := func(password string) string {
 		return "connect " + user.Username + " password \"" + password + "\""
 	}
-	if _, err := s.execDirectQueryLog(ctx, connectQuery(user.Password), connectQuery(passwordRedacted)); err != nil {
+	if _, err := s.execDirectQueryLog(ctx, connectQuery(user.Password), connectQuery(trace.RedactedText)); err != nil {
 		return err
 	}
-	s.metrics.msgCh <- counterMsg{idx: counterSessionConnects, v: uint64(1)}
+	s.user = user.clone()
+	s.metrics.addCounter(counterSessionConnects, 1)
 	return s.setSchema(ctx)
 }
 
@@ -275,13 +346,21 @@ func (s *session) dbConnectInfo(ctx context.Context, databaseName string) (*DBCo
 		return nil, err
 	}
 
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		if kind == p.PkDBConnectInfo {
-			return s.prd.ReadPart(ctx, ci, nil)
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
 		}
-		return p.ErrSkipped
-	}); err != nil {
-		return nil, err
+		switch pi.Header.Kind() {
+		case p.PkError:
+			err = pi.ReadHDBErrors(ctx)
+		case p.PkDBConnectInfo:
+			err = pi.ReadPart(ctx, ci)
+		default:
+			err = pi.SkipPart(ctx)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &DBConnectInfo{
@@ -292,9 +371,36 @@ func (s *session) dbConnectInfo(ctx context.Context, databaseName string) (*DBCo
 	}, nil
 }
 
+func (s *session) updateRouting(ctx context.Context, pi *p.PartInfo) {
+	if s.routingVersion == -1 {
+		return
+	}
+	ti := new(p.TopologyInformation)
+	if err := pi.ReadPart(ctx, ti); err != nil {
+		return // ignore error
+	}
+	s.routing.updateFromReply(s.routingVersion, ti)
+}
+
+// statementContextTime consumes a StatementContext part and stores the
+// server processing time it carries (0 when the server omits it) in
+// serverTime. It decodes the part only when SQL tracing is active -- the
+// sole consumer of the value -- and skips the part bytes otherwise.
+func (s *session) statementContextTime(ctx context.Context, pi *p.PartInfo, serverTime *time.Duration) error {
+	if s.sqlTracer == nil {
+		return pi.SkipPart(ctx)
+	}
+	var sc p.StatementContext
+	if err := pi.ReadPart(ctx, &sc); err != nil {
+		return err
+	}
+	*serverTime = sc.ServerProcessingTimeOrZero()
+	return nil
+}
+
 func (s *session) queryDirect(ctx context.Context, query string, traceKind string) (driver.Rows, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeQuery)
+	defer s.metrics.addSQLTimeValue(sqlTimeQuery, time.Now())
 
 	// allow e.g inserts as query -> handle commit like in _execDirect
 	if err := s.pwr.Write(ctx, p.MtExecuteDirect, !s.inTx.Load(), p.Command(query)); err != nil {
@@ -305,36 +411,50 @@ func (s *session) queryDirect(ctx context.Context, query string, traceKind strin
 	var qr *queryResult
 	meta := &p.ResultMetadata{}
 	resSet := &p.Resultset{}
+	var serverTime time.Duration
 
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				return nil, err
+			}
 		case p.PkResultMetadata:
 			qr = &queryResult{session: s}
 			qrs = append(qrs, qr)
-			if err := s.prd.ReadPart(ctx, meta, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, meta); err != nil {
+				return nil, err
 			}
 			qr.fields = meta.ResultFields
-			return nil
 		case p.PkResultsetID:
-			return s.prd.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID), nil)
+			if err := pi.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID)); err != nil {
+				return nil, err
+			}
 		case p.PkResultset:
 			resSet.ResultFields = qr.fields
-			if err := s.prd.ReadPart(ctx, resSet, qr); err != nil {
-				return err
+			if err := readResultPart(ctx, pi, resSet, qr); err != nil {
+				return nil, err
 			}
 			qr.fieldValues = resSet.FieldValues
 			qr.decodeErrors = resSet.DecodeErrors
-			qr.attrs = attrs
-			return nil
+			qr.attrs = pi.Header.Attrs()
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, err
+			}
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return nil, err
+			}
 		}
-	}); err != nil {
-		return nil, err
 	}
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceKind, query)
+		s.sqlTracer.log(ctx, t, traceKind, query, serverTime)
 	}
 	if !slices.ContainsFunc(qrs, func(qr *queryResult) bool { // no select query
 		return qr.rsID != 0
@@ -349,18 +469,41 @@ func (s *session) queryDirect(ctx context.Context, query string, traceKind strin
 
 func (s *session) execDirectQueryLog(ctx context.Context, query, logQuery string) (driver.Result, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeExec)
+	defer s.metrics.addSQLTimeValue(sqlTimeExec, time.Now())
 
 	if err := s.pwr.Write(ctx, p.MtExecuteDirect, !s.inTx.Load(), p.Command(query)); err != nil {
 		return nil, err
 	}
 
-	numRow, err := s.prd.IterateParts(ctx, 0, nil)
-	if err != nil {
-		return nil, err
+	rowsAffected := new(p.RowsAffected)
+	var serverTime time.Duration
+
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			err = pi.ReadHDBErrors(ctx)
+		case p.PkRowsAffected:
+			err = pi.ReadPart(ctx, rowsAffected)
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, err
+			}
+		default:
+			err = pi.SkipPart(ctx)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
+	numRow := rowsAffected.Total()
+
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceExec, logQuery)
+		s.sqlTracer.log(ctx, t, traceExec, logQuery, serverTime)
 	}
 	if s.prd.FunctionCode() == p.FcDDL {
 		return driver.ResultNoRows, nil
@@ -374,7 +517,7 @@ func (s *session) execDirect(ctx context.Context, query string) (driver.Result, 
 
 func (s *session) prepare(ctx context.Context, query string) (*prepareResult, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimePrepare)
+	defer s.metrics.addSQLTimeValue(sqlTimePrepare, time.Now())
 
 	if err := s.pwr.Write(ctx, p.MtPrepare, false, p.Command(query)); err != nil {
 		return nil, err
@@ -383,77 +526,101 @@ func (s *session) prepare(ctx context.Context, query string) (*prepareResult, er
 	pr := &prepareResult{}
 	resMeta := &p.ResultMetadata{}
 	prmMeta := &p.ParameterMetadata{}
+	var serverTime time.Duration
 
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				return nil, err
+			}
 		case p.PkStatementID:
-			return s.prd.ReadPart(ctx, (*p.StatementID)(&pr.stmtID), nil)
+			if err := pi.ReadPart(ctx, (*p.StatementID)(&pr.stmtID)); err != nil {
+				return nil, err
+			}
 		case p.PkResultMetadata:
-			if err := s.prd.ReadPart(ctx, resMeta, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, resMeta); err != nil {
+				return nil, err
 			}
 			pr.resultFields = resMeta.ResultFields
-			return nil
 		case p.PkParameterMetadata:
-			if err := s.prd.ReadPart(ctx, prmMeta, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, prmMeta); err != nil {
+				return nil, err
 			}
 			pr.parameterFields = prmMeta.ParameterFields
-			return nil
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, err
+			}
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return nil, err
+			}
 		}
-	}); err != nil {
-		return nil, err
 	}
 	pr.fc = s.prd.FunctionCode()
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, tracePrepare, query)
+		s.sqlTracer.log(ctx, t, tracePrepare, query, serverTime)
 	}
 	return pr, nil
 }
 
 func (s *session) query(ctx context.Context, query string, pr *prepareResult, nvargs []driver.NamedValue) (driver.Rows, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeQuery)
+	defer s.metrics.addSQLTimeValue(sqlTimeQuery, time.Now())
 
 	// allow e.g inserts as query -> handle commit like in exec
 
-	if err := convertQueryArgs(pr.parameterFields, nvargs, s.attrs.cesu8Encoder, s.attrs.lobChunkSize); err != nil {
+	if err := convertQueryArgs(pr.parameterFields, nvargs, s.attrs.cesu8EncoderFn, s.attrs.lobChunkSize); err != nil {
 		return nil, err
 	}
-	inputParameters, err := p.NewInputParameters(pr.parameterFields, nvargs)
-	if err != nil {
-		return nil, err
-	}
+	inputParameters := p.NewInputParameters(pr.parameterFields, nvargs)
 	if err := s.pwr.Write(ctx, p.MtExecute, !s.inTx.Load(), p.StatementID(pr.stmtID), inputParameters); err != nil {
 		return nil, err
 	}
 
 	qr := &queryResult{session: s, fields: pr.resultFields}
 	resSet := &p.Resultset{}
+	var serverTime time.Duration
 
-	if _, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				return nil, err
+			}
 		case p.PkResultsetID:
-			return s.prd.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID), nil)
+			if err := pi.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID)); err != nil {
+				return nil, err
+			}
 		case p.PkResultset:
 			resSet.ResultFields = qr.fields
-			if err := s.prd.ReadPart(ctx, resSet, qr); err != nil {
-				return err
+			if err := readResultPart(ctx, pi, resSet, qr); err != nil {
+				return nil, err
 			}
 			qr.fieldValues = resSet.FieldValues
 			qr.decodeErrors = resSet.DecodeErrors
-			qr.attrs = attrs
-			return nil
+			qr.attrs = pi.Header.Attrs()
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, err
+			}
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return nil, err
+			}
 		}
-	}); err != nil {
-		return nil, err
 	}
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceQuery, query, nvargs...)
+		s.sqlTracer.log(ctx, t, traceQuery, query, serverTime, nvargs...)
 	}
 	if qr.rsID == 0 { // non select query
 		return noResult, nil
@@ -463,35 +630,53 @@ func (s *session) query(ctx context.Context, query string, pr *prepareResult, nv
 
 func (s *session) exec(ctx context.Context, query string, pr *prepareResult, nvargs []driver.NamedValue, offset int) (driver.Result, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeExec)
+	defer s.metrics.addSQLTimeValue(sqlTimeExec, time.Now())
 
-	inputParameters, err := p.NewInputParameters(pr.parameterFields, nvargs)
-	if err != nil {
-		return nil, err
-	}
+	inputParameters := p.NewInputParameters(pr.parameterFields, nvargs)
 	if err := s.pwr.Write(ctx, p.MtExecute, !s.inTx.Load(), p.StatementID(pr.stmtID), inputParameters); err != nil {
 		return nil, err
 	}
 
 	var ids []p.LocatorID
 	lobReply := &p.WriteLobReply{}
+	rowsAffected := new(p.RowsAffected)
+	var serverTime time.Duration
 
-	numRow, err := s.prd.IterateParts(ctx, offset, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				if hdbErrors, ok := errors.AsType[*p.HdbErrors](err); ok {
+					rowsAffected.SetHDbErrorsStmtNo(hdbErrors, offset)
+				}
+				return nil, err
+			}
 		case p.PkWriteLobReply:
-			if err := s.prd.ReadPart(ctx, lobReply, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, lobReply); err != nil {
+				return nil, err
 			}
 			ids = lobReply.IDs
-			return nil
+		case p.PkRowsAffected:
+			if err := pi.ReadPart(ctx, rowsAffected); err != nil {
+				return nil, err
+			}
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, err
+			}
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return nil, err
+			}
 		}
-	})
-	if err != nil {
-		return nil, err
 	}
 	fc := s.prd.FunctionCode()
+	numRow := rowsAffected.Total()
 
 	if len(ids) != 0 {
 		/*
@@ -504,7 +689,7 @@ func (s *session) exec(ctx context.Context, query string, pr *prepareResult, nva
 			write lob data only for the last record as lob streaming is only available for the last one
 		*/
 		startLastRec := len(nvargs) - len(pr.parameterFields)
-		numlobRow, err := s.writeLobs(ctx, nil, ids, pr.parameterFields, nvargs[startLastRec:])
+		numlobRow, err := s.writeLobs(ctx, ids, pr.parameterFields, nvargs[startLastRec:])
 		if err != nil {
 			return nil, err
 		}
@@ -514,7 +699,7 @@ func (s *session) exec(ctx context.Context, query string, pr *prepareResult, nva
 		numRow += numlobRow
 	}
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceExec, query, nvargs...)
+		s.sqlTracer.log(ctx, t, traceExec, query, serverTime, nvargs...)
 	}
 	if fc == p.FcDDL {
 		return driver.ResultNoRows, nil
@@ -524,17 +709,13 @@ func (s *session) exec(ctx context.Context, query string, pr *prepareResult, nva
 
 func (s *session) execCall(ctx context.Context, query string, pr *prepareResult, nvargs []driver.NamedValue) (*callResult, *callArgs, int64, error) {
 	t := time.Now()
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeCall)
+	defer s.metrics.addSQLTimeValue(sqlTimeCall, time.Now())
 
-	callArgs, err := convertCallArgs(pr.parameterFields, nvargs, s.attrs.cesu8Encoder, s.attrs.lobChunkSize)
+	callArgs, err := convertCallArgs(pr.parameterFields, nvargs, s.attrs.cesu8EncoderFn, s.attrs.lobChunkSize)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	inputParameters, err := p.NewInputParameters(callArgs.inFields, callArgs.inArgs)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-
+	inputParameters := p.NewInputParameters(callArgs.inFields, callArgs.inArgs)
 	if err := s.pwr.Write(ctx, p.MtExecute, !s.inTx.Load(), (*p.StatementID)(&pr.stmtID), inputParameters); err != nil {
 		return nil, nil, 0, err
 	}
@@ -547,18 +728,26 @@ func (s *session) execCall(ctx context.Context, query string, pr *prepareResult,
 	meta := &p.ResultMetadata{}
 	resSet := &p.Resultset{}
 	lobReply := &p.WriteLobReply{}
+	rowsAffected := new(p.RowsAffected)
 	tableRowIdx := 0
+	var serverTime time.Duration
 
-	numRow, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				return nil, nil, 0, err
+			}
 		case p.PkOutputParameters:
 			outPrms.OutputFields = cr.outFields
-			if err := s.prd.ReadPart(ctx, outPrms, cr); err != nil {
-				return err
+			if err := readResultPart(ctx, pi, outPrms, cr); err != nil {
+				return nil, nil, 0, err
 			}
 			cr.fieldValues = outPrms.FieldValues
 			cr.decodeErrors = outPrms.DecodeErrors
-			return nil
 		case p.PkResultMetadata:
 			/*
 				procedure call with table parameters does return metadata for each table
@@ -571,35 +760,44 @@ func (s *session) execCall(ctx context.Context, query string, pr *prepareResult,
 			cr.outFields = append(cr.outFields, p.NewTableRowsParameterField(tableRowIdx))
 			cr.fieldValues = append(cr.fieldValues, qr)
 			tableRowIdx++
-			if err := s.prd.ReadPart(ctx, meta, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, meta); err != nil {
+				return nil, nil, 0, err
 			}
 			qr.fields = meta.ResultFields
-			return nil
 		case p.PkResultset:
 			resSet.ResultFields = qr.fields
-			if err := s.prd.ReadPart(ctx, resSet, qr); err != nil {
-				return err
+			if err := readResultPart(ctx, pi, resSet, qr); err != nil {
+				return nil, nil, 0, err
 			}
 			qr.fieldValues = resSet.FieldValues
 			qr.decodeErrors = resSet.DecodeErrors
-			qr.attrs = attrs
-			return nil
+			qr.attrs = pi.Header.Attrs()
 		case p.PkResultsetID:
-			return s.prd.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID), nil)
+			if err := pi.ReadPart(ctx, (*p.ResultsetID)(&qr.rsID)); err != nil {
+				return nil, nil, 0, err
+			}
 		case p.PkWriteLobReply:
-			if err := s.prd.ReadPart(ctx, lobReply, nil); err != nil {
-				return err
+			if err := pi.ReadPart(ctx, lobReply); err != nil {
+				return nil, nil, 0, err
 			}
 			ids = lobReply.IDs
-			return nil
+		case p.PkRowsAffected:
+			if err := pi.ReadPart(ctx, rowsAffected); err != nil {
+				return nil, nil, 0, err
+			}
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
+		case p.PkStatementContext:
+			if err := s.statementContextTime(ctx, pi, &serverTime); err != nil {
+				return nil, nil, 0, err
+			}
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return nil, nil, 0, err
+			}
 		}
-	})
-	if err != nil {
-		return nil, nil, 0, err
 	}
+	numRow := rowsAffected.Total()
 
 	if len(ids) != 0 {
 		/*
@@ -607,7 +805,7 @@ func (s *session) execCall(ctx context.Context, query string, pr *prepareResult,
 			- chunkReaders
 			- cr (callResult output parameters are set after all lob input parameters are written)
 		*/
-		numLobRow, err := s.writeLobs(ctx, cr, ids, callArgs.inFields, callArgs.inArgs)
+		numLobRow, err := s.writeLobs(ctx, ids, callArgs.inFields, callArgs.inArgs)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -617,13 +815,13 @@ func (s *session) execCall(ctx context.Context, query string, pr *prepareResult,
 		numRow += numLobRow
 	}
 	if s.sqlTracer != nil {
-		s.sqlTracer.log(ctx, t, traceExecCall, query, nvargs...)
+		s.sqlTracer.log(ctx, t, traceExecCall, query, serverTime, nvargs...)
 	}
 	return cr, callArgs, numRow, nil
 }
 
 func (s *session) fetchNext(ctx context.Context, qr *queryResult) error {
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeFetch)
+	defer s.metrics.addSQLTimeValue(sqlTimeFetch, time.Now())
 
 	if err := s.pwr.Write(ctx, p.MtFetchNext, false, p.ResultsetID(qr.rsID), p.Fetchsize(s.attrs.fetchSize)); err != nil { //nolint: gosec
 		return err
@@ -631,21 +829,31 @@ func (s *session) fetchNext(ctx context.Context, qr *queryResult) error {
 
 	resSet := &p.Resultset{ResultFields: qr.fields, FieldValues: qr.fieldValues} // reuse field values
 
-	_, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-		switch kind {
+	for pi, err := range s.prd.Parts(ctx) {
+		if err != nil {
+			return err
+		}
+		switch pi.Header.Kind() {
+		case p.PkError:
+			if err := pi.ReadHDBErrors(ctx); err != nil {
+				return err
+			}
 		case p.PkResultset:
-			if err := s.prd.ReadPart(ctx, resSet, qr); err != nil {
+			if err := readResultPart(ctx, pi, resSet, qr); err != nil {
 				return err
 			}
 			qr.fieldValues = resSet.FieldValues
 			qr.decodeErrors = resSet.DecodeErrors
-			qr.attrs = attrs
-			return nil
+			qr.attrs = pi.Header.Attrs()
+		case p.PkTopologyInformation:
+			s.updateRouting(ctx, pi)
 		default:
-			return p.ErrSkipped
+			if err := pi.SkipPart(ctx); err != nil {
+				return err
+			}
 		}
-	})
-	return err
+	}
+	return nil
 }
 
 func (s *session) dropStatementID(ctx context.Context, id uint64) error {
@@ -663,7 +871,7 @@ func (s *session) closeResultsetID(ctx context.Context, id uint64) error {
 }
 
 func (s *session) commit(ctx context.Context) error {
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeCommit)
+	defer s.metrics.addSQLTimeValue(sqlTimeCommit, time.Now())
 
 	if err := s.pwr.Write(ctx, p.MtCommit, false); err != nil {
 		return err
@@ -675,7 +883,7 @@ func (s *session) commit(ctx context.Context) error {
 }
 
 func (s *session) rollback(ctx context.Context) error {
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeRollback)
+	defer s.metrics.addSQLTimeValue(sqlTimeRollback, time.Now())
 
 	if err := s.pwr.Write(ctx, p.MtRollback, false); err != nil {
 		return err
@@ -687,10 +895,17 @@ func (s *session) rollback(ctx context.Context) error {
 }
 
 func (s *session) disconnect(ctx context.Context) error {
-	if err := s.pwr.Write(ctx, p.MtDisconnect, false); err != nil {
-		return err
-	}
 	/*
+		Do not send a disconnect message. The reference hdbcli implementation closes
+		the TCP connection without a disconnect message and HANA terminates the session
+		on socket close. As conn.Close closes the connection right after this call, the
+		message would race the close and the server reply is unreliably delivered, so a
+		disconnect message adds no value.
+
+		// if err := s.pwr.Write(ctx, p.MtDisconnect, false); err != nil {
+		// 	return err
+		// }
+
 		Do not read server reply as on slow connections the TCP/IP connection is closed (by Server)
 		before the reply can be read completely.
 
@@ -702,41 +917,8 @@ func (s *session) disconnect(ctx context.Context) error {
 	return nil
 }
 
-/*
-readLob reads output lob or result lob parameters from db.
-
-read lob reply
-  - seems like readLobreply returns only a result for one lob - even if more than one is requested
-    --> read single lobs
-*/
-func (s *session) readLob(ctx context.Context, request *p.ReadLobRequest, reply *p.ReadLobReply) error {
-	defer metricsAddSQLTimeValue(s.metrics, time.Now(), sqlTimeFetchLob)
-
-	var err error
-	for err != io.EOF { //nolint: errorlint
-		if err = s.pwr.Write(ctx, p.MtWriteLob, false, request); err != nil {
-			return err
-		}
-
-		if _, err = s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-			if kind == p.PkReadLobReply {
-				return s.prd.ReadPart(ctx, reply, nil)
-			}
-			return p.ErrSkipped
-		}); err != nil {
-			return err
-		}
-
-		_, err = reply.Write()
-		if err != nil && err != io.EOF { //nolint: errorlint
-			return err
-		}
-	}
-	return nil
-}
-
 // writeLobs writes input lob parameters to db and returns the accumulated rows.
-func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.LocatorID, inPrmFields []*p.ParameterField, nvargs []driver.NamedValue) (int64, error) {
+func (s *session) writeLobs(ctx context.Context, ids []p.LocatorID, inPrmFields []*p.ParameterField, nvargs []driver.NamedValue) (int64, error) {
 	if len(inPrmFields) != len(nvargs) {
 		panic("lob streaming can only be done for one (the last) record")
 	}
@@ -785,36 +967,37 @@ func (s *session) writeLobs(ctx context.Context, cr *callResult, ids []p.Locator
 		}
 
 		lobReply := &p.WriteLobReply{}
-		outPrms := &p.OutputParameters{}
+		rowsAffected := new(p.RowsAffected)
 
-		numRow, err := s.prd.IterateParts(ctx, 0, func(kind p.PartKind, attrs p.PartAttributes) error {
-			switch kind {
-			case p.PkOutputParameters:
-				outPrms.OutputFields = cr.outFields
-				if err := s.prd.ReadPart(ctx, outPrms, nil); err != nil {
-					return err
+		for pi, err := range s.prd.Parts(ctx) {
+			if err != nil {
+				return 0, err
+			}
+			switch pi.Header.Kind() {
+			case p.PkError:
+				if err := pi.ReadHDBErrors(ctx); err != nil {
+					return 0, err
 				}
-				cr.fieldValues = outPrms.FieldValues
-				cr.decodeErrors = outPrms.DecodeErrors
-				return nil
 			case p.PkWriteLobReply:
-				if err := s.prd.ReadPart(ctx, lobReply, nil); err != nil {
-					return err
+				if err := pi.ReadPart(ctx, lobReply); err != nil {
+					return 0, err
 				}
 				ids = lobReply.IDs
-				return nil
+			case p.PkRowsAffected:
+				if err := pi.ReadPart(ctx, rowsAffected); err != nil {
+					return 0, err
+				}
 			default:
-				return p.ErrSkipped
+				if err := pi.SkipPart(ctx); err != nil {
+					return 0, err
+				}
 			}
-		})
-		if err != nil {
-			return 0, err
 		}
 
 		// Accumulate rowsAffected from LOB write operations.
 		// HANA 2: returns 0 for LOB writes
 		// HANA 4: returns 1 for LOB writes
-		totalNumRow += numRow
+		totalNumRow += rowsAffected.Total()
 
 		// remove done descr
 		j := 0

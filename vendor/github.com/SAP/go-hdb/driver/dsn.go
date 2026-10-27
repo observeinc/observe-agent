@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/SAP/go-hdb/driver/internal/trace"
 )
 
 // DSN parameters.
@@ -19,7 +21,7 @@ const (
 /*
 DSN TLS parameters.
 For more information please see https://golang.org/pkg/crypto/tls/#Config.
-For more flexibility in TLS configuration please see driver.Connector.
+For more flexibility in TLS configuration please see driver.ConnectorConfig.
 */
 const (
 	DSNTLSRootCAFile         = "TLSRootCAFile"         // Path/filename to root certificate(s).
@@ -70,7 +72,7 @@ type ParseError struct {
 	err error
 }
 
-func (e ParseError) Error() string {
+func (e *ParseError) Error() string {
 	if err := errors.Unwrap(e.err); err != nil {
 		return err.Error()
 	}
@@ -78,10 +80,10 @@ func (e ParseError) Error() string {
 }
 
 // Unwrap returns the nested error.
-func (e ParseError) Unwrap() error { return e.err }
+func (e *ParseError) Unwrap() error { return e.err }
 
 // Cause returns the cause of the error.
-func (e ParseError) Cause() error { return e.err }
+func (e *ParseError) Cause() error { return e.err }
 
 func parameterNotSupportedError(k string) error {
 	return &ParseError{s: fmt.Sprintf("parameter %s is not supported", k)}
@@ -193,8 +195,43 @@ func ParseDSN(s string) (*DSN, error) {
 	return dsn, nil
 }
 
+// ParseDSNConfig parses a DSN string into a ConnectorConfig: parse,
+// fill, resolve TLS, apply the legacy timeout normalization (unset
+// stays zero - no deadlines - negative clamps to zero) to all three
+// timeout budgets alike. Tweak the result and hand it to
+// NewConfigConnector.
+func ParseDSNConfig(s string) (*ConnectorConfig, error) {
+	dsn, err := ParseDSN(s)
+	if err != nil {
+		return nil, err
+	}
+	cfg := NewConnectorConfig()
+	cfg.Host = dsn.host
+	cfg.DatabaseName = dsn.databaseName
+	cfg.Username = dsn.username
+	cfg.Password = dsn.password
+	cfg.DefaultSchema = dsn.defaultSchema
+	cfg.DialTimeout = max(dsn.timeout, minTimeout)
+	cfg.ReadTimeout = max(dsn.timeout, minTimeout)
+	cfg.WriteTimeout = max(dsn.timeout, minTimeout)
+	cfg.PingInterval = dsn.pingInterval
+	if dsn.tls != nil {
+		tlsConfig, err := NewTLSConfig(dsn.tls.ServerName, dsn.tls.InsecureSkipVerify, dsn.tls.RootCAFiles...)
+		if err != nil {
+			return nil, err
+		}
+		cfg.TLSConfig = tlsConfig
+	}
+	return cfg, nil
+}
+
 // String reassembles the DSN into a valid DSN string.
-func (dsn *DSN) String() string {
+func (dsn *DSN) String() string { return dsn.string(dsn.password) }
+
+// Redacted is like String but replaces any password with trace.RedactedText.
+func (dsn *DSN) Redacted() string { return dsn.string(trace.RedactedText) }
+
+func (dsn *DSN) string(password string) string {
 	values := url.Values{}
 	if dsn.databaseName != "" {
 		values.Set(DSNDatabaseName, dsn.databaseName)
@@ -224,7 +261,7 @@ func (dsn *DSN) String() string {
 	}
 	switch {
 	case dsn.username != "" && dsn.password != "":
-		u.User = url.UserPassword(dsn.username, dsn.password)
+		u.User = url.UserPassword(dsn.username, password)
 	case dsn.username != "":
 		u.User = url.User(dsn.username)
 	}

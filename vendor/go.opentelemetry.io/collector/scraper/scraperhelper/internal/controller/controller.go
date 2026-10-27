@@ -80,7 +80,7 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
-	sc.startScraping()
+	sc.startScraping(ctx)
 	return nil
 }
 
@@ -99,7 +99,8 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
-func (sc *Controller[T]) startScraping() {
+func (sc *Controller[T]) startScraping(ctx context.Context) {
+	ctx = context.WithoutCancel(ctx)
 	sc.wg.Go(func() {
 		if sc.initialDelay > 0 {
 			select {
@@ -115,14 +116,24 @@ func (sc *Controller[T]) startScraping() {
 
 			sc.tickerCh = ticker.C
 		}
-		// Call scrape method during initialization to ensure
-		// that scrapers start from when the component starts
-		// instead of waiting for the full duration to start.
-		_ = sc.scrapeFunc(context.Background(), sc)
+
 		for {
+			// Call scrape method immediately to ensure
+			// that scrapers start from when the component starts
+			// instead of waiting for the full duration to start.
+			_ = sc.scrapeFunc(ctx, sc)
+
+			// If sc.scrapeFunc is delayed, sc.tickerCh and sc.done
+			// can both be ready and, without this, we aren't
+			// guaranteed to shutdown.
+			select {
+			case <-sc.done:
+				return
+			default:
+			}
+
 			select {
 			case <-sc.tickerCh:
-				_ = sc.scrapeFunc(context.Background(), sc)
 			case <-sc.done:
 				return
 			}

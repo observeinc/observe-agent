@@ -46,6 +46,7 @@ type RegionCompositeHealthChecksCallOptions struct {
 	AggregatedList     []gax.CallOption
 	Delete             []gax.CallOption
 	Get                []gax.CallOption
+	GetHealth          []gax.CallOption
 	Insert             []gax.CallOption
 	List               []gax.CallOption
 	Patch              []gax.CallOption
@@ -81,6 +82,18 @@ func defaultRegionCompositeHealthChecksRESTCallOptions() *RegionCompositeHealthC
 					http.StatusServiceUnavailable)
 			}),
 		},
+		GetHealth: []gax.CallOption{
+			gax.WithTimeout(600000 * time.Millisecond),
+			gax.WithRetry(func() gax.Retryer {
+				return gax.OnHTTPCodes(gax.Backoff{
+					Initial:    100 * time.Millisecond,
+					Max:        60000 * time.Millisecond,
+					Multiplier: 1.30,
+				},
+					http.StatusGatewayTimeout,
+					http.StatusServiceUnavailable)
+			}),
+		},
 		Insert: []gax.CallOption{
 			gax.WithTimeout(600000 * time.Millisecond),
 		},
@@ -105,7 +118,7 @@ func defaultRegionCompositeHealthChecksRESTCallOptions() *RegionCompositeHealthC
 	}
 }
 
-// internalRegionCompositeHealthChecksClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionCompositeHealthChecksClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionCompositeHealthChecksClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -113,16 +126,19 @@ type internalRegionCompositeHealthChecksClient interface {
 	AggregatedList(context.Context, *computepb.AggregatedListRegionCompositeHealthChecksRequest, ...gax.CallOption) *CompositeHealthChecksScopedListPairIterator
 	Delete(context.Context, *computepb.DeleteRegionCompositeHealthCheckRequest, ...gax.CallOption) (*Operation, error)
 	Get(context.Context, *computepb.GetRegionCompositeHealthCheckRequest, ...gax.CallOption) (*computepb.CompositeHealthCheck, error)
+	GetHealth(context.Context, *computepb.GetHealthRegionCompositeHealthCheckRequest, ...gax.CallOption) (*computepb.CompositeHealthCheckHealth, error)
 	Insert(context.Context, *computepb.InsertRegionCompositeHealthCheckRequest, ...gax.CallOption) (*Operation, error)
 	List(context.Context, *computepb.ListRegionCompositeHealthChecksRequest, ...gax.CallOption) *CompositeHealthCheckIterator
 	Patch(context.Context, *computepb.PatchRegionCompositeHealthCheckRequest, ...gax.CallOption) (*Operation, error)
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionCompositeHealthCheckRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionCompositeHealthChecksClient is a client for interacting with Google Compute Engine API.
+// RegionCompositeHealthChecksClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionCompositeHealthChecks API.
+//
+// This client uses RegionCompositeHealthChecks version 2026-09-01.
 type RegionCompositeHealthChecksClient struct {
 	// The internal transport-dependent client.
 	internalClient internalRegionCompositeHealthChecksClient
@@ -133,7 +149,7 @@ type RegionCompositeHealthChecksClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionCompositeHealthChecksClient) Close() error {
 	return c.internalClient.Close()
@@ -171,6 +187,12 @@ func (c *RegionCompositeHealthChecksClient) Delete(ctx context.Context, req *com
 // Get returns the specified CompositeHealthCheck resource in the given region.
 func (c *RegionCompositeHealthChecksClient) Get(ctx context.Context, req *computepb.GetRegionCompositeHealthCheckRequest, opts ...gax.CallOption) (*computepb.CompositeHealthCheck, error) {
 	return c.internalClient.Get(ctx, req, opts...)
+}
+
+// GetHealth gets the most recent health check results for this
+// regional CompositeHealthCheck.
+func (c *RegionCompositeHealthChecksClient) GetHealth(ctx context.Context, req *computepb.GetHealthRegionCompositeHealthCheckRequest, opts ...gax.CallOption) (*computepb.CompositeHealthCheckHealth, error) {
+	return c.internalClient.GetHealth(ctx, req, opts...)
 }
 
 // Insert create a CompositeHealthCheck in the specified project in the given region
@@ -261,10 +283,52 @@ func NewRegionCompositeHealthChecksRESTClient(ctx context.Context, opts ...optio
 		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientMetrics(metrics))
 		callOpts.Delete = append(callOpts.Delete, gax.WithClientMetrics(metrics))
 		callOpts.Get = append(callOpts.Get, gax.WithClientMetrics(metrics))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientMetrics(metrics))
 		callOpts.Insert = append(callOpts.Insert, gax.WithClientMetrics(metrics))
 		callOpts.List = append(callOpts.List, gax.WithClientMetrics(metrics))
 		callOpts.Patch = append(callOpts.Patch, gax.WithClientMetrics(metrics))
 		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientMetrics(metrics))
+	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientTracing(tracing))
+		callOpts.Delete = append(callOpts.Delete, gax.WithClientTracing(tracing))
+		callOpts.Get = append(callOpts.Get, gax.WithClientTracing(tracing))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientTracing(tracing))
+		callOpts.Insert = append(callOpts.Insert, gax.WithClientTracing(tracing))
+		callOpts.List = append(callOpts.List, gax.WithClientTracing(tracing))
+		callOpts.Patch = append(callOpts.Patch, gax.WithClientTracing(tracing))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientLogging(logging))
+		callOpts.Delete = append(callOpts.Delete, gax.WithClientLogging(logging))
+		callOpts.Get = append(callOpts.Get, gax.WithClientLogging(logging))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientLogging(logging))
+		callOpts.Insert = append(callOpts.Insert, gax.WithClientLogging(logging))
+		callOpts.List = append(callOpts.List, gax.WithClientLogging(logging))
+		callOpts.Patch = append(callOpts.Patch, gax.WithClientLogging(logging))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientLogging(logging))
 	}
 
 	o := []option.ClientOption{
@@ -300,10 +364,11 @@ func (c *regionCompositeHealthChecksRESTClient) setGoogleClientInfo(keyval ...st
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "rest", "UNKNOWN", "pb", protoVersion)
 	c.xGoogHeaders = []string{
 		"x-goog-api-client", gax.XGoogHeader(kv...),
+		"x-goog-api-version", "2026-09-01",
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionCompositeHealthChecksRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -328,7 +393,7 @@ func (c *regionCompositeHealthChecksRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *regionCompositeHealthChecksRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListRegionCompositeHealthChecksRequest, opts ...gax.CallOption) *CompositeHealthChecksScopedListPairIterator {
 	it := &CompositeHealthChecksScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListRegionCompositeHealthChecksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]CompositeHealthChecksScopedListPair, string, error) {
 		resp := &computepb.CompositeHealthCheckAggregatedList{}
@@ -361,9 +426,6 @@ func (c *regionCompositeHealthChecksRESTClient) AggregatedList(ctx context.Conte
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 		if req != nil && req.ServiceProjectNumber != nil {
 			params.Add("serviceProjectNumber", fmt.Sprintf("%v", req.GetServiceProjectNumber()))
@@ -445,9 +507,6 @@ func (c *regionCompositeHealthChecksRESTClient) Delete(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/compositeHealthChecks/%v", req.GetProject(), req.GetRegion(), req.GetCompositeHealthCheck()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/Delete")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks/{composite_health_check}")
@@ -505,9 +564,6 @@ func (c *regionCompositeHealthChecksRESTClient) Get(ctx context.Context, req *co
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/compositeHealthChecks/%v", req.GetProject(), req.GetRegion(), req.GetCompositeHealthCheck()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/Get")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks/{composite_health_check}")
@@ -527,6 +583,56 @@ func (c *regionCompositeHealthChecksRESTClient) Get(ctx context.Context, req *co
 		httpReq.Header = headers
 
 		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "Get")
+		if err != nil {
+			return err
+		}
+
+		if err := unm.Unmarshal(buf, resp); err != nil {
+			return err
+		}
+
+		return nil
+	}, opts...)
+	if e != nil {
+		return nil, e
+	}
+	return resp, nil
+}
+
+// GetHealth gets the most recent health check results for this
+// regional CompositeHealthCheck.
+func (c *regionCompositeHealthChecksRESTClient) GetHealth(ctx context.Context, req *computepb.GetHealthRegionCompositeHealthCheckRequest, opts ...gax.CallOption) (*computepb.CompositeHealthCheckHealth, error) {
+	baseUrl, err := url.Parse(c.endpoint)
+	if err != nil {
+		return nil, err
+	}
+	baseUrl.Path += fmt.Sprintf("/compute/v1/projects/%v/regions/%v/compositeHealthChecks/%v/getHealth", req.GetProject(), req.GetRegion(), req.GetCompositeHealthCheck())
+
+	// Build HTTP headers from client and context metadata.
+	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v&%s=%v&%s=%v", "project", url.QueryEscape(req.GetProject()), "region", url.QueryEscape(req.GetRegion()), "composite_health_check", url.QueryEscape(req.GetCompositeHealthCheck()))}
+
+	hds = append(c.xGoogHeaders, hds...)
+	hds = append(hds, "Content-Type", "application/json")
+	headers := gax.BuildHeaders(ctx, hds...)
+	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
+		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/GetHealth")
+		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks/{composite_health_check}/getHealth")
+	}
+	opts = append((*c.CallOptions).GetHealth[0:len((*c.CallOptions).GetHealth):len((*c.CallOptions).GetHealth)], opts...)
+	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
+	resp := &computepb.CompositeHealthCheckHealth{}
+	e := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		if settings.Path != "" {
+			baseUrl.Path = settings.Path
+		}
+		httpReq, err := http.NewRequest("GET", baseUrl.String(), nil)
+		if err != nil {
+			return err
+		}
+		httpReq = httpReq.WithContext(ctx)
+		httpReq.Header = headers
+
+		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "GetHealth")
 		if err != nil {
 			return err
 		}
@@ -572,9 +678,6 @@ func (c *regionCompositeHealthChecksRESTClient) Insert(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v", req.GetProject(), req.GetRegion()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/Insert")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks")
@@ -621,7 +724,7 @@ func (c *regionCompositeHealthChecksRESTClient) Insert(ctx context.Context, req 
 // List lists the CompositeHealthChecks for a project in the given region.
 func (c *regionCompositeHealthChecksRESTClient) List(ctx context.Context, req *computepb.ListRegionCompositeHealthChecksRequest, opts ...gax.CallOption) *CompositeHealthCheckIterator {
 	it := &CompositeHealthCheckIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionCompositeHealthChecksRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.CompositeHealthCheck, string, error) {
 		resp := &computepb.CompositeHealthCheckList{}
@@ -651,9 +754,6 @@ func (c *regionCompositeHealthChecksRESTClient) List(ctx context.Context, req *c
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 
 		baseUrl.RawQuery = params.Encode()
@@ -735,9 +835,6 @@ func (c *regionCompositeHealthChecksRESTClient) Patch(ctx context.Context, req *
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/compositeHealthChecks/%v", req.GetProject(), req.GetRegion(), req.GetCompositeHealthCheck()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/Patch")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks/{composite_health_check}")
@@ -802,9 +899,6 @@ func (c *regionCompositeHealthChecksRESTClient) TestIamPermissions(ctx context.C
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/compositeHealthChecks/%v", req.GetProject(), req.GetRegion(), req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionCompositeHealthChecks/TestIamPermissions")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/compositeHealthChecks/{resource}/testIamPermissions")

@@ -30,9 +30,13 @@ type Image struct {
 	Architecture Architecture
 
 	Protection ImageProtection
-	Deprecated time.Time // The zero value denotes the image is not deprecated.
 	Labels     map[string]string
 	Deleted    time.Time
+
+	// Deprecated: Use [Image.Deprecation] instead.
+	// The zero value denotes the image is not deprecated.
+	Deprecated time.Time
+	DeprecatableResource
 }
 
 func (o *Image) pathID() (string, error) {
@@ -40,11 +44,6 @@ func (o *Image) pathID() (string, error) {
 		return "", missingField(o, "ID")
 	}
 	return strconv.FormatInt(o.ID, 10), nil
-}
-
-// IsDeprecated returns whether the image is deprecated.
-func (o *Image) IsDeprecated() bool {
-	return !o.Deprecated.IsZero()
 }
 
 // IsDeleted returns whether the image is deleted.
@@ -159,7 +158,7 @@ type ImageListOpts struct {
 	Architecture      []Architecture
 }
 
-func (l ImageListOpts) values() url.Values {
+func (l ImageListOpts) Values() url.Values {
 	vals := l.ListOpts.Values()
 	for _, typ := range l.Type {
 		vals.Add("type", string(typ))
@@ -193,7 +192,7 @@ func (c *ImageClient) List(ctx context.Context, opts ImageListOpts) ([]*Image, *
 	const opPath = "/images?%s"
 	ctx = ctxutil.SetOpPath(ctx, opPath)
 
-	reqPath := fmt.Sprintf(opPath, opts.values().Encode())
+	reqPath := fmt.Sprintf(opPath, opts.Values().Encode())
 
 	respBody, resp, err := getRequest[schema.ImageListResponse](ctx, c.client, reqPath)
 	if err != nil {

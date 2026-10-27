@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"math"
 	"math/big"
 	"time"
@@ -13,80 +12,84 @@ import (
 	"golang.org/x/text/transform"
 )
 
-const readScratchSize = 4096
+// ShortBufferError is panicked by a Decoder read that would consume more bytes
+// than remain in the buffer - a truncated or internally inconsistent part
+// payload, which a correct server never sends. It is recovered at the
+// part-decode boundary and turned into a normal statement error; it is not
+// meant to escape the protocol layer.
+type ShortBufferError struct{ Need, Have int }
 
-// Decoder decodes hdb protocol datatypes on basis of an io.Reader.
+func (e ShortBufferError) Error() string {
+	return fmt.Sprintf("decode: short buffer: need %d bytes, have %d", e.Need, e.Have)
+}
+
+// Decoder decodes hdb protocol datatypes on basis of an buffer.
+//
+// Decoder primitives slice the buffer using lengths/counts taken from the wire.
+// A read is length-checked first: if the buffer is shorter than the read
+// requires - an internally inconsistent frame, which a correct server never
+// sends - the read panics ShortBufferError rather than a raw slice-bounds
+// error. The typed panic lets the part-decode boundary recover it
+// deterministically (see protocol.recoverShortBuffer) and fail just the current
+// statement, while a genuine driver bug (a different panic) still crashes.
 type Decoder struct {
-	rd io.Reader
-	/* err: fatal read error
-	- not set by conversion errors
-	- conversion errors are returned by the reader function itself
-	*/
-	err error
-	b   []byte // scratch buffer (used for skip, CESU8Bytes - define size not too small!)
+	buf []byte
 	tr  transform.Transformer
-	cnt int
-
-	// decoder options
-	alphanumDfv1    bool
-	emptyDateAsNull bool
 }
 
-// NewDecoder creates a new Decoder instance based on an io.Reader.
-func NewDecoder(rd io.Reader, tr transform.Transformer, emptyDateAsNull bool) *Decoder {
-	return &Decoder{
-		rd:              rd,
-		b:               make([]byte, readScratchSize),
-		tr:              tr,
-		emptyDateAsNull: emptyDateAsNull,
-	}
+// NewDecoder returns a new Decoder over buf using tr for CESU-8 -> UTF-8 field
+// decoding. Either argument may be nil (nil buf: set later via SetBuffer; nil
+// tr: no CESU-8 field decoding on this decoder).
+func NewDecoder(buf []byte, tr transform.Transformer) *Decoder {
+	return &Decoder{buf: buf, tr: tr}
 }
 
-// SetAlphanumDfv1 sets the alphanum dfv1 flag decoder.
-func (d *Decoder) SetAlphanumDfv1(alphanumDfv1 bool) { d.alphanumDfv1 = alphanumDfv1 }
+// SetBuffer points the decoder at buf, resetting its read position. The
+// transformer is retained.
+func (d *Decoder) SetBuffer(buf []byte) { d.buf = buf }
 
-// Cnt returns the value of the byte read counter.
-func (d *Decoder) Cnt() int { return d.cnt }
+// Buffer returns the decoder's (remaining) buffer.
+func (d *Decoder) Buffer() []byte { return d.buf }
 
-// Error returns the last decoder error.
-func (d *Decoder) Error() error { return d.err }
-
-// ResetError resets reader error.
-func (d *Decoder) ResetError() { d.err = nil }
-
-// readFull reads data from reader + read counter and error handling.
-func (d *Decoder) readFull(buf []byte) error {
-	if d.err != nil {
-		return d.err
-	}
-	var n int
-	n, d.err = io.ReadFull(d.rd, buf)
-	d.cnt += n
-	return d.err
-}
+// Transformer returns the decoder's CESU-8 transformer.
+func (d *Decoder) Transformer() transform.Transformer { return d.tr }
 
 // Skip skips cnt bytes from reading.
 func (d *Decoder) Skip(cnt int) {
-	if cnt <= readScratchSize {
-		d.readFull(d.b[:cnt]) //nolint: errcheck
-		return
+	if len(d.buf) < cnt {
+		panic(ShortBufferError{Need: cnt, Have: len(d.buf)})
 	}
-	var n int64
-	n, d.err = io.CopyN(io.Discard, d.rd, int64(cnt))
-	d.cnt += int(n)
+	d.buf = d.buf[cnt:]
 }
 
 // Byte decodes a byte.
 func (d *Decoder) Byte() byte {
-	if err := d.readFull(d.b[:1]); err != nil {
-		return 0
+	if len(d.buf) < 1 {
+		panic(ShortBufferError{Need: 1, Have: len(d.buf)})
 	}
-	return d.b[0]
+	b := d.buf[0]
+	d.buf = d.buf[1:]
+	return b
 }
 
 // Bytes decodes bytes.
-func (d *Decoder) Bytes(p []byte) {
-	d.readFull(p) //nolint:errcheck
+func (d *Decoder) Bytes(n int) []byte {
+	if len(d.buf) < n {
+		panic(ShortBufferError{Need: n, Have: len(d.buf)})
+	}
+	b := d.buf[:n]
+	d.buf = d.buf[n:]
+	return b
+}
+
+// Str decodes strings.
+func (d *Decoder) Str(n int) string {
+	if len(d.buf) < n {
+		panic(ShortBufferError{Need: n, Have: len(d.buf)})
+	}
+	b := d.buf[:n]
+	d.buf = d.buf[n:]
+	return unsafe.ByteSlice2String(b)
 }
 
 // Bool decodes a boolean.
@@ -96,99 +99,117 @@ func (d *Decoder) Bool() bool {
 
 // Int8 decodes an int8.
 func (d *Decoder) Int8() int8 {
-	return int8(d.Byte())
+	return int8(d.Byte()) //nolint:gosec
 }
 
 // Int16 decodes an int16.
 func (d *Decoder) Int16() int16 {
-	if err := d.readFull(d.b[:2]); err != nil {
-		return 0
+	if len(d.buf) < 2 {
+		panic(ShortBufferError{Need: 2, Have: len(d.buf)})
 	}
-	return int16(binary.LittleEndian.Uint16(d.b[:2])) //nolint: gosec
+	i16 := int16(binary.LittleEndian.Uint16(d.buf)) //nolint: gosec
+	d.buf = d.buf[2:]
+	return i16
 }
 
 // Uint16 decodes an uint16.
 func (d *Decoder) Uint16() uint16 {
-	if err := d.readFull(d.b[:2]); err != nil {
-		return 0
+	if len(d.buf) < 2 {
+		panic(ShortBufferError{Need: 2, Have: len(d.buf)})
 	}
-	return binary.LittleEndian.Uint16(d.b[:2])
+	u16 := binary.LittleEndian.Uint16(d.buf)
+	d.buf = d.buf[2:]
+	return u16
 }
 
 // Uint16ByteOrder decodes an uint16 in given byte order.
 func (d *Decoder) Uint16ByteOrder(byteOrder binary.ByteOrder) uint16 {
-	if err := d.readFull(d.b[:2]); err != nil {
-		return 0
+	if len(d.buf) < 2 {
+		panic(ShortBufferError{Need: 2, Have: len(d.buf)})
 	}
-	return byteOrder.Uint16(d.b[:2])
+	u16 := byteOrder.Uint16(d.buf)
+	d.buf = d.buf[2:]
+	return u16
 }
 
 // Int32 decodes an int32.
 func (d *Decoder) Int32() int32 {
-	if err := d.readFull(d.b[:4]); err != nil {
-		return 0
+	if len(d.buf) < 4 {
+		panic(ShortBufferError{Need: 4, Have: len(d.buf)})
 	}
-	return int32(binary.LittleEndian.Uint32(d.b[:4])) //nolint: gosec
+	i32 := int32(binary.LittleEndian.Uint32(d.buf)) //nolint: gosec
+	d.buf = d.buf[4:]
+	return i32
 }
 
 // Uint32 decodes an uint32.
 func (d *Decoder) Uint32() uint32 {
-	if err := d.readFull(d.b[:4]); err != nil {
-		return 0
+	if len(d.buf) < 4 {
+		panic(ShortBufferError{Need: 4, Have: len(d.buf)})
 	}
-	return binary.LittleEndian.Uint32(d.b[:4])
+	u32 := binary.LittleEndian.Uint32(d.buf)
+	d.buf = d.buf[4:]
+	return u32
 }
 
 // Uint32ByteOrder decodes an uint32 in given byte order.
 func (d *Decoder) Uint32ByteOrder(byteOrder binary.ByteOrder) uint32 {
-	if err := d.readFull(d.b[:4]); err != nil {
-		return 0
+	if len(d.buf) < 4 {
+		panic(ShortBufferError{Need: 4, Have: len(d.buf)})
 	}
-	return byteOrder.Uint32(d.b[:4])
+	u32 := byteOrder.Uint32(d.buf)
+	d.buf = d.buf[4:]
+	return u32
 }
 
 // Int64 decodes an int64.
 func (d *Decoder) Int64() int64 {
-	if err := d.readFull(d.b[:8]); err != nil {
-		return 0
+	if len(d.buf) < 8 {
+		panic(ShortBufferError{Need: 8, Have: len(d.buf)})
 	}
-	return int64(binary.LittleEndian.Uint64(d.b[:8])) //nolint: gosec
+	i64 := int64(binary.LittleEndian.Uint64(d.buf)) //nolint: gosec
+	d.buf = d.buf[8:]
+	return i64
 }
 
 // Uint64 decodes an uint64.
 func (d *Decoder) Uint64() uint64 {
-	if err := d.readFull(d.b[:8]); err != nil {
-		return 0
+	if len(d.buf) < 8 {
+		panic(ShortBufferError{Need: 8, Have: len(d.buf)})
 	}
-	return binary.LittleEndian.Uint64(d.b[:8])
+	u64 := binary.LittleEndian.Uint64(d.buf)
+	d.buf = d.buf[8:]
+	return u64
 }
 
 // Float32 decodes a float32.
 func (d *Decoder) Float32() float32 {
-	if err := d.readFull(d.b[:4]); err != nil {
-		return 0
+	if len(d.buf) < 4 {
+		panic(ShortBufferError{Need: 4, Have: len(d.buf)})
 	}
-	bits := binary.LittleEndian.Uint32(d.b[:4])
+	bits := binary.LittleEndian.Uint32(d.buf)
+	d.buf = d.buf[4:]
 	return math.Float32frombits(bits)
 }
 
 // Float64 decodes a float64.
 func (d *Decoder) Float64() float64 {
-	if err := d.readFull(d.b[:8]); err != nil {
-		return 0
+	if len(d.buf) < 8 {
+		panic(ShortBufferError{Need: 8, Have: len(d.buf)})
 	}
-	bits := binary.LittleEndian.Uint64(d.b[:8])
+	bits := binary.LittleEndian.Uint64(d.buf)
+	d.buf = d.buf[8:]
 	return math.Float64frombits(bits)
 }
 
 // Decimal decodes a decimal.
 // - error is only returned in case of conversion errors.
 func (d *Decoder) Decimal() (*big.Int, int, error) { // m, exp
-	bs := d.b[:decSize]
-
-	if err := d.readFull(bs); err != nil {
-		return nil, 0, nil //nolint:nilerr
+	if len(d.buf) < decSize {
+		panic(ShortBufferError{Need: decSize, Have: len(d.buf)})
 	}
+	bs := d.buf[:decSize]
+	d.buf = d.buf[decSize:]
 
 	if (bs[15] & 0x70) == 0x70 { // null value (bit 4,5,6 set)
 		return nil, 0, nil
@@ -228,11 +249,11 @@ func (d *Decoder) Decimal() (*big.Int, int, error) { // m, exp
 
 // Fixed decodes a fixed decimal.
 func (d *Decoder) Fixed(size int) *big.Int { // m, exp
-	bs := d.b[:size]
-
-	if err := d.readFull(bs); err != nil {
-		return nil
+	if len(d.buf) < size {
+		panic(ShortBufferError{Need: size, Have: len(d.buf)})
 	}
+	bs := d.buf[:size]
+	d.buf = d.buf[size:]
 
 	neg := (bs[size-1] & 0x80) != 0 // is negative number (2s complement)
 
@@ -267,23 +288,20 @@ func (d *Decoder) Fixed(size int) *big.Int { // m, exp
 // CESU8Bytes decodes CESU-8 into UTF-8 bytes.
 // - error is only returned in case of conversion errors.
 func (d *Decoder) CESU8Bytes(size int) ([]byte, error) {
-	if d.err != nil {
-		return nil, nil //nolint:nilerr
+	if len(d.buf) < size {
+		panic(ShortBufferError{Need: size, Have: len(d.buf)})
 	}
+	p := d.buf[:size]
+	d.buf = d.buf[size:]
 
-	var p []byte
-	if size > readScratchSize {
-		p = make([]byte, size)
-	} else {
-		p = d.b[:size]
+	// reset before use: this is a self-contained (atEOF) decode of one value; a
+	// stateful (custom) transformer must not carry state in from a prior use.
+	d.tr.Reset()
+	n, _, err := d.tr.Transform(p, p, true) // transform inline
+	if err != nil {
+		return nil, err
 	}
-
-	if err := d.readFull(p); err != nil {
-		return nil, nil //nolint:nilerr
-	}
-
-	b, _, err := transform.Bytes(d.tr, p)
-	return b, err
+	return p[:n], nil
 }
 
 // varFieldInd decodes a variable field indicator.
@@ -304,14 +322,12 @@ func (d *Decoder) varFieldInd() (n, size int, null bool) {
 }
 
 // LIBytes decodes bytes with length indicator.
-func (d *Decoder) LIBytes() (n int, b []byte) {
+func (d *Decoder) LIBytes() (int, []byte) {
 	n, size, null := d.varFieldInd()
 	if null {
 		return n, nil
 	}
-	b = make([]byte, size)
-	d.Bytes(b)
-	return n + size, b
+	return n + size, d.Bytes(size)
 }
 
 // LIString decodes a string with length indicator.
@@ -449,9 +465,9 @@ func (d *Decoder) SeconddateField() (any, error) {
 }
 
 // DaydateField decodes a daydate field.
-func (d *Decoder) DaydateField() (any, error) {
+func (d *Decoder) DaydateField(emptyDateAsNull bool) (any, error) {
 	daydate := d.Int32()
-	if daydate == daydateNullValue || (d.emptyDateAsNull && daydate == 0) {
+	if daydate == daydateNullValue || (emptyDateAsNull && daydate == 0) {
 		return nil, nil
 	}
 	return convertDaydateToTime(int64(daydate)), nil
@@ -475,15 +491,18 @@ func (d *Decoder) DecimalField() (any, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return convertDecimalToRat(m, exp), nil
+	return Decimal{m: m, exp: exp}, nil
 }
 
 func (d *Decoder) decodeFixed(size, scale int) (any, error) {
+	if scale < 0 {
+		panic(fmt.Sprintf("fixed: invalid scale %d", scale))
+	}
 	m := d.Fixed(size)
 	if m == nil { // important: return nil and not m (as m is of type *big.Int)
 		return nil, nil
 	}
-	return convertFixedToRat(m, scale), nil
+	return Decimal{m: m, exp: -scale}, nil
 }
 
 // Fixed8Field decodes a fixed8 field.
@@ -491,7 +510,7 @@ func (d *Decoder) Fixed8Field(scale int) (any, error) {
 	if !d.Bool() { // null value
 		return nil, nil
 	}
-	return d.decodeFixed(Fixed8FieldSize, scale)
+	return d.decodeFixed(8, scale)
 }
 
 // Fixed12Field decodes a fixed12 field.
@@ -499,7 +518,7 @@ func (d *Decoder) Fixed12Field(scale int) (any, error) {
 	if !d.Bool() { // null value
 		return nil, nil
 	}
-	return d.decodeFixed(Fixed12FieldSize, scale)
+	return d.decodeFixed(12, scale)
 }
 
 // Fixed16Field decodes a fixed16 field.
@@ -507,7 +526,7 @@ func (d *Decoder) Fixed16Field(scale int) (any, error) {
 	if !d.Bool() { // null value
 		return nil, nil
 	}
-	return d.decodeFixed(Fixed16FieldSize, scale)
+	return d.decodeFixed(16, scale)
 }
 
 // VarField decodes a var field.
@@ -525,8 +544,8 @@ func (d *Decoder) VarField() (any, error) {
 }
 
 // AlphanumField decodes an alphanum field.
-func (d *Decoder) AlphanumField() (any, error) {
-	if d.alphanumDfv1 { // like VarField
+func (d *Decoder) AlphanumField(alphanumDfv1 bool) (any, error) {
+	if alphanumDfv1 { // like VarField
 		return d.VarField()
 	}
 	_, b := d.LIBytes()
@@ -546,6 +565,9 @@ func (d *Decoder) AlphanumField() (any, error) {
 
 	   ignore first byte for now
 	*/
+	if len(b) == 0 { // non-null indicator but no leading size byte: truncated payload
+		panic(ShortBufferError{Need: 1, Have: 0})
+	}
 	return b[1:], nil
 }
 
