@@ -41,6 +41,7 @@ CONTRIB = """### Images and binaries here: https://example.invalid
 ### 🛑 Breaking changes 🛑
 
 - `pkg/fileconsumer`: Move a gate to beta. (#11)
+- `pkg/ottl`: Move a gate to beta. (#11)
 - `pkg/ottl`: API-only change. (#14)
 """
 
@@ -89,15 +90,28 @@ class ParseChangelogTest(unittest.TestCase):
     def test_scope_aliases_and_exclusions(self):
         _, ledger = self.ledger()
         prs = sorted(e["prs"][0] for e in ledger)
-        # 10: kind-suffix normalisation, 11: pkg/fileconsumer alias, 12: pkg/stanza subpath,
-        # 14: API-only entry, 20: core pkg/*. Excluded: 2 (Unmaintained), 13 (not built), 19 (repeat block).
-        self.assertEqual(prs, ["10", "11", "12", "14", "20"])
+        # 10: kind-suffix normalisation, 11: pkg/fileconsumer alias and the same PR for pkg/ottl,
+        # 12: pkg/stanza subpath, 14: API-only entry, 20: core pkg/*.
+        # Excluded: 2 (Unmaintained), 13 (not built), 19 (repeat block).
+        self.assertEqual(prs, ["10", "11", "11", "12", "14", "20"])
 
     def test_api_duplicate_is_dropped_in_favour_of_end_user(self):
-        _, ledger = self.ledger()
-        dup = [e for e in ledger if e["prs"] == ["11"]]
+        res, ledger = self.ledger()
+        dup = [e for e in ledger if e["prs"] == ["11"] and e["tags"] == ["pkg/fileconsumer"]]
         self.assertEqual(len(dup), 1)
         self.assertEqual(dup[0]["block"], "End User")
+        self.assertIn("(1 API duplicates dropped)", res.stdout)
+
+    def test_same_pr_for_another_component_is_kept(self):
+        _, ledger = self.ledger()
+        other = [e for e in ledger if e["prs"] == ["11"] and e["tags"] == ["pkg/ottl"]]
+        self.assertEqual(len(other), 1)
+        self.assertEqual(other[0]["block"], "API")
+
+    def test_per_file_entry_counts_are_reported(self):
+        res, _ = self.ledger()
+        self.assertIn("contrib-0.999.0.md: 8 entries", res.stderr)
+        self.assertIn("core-0.999.0.md: 2 entries", res.stderr)
 
     def test_continuation_lines_go_into_body(self):
         _, ledger = self.ledger()
@@ -128,7 +142,15 @@ class ParseChangelogTest(unittest.TestCase):
             f.write("## End User Changelog\n\nNothing here.\n")
         res = run(self.notes, self.gomod, self.out)
         self.assertNotEqual(res.returncode, 0)
-        self.assertIn("no changelog entries parsed", res.stderr)
+        self.assertIn("no changelog entries parsed from core-0.999.0.md", res.stderr)
+
+    def test_one_empty_file_among_populated_fails(self):
+        self.write_notes()
+        open(os.path.join(self.notes, "contrib-0.998.0.md"), "w").close()
+        res = run(self.notes, self.gomod, self.out)
+        self.assertNotEqual(res.returncode, 0)
+        self.assertIn("no changelog entries parsed from contrib-0.998.0.md", res.stderr)
+        self.assertNotIn("contrib-0.999.0.md,", res.stderr)
 
 
 if __name__ == "__main__":

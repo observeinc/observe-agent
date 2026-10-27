@@ -67,9 +67,10 @@ def in_scope(repo, tags, contrib, core):
 
 
 def parse(paths):
-    entries, unparsed = [], []
+    entries, unparsed, per_file = [], [], {}
     for path in paths:
         repo, ver = os.path.basename(path)[:-3].split("-", 1)
+        before = len(entries)
         block, heading, cur = "End User", "", None
         for lineno, line in enumerate(open(path), 1):
             line = line.rstrip("\n")
@@ -97,7 +98,8 @@ def parse(paths):
                 if line.startswith("- "):
                     unparsed.append(dict(file=os.path.basename(path), line=lineno, block=block, text=line))
                 cur = None
-    return entries, unparsed
+        per_file[os.path.basename(path)] = len(entries) - before
+    return entries, unparsed, per_file
 
 
 def main():
@@ -106,17 +108,24 @@ def main():
     if not paths:
         sys.exit(f"error: no release notes (core-<ver>.md / contrib-<ver>.md) found in {notes_dir}")
     contrib, core = scope_from_gomod(gomod)
-    entries, unparsed = parse(paths)
-    if not entries:
-        sys.exit(f"error: no changelog entries parsed from {len(paths)} file(s) in {notes_dir}; check the note format")
+    entries, unparsed, per_file = parse(paths)
+    for name, count in per_file.items():
+        print(f"{name}: {count} entries", file=sys.stderr)
+    empty = [name for name, count in per_file.items() if count == 0]
+    if empty:
+        sys.exit(f"error: no changelog entries parsed from {', '.join(empty)} in {notes_dir}; "
+                 "re-fetch the release notes (step 2) or check the note format")
     ours = [e for e in entries
             if e["block"] not in ("Unmaintained", "Repeat") and in_scope(e["repo"], e["tags"], contrib, core)]
     seen = set()
     ledger = []
-    # The API changelog repeats End User entries; keep the End User copy.
+    deduped = 0
+    # The API changelog repeats End User entries; keep the End User copy. chloggen writes one
+    # entry per component, so the tags are part of the key.
     for e in ours:
-        key = (e["repo"], e["ver"], tuple(e["prs"]), e["title"][:60])
+        key = (e["repo"], e["ver"], tuple(e["tags"]), tuple(e["prs"]), e["title"][:60])
         if e["block"] == "API" and key in seen:
+            deduped += 1
             continue
         seen.add(key)
         e["id"] = f"{'core' if e['repo'] == 'core' else 'ctb'}{e['ver'].split('.')[1]}-{len(ledger):03d}"
@@ -130,7 +139,8 @@ def main():
         for u in unparsed:
             f.write(f"{u['file']}:{u['line']} [{u['block']}] {u['text']}\n")
     outside_unmaintained = sum(1 for u in unparsed if u["block"] != "Unmaintained")
-    print(f"parsed {len(entries)} entries; {len(ledger)} in scope -> {out}/ledger.json, {out}/compact.txt")
+    print(f"parsed {len(entries)} entries; {len(ledger)} in scope ({deduped} API duplicates dropped) "
+          f"-> {out}/ledger.json, {out}/compact.txt")
     print(f"{len(unparsed)} unparsed top-level bullets ({outside_unmaintained} outside Unmaintained sections) -> {out}/unparsed.txt",
           file=sys.stderr)
 
