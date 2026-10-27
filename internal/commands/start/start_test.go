@@ -2,150 +2,158 @@ package start
 
 import (
 	"context"
-	"encoding/base64"
 	"os"
 	"testing"
 
 	"github.com/mcuadros/go-defaults"
+	"github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver"
 	"github.com/observeinc/observe-agent/internal/config"
+	"github.com/observeinc/observe-agent/observecol"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
-func TestSetConfigEnvVars(t *testing.T) {
-	// Save original environment variables
-	originalAgentConfig := os.Getenv("OBSERVE_AGENT_CONFIG")
-	originalOtelConfig := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
-	defer func() {
-		if originalAgentConfig != "" {
-			os.Setenv("OBSERVE_AGENT_CONFIG", originalAgentConfig)
-		} else {
-			os.Unsetenv("OBSERVE_AGENT_CONFIG")
-		}
-		if originalOtelConfig != "" {
-			os.Setenv("OBSERVE_AGENT_OTEL_CONFIG", originalOtelConfig)
-		} else {
-			os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
-		}
-	}()
-
-	t.Run("successfully sets environment variables with valid config", func(t *testing.T) {
-		// Save original viper state for cleanup
-		originalViper := viper.GetViper()
-		defer func() {
-			// Restore original viper settings
-			viper.Reset()
-			for _, key := range originalViper.AllKeys() {
-				viper.Set(key, originalViper.Get(key))
-			}
-		}()
-
-		// Set our test config
+// setupTest isolates viper, the OTel config flags, the heartbeat configs and the legacy env vars.
+func setupTest(t *testing.T, token, observeURL string) {
+	t.Helper()
+	t.Setenv("OBSERVE_AGENT_CONFIG", "")
+	t.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "")
+	heartbeatreceiver.ResetConfigs()
+	setOtelFlags(t)
+	viper.Reset()
+	viper.Set("token", token)
+	viper.Set("observe_url", observeURL)
+	t.Cleanup(func() {
 		viper.Reset()
-		viper.Set("token", "test:token123456789")
-		viper.Set("observe_url", "https://example.observeinc.com")
-
-		// Clear environment variables
-		os.Unsetenv("OBSERVE_AGENT_CONFIG")
-		os.Unsetenv("OBSERVE_AGENT_OTEL_CONFIG")
-
-		// Call the function
-		ctx := context.Background()
-		err := setConfigEnvVars(ctx)
-		require.NoError(t, err, "setConfigEnvVars should succeed in unit test")
-
-		// Both env vars must be set (base64 encoded)
-		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
-		require.NotEmpty(t, agentConfigEncoded, "OBSERVE_AGENT_CONFIG must be set")
-
-		otelConfigEncoded := os.Getenv("OBSERVE_AGENT_OTEL_CONFIG")
-		require.NotEmpty(t, otelConfigEncoded, "OBSERVE_AGENT_OTEL_CONFIG must be set")
-
-		// Decode from base64
-		agentConfigBytes, err := base64.StdEncoding.DecodeString(agentConfigEncoded)
-		require.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid base64")
-
-		otelConfigBytes, err := base64.StdEncoding.DecodeString(otelConfigEncoded)
-		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid base64")
-
-		// Verify the agent config is valid YAML and contains expected values
-		var agentConfigParsed config.AgentConfig
-		err = yaml.Unmarshal(agentConfigBytes, &agentConfigParsed)
-		require.NoError(t, err, "OBSERVE_AGENT_CONFIG should be valid YAML")
-		assert.Equal(t, "test:token123456789", agentConfigParsed.Token)
-		assert.Equal(t, "https://example.observeinc.com", agentConfigParsed.ObserveURL)
-
-		// Verify the OTEL config is valid YAML
-		var otelConfigParsed map[string]interface{}
-		err = yaml.Unmarshal(otelConfigBytes, &otelConfigParsed)
-		require.NoError(t, err, "OBSERVE_AGENT_OTEL_CONFIG should be valid YAML")
-	})
-
-	t.Run("preserves token and other sensitive fields in env var", func(t *testing.T) {
-		// This test verifies that the raw config is stored in the env var (base64 encoded)
-		// (redaction happens in the heartbeat receiver when reading the env var)
-		viper.Reset()
-		viper.Set("token", "sensitive:token12345678901234567890")
-		viper.Set("observe_url", "https://example.observeinc.com")
-
-		ctx := context.Background()
-		err := setConfigEnvVars(ctx)
-
-		// May fail on OTEL config part, but we can still check agent config
-		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
-		if agentConfigEncoded != "" {
-			// Decode from base64
-			agentConfigBytes, decodeErr := base64.StdEncoding.DecodeString(agentConfigEncoded)
-			require.NoError(t, decodeErr, "Should be valid base64")
-
-			// Verify the full token is in the decoded YAML (not redacted)
-			assert.Contains(t, string(agentConfigBytes), "sensitive:token12345678901234567890",
-				"Token should be stored unredacted in env var")
-		}
-
-		// The actual redaction happens in the heartbeat receiver
-		// when it calls redactAndEncodeConfig
-		_ = err // Ignore error for this test
+		heartbeatreceiver.ResetConfigs()
+		setOtelFlags(t)
 	})
 }
 
-func TestSetConfigEnvVarsIntegration(t *testing.T) {
-	t.Run("validates agent config before setting env vars", func(t *testing.T) {
-		// Create a valid config
+// setOtelFlags registers the OTel config flags on a fresh flag set, which resets them to their
+// defaults, and then parses args.
+func setOtelFlags(t *testing.T, args ...string) {
+	t.Helper()
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	observecol.AddConfigFlags(fs)
+	require.NoError(t, fs.Parse(args))
+}
+
+func TestSetHeartbeatConfigs(t *testing.T) {
+	t.Run("hands configs to the heartbeat receiver without env vars", func(t *testing.T) {
+		setupTest(t, "test:token123456789", "https://example.observeinc.com")
+
+		require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+		agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+		require.True(t, ok, "configs must be set")
+		require.NotEmpty(t, agentConfigYaml, "agent config must be set")
+		require.NotEmpty(t, otelConfigYaml, "OTel config must be set")
+
+		var agentConfigParsed config.AgentConfig
+		require.NoError(t, yaml.Unmarshal([]byte(agentConfigYaml), &agentConfigParsed))
+		assert.Equal(t, "test:token123456789", agentConfigParsed.Token)
+		assert.Equal(t, "https://example.observeinc.com", agentConfigParsed.ObserveURL)
+
+		var otelConfigParsed map[string]interface{}
+		require.NoError(t, yaml.Unmarshal([]byte(otelConfigYaml), &otelConfigParsed))
+	})
+
+	t.Run("does not set the legacy env vars", func(t *testing.T) {
+		setupTest(t, "test:token123456789", "https://example.observeinc.com")
+
+		require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+		// Regression guard (OB-70021): the configs must not be placed in the environment, where
+		// child processes such as journalctl would inherit them and hit E2BIG on large configs.
+		assert.Empty(t, os.Getenv("OBSERVE_AGENT_CONFIG"))
+		assert.Empty(t, os.Getenv("OBSERVE_AGENT_OTEL_CONFIG"))
+	})
+
+	t.Run("preserves token unredacted for the receiver", func(t *testing.T) {
+		// Redaction happens in the heartbeat receiver, not here.
+		setupTest(t, "sensitive:token12345678901234567890", "https://example.observeinc.com")
+
+		require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+		agentConfigYaml, _, ok := heartbeatreceiver.Configs()
+		require.True(t, ok)
+		assert.Contains(t, agentConfigYaml, "sensitive:token12345678901234567890")
+	})
+
+	t.Run("keeps the agent config when OTel rendering fails", func(t *testing.T) {
+		setupTest(t, "test:token123456789", "https://example.observeinc.com")
+		// A --set value without '=' makes OTel config rendering fail.
+		setOtelFlags(t, "--set=invalid")
+
+		require.Error(t, setHeartbeatConfigs(context.Background()))
+
+		agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+		require.True(t, ok, "configs must be set so a partial heartbeat is sent")
+		assert.Contains(t, agentConfigYaml, "test:token123456789")
+		assert.Empty(t, otelConfigYaml)
+	})
+}
+
+func TestSetHeartbeatConfigsIntegration(t *testing.T) {
+	t.Run("validates agent config before setting configs", func(t *testing.T) {
 		validConfig := config.AgentConfig{
 			Token:      "test:validtoken123",
 			ObserveURL: "https://test.observeinc.com",
 		}
 		defaults.SetDefaults(&validConfig)
+		require.NoError(t, validConfig.Validate(), "Test config should be valid")
+		setupTest(t, validConfig.Token, validConfig.ObserveURL)
 
-		// Verify it's valid
-		err := validConfig.Validate()
-		require.NoError(t, err, "Test config should be valid")
+		require.NoError(t, setHeartbeatConfigs(context.Background()))
 
-		// Set it in viper
-		viper.Reset()
-		viper.Set("token", validConfig.Token)
-		viper.Set("observe_url", validConfig.ObserveURL)
-
-		// The function should work with this valid config
-		// (though it might fail on OTEL config generation in test env)
-		ctx := context.Background()
-		_ = setConfigEnvVars(ctx)
-
-		// At minimum, the agent config should be set (base64 encoded)
-		agentConfigEncoded := os.Getenv("OBSERVE_AGENT_CONFIG")
-		if agentConfigEncoded != "" {
-			// Decode from base64
-			agentConfigBytes, decodeErr := base64.StdEncoding.DecodeString(agentConfigEncoded)
-			assert.NoError(t, decodeErr, "Should be valid base64")
-
-			var parsed config.AgentConfig
-			err := yaml.Unmarshal(agentConfigBytes, &parsed)
-			assert.NoError(t, err)
-			assert.Equal(t, validConfig.Token, parsed.Token)
-			assert.Equal(t, validConfig.ObserveURL, parsed.ObserveURL)
-		}
+		agentConfigYaml, _, ok := heartbeatreceiver.Configs()
+		require.True(t, ok)
+		var parsed config.AgentConfig
+		require.NoError(t, yaml.Unmarshal([]byte(agentConfigYaml), &parsed))
+		assert.Equal(t, validConfig.Token, parsed.Token)
+		assert.Equal(t, validConfig.ObserveURL, parsed.ObserveURL)
 	})
+}
+
+func TestSetHeartbeatConfigsClearsLegacyEnvVars(t *testing.T) {
+	setupTest(t, "test:token123456789", "https://example.observeinc.com")
+	t.Setenv("OBSERVE_AGENT_CONFIG", "aW5oZXJpdGVk")
+	t.Setenv("OBSERVE_AGENT_OTEL_CONFIG", "aW5oZXJpdGVk")
+
+	require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+	_, found := os.LookupEnv("OBSERVE_AGENT_CONFIG")
+	assert.False(t, found)
+	_, found = os.LookupEnv("OBSERVE_AGENT_OTEL_CONFIG")
+	assert.False(t, found)
+}
+
+func TestSetHeartbeatConfigsAgentConfigFailure(t *testing.T) {
+	setupTest(t, "test:token123456789", "https://example.observeinc.com")
+	// A map cannot be decoded into the string token field, so AgentConfigFromViper fails.
+	viper.Set("token", map[string]int{"a": 1})
+
+	require.Error(t, setHeartbeatConfigs(context.Background()))
+
+	agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+	require.True(t, ok, "configs must be marked set so the env var fallback is skipped")
+	assert.Empty(t, agentConfigYaml)
+	assert.Empty(t, otelConfigYaml)
+}
+
+func TestSetHeartbeatConfigsValidateFailure(t *testing.T) {
+	// A token without ':' decodes fine but fails Validate. Validate failures are only logged,
+	// so the configs must still be handed to the receiver in full.
+	setupTest(t, "notatoken", "https://example.observeinc.com")
+
+	require.NoError(t, setHeartbeatConfigs(context.Background()))
+
+	agentConfigYaml, otelConfigYaml, ok := heartbeatreceiver.Configs()
+	require.True(t, ok)
+	assert.Contains(t, agentConfigYaml, "notatoken")
+	assert.NotEmpty(t, otelConfigYaml)
 }
