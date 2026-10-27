@@ -10,7 +10,7 @@ import (
 )
 
 // DriverVersion is the version number of the hdb driver.
-const DriverVersion = "1.16.6"
+const DriverVersion = "1.19.2"
 
 // DriverName is the driver name to use with sql.Open for hdb databases.
 const DriverName = "hdb"
@@ -45,11 +45,11 @@ func register() {
 	sql.Register(DriverName, stdHdbDriver)
 }
 
-// Unregister unregisters the go-hdb driver and frees all allocated resources.
-// After calling any go-hdb access might panic.
-func Unregister() error {
-	return stdHdbDriver.shutdown()
-}
+// Unregister is deprecated.
+//
+// Deprecated: Unregister no longer performs any action; it exists only to keep
+// existing callers compiling.
+func Unregister() error { return nil }
 
 // driver
 
@@ -72,14 +72,9 @@ type hdbDriver struct {
 	metrics *metrics
 }
 
-func (d hdbDriver) shutdown() error {
-	d.metrics.close()
-	return nil
-}
-
 // Open implements the driver.Driver interface.
 func (d *hdbDriver) Open(dsn string) (driver.Conn, error) {
-	connector, err := NewDSNConnector(dsn)
+	connector, err := d.OpenConnector(dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +82,13 @@ func (d *hdbDriver) Open(dsn string) (driver.Conn, error) {
 }
 
 // OpenConnector implements the driver.DriverContext interface.
-func (d *hdbDriver) OpenConnector(dsn string) (driver.Connector, error) { return NewDSNConnector(dsn) }
+func (d *hdbDriver) OpenConnector(dsn string) (driver.Connector, error) {
+	cfg, err := ParseDSNConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	return NewConfigConnector(cfg)
+}
 
 // Name returns the driver name.
 func (d *hdbDriver) Name() string { return DriverName }
@@ -103,7 +104,7 @@ func (d *hdbDriver) Stats() *Stats { return d.metrics.stats() }
 type DB struct {
 	// The embedded sql.DB instance. Please use only the methods of the wrapper (driver.DB).
 	// The field is exported to support use cases where a sql.DB object is requested, but please
-	// use with care as some of the sql.DB methods (e.g. Close) might be redefined in driver.DB.
+	// use with care as some of the sql.DB methods might be redefined in driver.DB.
 	*sql.DB
 	metrics *metrics
 }
@@ -117,14 +118,6 @@ func OpenDB(c *Connector) *DB {
 		DB:      sql.OpenDB(nc),
 		metrics: metrics,
 	}
-}
-
-// Close closes the database. It also calls the Close method of the sql package and returns its error.
-func (db *DB) Close() error {
-	err := db.DB.Close()
-	// close metrics only after db is closed.
-	db.metrics.close()
-	return err
 }
 
 // ExStats returns the extended database statistics.

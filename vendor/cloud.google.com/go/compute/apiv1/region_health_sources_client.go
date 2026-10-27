@@ -46,6 +46,7 @@ type RegionHealthSourcesCallOptions struct {
 	AggregatedList     []gax.CallOption
 	Delete             []gax.CallOption
 	Get                []gax.CallOption
+	GetHealth          []gax.CallOption
 	Insert             []gax.CallOption
 	List               []gax.CallOption
 	Patch              []gax.CallOption
@@ -81,6 +82,18 @@ func defaultRegionHealthSourcesRESTCallOptions() *RegionHealthSourcesCallOptions
 					http.StatusServiceUnavailable)
 			}),
 		},
+		GetHealth: []gax.CallOption{
+			gax.WithTimeout(600000 * time.Millisecond),
+			gax.WithRetry(func() gax.Retryer {
+				return gax.OnHTTPCodes(gax.Backoff{
+					Initial:    100 * time.Millisecond,
+					Max:        60000 * time.Millisecond,
+					Multiplier: 1.30,
+				},
+					http.StatusGatewayTimeout,
+					http.StatusServiceUnavailable)
+			}),
+		},
 		Insert: []gax.CallOption{
 			gax.WithTimeout(600000 * time.Millisecond),
 		},
@@ -105,7 +118,7 @@ func defaultRegionHealthSourcesRESTCallOptions() *RegionHealthSourcesCallOptions
 	}
 }
 
-// internalRegionHealthSourcesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionHealthSourcesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionHealthSourcesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -113,16 +126,19 @@ type internalRegionHealthSourcesClient interface {
 	AggregatedList(context.Context, *computepb.AggregatedListRegionHealthSourcesRequest, ...gax.CallOption) *HealthSourcesScopedListPairIterator
 	Delete(context.Context, *computepb.DeleteRegionHealthSourceRequest, ...gax.CallOption) (*Operation, error)
 	Get(context.Context, *computepb.GetRegionHealthSourceRequest, ...gax.CallOption) (*computepb.HealthSource, error)
+	GetHealth(context.Context, *computepb.GetHealthRegionHealthSourceRequest, ...gax.CallOption) (*computepb.HealthSourceHealth, error)
 	Insert(context.Context, *computepb.InsertRegionHealthSourceRequest, ...gax.CallOption) (*Operation, error)
 	List(context.Context, *computepb.ListRegionHealthSourcesRequest, ...gax.CallOption) *HealthSourceIterator
 	Patch(context.Context, *computepb.PatchRegionHealthSourceRequest, ...gax.CallOption) (*Operation, error)
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionHealthSourceRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionHealthSourcesClient is a client for interacting with Google Compute Engine API.
+// RegionHealthSourcesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionHealthSources API.
+//
+// This client uses RegionHealthSources version 2026-09-01.
 type RegionHealthSourcesClient struct {
 	// The internal transport-dependent client.
 	internalClient internalRegionHealthSourcesClient
@@ -133,7 +149,7 @@ type RegionHealthSourcesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionHealthSourcesClient) Close() error {
 	return c.internalClient.Close()
@@ -171,6 +187,12 @@ func (c *RegionHealthSourcesClient) Delete(ctx context.Context, req *computepb.D
 // Get returns the specified HealthSource resource in the given region.
 func (c *RegionHealthSourcesClient) Get(ctx context.Context, req *computepb.GetRegionHealthSourceRequest, opts ...gax.CallOption) (*computepb.HealthSource, error) {
 	return c.internalClient.Get(ctx, req, opts...)
+}
+
+// GetHealth gets the most recent health check results for this
+// regional HealthSource.
+func (c *RegionHealthSourcesClient) GetHealth(ctx context.Context, req *computepb.GetHealthRegionHealthSourceRequest, opts ...gax.CallOption) (*computepb.HealthSourceHealth, error) {
+	return c.internalClient.GetHealth(ctx, req, opts...)
 }
 
 // Insert create a HealthSource in the specified project in the given region
@@ -261,10 +283,52 @@ func NewRegionHealthSourcesRESTClient(ctx context.Context, opts ...option.Client
 		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientMetrics(metrics))
 		callOpts.Delete = append(callOpts.Delete, gax.WithClientMetrics(metrics))
 		callOpts.Get = append(callOpts.Get, gax.WithClientMetrics(metrics))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientMetrics(metrics))
 		callOpts.Insert = append(callOpts.Insert, gax.WithClientMetrics(metrics))
 		callOpts.List = append(callOpts.List, gax.WithClientMetrics(metrics))
 		callOpts.Patch = append(callOpts.Patch, gax.WithClientMetrics(metrics))
 		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientMetrics(metrics))
+	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientTracing(tracing))
+		callOpts.Delete = append(callOpts.Delete, gax.WithClientTracing(tracing))
+		callOpts.Get = append(callOpts.Get, gax.WithClientTracing(tracing))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientTracing(tracing))
+		callOpts.Insert = append(callOpts.Insert, gax.WithClientTracing(tracing))
+		callOpts.List = append(callOpts.List, gax.WithClientTracing(tracing))
+		callOpts.Patch = append(callOpts.Patch, gax.WithClientTracing(tracing))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientLogging(logging))
+		callOpts.Delete = append(callOpts.Delete, gax.WithClientLogging(logging))
+		callOpts.Get = append(callOpts.Get, gax.WithClientLogging(logging))
+		callOpts.GetHealth = append(callOpts.GetHealth, gax.WithClientLogging(logging))
+		callOpts.Insert = append(callOpts.Insert, gax.WithClientLogging(logging))
+		callOpts.List = append(callOpts.List, gax.WithClientLogging(logging))
+		callOpts.Patch = append(callOpts.Patch, gax.WithClientLogging(logging))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientLogging(logging))
 	}
 
 	o := []option.ClientOption{
@@ -300,10 +364,11 @@ func (c *regionHealthSourcesRESTClient) setGoogleClientInfo(keyval ...string) {
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "rest", "UNKNOWN", "pb", protoVersion)
 	c.xGoogHeaders = []string{
 		"x-goog-api-client", gax.XGoogHeader(kv...),
+		"x-goog-api-version", "2026-09-01",
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionHealthSourcesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -328,7 +393,7 @@ func (c *regionHealthSourcesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *regionHealthSourcesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListRegionHealthSourcesRequest, opts ...gax.CallOption) *HealthSourcesScopedListPairIterator {
 	it := &HealthSourcesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListRegionHealthSourcesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]HealthSourcesScopedListPair, string, error) {
 		resp := &computepb.HealthSourceAggregatedList{}
@@ -361,9 +426,6 @@ func (c *regionHealthSourcesRESTClient) AggregatedList(ctx context.Context, req 
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 		if req != nil && req.ServiceProjectNumber != nil {
 			params.Add("serviceProjectNumber", fmt.Sprintf("%v", req.GetServiceProjectNumber()))
@@ -445,9 +507,6 @@ func (c *regionHealthSourcesRESTClient) Delete(ctx context.Context, req *compute
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/healthSources/%v", req.GetProject(), req.GetRegion(), req.GetHealthSource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/Delete")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources/{health_source}")
@@ -505,9 +564,6 @@ func (c *regionHealthSourcesRESTClient) Get(ctx context.Context, req *computepb.
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/healthSources/%v", req.GetProject(), req.GetRegion(), req.GetHealthSource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/Get")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources/{health_source}")
@@ -527,6 +583,56 @@ func (c *regionHealthSourcesRESTClient) Get(ctx context.Context, req *computepb.
 		httpReq.Header = headers
 
 		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "Get")
+		if err != nil {
+			return err
+		}
+
+		if err := unm.Unmarshal(buf, resp); err != nil {
+			return err
+		}
+
+		return nil
+	}, opts...)
+	if e != nil {
+		return nil, e
+	}
+	return resp, nil
+}
+
+// GetHealth gets the most recent health check results for this
+// regional HealthSource.
+func (c *regionHealthSourcesRESTClient) GetHealth(ctx context.Context, req *computepb.GetHealthRegionHealthSourceRequest, opts ...gax.CallOption) (*computepb.HealthSourceHealth, error) {
+	baseUrl, err := url.Parse(c.endpoint)
+	if err != nil {
+		return nil, err
+	}
+	baseUrl.Path += fmt.Sprintf("/compute/v1/projects/%v/regions/%v/healthSources/%v/getHealth", req.GetProject(), req.GetRegion(), req.GetHealthSource())
+
+	// Build HTTP headers from client and context metadata.
+	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v&%s=%v&%s=%v", "project", url.QueryEscape(req.GetProject()), "region", url.QueryEscape(req.GetRegion()), "health_source", url.QueryEscape(req.GetHealthSource()))}
+
+	hds = append(c.xGoogHeaders, hds...)
+	hds = append(hds, "Content-Type", "application/json")
+	headers := gax.BuildHeaders(ctx, hds...)
+	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
+		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/GetHealth")
+		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources/{health_source}/getHealth")
+	}
+	opts = append((*c.CallOptions).GetHealth[0:len((*c.CallOptions).GetHealth):len((*c.CallOptions).GetHealth)], opts...)
+	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
+	resp := &computepb.HealthSourceHealth{}
+	e := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		if settings.Path != "" {
+			baseUrl.Path = settings.Path
+		}
+		httpReq, err := http.NewRequest("GET", baseUrl.String(), nil)
+		if err != nil {
+			return err
+		}
+		httpReq = httpReq.WithContext(ctx)
+		httpReq.Header = headers
+
+		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "GetHealth")
 		if err != nil {
 			return err
 		}
@@ -572,9 +678,6 @@ func (c *regionHealthSourcesRESTClient) Insert(ctx context.Context, req *compute
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v", req.GetProject(), req.GetRegion()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/Insert")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources")
@@ -621,7 +724,7 @@ func (c *regionHealthSourcesRESTClient) Insert(ctx context.Context, req *compute
 // List lists the HealthSources for a project in the given region.
 func (c *regionHealthSourcesRESTClient) List(ctx context.Context, req *computepb.ListRegionHealthSourcesRequest, opts ...gax.CallOption) *HealthSourceIterator {
 	it := &HealthSourceIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionHealthSourcesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.HealthSource, string, error) {
 		resp := &computepb.HealthSourceList{}
@@ -651,9 +754,6 @@ func (c *regionHealthSourcesRESTClient) List(ctx context.Context, req *computepb
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 
 		baseUrl.RawQuery = params.Encode()
@@ -735,9 +835,6 @@ func (c *regionHealthSourcesRESTClient) Patch(ctx context.Context, req *computep
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/healthSources/%v", req.GetProject(), req.GetRegion(), req.GetHealthSource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/Patch")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources/{health_source}")
@@ -802,9 +899,6 @@ func (c *regionHealthSourcesRESTClient) TestIamPermissions(ctx context.Context, 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v/healthSources/%v", req.GetProject(), req.GetRegion(), req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.RegionHealthSources/TestIamPermissions")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}/healthSources/{resource}/testIamPermissions")
