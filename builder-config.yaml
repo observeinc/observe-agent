@@ -40,6 +40,8 @@ processors:
 
   - gomod: github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
     path: ./components/processors/observek8sattributesprocessor
+  - gomod: github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000
+    path: ./components/processors/tailsamplinglegacyprocessor
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.164.0

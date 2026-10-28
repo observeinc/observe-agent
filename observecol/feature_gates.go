@@ -23,6 +23,8 @@ var internalFeatureFlagDefaults = map[string]bool{
 	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
 	"connector.spanmetrics.excludeResourceMetrics":                false,
 	"connector.spanmetrics.includeCollectorInstanceID":            true,
+	// tailsampling_legacy only runs configs that rely on invert_match excluding traces.
+	"processor.tailsamplinglegacyprocessor.disableinvertdecisions": false,
 	// Keep kubeletstats *.cpu.usage from the kubelet's UsageNanoCores, which Kubernetes Explorer
 	// reads; the scrape-based calculation is missing on the first scrape.
 	"receiver.kubeletstats.cpuUsageScrapeBased": false,

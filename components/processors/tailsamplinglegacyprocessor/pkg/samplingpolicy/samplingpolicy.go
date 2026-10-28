@@ -1,0 +1,89 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package samplingpolicy // import "github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor/pkg/samplingpolicy"
+
+import (
+	"context"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
+
+// TraceData stores the sampling related trace data.
+type TraceData struct {
+	// SpanCount track the number of spans on the trace.
+	SpanCount int64
+	// SizeBytes is how many bytes we have accumulated for the trace.
+	SizeBytes uint64
+	// ReceivedBatches stores all the batches received for the trace.
+	ReceivedBatches ptrace.Traces
+}
+
+// Decision gives the status of sampling decision.
+type Decision int32
+
+const (
+	// Unspecified indicates that the status of the decision was not set yet.
+	Unspecified Decision = iota
+	// Pending indicates that the policy was not evaluated yet.
+	Pending
+	// Sampled is used to indicate that the decision was already taken
+	// to sample the data.
+	Sampled
+	// NotSampled is used to indicate that the decision was already taken
+	// to not sample the data.
+	NotSampled
+	// Dropped is used to indicate that a trace should be dropped regardless of
+	// all other decisions.
+	Dropped
+	// Error is used to indicate that policy evaluation was not succeeded.
+	Error
+	// InvertSampled is used on the invert match flow and indicates to sample
+	// the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
+	InvertSampled
+	// InvertNotSampled is used on the invert match flow and indicates to not
+	// sample the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
+	InvertNotSampled
+)
+
+// String returns a string representation of the Decision.
+func (d Decision) String() string {
+	switch d {
+	case Unspecified:
+		return "unspecified"
+	case Pending:
+		return "pending"
+	case Sampled:
+		return "sampled"
+	case NotSampled:
+		return "not_sampled"
+	case Dropped:
+		return "dropped"
+	case Error:
+		return "error"
+	case InvertSampled:
+		return "invert_sampled"
+	case InvertNotSampled:
+		return "invert_not_sampled"
+	default:
+		return "unknown"
+	}
+}
+
+// Evaluator implements a tail-based sampling policy evaluator,
+// which makes a sampling decision for a given trace when requested.
+type Evaluator interface {
+	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
+	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+	// IsStateful reports whether decisions can depend on prior evaluations/state.
+	IsStateful() bool
+}
+
+type Extension interface {
+	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
+}

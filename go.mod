@@ -264,6 +264,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 // indirect
+	github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000 // indirect
 	github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/oklog/ulid/v2 v2.1.2 // indirect
 	github.com/open-telemetry/opamp-go v0.24.0 // indirect
@@ -610,6 +611,7 @@ require (
 
 replace (
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
+	github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/tailsamplinglegacyprocessor
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
 	github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/jmxreceiver
 	github.com/observeinc/observe-agent/observecol => ./observecol

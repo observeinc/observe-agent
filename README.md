@@ -90,8 +90,8 @@ This section lists the components that are included in the Observe Distribution 
 | [k8sobjects][k8sobjectsreceiver]                         | [resourcedetection][resourcedetectionprocessor]       |                                                        |                                         |                                             |
 | [kafka][kafkareceiver]                                   | [span][spanprocessor]                                 |                                                        |                                         |                                             |
 | [kafkametrics][kafkametricsreceiver]                     | [tailsampling][tailsamplingprocessor]                 |                                                        |                                         |                                             |
-| [kubeletstats][kubeletstatsreceiver]                     | [transform][transformprocessor]                       |                                                        |                                         |                                             |
-| [mongodb][mongodbreceiver]                               |                                                       |                                                        |                                         |                                             |
+| [kubeletstats][kubeletstatsreceiver]                     | [tailsamplinglegacy][tailsamplinglegacyprocessor]     |                                                        |                                         |                                             |
+| [mongodb][mongodbreceiver]                               | [transform][transformprocessor]                       |                                                        |                                         |                                             |
 | [nop][nopreceiver]                                       |                                                       |                                                        |                                         |                                             |
 | [otlp][otlpreceiver]                                     |                                                       |                                                        |                                         |                                             |
 | [postgresql][postgresqlreceiver]                         |                                                       |                                                        |                                         |                                             |
@@ -171,6 +171,7 @@ This section lists the components that are included in the Observe Distribution 
 [statsdreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/receiver/statsdreceiver
 [syslogexporter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/exporter/syslogexporter
 [syslogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/receiver/syslogreceiver
+[tailsamplinglegacyprocessor]: ./components/processors/tailsamplinglegacyprocessor
 [tailsamplingprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/processor/tailsamplingprocessor
 [tcplogreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/receiver/tcplogreceiver
 [transformprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.1/processor/transformprocessor

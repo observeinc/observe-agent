@@ -50,6 +50,7 @@ import (
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	logdedupprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 	observek8sattributesprocessor "github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor"
+	tailsamplinglegacyprocessor "github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	awsecscontainermetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
@@ -241,6 +242,7 @@ func components() (otelcol.Factories, error) {
 		transformprocessor.NewFactory(),
 		logdedupprocessor.NewFactory(),
 		observek8sattributesprocessor.NewFactory(),
+		tailsamplinglegacyprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -264,6 +266,7 @@ func components() (otelcol.Factories, error) {
 		transformprocessor.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.164.1",
 		logdedupprocessor.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.164.1",
 		observek8sattributesprocessor.NewFactory().Type(): "github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000",
+		tailsamplinglegacyprocessor.NewFactory().Type(): "github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000",
 	})
 
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](

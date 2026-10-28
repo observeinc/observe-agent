@@ -56,6 +56,7 @@ build-ocb:
 	sed -i -e 's/\/Users\/.*observe-agent\//..\//g' ocb-build/go.mod
 	sed -i -e 's/\/home\/.*observe-agent\//..\//g' ocb-build/go.mod
 	sed -i -e 's/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 =>/observek8sattributesprocessor =>/g' ocb-build/go.mod
+	sed -i -e 's/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000 =>/tailsamplinglegacyprocessor =>/g' ocb-build/go.mod
 	sed -i -e 's/heartbeatreceiver v0.0.0-00010101000000-000000000000 =>/heartbeatreceiver =>/g' ocb-build/go.mod
 	sed -i -e 's/jmxreceiver v0.0.0-00010101000000-000000000000 =>/jmxreceiver =>/g' ocb-build/go.mod
 	cp ./ocb-build/components.go ./observecol/components.go

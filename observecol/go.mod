@@ -7,6 +7,7 @@ go 1.26.10
 require (
 	github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
+	github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.164.1
@@ -70,6 +71,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
+	go.opentelemetry.io/collector/component/componenttest v0.164.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.70.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.70.0
@@ -78,6 +80,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.70.0
 	go.opentelemetry.io/collector/connector v0.164.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.164.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
 	go.opentelemetry.io/collector/exporter v1.70.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.164.0
 	go.opentelemetry.io/collector/exporter/nopexporter v0.164.0
@@ -87,13 +90,17 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.164.0
 	go.opentelemetry.io/collector/featuregate v1.70.0
 	go.opentelemetry.io/collector/otelcol v0.164.0
+	go.opentelemetry.io/collector/pdata v1.70.0
 	go.opentelemetry.io/collector/processor v1.70.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.164.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.164.0
+	go.opentelemetry.io/collector/processor/processortest v0.164.0
 	go.opentelemetry.io/collector/receiver v1.70.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.164.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.164.0
 	go.opentelemetry.io/collector/service v0.164.0
+	go.opentelemetry.io/otel/metric v1.47.0
+	go.opentelemetry.io/otel/trace v1.47.0
 	go.uber.org/zap v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -463,7 +470,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.164.0 // indirect
-	go.opentelemetry.io/collector/component/componenttest v0.164.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v1.70.0 // indirect
@@ -481,7 +487,6 @@ require (
 	go.opentelemetry.io/collector/consumer v1.70.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.164.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.164.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.164.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.0 // indirect
@@ -499,7 +504,6 @@ require (
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/statusutil v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.164.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.164.0 // indirect
@@ -507,7 +511,6 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.164.0 // indirect
-	go.opentelemetry.io/collector/processor/processortest v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.164.0 // indirect
@@ -551,11 +554,9 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
-	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.21.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.47.0 // indirect
-	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
@@ -608,5 +609,7 @@ replace github.com/observeinc/observe-agent/components/receivers/heartbeatreceiv
 replace github.com/observeinc/observe-agent/components/receivers/jmxreceiver => ../components/receivers/jmxreceiver
 
 replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../components/processors/observek8sattributesprocessor
+
+replace github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor => ../components/processors/tailsamplinglegacyprocessor
 
 replace github.com/observeinc/observe-agent => ../
