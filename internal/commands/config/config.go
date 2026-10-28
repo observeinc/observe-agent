@@ -12,6 +12,7 @@ import (
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/observeinc/observe-agent/observecol"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 var configCmd = &cobra.Command{
@@ -48,7 +49,12 @@ var configValidateCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := logger.WithCtx(context.Background(), logger.GetNop())
-		col, err := observecol.GetOtelCollector(ctx)
+		settings, err := observecol.GetOtelCollectorSettings(ctx)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "❌ failed to generate config")
+			return err
+		}
+		col, err := otelcol.NewCollector(*settings)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "❌ failed to generate config")
 			return err
@@ -57,6 +63,13 @@ var configValidateCmd = &cobra.Command{
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "❌ invalid config")
 			return err
+		}
+		invertMatch, err := observecol.InvertMatchTailSamplingProcessors(ctx, settings)
+		if err != nil {
+			return err
+		}
+		for _, id := range invertMatch {
+			fmt.Fprintf(os.Stderr, "⚠️  processor %s: %s\n", id, observecol.InvertMatchWarning)
 		}
 		fmt.Fprintln(os.Stderr, "✅ configuration is valid")
 		return nil

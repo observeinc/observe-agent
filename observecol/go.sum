@@ -674,6 +674,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f h1:KUppIJq7/+SVif2QVs3tOP0zanoHgBEVAwHxUSIzRqU=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/observeinc/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.0.0-20261029054918-f50d774c8658 h1:n1Hg7RafD0Wmo1UCJi8DG1zCHuy7UIKjkayVCT4BMUQ=
+github.com/observeinc/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.0.0-20261029054918-f50d774c8658/go.mod h1:6dDGPRKdDCwetaT8LOl6gVoZSgtNcU5WngR/ZsYd0IQ=
 github.com/oklog/ulid/v2 v2.1.2 h1:IEclFb9JNvzYA6MW2SCxbLzcHTVsfqm3PrqGQJH5zec=
 github.com/oklog/ulid/v2 v2.1.2/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
 github.com/onsi/ginkgo/v2 v2.27.4 h1:fcEcQW/A++6aZAZQNUmNjvA9PSOzefMJBerHJ4t8v8Y=
@@ -834,8 +836,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceproc
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.164.1/go.mod h1:Z2EuEos9ZUP34PlB/K2MtSnOevBqGctF/3VUTiCA2FU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.164.1 h1:/74aWJfSDVbv/qTEexH0/de6Ll16I6ywTRzY3lZwG+A=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.164.1/go.mod h1:HbroGehIY1yIvhlwx98a+40zXMgtQAWtU1Yhqqg7fxg=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.164.1 h1:FJ4ir5Ro+Xymtg336vlhlSQEaaEehimYwRldUS36Aus=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.164.1/go.mod h1:6dDGPRKdDCwetaT8LOl6gVoZSgtNcU5WngR/ZsYd0IQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.164.1 h1:ieV1Eg8g8hQmZR1Iq5XOwftewlRf34b/nptCLy/GtvU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.164.1/go.mod h1:92OrIJ3oJQVuCvzrwn8mVH+zEWEKm4i0gBL1ChHHgK0=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.164.1 h1:ELvjcA0J57eJJsrdVm9xM9LRcD9cjnQ4uZthg8t8NIY=
