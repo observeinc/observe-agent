@@ -131,7 +131,7 @@ This section lists the components that are included in the Observe Distribution 
 [hostmetricsreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/hostmetricsreceiver
 [httpcheckreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/httpcheckreceiver
 [iisreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/iisreceiver
-[jmxreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/jmxreceiver
+[jmxreceiver]: ./components/receivers/jmxreceiver
 [journaldreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/journaldreceiver
 [k8sattributesprocessor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/processor/k8sattributesprocessor
 [k8sclusterreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.151.0/receiver/k8sclusterreceiver

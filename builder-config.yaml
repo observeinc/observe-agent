@@ -72,11 +72,12 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.151.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.151.0
 
   - gomod: github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000
     path: ./components/receivers/heartbeatreceiver
+  - gomod: github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000
+    path: ./components/receivers/jmxreceiver
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.151.0
