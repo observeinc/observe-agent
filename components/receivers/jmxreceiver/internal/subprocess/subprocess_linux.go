@@ -3,7 +3,7 @@
 
 //go:build linux
 
-package subprocess // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
+package subprocess // import "github.com/observeinc/observe-agent/components/receivers/jmxreceiver/internal/subprocess"
 
 import (
 	"os/exec"

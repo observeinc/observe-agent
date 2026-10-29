@@ -508,6 +508,8 @@ github.com/coreos/go-systemd/v22/activation
 # github.com/danieljoos/wincred v1.2.2
 ## explicit; go 1.18
 github.com/danieljoos/wincred
+# github.com/davecgh/go-spew v1.1.1
+## explicit
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -654,6 +656,8 @@ github.com/go-ldap/ldap/v3
 # github.com/go-logfmt/logfmt v0.6.0
 ## explicit; go 1.17
 github.com/go-logfmt/logfmt
+# github.com/go-logr/logr v1.4.3
+## explicit; go 1.18
 # github.com/go-logr/logr v1.4.4
 ## explicit; go 1.18
 github.com/go-logr/logr
@@ -1073,6 +1077,8 @@ github.com/json-iterator/go
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit; go 1.7
 github.com/julienschmidt/httprouter
+# github.com/klauspost/compress v1.18.5
+## explicit; go 1.24
 # github.com/klauspost/compress v1.19.1
 ## explicit; go 1.24
 github.com/klauspost/compress
@@ -1252,6 +1258,8 @@ github.com/mwitkow/go-conntrack
 # github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000 => ./components/processors/observek8sattributesprocessor
 ## explicit; go 1.26.10
 # github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/heartbeatreceiver
+## explicit; go 1.26.10
+# github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000 => ./components/receivers/jmxreceiver
 ## explicit; go 1.26.10
 # github.com/observeinc/observe-agent/observecol v0.0.0-00010101000000-000000000000 => ./observecol
 ## explicit; go 1.26.10
@@ -1796,11 +1804,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckrece
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata
-# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.151.0
-## explicit; go 1.25.0
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.151.0
 ## explicit; go 1.25.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
@@ -1977,6 +1980,8 @@ github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
+# github.com/pierrec/lz4/v4 v4.1.26
+## explicit; go 1.17
 # github.com/pierrec/lz4/v4 v4.1.27
 ## explicit; go 1.17
 github.com/pierrec/lz4/v4
@@ -1998,6 +2003,8 @@ github.com/planetscale/vtprotobuf/types/known/durationpb
 github.com/planetscale/vtprotobuf/types/known/emptypb
 github.com/planetscale/vtprotobuf/types/known/structpb
 github.com/planetscale/vtprotobuf/types/known/wrapperspb
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
@@ -2804,6 +2811,8 @@ go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/inte
 ## explicit; go 1.25.0
 go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace
 go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace/internal/semconv
+# go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
@@ -2823,6 +2832,8 @@ go.opentelemetry.io/contrib/propagators/b3
 ## explicit; go 1.25.0
 go.opentelemetry.io/contrib/zpages
 go.opentelemetry.io/contrib/zpages/internal
+# go.opentelemetry.io/otel v1.43.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/otel v1.45.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/otel
@@ -2945,11 +2956,15 @@ go.opentelemetry.io/otel/log/embedded
 go.opentelemetry.io/otel/log/global
 go.opentelemetry.io/otel/log/internal/global
 go.opentelemetry.io/otel/log/noop
+# go.opentelemetry.io/otel/metric v1.43.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/otel/metric v1.45.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/otel/metric
 go.opentelemetry.io/otel/metric/embedded
 go.opentelemetry.io/otel/metric/noop
+# go.opentelemetry.io/otel/sdk v1.43.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/otel/sdk v1.45.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/otel/sdk
@@ -2968,6 +2983,8 @@ go.opentelemetry.io/otel/sdk/log/internal/attrnorm
 go.opentelemetry.io/otel/sdk/log/internal/counter
 go.opentelemetry.io/otel/sdk/log/internal/observ
 go.opentelemetry.io/otel/sdk/log/internal/x
+# go.opentelemetry.io/otel/sdk/metric v1.43.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/otel/sdk/metric v1.45.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/otel/sdk/metric
@@ -2979,6 +2996,8 @@ go.opentelemetry.io/otel/sdk/metric/internal/observ
 go.opentelemetry.io/otel/sdk/metric/internal/reservoir
 go.opentelemetry.io/otel/sdk/metric/internal/x
 go.opentelemetry.io/otel/sdk/metric/metricdata
+# go.opentelemetry.io/otel/trace v1.43.0
+## explicit; go 1.25.0
 # go.opentelemetry.io/otel/trace v1.45.0
 ## explicit; go 1.25.0
 go.opentelemetry.io/otel/trace
@@ -3242,11 +3261,15 @@ google.golang.org/genproto/googleapis/cloud/extendedops
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20260406210006-6f92a3bedf2d
+## explicit; go 1.25.0
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
+# google.golang.org/grpc v1.80.0
+## explicit; go 1.25.0
 # google.golang.org/grpc v1.83.2
 ## explicit; go 1.25.0
 google.golang.org/grpc

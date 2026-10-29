@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package subprocess // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
+package subprocess // import "github.com/observeinc/observe-agent/components/receivers/jmxreceiver/internal/subprocess"
 
 import (
 	"bufio"
