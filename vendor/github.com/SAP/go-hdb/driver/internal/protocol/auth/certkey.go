@@ -16,9 +16,11 @@ import (
 	"strings"
 	"time"
 	"unique"
+
+	"github.com/SAP/go-hdb/driver/internal/trace"
 )
 
-// CertValidationError is returned in case of X09 certificate validation errors.
+// CertValidationError is returned in case of X509 certificate validation errors.
 type CertValidationError struct {
 	t    time.Time
 	cert *x509.Certificate
@@ -34,7 +36,7 @@ func (e CertValidationError) Error() string {
 	)
 }
 
-// CertKey represents a X509 certificate and key.
+// CertKey represents an X509 certificate and key.
 type CertKey struct {
 	certHandle, keyHandle unique.Handle[string]
 	certBlocks            []*pem.Block
@@ -60,10 +62,17 @@ func NewCertKey(certHandle, keyHandle unique.Handle[string]) (*CertKey, error) {
 }
 
 func (ck *CertKey) String() string {
-	return fmt.Sprintf("cert %s key %s", ck.certHandle.Value(), ck.keyHandle.Value())
+	cert := ""
+	if len(ck.certs) != 0 {
+		cert = fmt.Sprintf("subject %s issuer %s",
+			ck.certs[0].Subject.ToRDNSequence().String(),
+			ck.certs[0].Issuer.ToRDNSequence().String(),
+		)
+	}
+	return fmt.Sprintf("cert %s key %s", cert, trace.Redacted(ck.keyHandle.Value()))
 }
 
-// Equal returns true if the certificate and key equals the instance data, false otherwise.
+// Equal returns true if the certificate and key are equal to the instance data, false otherwise.
 func (ck *CertKey) Equal(certHandle, keyHandle unique.Handle[string]) bool {
 	return certHandle == ck.certHandle && keyHandle == ck.keyHandle
 }

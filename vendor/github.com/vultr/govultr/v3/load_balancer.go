@@ -17,15 +17,20 @@ type LoadBalancerService interface {
 	Get(ctx context.Context, lbID string) (*LoadBalancer, *http.Response, error)
 	Update(ctx context.Context, lbID string, updateReq *LoadBalancerReq) error
 	Delete(ctx context.Context, lbID string) error
+	List(ctx context.Context, options *ListOptions) ([]LoadBalancer, *Meta, *http.Response, error)
+
 	DeleteSSL(ctx context.Context, lbID string) error
 	DeleteAutoSSL(ctx context.Context, lbID string) error
-	List(ctx context.Context, options *ListOptions) ([]LoadBalancer, *Meta, *http.Response, error)
+
 	CreateForwardingRule(ctx context.Context, lbID string, rule *ForwardingRule) (*ForwardingRule, *http.Response, error)
 	GetForwardingRule(ctx context.Context, lbID string, ruleID string) (*ForwardingRule, *http.Response, error)
 	DeleteForwardingRule(ctx context.Context, lbID string, RuleID string) error
 	ListForwardingRules(ctx context.Context, lbID string, options *ListOptions) ([]ForwardingRule, *Meta, *http.Response, error)
-	ListFirewallRules(ctx context.Context, lbID string, options *ListOptions) ([]LBFirewallRule, *Meta, *http.Response, error)
+
+	CreateFirewallRules(ctx context.Context, lbID string, fwRule []LBFirewallRule) error
 	GetFirewallRule(ctx context.Context, lbID string, ruleID string) (*LBFirewallRule, *http.Response, error)
+	DeleteFirewallRule(ctx context.Context, lbID, fwRuleID string) error
+	ListFirewallRules(ctx context.Context, lbID string, options *ListOptions) ([]LBFirewallRule, *Meta, *http.Response, error)
 }
 
 // LoadBalancerHandler handles interaction with the server methods for the Vultr API
@@ -52,7 +57,8 @@ type LoadBalancer struct {
 	HTTP3           *bool            `json:"http3,omitempty"`
 	ForwardingRules []ForwardingRule `json:"forwarding_rules,omitempty"`
 	FirewallRules   []LBFirewallRule `json:"firewall_rules,omitempty"`
-	GlobalRegions   []string         `json:"global_regions,omitempty"`
+	GlobalRegions   []LBGlobalRegion `json:"global_regions,omitempty"`
+	NodeIPs         LBNodeIPs        `json:"node_ips,omitempty"`
 }
 
 // LoadBalancerReq gives options for creating or updating a load balancer
@@ -74,7 +80,7 @@ type LoadBalancerReq struct {
 	FirewallRules      []LBFirewallRule `json:"firewall_rules,omitempty"`
 	Timeout            int              `json:"timeout,omitempty"`
 	VPC                *string          `json:"vpc,omitempty"`
-	GlobalRegions      []string         `json:"global_regions,omitempty"`
+	GlobalRegions      []LBGlobalRegion `json:"global_regions,omitempty"`
 }
 
 // InstanceList represents instances that are attached to your load balancer
@@ -128,6 +134,25 @@ type LBFirewallRule struct {
 	Port   int    `json:"port,omitempty"`
 	IPType string `json:"ip_type,omitempty"`
 	Source string `json:"source,omitempty"`
+}
+
+// LBFirewallRules represents a list of firewall rules.  This is only used when
+// sending the create firewall rules request
+type LBFirewallRules struct {
+	Rules []LBFirewallRule `json:"firewall_rules"`
+}
+
+// LBGlobalRegion represents a global load balancer region
+type LBGlobalRegion struct {
+	RegionID string `json:"region_id"`
+	VPCID    string `json:"vpc_id"`
+}
+
+// LBNodeIPs represents lists of LoadBalancer node IPs
+type LBNodeIPs struct {
+	V4      []string `json:"v4,omitempty"`
+	V6      []string `json:"v6,omitempty"`
+	Private []string `json:"private,omitempty"`
 }
 
 // SSL represents valid SSL config
@@ -324,6 +349,21 @@ func (l *LoadBalancerHandler) DeleteForwardingRule(ctx context.Context, lbID, ru
 	return err
 }
 
+// CreateFirewallRules will create firewall rules on your load balancer
+func (l *LoadBalancerHandler) CreateFirewallRules(ctx context.Context, lbID string, fwRule []LBFirewallRule) error {
+	uri := fmt.Sprintf("%s/%s/firewall-rules", lbPath, lbID)
+	req, err := l.client.NewRequest(ctx, http.MethodPost, uri, LBFirewallRules{Rules: fwRule})
+	if err != nil {
+		return err
+	}
+
+	if _, err := l.client.DoWithContext(ctx, req, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetFirewallRule will get a firewall rule from your load balancer subscription.
 func (l *LoadBalancerHandler) GetFirewallRule(ctx context.Context, lbID, ruleID string) (*LBFirewallRule, *http.Response, error) {
 	uri := fmt.Sprintf("%s/%s/firewall-rules/%s", lbPath, lbID, ruleID)
@@ -339,6 +379,21 @@ func (l *LoadBalancerHandler) GetFirewallRule(ctx context.Context, lbID, ruleID 
 	}
 
 	return fwRule.FirewallRule, resp, nil
+}
+
+// DeleteFirewallRule will delete a firewall rule from your load balancer
+func (l *LoadBalancerHandler) DeleteFirewallRule(ctx context.Context, lbID, fwRuleID string) error {
+	uri := fmt.Sprintf("%s/%s/firewall-rules/%s", lbPath, lbID, fwRuleID)
+	req, err := l.client.NewRequest(ctx, http.MethodDelete, uri, nil)
+	if err != nil {
+		return err
+	}
+
+	if _, err := l.client.DoWithContext(ctx, req, nil); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ListFirewallRules lists all firewall rules for a load balancer subscription

@@ -88,7 +88,7 @@ func defaultDiskTypesRESTCallOptions() *DiskTypesCallOptions {
 	}
 }
 
-// internalDiskTypesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalDiskTypesClient is an interface that defines the methods available from Compute Engine API.
 type internalDiskTypesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -98,10 +98,12 @@ type internalDiskTypesClient interface {
 	List(context.Context, *computepb.ListDiskTypesRequest, ...gax.CallOption) *DiskTypeIterator
 }
 
-// DiskTypesClient is a client for interacting with Google Compute Engine API.
+// DiskTypesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The DiskTypes API.
+//
+// This client uses DiskTypes version 2026-09-01.
 type DiskTypesClient struct {
 	// The internal transport-dependent client.
 	internalClient internalDiskTypesClient
@@ -112,7 +114,7 @@ type DiskTypesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *DiskTypesClient) Close() error {
 	return c.internalClient.Close()
@@ -214,6 +216,37 @@ func NewDiskTypesRESTClient(ctx context.Context, opts ...option.ClientOption) (*
 		callOpts.Get = append(callOpts.Get, gax.WithClientMetrics(metrics))
 		callOpts.List = append(callOpts.List, gax.WithClientMetrics(metrics))
 	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientTracing(tracing))
+		callOpts.Get = append(callOpts.Get, gax.WithClientTracing(tracing))
+		callOpts.List = append(callOpts.List, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.AggregatedList = append(callOpts.AggregatedList, gax.WithClientLogging(logging))
+		callOpts.Get = append(callOpts.Get, gax.WithClientLogging(logging))
+		callOpts.List = append(callOpts.List, gax.WithClientLogging(logging))
+	}
 
 	return &DiskTypesClient{internalClient: c, CallOptions: callOpts}, nil
 }
@@ -238,10 +271,11 @@ func (c *diskTypesRESTClient) setGoogleClientInfo(keyval ...string) {
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "rest", "UNKNOWN", "pb", protoVersion)
 	c.xGoogHeaders = []string{
 		"x-goog-api-client", gax.XGoogHeader(kv...),
+		"x-goog-api-version", "2026-09-01",
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *diskTypesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -262,7 +296,7 @@ func (c *diskTypesRESTClient) Connection() *grpc.ClientConn {
 // returnPartialSuccess parameter to true.
 func (c *diskTypesRESTClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListDiskTypesRequest, opts ...gax.CallOption) *DiskTypesScopedListPairIterator {
 	it := &DiskTypesScopedListPairIterator{}
-	req = proto.Clone(req).(*computepb.AggregatedListDiskTypesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]DiskTypesScopedListPair, string, error) {
 		resp := &computepb.DiskTypeAggregatedList{}
@@ -295,9 +329,6 @@ func (c *diskTypesRESTClient) AggregatedList(ctx context.Context, req *computepb
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 		if req != nil && req.ServiceProjectNumber != nil {
 			params.Add("serviceProjectNumber", fmt.Sprintf("%v", req.GetServiceProjectNumber()))
@@ -372,9 +403,6 @@ func (c *diskTypesRESTClient) Get(ctx context.Context, req *computepb.GetDiskTyp
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/zones/%v/diskTypes/%v", req.GetProject(), req.GetZone(), req.GetDiskType()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.DiskTypes/Get")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/zones/{zone}/diskTypes/{disk_type}")
@@ -414,7 +442,7 @@ func (c *diskTypesRESTClient) Get(ctx context.Context, req *computepb.GetDiskTyp
 // project.
 func (c *diskTypesRESTClient) List(ctx context.Context, req *computepb.ListDiskTypesRequest, opts ...gax.CallOption) *DiskTypeIterator {
 	it := &DiskTypeIterator{}
-	req = proto.Clone(req).(*computepb.ListDiskTypesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.DiskType, string, error) {
 		resp := &computepb.DiskTypeList{}
@@ -444,9 +472,6 @@ func (c *diskTypesRESTClient) List(ctx context.Context, req *computepb.ListDiskT
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 
 		baseUrl.RawQuery = params.Encode()

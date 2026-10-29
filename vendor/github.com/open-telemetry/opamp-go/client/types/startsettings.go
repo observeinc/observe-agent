@@ -8,6 +8,18 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
+// BackoffPolicy controls the delay between consecutive connection or request
+// retry attempts. The client calls NextBackOff to determine how long to wait
+// before the next one.
+type BackoffPolicy interface {
+	// NextBackOff returns the duration to wait before the next retry.
+	NextBackOff() time.Duration
+}
+
+// BackoffPolicyFunc returns a fresh BackoffPolicy. The client invokes it at
+// the start of each retry sequence.
+type BackoffPolicyFunc func() BackoffPolicy
+
 // StartSettings defines the parameters for starting the OpAMP Client.
 type StartSettings struct {
 	// Connection parameters.
@@ -17,6 +29,10 @@ type StartSettings struct {
 
 	// Optional additional HTTP headers to send with all HTTP requests.
 	Header http.Header
+
+	// Optional HTTP client used by the plain HTTP transport for OpAMP requests.
+	// If nil, a default HTTP client will be used. WebSocket transport ignores this field.
+	Client *http.Client
 
 	// Optional function that can be used to modify the HTTP headers
 	// before each HTTP request.
@@ -63,6 +79,14 @@ type StartSettings struct {
 	// The data will be compressed in both directions.
 	EnableCompression bool
 
+	// MaxMessageSize is the maximum size in bytes of OpAMP transport messages
+	// that the client sends or receives. For HTTP this applies to the complete
+	// request or response body before compression and after decompression. For
+	// WebSocket this applies to the complete OpAMP WebSocket message, including
+	// header and data, before compression and after decompression.
+	// If zero, the default limit of 64 MiB is used. If negative, no limit is applied.
+	MaxMessageSize int64
+
 	// Optional HeartbeatInterval to configure the heartbeat interval for client.
 	// If nil, the default heartbeat interval (30s) will be used.
 	// If zero, heartbeat will be disabled for a Websocket-based client.
@@ -77,4 +101,12 @@ type StartSettings struct {
 	// If nil, the default reporter interval (10s) will be used.
 	// If specified a minimum value of 1s will be enforced.
 	DownloadReporterInterval *time.Duration
+
+	// Optional BackoffPolicy returns a fresh policy controlling the delay between
+	// consecutive retry attempts when a connection (WebSocket) or request
+	// (HTTP) fails. It is invoked at the start of each retry sequence, so every
+	// sequence begins from the returned policy's initial state. If nil, a
+	// default exponential backoff is used that retries indefinitely.
+	// See BackoffPolicy and BackoffPolicyFunc for details.
+	BackoffPolicy BackoffPolicyFunc
 }

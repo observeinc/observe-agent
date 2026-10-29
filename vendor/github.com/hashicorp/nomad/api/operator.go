@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2015, 2025
+// Copyright IBM Corp. 2015, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package api
@@ -185,6 +185,13 @@ type SchedulerConfiguration struct {
 	// until the configuration is updated and written to the Nomad servers.
 	PauseEvalBroker bool
 
+	// NodeLimitForFeasibilityChecks limits the number of feasible nodes to consider when
+	// scheduling a job that specifies spread and/or affinity. Defaults to 100 nodes if
+	// unset. Lower numbers result in better scheduler performance and more randomization
+	// of jobs across nodes. Higher numbers result in more deterministic application of
+	// spread and/or affinity.
+	NodeLimitForFeasibilityChecks uint
+
 	// CreateIndex/ModifyIndex store the create/modify indexes of this configuration.
 	CreateIndex uint64
 	ModifyIndex uint64
@@ -326,7 +333,7 @@ type License struct {
 	Product string
 
 	// License Specific Flags
-	Flags map[string]interface{}
+	Flags map[string]any
 
 	// Modules is a list of the licensed enterprise modules
 	Modules []string

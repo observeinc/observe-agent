@@ -14,8 +14,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
+	"github.com/SAP/go-hdb/driver/internal/trace"
 )
 
 const (
@@ -24,15 +26,19 @@ const (
 	ldapCapabilitiesSize    = 8
 	ldapDefaultCapabilities = 0x01 // called "default capabilities" in node-hdb
 	ldapSessionKeySize      = 32   // AES-256 key size
+	ldapPublicKeyBitSize    = 2048 // required server RSA key size
+	ldapPublicKeyBufLen     = 580  // maximum server RSA public key length in bytes
 )
 
 // LDAP implements LDAP authentication.
 type LDAP struct {
-	username        string
-	password        string
-	clientChallenge []byte
-	serverChallenge []byte
-	serverPublicKey *rsa.PublicKey
+	username            string
+	password            string
+	clientChallenge     []byte
+	serverChallenge     []byte
+	serverPublicKey     *rsa.PublicKey
+	encryptedSessionKey []byte
+	encryptedPassword   []byte
 }
 
 // NewLDAP creates a new LDAP authentication instance.
@@ -44,7 +50,17 @@ func NewLDAP(username, password string) *LDAP {
 }
 
 func (a *LDAP) String() string {
-	return fmt.Sprintf("method type %s username %s", a.Typ(), a.username)
+	b := &strings.Builder{}
+	fmt.Fprintf(b,
+		"method type %s username %s clientChallenge %s serverChallenge %s encryptedSessionKey %s encryptedPassword %s",
+		a.Typ(), trace.Cut(a.username), trace.Cut(a.clientChallenge), trace.Cut(a.serverChallenge),
+		trace.Cut(a.encryptedSessionKey), trace.Cut(a.encryptedPassword))
+	if a.serverPublicKey != nil {
+		if der, err := x509.MarshalPKIXPublicKey(a.serverPublicKey); err == nil {
+			fmt.Fprintf(b, " serverPublicKey %s", trace.Cut(der))
+		}
+	}
+	return b.String()
 }
 
 // Typ implements the Method interface.
@@ -53,12 +69,13 @@ func (a *LDAP) Typ() string { return MtLDAP }
 // Order implements the Method interface.
 func (a *LDAP) Order() byte { return MoLDAP }
 
-// PrepareInitReq implements the Method interface.
-func (a *LDAP) PrepareInitReq(prms *Prms) error {
-	a.clientChallenge = make([]byte, ldapClientChallengeSize)
-	rand.Read(a.clientChallenge) //nolint: errcheck // never returns error
+// AuthLoginName implements the Method interface.
+func (a *LDAP) AuthLoginName() string { return a.username }
 
-	prms.addString(a.Typ())
+// EncodeInitReq implements the Method interface.
+func (a *LDAP) EncodeInitReq(prms *Prms) error {
+	a.clientChallenge = make([]byte, ldapClientChallengeSize)
+	rand.Read(a.clientChallenge)
 
 	// Add sub-parameters: client challenge and capabilities
 	subPrms := prms.addPrms()
@@ -71,29 +88,53 @@ func (a *LDAP) PrepareInitReq(prms *Prms) error {
 	return nil
 }
 
-// InitRepDecode implements the Method interface.
-func (a *LDAP) InitRepDecode(d *encoding.Decoder) error {
-	d.AuthVarFieldInd()
-	if err := DecodeAndCheckNumPrm(d, 4); err != nil {
+// DecodeInitReq implements the Method interface.
+func (a *LDAP) DecodeInitReq(dec *encoding.Decoder) error {
+	_, b := dec.LIBytes() // sub parameters
+	sub := encoding.NewDecoder(b, nil)
+	if err := DecodeAndCheckNumPrm(sub, 2); err != nil {
+		return err
+	}
+
+	_, clientChallenge := sub.LIBytes()
+	if len(clientChallenge) != ldapClientChallengeSize {
+		return fmt.Errorf("invalid client challenge size %d - expected %d", len(clientChallenge), ldapClientChallengeSize)
+	}
+	a.clientChallenge = clientChallenge
+
+	_, capabilities := sub.LIBytes()
+	if len(capabilities) != ldapCapabilitiesSize {
+		return fmt.Errorf("invalid capabilities size %d - expected %d", len(capabilities), ldapCapabilitiesSize)
+	}
+	return nil
+}
+
+// DecodeInitReply implements the Method interface.
+func (a *LDAP) DecodeInitReply(dec *encoding.Decoder) error {
+	dec.AuthVarFieldInd()
+	if err := DecodeAndCheckNumPrm(dec, 4); err != nil {
 		return fmt.Errorf("LDAP authentication: %w", err)
 	}
 
-	clientChallenge := d.AuthBytes()
+	clientChallenge := dec.AuthBytes()
 	if len(clientChallenge) != ldapClientChallengeSize {
 		return fmt.Errorf("invalid client challenge size %d - expected %d", len(clientChallenge), ldapClientChallengeSize)
 	}
 
-	a.serverChallenge = d.AuthBytes()
+	a.serverChallenge = dec.AuthBytes()
 	if len(a.serverChallenge) != ldapServerChallengeSize {
 		return fmt.Errorf("invalid server challenge size %d - expected %d", len(a.serverChallenge), ldapServerChallengeSize)
 	}
 
-	serverPublicKeyPEM := d.AuthBytes()
+	serverPublicKeyPEM := dec.AuthBytes()
 	if len(serverPublicKeyPEM) == 0 {
 		return errors.New("server did not provide RSA public key")
 	}
+	if len(serverPublicKeyPEM) > ldapPublicKeyBufLen {
+		return fmt.Errorf("invalid server RSA public key length %d - maximum %d", len(serverPublicKeyPEM), ldapPublicKeyBufLen)
+	}
 
-	capabilities := d.AuthBytes()
+	capabilities := dec.AuthBytes()
 	if len(capabilities) == 0 {
 		return errors.New("empty server capabilities")
 	}
@@ -106,18 +147,21 @@ func (a *LDAP) InitRepDecode(d *encoding.Decoder) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse server public key: %w", err)
 	}
+	if a.serverPublicKey.N.BitLen() != ldapPublicKeyBitSize {
+		return fmt.Errorf("invalid server RSA public key size %d bits - expected %d", a.serverPublicKey.N.BitLen(), ldapPublicKeyBitSize)
+	}
 
 	if !bytes.Equal(clientChallenge, a.clientChallenge) {
-		return errors.New("LDAP authentication: client challenge mismatch")
+		return fmt.Errorf("%w: LDAP authentication: client challenge mismatch", ErrAuthVerifyFailed)
 	}
 	return nil
 }
 
-// PrepareFinalReq implements the Method interface.
-func (a *LDAP) PrepareFinalReq(prms *Prms) error {
+// EncodeFinalReq implements the Method interface.
+func (a *LDAP) EncodeFinalReq(prms *Prms) error {
 	// Generate random session key
 	sessionKey := make([]byte, ldapSessionKeySize)
-	rand.Read(sessionKey) //nolint:errcheck
+	rand.Read(sessionKey)
 
 	encryptedSessionKey, err := ldapEncryptSessionKey(sessionKey, a.serverChallenge, a.serverPublicKey)
 	if err != nil {
@@ -129,9 +173,6 @@ func (a *LDAP) PrepareFinalReq(prms *Prms) error {
 		return err
 	}
 
-	prms.AddCESU8String(a.username)
-	prms.addString(a.Typ())
-
 	subPrms := prms.addPrms()
 	subPrms.addBytes(encryptedSessionKey)
 	subPrms.addBytes(encryptedPassword)
@@ -139,17 +180,30 @@ func (a *LDAP) PrepareFinalReq(prms *Prms) error {
 	return nil
 }
 
-// FinalRepDecode implements the Method interface.
-func (a *LDAP) FinalRepDecode(d *encoding.Decoder) error {
-	if err := DecodeAndCheckNumPrm(d, 2); err != nil {
+// DecodeFinalReq implements the Method interface.
+func (a *LDAP) DecodeFinalReq(dec *encoding.Decoder, logonname string) error {
+	a.username = logonname
+	_, b := dec.LIBytes() // sub parameters
+	sub := encoding.NewDecoder(b, nil)
+	if err := DecodeAndCheckNumPrm(sub, 2); err != nil {
+		return err
+	}
+	_, a.encryptedSessionKey = sub.LIBytes()
+	_, a.encryptedPassword = sub.LIBytes()
+	return nil
+}
+
+// DecodeFinalReply implements the Method interface.
+func (a *LDAP) DecodeFinalReply(dec *encoding.Decoder) error {
+	if err := DecodeAndCheckNumPrm(dec, 2); err != nil {
 		return fmt.Errorf("LDAP authentication: %w", err)
 	}
 
-	methodName := d.AuthString()
+	methodName := dec.AuthString()
 	if err := checkAuthMethodType(methodName, a.Typ()); err != nil {
 		return err
 	}
-	serverProof := d.AuthBytes()
+	serverProof := dec.AuthBytes()
 	if len(serverProof) > 0 {
 		return fmt.Errorf("server proof failed: %v", serverProof)
 	}
@@ -221,6 +275,6 @@ func ldapEncryptPassword(password string, sessionKey []byte, challenge []byte) (
 // ldapPKCS7Pad pads data to a multiple of blockSize using PKCS7 padding.
 func ldapPKCS7Pad(data []byte, blockSize int) []byte {
 	padding := blockSize - (len(data) % blockSize)
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding) //nolint: gosec
 	return append(data, padtext...)
 }

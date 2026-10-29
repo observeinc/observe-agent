@@ -4,21 +4,14 @@ LINODE_DEBUG ?= 0
 # The path to the pubkey to configure the E2E testing instance with.
 TEST_PUBKEY ?= ~/.ssh/id_rsa.pub
 
-SKIP_DOCKER       ?= 0
-
 GOLANGCILINT      := golangci-lint
-GOLANGCILINT_IMG  := golangci/golangci-lint:latest
 GOLANGCILINT_ARGS := run
 
 # Whether to cleanup the Linode instance used in the testing
 CLEANUP_TEST_LINODE_INSTANCE ?= false
 
 lint:
-ifeq ($(SKIP_DOCKER), 1)
 	$(GOLANGCILINT) $(GOLANGCILINT_ARGS)
-else
-	docker run --rm -v $(shell pwd):/app -w /app $(GOLANGCILINT_IMG) $(GOLANGCILINT) $(GOLANGCILINT_ARGS)
-endif
 
 fmt:
 	gofumpt -w -l .
