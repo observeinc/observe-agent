@@ -8,6 +8,7 @@ require (
 	github.com/observeinc/observe-agent v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor v0.0.0-00010101000000-000000000000
 	github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver v0.0.0-00010101000000-000000000000
+	github.com/observeinc/observe-agent/components/receivers/jmxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.151.0
@@ -48,7 +49,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.151.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.151.0
@@ -584,6 +584,8 @@ require (
 )
 
 replace github.com/observeinc/observe-agent/components/receivers/heartbeatreceiver => ../components/receivers/heartbeatreceiver
+
+replace github.com/observeinc/observe-agent/components/receivers/jmxreceiver => ../components/receivers/jmxreceiver
 
 replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../components/processors/observek8sattributesprocessor
 
