@@ -49,15 +49,18 @@ func invertHasResourceOrSpanWithCondition(
 
 		resource := rs.Resource()
 		if !shouldSampleResource(resource) {
-			return samplingpolicy.NotSampled
+			//nolint:staticcheck // SA1019: Observe Agent patch keeps the inverted decisions.
+			return samplingpolicy.InvertNotSampled
 		}
 
 		if !hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, true) {
-			return samplingpolicy.NotSampled
+			//nolint:staticcheck // SA1019: Observe Agent patch keeps the inverted decisions.
+			return samplingpolicy.InvertNotSampled
 		}
 	}
 
-	return samplingpolicy.Sampled
+	//nolint:staticcheck // SA1019: Observe Agent patch keeps the inverted decisions.
+	return samplingpolicy.InvertSampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.

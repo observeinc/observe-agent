@@ -70,6 +70,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
+	go.opentelemetry.io/collector/component/componenttest v0.164.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.70.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.70.0
@@ -78,6 +79,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.70.0
 	go.opentelemetry.io/collector/connector v0.164.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.164.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
 	go.opentelemetry.io/collector/exporter v1.70.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.164.0
 	go.opentelemetry.io/collector/exporter/nopexporter v0.164.0
@@ -87,9 +89,11 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.164.0
 	go.opentelemetry.io/collector/featuregate v1.70.0
 	go.opentelemetry.io/collector/otelcol v0.164.0
+	go.opentelemetry.io/collector/pdata v1.70.0
 	go.opentelemetry.io/collector/processor v1.70.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.164.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.164.0
+	go.opentelemetry.io/collector/processor/processortest v0.164.0
 	go.opentelemetry.io/collector/receiver v1.70.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.164.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.164.0
@@ -463,7 +467,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.164.0 // indirect
-	go.opentelemetry.io/collector/component/componenttest v0.164.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v1.70.0 // indirect
@@ -481,7 +484,6 @@ require (
 	go.opentelemetry.io/collector/consumer v1.70.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.164.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.164.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.164.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.0 // indirect
@@ -499,7 +501,6 @@ require (
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/statusutil v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.164.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.164.0 // indirect
@@ -507,7 +508,6 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.164.0 // indirect
-	go.opentelemetry.io/collector/processor/processortest v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.164.0 // indirect
@@ -612,3 +612,5 @@ replace github.com/observeinc/observe-agent/components/processors/observek8sattr
 replace github.com/observeinc/observe-agent => ../
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.24.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => github.com/observeinc/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.0.0-20261029054918-f50d774c8658

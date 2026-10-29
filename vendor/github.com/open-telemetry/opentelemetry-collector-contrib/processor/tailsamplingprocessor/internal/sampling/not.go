@@ -38,9 +38,11 @@ func (n *not) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samp
 
 	// Return the opposite of the decision
 	switch decision {
-	case samplingpolicy.Sampled:
+	//nolint:staticcheck // SA1019: Observe Agent patch keeps the inverted decisions.
+	case samplingpolicy.Sampled, samplingpolicy.InvertSampled:
 		return samplingpolicy.NotSampled, nil
-	case samplingpolicy.NotSampled:
+	//nolint:staticcheck // SA1019: Observe Agent patch keeps the inverted decisions.
+	case samplingpolicy.NotSampled, samplingpolicy.InvertNotSampled:
 		return samplingpolicy.Sampled, nil
 	default:
 		// For any other decision types (Unspecified, Pending, Error), just let them bubble up.

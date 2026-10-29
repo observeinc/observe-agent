@@ -38,6 +38,9 @@ func generateCollectorSettings(URIs []string) *otelcol.CollectorSettings {
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
 				},
+				ConverterFactories: []confmap.ConverterFactory{
+					newInvertMatchConverterFactory(),
+				},
 			},
 		},
 	}
