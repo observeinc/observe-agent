@@ -20,7 +20,7 @@ const otelOverrideSection = `
 #   service:
 #     pipelines:
 #       metrics:
-#         receivers: [hostmetrics]
+#         receivers: [host_metrics]
 #         processors: [memory_limiter]
 #         exporters: [debug]
 `

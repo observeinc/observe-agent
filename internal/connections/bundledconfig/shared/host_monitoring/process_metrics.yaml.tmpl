@@ -1,5 +1,5 @@
 receivers:
-  hostmetrics/host-monitoring-process:
+  host_metrics/host-monitoring-process:
     collection_interval: 60s
     scrapers:
       process:
@@ -28,7 +28,7 @@ receivers:
 service:
   pipelines:
     metrics/host_monitoring_process:
-      receivers: [hostmetrics/host-monitoring-process]
+      receivers: [host_metrics/host-monitoring-process]
       processors:
         - memory_limiter
         - resourcedetection
