@@ -610,5 +610,3 @@ replace github.com/observeinc/observe-agent/components/receivers/jmxreceiver => 
 replace github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor => ../components/processors/observek8sattributesprocessor
 
 replace github.com/observeinc/observe-agent => ../
-
-replace github.com/apache/thrift => github.com/apache/thrift v0.24.0
