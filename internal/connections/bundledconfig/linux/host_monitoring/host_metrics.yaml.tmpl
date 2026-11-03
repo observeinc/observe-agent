@@ -5,8 +5,11 @@ receivers:
     scrapers:
       cpu:
         metrics:
+          system.cpu.time:
+            attributes: [cpu, state]
           system.cpu.utilization:
             enabled: true
+            attributes: [cpu, state]
           system.cpu.frequency:
             enabled: true
           system.cpu.logical.count:
