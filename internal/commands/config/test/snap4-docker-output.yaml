@@ -245,6 +245,15 @@ processors:
                 - set(attributes["observe_transform"]["identifiers"]["deployment.environment.name"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil
                 - set(attributes["observe_transform"]["identifiers"]["host.name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil
                 - set(attributes["observe_transform"]["identifiers"]["os.type"], resource.attributes["os.type"]) where resource.attributes["os.type"] != nil
+    transform/memory_limiter_legacy_names:
+        error_mode: ignore
+        metric_statements:
+            - copy_metric(name="otelcol_processor_accepted_log_records_total") where metric.name == "otelcol_processor_memory_limiter_accepted_log_records_total"
+            - copy_metric(name="otelcol_processor_accepted_metric_points_total") where metric.name == "otelcol_processor_memory_limiter_accepted_metric_points_total"
+            - copy_metric(name="otelcol_processor_accepted_spans_total") where metric.name == "otelcol_processor_memory_limiter_accepted_spans_total"
+            - copy_metric(name="otelcol_processor_refused_log_records_total") where metric.name == "otelcol_processor_memory_limiter_refused_log_records_total"
+            - copy_metric(name="otelcol_processor_refused_metric_points_total") where metric.name == "otelcol_processor_memory_limiter_refused_metric_points_total"
+            - copy_metric(name="otelcol_processor_refused_spans_total") where metric.name == "otelcol_processor_memory_limiter_refused_spans_total"
     transform/promote_peer_to_service:
         error_mode: ignore
         trace_statements:
@@ -479,6 +488,7 @@ service:
                 - prometheusremotewrite/observe
             processors:
                 - memory_limiter
+                - transform/memory_limiter_legacy_names
                 - transform/truncate
                 - resourcedetection
                 - resourcedetection/cloud
@@ -597,5 +607,8 @@ service:
                             with_resource_constant_labels:
                                 included:
                                     - observe.agent.instance.id
+                            without_scope_info: false
+                            without_type_suffix: false
+                            without_units: false
         resource:
             observe.agent.instance.id: test-agent-instance-id
