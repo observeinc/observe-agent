@@ -1,5 +1,5 @@
 receivers:
-  filelog/test:
+  file_log/test:
     include: ["./test.log"]
 
 processors:
@@ -19,7 +19,7 @@ service:
     pipelines:
         logs/test:
             receivers:
-                - filelog/test
+                - file_log/test
             processors:
                 - attributes/test
             exporters:

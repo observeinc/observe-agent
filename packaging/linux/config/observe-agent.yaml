@@ -47,11 +47,11 @@ host_monitoring:
 #     pipelines:
 #       # This will override the existing metrics/host_monitoring pipeline and output to stdout debug instead
 #       metrics/host_monitoring_host:
-#         receivers: [hostmetrics/host-monitoring-host]
+#         receivers: [host_metrics/host-monitoring-host]
 #         processors: [memory_limiter]
 #         exporters: [debug]
 #       # This is a net new pipeline
 #       logs/new-pipeline:
-#         receivers: [filelog/host_monitoring]
+#         receivers: [file_log/host_monitoring]
 #         processors: [memory_limiter]
 #         exporters: [debug]
