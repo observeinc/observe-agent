@@ -137,6 +137,11 @@ var allSnapshotTests = []snapshotTest{
 		outputPath:      "test/snap4-windows-output.yaml",
 		packageType:     Windows,
 	},
+	{
+		agentConfigPath: "test/snap5-tail-sampling-agent-config.yaml",
+		outputPath:      "test/snap5-linux-output.yaml",
+		packageType:     Linux,
+	},
 }
 
 // This test cannot be run in our CI since some of the OTel components validate file paths
@@ -223,7 +228,10 @@ func setupConfig(t *testing.T, test snapshotTest) {
 		viper.Set("agent_local_file_path", originalPath)
 	})
 
-	root.CfgFile = filepath.Join(curPath, test.agentConfigPath)
+	root.CfgFile = test.agentConfigPath
+	if !filepath.IsAbs(root.CfgFile) {
+		root.CfgFile = filepath.Join(curPath, root.CfgFile)
+	}
 	root.RootCmd.PersistentFlags().Set("config-mode", string(test.packageType))
 	t.Cleanup(func() { root.RootCmd.PersistentFlags().Set("config-mode", "") })
 	root.InitConfig()

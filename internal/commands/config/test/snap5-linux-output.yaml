@@ -1,0 +1,33 @@
+exporters:
+    nop: {}
+extensions:
+    file_storage:
+        directory: /var/lib/observe-agent/filestorage
+processors:
+    tailsampling_legacy/observe:
+        policies:
+            - name: sample-errors
+              status_code:
+                status_codes:
+                    - ERROR
+              type: status_code
+            - name: exclude-health-checks
+              string_attribute:
+                invert_match: true
+                key: http.target
+                values:
+                    - /healthz
+              type: string_attribute
+receivers:
+    nop: {}
+service:
+    extensions:
+        - file_storage
+    pipelines:
+        traces:
+            exporters:
+                - nop
+            processors:
+                - tailsampling_legacy/observe
+            receivers:
+                - nop

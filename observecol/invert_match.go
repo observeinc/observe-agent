@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	tailsamplinglegacyprocessor "github.com/observeinc/observe-agent/components/processors/tailsamplinglegacyprocessor"
@@ -61,23 +60,13 @@ func reliesOnInvertMatch(cfg map[string]any) bool {
 		nonDrop++
 		switch typ {
 		case "string_attribute", "numeric_attribute", "boolean_attribute":
-			if filter, _ := policy[typ].(map[string]any); isTrue(filter["invert_match"]) {
+			filter, _ := policy[typ].(map[string]any)
+			if invert, _ := filter["invert_match"].(bool); invert {
 				inverted++
 			}
 		}
 	}
 	return inverted > 0 && nonDrop > 1
-}
-
-func isTrue(v any) bool {
-	switch v := v.(type) {
-	case bool:
-		return v
-	case string:
-		b, err := strconv.ParseBool(v)
-		return err == nil && b
-	}
-	return false
 }
 
 // legacyConfigError reports why tailsampling_legacy can't run a tail_sampling configuration, such as

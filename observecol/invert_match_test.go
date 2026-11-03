@@ -30,7 +30,6 @@ func TestReliesOnInvertMatch(t *testing.T) {
 	}{
 		{"inverted next to another policy", `[` + errorsPolicy + `, ` + healthzInverted + `]`, true},
 		{"two inverted policies", `[` + healthzInverted + `, {name: slow, type: numeric_attribute, numeric_attribute: {key: duration, min_value: 1, max_value: 2, invert_match: true}}]`, true},
-		{"invert_match as a string", `[` + errorsPolicy + `, {name: no-debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true, invert_match: "true"}}]`, true},
 		{"lone inverted policy", `[` + healthzInverted + `]`, false},
 		{"lone inverted policy and a drop policy", `[` + healthzInverted + `, {name: drop-debug, type: drop, drop: {drop_sub_policy: [{name: debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true}}]}}]`, false},
 		{"inverted inside and", `[` + errorsPolicy + `, {name: and, type: and, and: {and_sub_policy: [` + healthzInverted + `]}}]`, false},

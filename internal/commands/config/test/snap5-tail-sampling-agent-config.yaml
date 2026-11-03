@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../../../observe-agent.schema.json
+# A tail_sampling processor that relies on invert_match excluding traces, which the agent runs as
+# tailsampling_legacy. tail_sampling_test.go covers the other configurations.
+observe_url: https://test.collect.observeinc.com/
+
+token: 12345678901234567890:abcdefghijklmnopqrstuvwxyzABCDEF
+
+omit_base_components: true
+
+forwarding:
+    enabled: false
+
+health_check:
+    enabled: false
+
+internal_telemetry:
+    enabled: false
+
+host_monitoring:
+    enabled: false
+
+self_monitoring:
+    enabled: false
+
+otel_config_overrides:
+    receivers:
+        nop: {}
+    exporters:
+        nop: {}
+    processors:
+        tail_sampling/observe:
+            policies:
+                - {name: sample-errors, type: status_code, status_code: {status_codes: [ERROR]}}
+                - {name: exclude-health-checks, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}
+    service:
+        pipelines:
+            traces:
+                receivers: [nop]
+                processors: [tail_sampling/observe]
+                exporters: [nop]
