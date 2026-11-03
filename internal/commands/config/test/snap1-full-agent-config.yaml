@@ -97,7 +97,21 @@ application:
               instrumentation_scope_name: "@genai-otel/core"
             - service_name: agent-service
 
-otel_config_overrides: {}
+otel_config_overrides:
+    receivers:
+        jmx:
+            jar_path: /opt/opentelemetry-jmx-scraper.jar
+            endpoint: localhost:9999
+            target_system: jvm
+            collection_interval: 10s
+            resource_attributes:
+                service.name: test-java-service
+    service:
+        pipelines:
+            metrics/jmx:
+                receivers: [jmx]
+                processors: [memory_limiter, resourcedetection, batch]
+                exporters: [prometheusremotewrite/observe]
 
 exporters:
     emit_prometheus_target_info_metric: true

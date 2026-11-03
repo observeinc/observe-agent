@@ -866,6 +866,13 @@ receivers:
                 mute_process_io_error: true
                 mute_process_name_error: true
                 mute_process_user_error: true
+    jmx:
+        collection_interval: 10s
+        endpoint: localhost:9999
+        jar_path: /opt/opentelemetry-jmx-scraper.jar
+        resource_attributes:
+            service.name: test-java-service
+        target_system: jvm
     nop: null
     otlp:
         protocols:
@@ -1080,6 +1087,15 @@ service:
                 - batch
             receivers:
                 - hostmetrics/host-monitoring-process
+        metrics/jmx:
+            exporters:
+                - prometheusremotewrite/observe
+            processors:
+                - memory_limiter
+                - resourcedetection
+                - batch
+            receivers:
+                - jmx
         metrics/spanmetrics:
             exporters:
                 - routing/red_metrics_internal
