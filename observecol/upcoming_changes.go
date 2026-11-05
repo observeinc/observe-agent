@@ -14,6 +14,7 @@ import (
 const (
 	tailSamplingType   = "tail_sampling"
 	hostMetricsType    = "hostmetrics"
+	prometheusType     = "prometheus"
 	dropPolicyGuideURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor"
 	contribChangelog   = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md"
 	upcomingPrefix     = "Upcoming change in the next minor releases of the Observe Agent, which update the OpenTelemetry Collector from v0.151.0: "
@@ -43,6 +44,11 @@ const (
 	postgreSQLMessage = upcomingPrefix +
 		"from v0.158.0, the postgresql receiver collects postgresql.database.locks from every configured database instead of only the postgres database. " +
 		"Update dashboards and monitors that use this metric. Details: " + contribChangelog
+
+	prometheusSuffixesMessage = upcomingPrefix +
+		"from v0.154.0, the prometheus exporter ignores add_metric_suffixes and adds type and unit suffixes, such as _total, to metric names. " +
+		"To keep names without suffixes, replace add_metric_suffixes: false with translation_strategy: UnderscoreEscapingWithoutSuffixes, which this version already supports. " +
+		"Details: " + contribChangelog
 
 	hostMetricsCPUMessage = upcomingPrefix +
 		"from v0.157.0, the hostmetrics CPU scraper reports system.cpu.time and system.cpu.utilization without the cpu attribute unless it is listed, " +
@@ -125,6 +131,15 @@ func dropsPerCPUSeries(cfg map[string]any) bool {
 	return false
 }
 
+// dropsMetricSuffixes reports whether a prometheus exporter turns suffixes off with the deprecated
+// add_metric_suffixes, which upstream ignores from v0.154.0. translation_strategy takes precedence
+// when set, so those configurations keep their names.
+func dropsMetricSuffixes(cfg map[string]any) bool {
+	add, ok := cfg["add_metric_suffixes"].(bool)
+	strategy, _ := cfg["translation_strategy"].(string)
+	return ok && !add && strategy == ""
+}
+
 func upcomingChanges(conf map[string]any) []UpcomingChange {
 	var changes []UpcomingChange
 	processors, _ := conf["processors"].(map[string]any)
@@ -148,6 +163,14 @@ func upcomingChanges(conf map[string]any) []UpcomingChange {
 		cfg, _ := raw.(map[string]any)
 		if typ == hostMetricsType && dropsPerCPUSeries(cfg) {
 			changes = append(changes, UpcomingChange{Component: id, Message: hostMetricsCPUMessage})
+		}
+	}
+	exporters, _ := conf["exporters"].(map[string]any)
+	for id, raw := range exporters {
+		typ, _, _ := strings.Cut(id, "/")
+		cfg, _ := raw.(map[string]any)
+		if typ == prometheusType && dropsMetricSuffixes(cfg) {
+			changes = append(changes, UpcomingChange{Component: id, Message: prometheusSuffixesMessage})
 		}
 	}
 	slices.SortFunc(changes, func(a, b UpcomingChange) int { return strings.Compare(a.Component, b.Component) })

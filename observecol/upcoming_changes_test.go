@@ -126,6 +126,23 @@ receivers:
 	}, got)
 }
 
+func TestUpcomingChangesForPrometheusExporter(t *testing.T) {
+	conf := mapFromYAML(t, `
+exporters:
+  prometheus/no_suffixes:
+    add_metric_suffixes: false
+  prometheus/with_strategy:
+    add_metric_suffixes: false
+    translation_strategy: UnderscoreEscapingWithoutSuffixes
+  prometheus/defaults: {}
+  prometheusremotewrite:
+    add_metric_suffixes: false
+`)
+	changes := upcomingChanges(conf)
+	require.Len(t, changes, 1)
+	assert.Equal(t, UpcomingChange{Component: "prometheus/no_suffixes", Message: prometheusSuffixesMessage}, changes[0])
+}
+
 func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
 	core, logs := observer.New(zapcore.WarnLevel)
 	converter := newUpcomingChangesConverterFactory().Create(confmap.ConverterSettings{Logger: zap.New(core)})
