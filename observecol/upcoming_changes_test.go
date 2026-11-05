@@ -75,6 +75,57 @@ func TestUpcomingChanges(t *testing.T) {
 	assert.Contains(t, changes[0].Message, "no longer exclude traces")
 }
 
+func TestUpcomingChangesForReceivers(t *testing.T) {
+	conf := mapFromYAML(t, `
+receivers:
+  otlp: {}
+  http_check: {}
+  httpcheck/legacy: {}
+  mongodb: {}
+  sqlserver/main: {}
+  postgresql: {}
+  hostmetrics/defaults:
+    scrapers:
+      cpu:
+  hostmetrics/keeps_cpu:
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.time:
+            attributes: [cpu, state]
+  hostmetrics/utilization_without_cpu:
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.time:
+            attributes: [cpu, state]
+          system.cpu.utilization:
+            enabled: true
+  hostmetrics/time_disabled:
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.time:
+            enabled: false
+  hostmetrics/no_cpu:
+    scrapers:
+      memory:
+`)
+	got := map[string]string{}
+	for _, change := range upcomingChanges(conf) {
+		got[change.Component] = change.Message
+	}
+	assert.Equal(t, map[string]string{
+		"http_check":                          httpCheckMessage,
+		"httpcheck/legacy":                    httpCheckMessage,
+		"mongodb":                             mongoDBMessage,
+		"sqlserver/main":                      sqlServerMessage,
+		"postgresql":                          postgreSQLMessage,
+		"hostmetrics/defaults":                hostMetricsCPUMessage,
+		"hostmetrics/utilization_without_cpu": hostMetricsCPUMessage,
+	}, got)
+}
+
 func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
 	core, logs := observer.New(zapcore.WarnLevel)
 	converter := newUpcomingChangesConverterFactory().Create(confmap.ConverterSettings{Logger: zap.New(core)})
