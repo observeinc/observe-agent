@@ -10,8 +10,8 @@
 #   remove_in:  agent release that deletes the entry (Phase 3). CI fails once that release is tagged.
 #   match:      omit to match every component of the types. Otherwise `check` names a Go check in
 #               upcoming_changes.go, or `all` lists conditions on the component's configuration:
-#               `path` (list of keys) with one of `equals: <value>`, `absent: true` or
-#               `not_contains: <value>`.
+#               `path` (list of keys) with one of `equals: <value>`, `absent: true` (missing,
+#               null or empty string) or `not_contains: <value>`.
 #   message:    what changes and what to do.
 #   examples:   component configurations that must and must not match; the tests run them.
 #
@@ -29,20 +29,28 @@ changes:
     message: >-
       Upcoming change: from OpenTelemetry Collector v0.152.0, which the next minor release of the
       Observe Agent includes, invert_match policies in tail_sampling no longer exclude traces that
-      other policies sample. This processor has a top-level invert_match policy next to other
-      policies, so it will sample more traces after that upgrade. Replace its top-level
-      invert_match policies with drop policies:
+      other policies sample, and not policies negate them. This processor has a top-level
+      invert_match policy next to other policies, or one inside a not policy, so the traces it
+      samples will change after that upgrade. Replace those invert_match policies with drop
+      policies:
       https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor
     examples:
       fires:
         - policies:
             - {name: errors, type: status_code, status_code: {status_codes: [ERROR]}}
             - {name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}
+        - policies:
+            - {name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}
+            - {name: drop-debug, type: drop, drop: {drop_sub_policy: [{name: debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true}}]}}
+        - policies:
+            - {name: not-healthz, type: not, not: {not_sub_policy: {name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}}}
       quiet:
         - policies:
             - {name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}
         - policies:
             - {name: errors, type: status_code, status_code: {status_codes: [ERROR]}}
+        - policies:
+            - {name: not-healthz, type: not, not: {not_sub_policy: {name: healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz]}}}}
 
   - id: httpcheck-nanoseconds
     kind: receiver
@@ -114,7 +122,7 @@ changes:
 
   - id: hostmetrics-cpu-attribute
     kind: receiver
-    types: [hostmetrics]
+    types: [host_metrics, hostmetrics]
     upstream: v0.157.0
     remove_in: v2.22.0
     match:
@@ -164,6 +172,7 @@ changes:
     examples:
       fires:
         - {add_metric_suffixes: false}
+        - {add_metric_suffixes: false, translation_strategy: ""}
       quiet:
         - {add_metric_suffixes: false, translation_strategy: UnderscoreEscapingWithoutSuffixes}
         - {add_metric_suffixes: true}

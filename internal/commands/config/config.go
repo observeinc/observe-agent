@@ -66,7 +66,7 @@ var configValidateCmd = &cobra.Command{
 		}
 		changes, err := observecol.UpcomingChanges(ctx, settings)
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "⚠️  could not check for upcoming changes: %v\n", err)
 		}
 		for _, change := range changes {
 			fmt.Fprintf(os.Stderr, "⚠️  %s: %s\n", change.Component, change.Message)

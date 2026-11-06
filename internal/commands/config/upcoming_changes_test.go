@@ -12,6 +12,7 @@ import (
 
 // Upcoming change warnings are for user config, so the bundled configuration must never trigger one.
 func Test_BundledConfigHasNoUpcomingChanges(t *testing.T) {
+	require.NoError(t, observecol.ApplyFeatureGates(context.Background()))
 	for _, test := range allSnapshotTests {
 		t.Run(test.agentConfigPath+"/"+string(test.packageType), func(t *testing.T) {
 			setupConfig(t, test)

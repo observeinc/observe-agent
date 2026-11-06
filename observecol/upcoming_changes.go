@@ -1,6 +1,7 @@
 package observecol
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -56,8 +58,20 @@ type matchCondition struct {
 
 // upcomingChangeChecks are matches upcoming_changes.yaml can't express as conditions.
 var upcomingChangeChecks = map[string]func(cfg map[string]any) bool{
-	"tail_sampling_invert_match": reliesOnInvertMatch,
-	"hostmetrics_cpu_attribute":  dropsPerCPUSeries,
+	"tail_sampling_invert_match": func(cfg map[string]any) bool {
+		return !featureGateEnabled(disableInvertDecisionsGate) && reliesOnInvertMatch(cfg)
+	},
+	"hostmetrics_cpu_attribute": dropsPerCPUSeries,
+}
+
+func featureGateEnabled(id string) bool {
+	enabled := false
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() == id {
+			enabled = g.IsEnabled()
+		}
+	})
+	return enabled
 }
 
 var (
@@ -78,7 +92,9 @@ func loadUpcomingChangeRules(content []byte) ([]upcomingChangeRule, error) {
 	var file struct {
 		Changes []upcomingChangeRule `yaml:"changes"`
 	}
-	if err := yaml.Unmarshal(content, &file); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(content))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&file); err != nil {
 		return nil, err
 	}
 	seen := map[string]bool{}
@@ -144,7 +160,7 @@ func (c matchCondition) holds(cfg map[string]any) bool {
 	value, found := lookupPath(cfg, c.Path)
 	switch {
 	case c.Absent:
-		return !found || value == nil
+		return !found || value == nil || value == ""
 	case c.Equals != nil:
 		return found && reflect.DeepEqual(value, c.Equals)
 	default:
@@ -168,28 +184,37 @@ func lookupPath(cfg map[string]any, path []string) (any, bool) {
 }
 
 // reliesOnInvertMatch reports whether a tail_sampling configuration behaves differently from
-// v0.152.0: a top-level string_attribute, numeric_attribute or boolean_attribute policy with
-// invert_match, next to at least one other top-level policy that isn't a drop policy. invert_match
-// inside and, composite, drop and not policies, and a lone inverted policy, behave the same.
+// v0.152.0, where invert_match policies return plain sampled and not-sampled decisions: a top-level
+// inverted policy next to any other top-level policy, or a top-level not policy that wraps an
+// inverted policy, since not passes inverted decisions through without negating them. invert_match
+// inside and, composite and drop policies, and a lone inverted policy, behave the same.
 func reliesOnInvertMatch(cfg map[string]any) bool {
 	policies, _ := cfg["policies"].([]any)
-	inverted, nonDrop := 0, 0
 	for _, p := range policies {
 		policy, _ := p.(map[string]any)
-		typ, _ := policy["type"].(string)
-		if typ == "drop" {
-			continue
+		if isInvertedPolicy(policy) && len(policies) > 1 {
+			return true
 		}
-		nonDrop++
-		switch typ {
-		case "string_attribute", "numeric_attribute", "boolean_attribute":
-			filter, _ := policy[typ].(map[string]any)
-			if invert, _ := filter["invert_match"].(bool); invert {
-				inverted++
+		if policy["type"] == "not" {
+			not, _ := policy["not"].(map[string]any)
+			sub, _ := not["not_sub_policy"].(map[string]any)
+			if isInvertedPolicy(sub) {
+				return true
 			}
 		}
 	}
-	return inverted > 0 && nonDrop > 1
+	return false
+}
+
+func isInvertedPolicy(policy map[string]any) bool {
+	typ, _ := policy["type"].(string)
+	switch typ {
+	case "string_attribute", "numeric_attribute", "boolean_attribute":
+		filter, _ := policy[typ].(map[string]any)
+		invert, _ := filter["invert_match"].(bool)
+		return invert
+	}
+	return false
 }
 
 // dropsPerCPUSeries reports whether a hostmetrics configuration has a CPU scraper with an enabled
