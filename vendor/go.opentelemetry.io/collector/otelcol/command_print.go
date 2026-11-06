@@ -5,7 +5,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
@@ -37,9 +35,7 @@ func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cob
 The output prints in YAML by default. To print JSON use --format=json,
 however this is considered unstable.
 
-Validation is enabled by default, as a safety measure.
-
-All modes are experimental, requiring the otelcol.printInitialConfig feature gate.`,
+Validation is enabled by default, as a safety measure.`,
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			pc := printContext{
@@ -75,9 +71,6 @@ type printContext struct {
 }
 
 func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
-	if !metadata.OtelcolPrintInitialConfigFeatureGate.IsEnabled() {
-		return errors.New("print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
-	}
 	err := updateSettingsUsingFlags(&pctx.set, flagSet)
 	if err != nil {
 		return err
@@ -151,7 +144,7 @@ func (pctx *printContext) printUnredactedConfig() error {
 
 	if pctx.validate {
 		// Validation serves prevent revealing invalid data.
-		if err = xconfmap.Validate(cfg); err != nil {
+		if err = confmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 		// Note: we discard the validated configuration.
@@ -172,7 +165,7 @@ func (pctx *printContext) printRedactedConfig() error {
 	}
 
 	if pctx.validate {
-		if err = xconfmap.Validate(cfg); err != nil {
+		if err = confmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 	}

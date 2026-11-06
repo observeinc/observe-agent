@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"iter"
-	"reflect"
 	"time"
 	"unsafe"
 )
@@ -66,6 +65,49 @@ func (a RecordAttrs) IsTransactional() bool {
 // These are generally not visible unless explicitly opted into.
 func (a RecordAttrs) IsControl() bool {
 	return a.attrs&0b0010_0000 != 0
+}
+
+// RecordAttrsOpts contains the fields of a [RecordAttrs]. The zero value is an
+// uncompressed, non-transactional, non-control record with a client-generated
+// timestamp.
+type RecordAttrsOpts struct {
+	// Codec is the codec the record was compressed with, overriding the
+	// default of no compression. The codec is stored in three bits; a
+	// codec that does not fit is ignored.
+	Codec CompressionCodecType
+
+	// TimestampType is how the record's timestamp was determined; see
+	// [RecordAttrs.TimestampType] for what the values mean.
+	TimestampType int8
+
+	// Transactional sets the record as a part of a transaction.
+	Transactional bool
+
+	// Control sets the record as a control record (ABORT or COMMIT).
+	Control bool
+}
+
+// NewRecordAttrs returns the attrs corresponding to opts. This exists so you
+// can populate [Record.Attrs] yourself; the client sets that field for you
+// when producing and consuming.
+func NewRecordAttrs(opts RecordAttrsOpts) RecordAttrs {
+	var attrs uint8
+	if c := uint8(opts.Codec); c <= 0b0000_0111 {
+		attrs |= c
+	}
+	switch {
+	case opts.TimestampType < 0:
+		attrs |= 0b1000_0000 // no timestamp type
+	case opts.TimestampType > 0:
+		attrs |= 0b0000_1000 // LogAppendTime
+	}
+	if opts.Transactional {
+		attrs |= 0b0001_0000
+	}
+	if opts.Control {
+		attrs |= 0b0010_0000
+	}
+	return RecordAttrs{attrs}
 }
 
 // Record is a record to write to Kafka.
@@ -187,6 +229,85 @@ func (r *Record) AppendFormat(b []byte, layout string) ([]byte, error) {
 	return f.AppendRecord(b, r), nil
 }
 
+// DeliveryCount returns the share group delivery count for this record: 1 on
+// first delivery, incremented each time the broker re-delivers the record
+// after an AckRelease or acquisition lock timeout. Returns 0 for records that
+// are not from a share group fetch.
+func (r *Record) DeliveryCount() int32 {
+	st := shareAckFromCtx(r)
+	if st == nil {
+		return 0
+	}
+	return st.deliveryCount
+}
+
+// AcquisitionDeadline returns the share group acquisition lock deadline for
+// this record: the broker will release the record for re-delivery if the
+// consumer has not acknowledged it (Accept, Release, Reject, or Renew) by this
+// time. Returns the zero time for records that are not from a share group
+// fetch.
+//
+// Note this is computed from the acquisition timeout millis in the Kafka
+// ShareFetch response when the client decodes the response. The milliseconds
+// are computed on the broker, and the timeout begins before the fetch is sent
+// to the client. As well, actually sending an ack back to the broker will have
+// network overhead. It is best to assume your actual practical deadline may be
+// a few seconds before the deadline returned from this function.
+func (r *Record) AcquisitionDeadline() time.Time {
+	if r.Context == nil {
+		return time.Time{}
+	}
+	slab, _ := r.Context.Value(shareAckKey).(*shareAckSlab)
+	if slab == nil {
+		return time.Time{}
+	}
+	return time.Unix(0, slab.acqLockDeadlineNanos)
+}
+
+// Ack sets the acknowledgement status for a share group record. This is a
+// no-op for records that are not from a share group fetch. Acks flush
+// periodically in the background; to force a flush, call
+// [Client.FlushAcks].
+//
+// Terminal statuses (AckAccept, AckRelease, AckReject) commit the record for
+// the broker. A record that is never explicitly acked is auto-accepted when
+// you poll.
+//
+// AckRenew extends the broker's acquisition lock (requires Kafka 4.2+) so the
+// caller can process a single record for longer than the broker's acquisition
+// lock timeout (30s default) without the record being released to another
+// consumer. Use AckRenew when processing one record takes longer than the
+// lock window and you do not intend to poll for more records until you are
+// done. AckRenew does NOT defer the terminal ack across polls: if you call
+// the next [Client.PollRecords] without first providing a terminal ack, the
+// renewed record is auto-accepted by the next poll's finalize pass, exactly
+// as if you had never renewed it. AckRenew may be called repeatedly within a
+// processing window, but only after each prior renew has been acknowledged
+// by the broker; a renew issued while a prior renew is still in flight is a
+// no-op (the broker would coalesce them either way). After the broker
+// confirms a renew, the next call extends the lock again.
+//
+// Renewals are best-effort. If the partition's leader changes or the
+// broker connection drops between the renewal and the terminal ack, the
+// held record is lost and the broker will redeliver it (possibly to
+// another consumer). Share group consumers are at-least-once regardless:
+// any TCP hiccup can cause re-delivery, so user processing must be
+// idempotent.
+func (r *Record) Ack(status AckStatus) {
+	if status < AckAccept || status > AckRenew {
+		return
+	}
+	st := shareAckFromCtx(r)
+	if st == nil || !st.tryAck(status, false) {
+		return
+	}
+	// Every successful CAS appends an entry and increments
+	// pendingAcks. Multiple calls on the same record (e.g.
+	// renew then accept) produce multiple entries that coalesce
+	// at request-build time.
+	st.appendAck()
+}
+
 // StringRecord returns a Record with the Value field set to the input value
 // string. For producing, this function is useful in tandem with the
 // client-level DefaultProduceTopic option.
@@ -197,13 +318,7 @@ func (r *Record) AppendFormat(b []byte, layout string) ([]byte, error) {
 // be used if you only ever read record fields. This function can safely be used
 // for producing; the client never modifies a record's key nor value fields.
 func StringRecord(value string) *Record {
-	var slice []byte
-	slicehdr := (*reflect.SliceHeader)(unsafe.Pointer(&slice))             //nolint:gosec // known way to convert string to slice
-	slicehdr.Data = ((*reflect.StringHeader)(unsafe.Pointer(&value))).Data //nolint:gosec // known way to convert string to slice
-	slicehdr.Len = len(value)
-	slicehdr.Cap = len(value)
-
-	return &Record{Value: slice}
+	return &Record{Value: unsafe.Slice(unsafe.StringData(value), len(value))} //nolint:gosec // G103 safe string-to-[]byte without copy; caller must not modify the slice
 }
 
 // KeyStringRecord returns a Record with the Key and Value fields set to the
@@ -216,14 +331,10 @@ func StringRecord(value string) *Record {
 // be used if you only ever read record fields. This function can safely be used
 // for producing; the client never modifies a record's key nor value fields.
 func KeyStringRecord(key, value string) *Record {
-	r := StringRecord(value)
-
-	keyhdr := (*reflect.SliceHeader)(unsafe.Pointer(&r.Key))           //nolint:gosec // known way to convert string to slice
-	keyhdr.Data = ((*reflect.StringHeader)(unsafe.Pointer(&key))).Data //nolint:gosec // known way to convert string to slice
-	keyhdr.Len = len(key)
-	keyhdr.Cap = len(key)
-
-	return r
+	return &Record{
+		Key:   unsafe.Slice(unsafe.StringData(key), len(key)),     //nolint:gosec // G103 safe string-to-[]byte without copy; caller must not modify the slice
+		Value: unsafe.Slice(unsafe.StringData(value), len(value)), //nolint:gosec // G103 safe string-to-[]byte without copy; caller must not modify the slice
+	}
 }
 
 // SliceRecord returns a Record with the Value field set to the input value
@@ -587,17 +698,28 @@ func (fs Fetches) EachTopic(fn func(FetchTopic)) {
 		return
 	}
 
+	// A topic's partitions are led by different brokers, so the same topic
+	// is spread across multiple Fetch entries (one per broker response); we
+	// must carry the TopicID across them rather than zeroing it. The broker
+	// returns the same ID in every fetch response for the topic, so the
+	// first non-zero copy is authoritative. Without this, EachTopic returns
+	// a zero TopicID whenever more than one broker replied -- i.e. nearly
+	// always in a real cluster, yet never in a single-broker test.
 	topics := make(map[string][]FetchPartition)
+	ids := make(map[string][16]byte)
 	for _, fetch := range fs {
 		for _, topic := range fetch.Topics {
 			topics[topic.Topic] = append(topics[topic.Topic], topic.Partitions...)
+			if topic.TopicID != noID {
+				ids[topic.Topic] = topic.TopicID
+			}
 		}
 	}
 
 	for topic, partitions := range topics {
 		fn(FetchTopic{
 			topic,
-			[16]byte{},
+			ids[topic],
 			partitions,
 		})
 	}

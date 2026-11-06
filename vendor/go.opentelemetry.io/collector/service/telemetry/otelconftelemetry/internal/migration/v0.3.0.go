@@ -9,11 +9,11 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -108,12 +108,26 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
-	// ensure endpoint normalization occurs
 	for _, r := range c.Readers {
+		// ensure endpoint normalization occurs
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
 				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
+		}
+		// Apply Prometheus exporter defaults for fields not explicitly set.
+		// When users explicitly configure the telemetry section (e.g. to
+		// change the host), unset *bool fields default to nil which the
+		// Prometheus exporter treats as false. This ensures the defaults
+		// match the implicit/default configuration where these are true.
+		//
+		// This is necessary because specifying any metric readers in the
+		// SDK config completely overwrites the list of readers, so the
+		// Prometheus exporter is treated as a new config without any of
+		// the defaults set in the createDefaultConfig function in
+		// otelconftelemetry. We must re-apply those defaults here.
+		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
+			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
 		}
 	}
 	return nil
@@ -130,6 +144,20 @@ func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
 	sm := conf.ToStringMap()
 	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
 	return conf.Marshal(sm)
+}
+
+// applyPrometheusDefaults sets default values for Prometheus exporter
+// fields that were not explicitly provided in the configuration.
+func applyPrometheusDefaults(p *config.Prometheus) {
+	if p.WithoutScopeInfo == nil {
+		p.WithoutScopeInfo = new(true)
+	}
+	if p.WithoutUnits == nil {
+		p.WithoutUnits = new(true)
+	}
+	if p.WithoutTypeSuffix == nil {
+		p.WithoutTypeSuffix = new(true)
+	}
 }
 
 type LogsConfigV030 struct {
@@ -183,7 +211,9 @@ type LogsConfigV030 struct {
 	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
 	// see details at Open in zap/writer.go.
 	//
-	// Note that this setting only affects the zap internal logger errors.
+	// Note that this setting only affects zap's own internal errors (e.g., failures
+	// to write to the configured output). It does NOT route application error-level
+	// log messages. To control where application logs go, use output_paths instead.
 	// (default = ["stderr"])
 	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
@@ -228,10 +258,11 @@ type LogsSamplingConfig struct {
 type ResourceConfigV030 struct {
 	config.Resource `mapstructure:",squash"`
 
-	LegacyAttributes map[string]any `mapstructure:",remain"`
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
-var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+var _ confmap.Validator = (*ResourceConfigV030)(nil)
 
 func (cfg *ResourceConfigV030) Validate() error {
 	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.

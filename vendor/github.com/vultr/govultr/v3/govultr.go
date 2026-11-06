@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	version     = "3.28.1"
+	version     = "3.33.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
 	rateLimit   = 500 * time.Millisecond
@@ -61,6 +62,8 @@ type Client struct {
 	Logs                     LogsService
 	Marketplace              MarketplaceService
 	ObjectStorage            ObjectStorageService
+	OIDC                     OIDCService
+	Organization             OrganizationService
 	OS                       OSService
 	Plan                     PlanService
 	Region                   RegionService
@@ -73,8 +76,6 @@ type Client struct {
 	User                     UserService
 	VirtualFileSystemStorage VirtualFileSystemStorageService
 	VPC                      VPCService
-	// Deprecated: VPC2 is no longer supported
-	VPC2 VPC2Service
 
 	// Optional function called after every successful request made to the Vultr API
 	onRequestCompleted RequestCompletionCallback
@@ -91,7 +92,6 @@ func NewClient(httpClient *http.Client) *Client {
 				DialContext: (&net.Dialer{
 					Timeout:   90 * time.Second,
 					KeepAlive: 90 * time.Second,
-					DualStack: true,
 				}).DialContext,
 				MaxIdleConns:          100,
 				IdleConnTimeout:       90 * time.Second,
@@ -138,6 +138,8 @@ func NewClient(httpClient *http.Client) *Client {
 	client.Logs = &LogsServiceHandler{client}
 	client.Marketplace = &MarketplaceServiceHandler{client}
 	client.ObjectStorage = &ObjectStorageServiceHandler{client}
+	client.OIDC = &OIDCServiceHandler{client}
+	client.Organization = &OrganizationServiceHandler{client}
 	client.OS = &OSServiceHandler{client}
 	client.Plan = &PlanServiceHandler{client}
 	client.Region = &RegionServiceHandler{client}
@@ -150,20 +152,19 @@ func NewClient(httpClient *http.Client) *Client {
 	client.User = &UserServiceHandler{client}
 	client.VirtualFileSystemStorage = &VirtualFileSystemStorageServiceHandler{client}
 	client.VPC = &VPCServiceHandler{client}
-	client.VPC2 = &VPC2ServiceHandler{client}
 
 	return client
 }
 
-// NewRequest creates an API Request
+// NewRequest creates an API request
 func (c *Client) NewRequest(ctx context.Context, method, uri string, body interface{}) (*http.Request, error) {
 	resolvedURL, err := c.BaseURL.Parse(uri)
 	if err != nil {
 		return nil, err
 	}
 
-	buf := new(bytes.Buffer)
-	if body != nil {
+	buf := &bytes.Buffer{}
+	if !isNilInterface(body) {
 		if err2 := json.NewEncoder(buf).Encode(body); err2 != nil {
 			return nil, err2
 		}
@@ -181,9 +182,10 @@ func (c *Client) NewRequest(ctx context.Context, method, uri string, body interf
 	return req, nil
 }
 
-// DoWithContext sends an API Request and returns back the response. The API response is checked  to see if it was
-// a successful call. A successful call is then checked to see if we need to unmarshal since some resources
-// have their own implements of unmarshal.
+// DoWithContext sends an API request and returns back the response. The API
+// response is checked to see if it was a successful call. A successful call is
+// then checked to see if we need to unmarshal since some resources have their
+// own implements of unmarshal.
 func (c *Client) DoWithContext(ctx context.Context, r *http.Request, data interface{}) (*http.Response, error) {
 	rreq, err := retryablehttp.FromRequest(r)
 	if err != nil {
@@ -215,16 +217,27 @@ func (c *Client) DoWithContext(ctx context.Context, r *http.Request, data interf
 
 	res.Body = io.NopCloser(bytes.NewBuffer(body))
 
-	if res.StatusCode >= http.StatusOK && res.StatusCode <= http.StatusNoContent {
-		if data != nil {
+	switch res.StatusCode {
+	case http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNonAuthoritativeInfo, http.StatusPartialContent:
+		if res.ContentLength == 0 || isNilInterface(data) {
+			return res, nil
+		}
+
+		switch res.Header.Get("Content-Type") { //nolint:gocritic
+		case "application/json":
 			if err := json.Unmarshal(body, data); err != nil {
 				return nil, err
 			}
 		}
-		return res, nil
-	}
 
-	return res, errors.New(string(body))
+		return res, nil
+
+	case http.StatusNoContent, http.StatusResetContent:
+		return res, nil
+
+	default:
+		return res, errors.New(string(body))
+	}
 }
 
 // SetBaseURL Overrides the default BaseUrl
@@ -274,6 +287,21 @@ func (c *Client) vultrErrorHandler(resp *http.Response, err error, numTries int)
 		return nil, fmt.Errorf("gave up after %d attempts, last error unavailable (error reading response body: %v)", numTries, err)
 	}
 	return nil, fmt.Errorf("gave up after %d attempts, last error: %#v", numTries, strings.TrimSpace(string(buf)))
+}
+
+func isNilInterface(i interface{}) bool {
+	v := reflect.ValueOf(i)
+
+	if !v.IsValid() {
+		return true
+	}
+
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Func, reflect.Interface:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 // BoolToBoolPtr helper function that returns a pointer from your bool value
