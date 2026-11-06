@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -20,8 +19,9 @@ import (
 //go:embed upcoming_changes.yaml
 var upcomingChangesYAML []byte
 
-// UpcomingChange is a component whose configuration behaves differently, or whose output changes, in
-// an upcoming Observe Agent release.
+// UpcomingChange is a component whose configuration behaves differently, or whose output changes,
+// because of an upstream change, from shortly before the Observe Agent release that delivers it
+// until the entry's remove_in release.
 type UpcomingChange struct {
 	// ID is the entry in upcoming_changes.yaml that matched.
 	ID string
@@ -58,20 +58,8 @@ type matchCondition struct {
 
 // upcomingChangeChecks are matches upcoming_changes.yaml can't express as conditions.
 var upcomingChangeChecks = map[string]func(cfg map[string]any) bool{
-	"tail_sampling_invert_match": func(cfg map[string]any) bool {
-		return !featureGateEnabled(disableInvertDecisionsGate) && reliesOnInvertMatch(cfg)
-	},
-	"hostmetrics_cpu_attribute": dropsPerCPUSeries,
-}
-
-func featureGateEnabled(id string) bool {
-	enabled := false
-	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
-		if g.ID() == id {
-			enabled = g.IsEnabled()
-		}
-	})
-	return enabled
+	"tail_sampling_invert_match": reliesOnInvertMatch,
+	"hostmetrics_cpu_attribute":  dropsPerCPUSeries,
 }
 
 var (

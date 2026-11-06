@@ -72,6 +72,7 @@ When the API returned an HTTP error, with the status code:
 When the API returned an application error, with the code:
   - [ErrorCodeConflict]
   - [ErrorCodeRateLimitExceeded]
+  - [ErrorCodeBadGateway]
   - [ErrorCodeTimeout]
 
 Changes to the retry policy might occur between releases, and will not be considered
@@ -79,5 +80,7 @@ breaking changes.
 */
 package hcloud
 
+import "github.com/hetznercloud/hcloud-go/v2/hcloud/internal/version"
+
 // Version is the library's version following Semantic Versioning.
-const Version = "2.39.0" // x-releaser-pleaser-version
+const Version = version.Version
