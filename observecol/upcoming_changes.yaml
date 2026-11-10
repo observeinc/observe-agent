@@ -33,7 +33,7 @@ changes:
       invert_match policy next to other policies, or one inside a not policy, so the traces it
       samples will change after that upgrade. Replace those invert_match policies with drop
       policies:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - policies:
@@ -64,7 +64,7 @@ changes:
       httpcheck.tls.handshake.duration, httpcheck.client.request.duration,
       httpcheck.response.duration) report nanoseconds instead of milliseconds, so their values are
       1,000,000 times larger. Update dashboards and monitors that use them. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - {}
@@ -80,7 +80,7 @@ changes:
       (v0.155.0), its metric units follow UCUM (v0.157.0), and mongodb.operation.latency.time
       becomes a cumulative sum instead of a gauge (v0.164.0). Update dashboards and monitors that
       use these metrics. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - {}
@@ -100,7 +100,7 @@ changes:
       sqlserver.database.name and the unlabeled _Total series is dropped, so
       sqlserver.database.backup_or_restore.rate splits per database (v0.163.0). Update dashboards
       and monitors that use these metrics. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - {}
@@ -115,7 +115,7 @@ changes:
       v0.151.0 to v0.164.1: from v0.158.0, the postgresql receiver collects
       postgresql.database.locks from every configured database instead of only the postgres
       database. Update dashboards and monitors that use this metric. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - {}
@@ -133,7 +133,7 @@ changes:
       system.cpu.time and system.cpu.utilization without the cpu attribute unless it is listed, so
       per-CPU series are combined. To keep them, set attributes: [cpu, state] on system.cpu.time,
       and on system.cpu.utilization if it is enabled. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - scrapers: {cpu: null}
@@ -168,7 +168,7 @@ changes:
       add_metric_suffixes and adds type and unit suffixes, such as _total, to metric names. To keep
       names without suffixes, replace add_metric_suffixes: false with translation_strategy:
       UnderscoreEscapingWithoutSuffixes, which this version already supports. Details:
-      https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
     examples:
       fires:
         - {add_metric_suffixes: false}
