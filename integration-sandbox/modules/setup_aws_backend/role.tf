@@ -85,7 +85,7 @@ resource "aws_iam_role" "access" {
 }
 
 resource "aws_iam_role_policy" "integration_tests" {
-  name   = "integration_tests"
+  name   = var.policy_name
   role   = aws_iam_role.access.id
   policy = data.aws_iam_policy_document.integration_tests.json
 }

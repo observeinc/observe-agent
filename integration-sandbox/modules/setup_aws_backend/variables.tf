@@ -7,7 +7,13 @@ variable "region" {
 variable "role_name" {
   description = "Name of the IAM role assumed by GitHub Actions"
   type        = string
-  default     = "gh-observe_agent-repo"
+  default     = "observe-agent-github-oidc-role"
+}
+
+variable "policy_name" {
+  description = "Name of the inline policy attached to the role"
+  type        = string
+  default     = "observe-agent-github-oidc-policy"
 }
 
 variable "github_subject" {
