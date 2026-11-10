@@ -27,9 +27,9 @@ changes:
     match:
       check: tail_sampling_invert_match
     message: >-
-      Upcoming change: from OpenTelemetry Collector v0.152.0, which the next minor release of the
-      Observe Agent includes, invert_match policies in tail_sampling no longer exclude traces that
-      other policies sample, and not policies negate them. This processor has a top-level
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: invert_match policies in tail_sampling no longer exclude traces that
+      other policies sample, and not policies negate them (v0.152.0). This processor has a top-level
       invert_match policy next to other policies, or one inside a not policy, so the traces it
       samples will change after that upgrade. Replace those invert_match policies with drop
       policies:
@@ -58,8 +58,8 @@ changes:
     upstream: v0.153.0
     remove_in: v2.22.0
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: from v0.153.0, the httpcheck timing metrics
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: from v0.153.0, the httpcheck timing metrics
       (httpcheck.dns.lookup.duration, httpcheck.client.connection.duration,
       httpcheck.tls.handshake.duration, httpcheck.client.request.duration,
       httpcheck.response.duration) report nanoseconds instead of milliseconds, so their values are
@@ -75,8 +75,8 @@ changes:
     upstream: v0.155.0
     remove_in: v2.22.0
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: the mongodb receiver requires MongoDB 4.4 or later
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: the mongodb receiver requires MongoDB 4.4 or later
       (v0.155.0), its metric units follow UCUM (v0.157.0), and mongodb.operation.latency.time
       becomes a cumulative sum instead of a gauge (v0.164.0). Update dashboards and monitors that
       use these metrics. Details:
@@ -91,8 +91,8 @@ changes:
     upstream: v0.157.0
     remove_in: v2.22.0
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: the sqlserver receiver's metric units follow UCUM, and
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: the sqlserver receiver's metric units follow UCUM, and
       sqlserver.lock.timeout.rate, if enabled, reports one data point per
       sqlserver.lock.timeout.type (v0.157.0); server.address and server.port become resource
       attributes enabled by default and are removed from db.server.top_query log attributes
@@ -111,8 +111,8 @@ changes:
     upstream: v0.158.0
     remove_in: v2.22.0
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: from v0.158.0, the postgresql receiver collects
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: from v0.158.0, the postgresql receiver collects
       postgresql.database.locks from every configured database instead of only the postgres
       database. Update dashboards and monitors that use this metric. Details:
       https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CHANGELOG.md
@@ -128,8 +128,8 @@ changes:
     match:
       check: hostmetrics_cpu_attribute
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: from v0.157.0, the hostmetrics CPU scraper reports
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: from v0.157.0, the hostmetrics CPU scraper reports
       system.cpu.time and system.cpu.utilization without the cpu attribute unless it is listed, so
       per-CPU series are combined. To keep them, set attributes: [cpu, state] on system.cpu.time,
       and on system.cpu.utilization if it is enabled. Details:
@@ -163,8 +163,8 @@ changes:
         - {path: [add_metric_suffixes], equals: false}
         - {path: [translation_strategy], absent: true}
     message: >-
-      Upcoming change in the next minor releases of the Observe Agent, which update the
-      OpenTelemetry Collector from v0.151.0: from v0.154.0, the prometheus exporter ignores
+      Upcoming change in Observe Agent v2.20.0, which updates the OpenTelemetry Collector from
+      v0.151.0 to v0.164.1: from v0.154.0, the prometheus exporter ignores
       add_metric_suffixes and adds type and unit suffixes, such as _total, to metric names. To keep
       names without suffixes, replace add_metric_suffixes: false with translation_strategy:
       UnderscoreEscapingWithoutSuffixes, which this version already supports. Details:
