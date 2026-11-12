@@ -5,7 +5,7 @@ locals {
     UBUNTU_22_04_LTS = {
       # ami used in testing
       ami_instance_type = "t3.small"
-      ami_id            = "ami-036cafe742923b3d9"
+      ami_id            = data.aws_ami.ubuntu_22_04.id
       ami_description   = "Ubuntu Server 22.04 LTS (HVM)- EBS General Purpose (SSD) Volume Type. Support available from Canonical"
       default_user      = "ubuntu"
       sleep             = 120
@@ -18,7 +18,7 @@ locals {
     DOCKER_AMD64_UBUNTU_22_04_LTS = {
       # ami used in testing
       ami_instance_type = "t3.small"
-      ami_id            = "ami-036cafe742923b3d9"
+      ami_id            = data.aws_ami.ubuntu_22_04.id
       ami_description   = "Used for Docker testing - Ubuntu Server 22.04 LTS (HVM)- EBS General Purpose (SSD) Volume Type. Support available from Canonical"
       default_user      = "ubuntu"
       sleep             = 120
@@ -58,8 +58,8 @@ locals {
 
     AMAZON_LINUX_2023 = {
       ami_instance_type = "t3.small"
-      ami_id            = "ami-0a2781a262879e465"
-      ami_description   = "Amazon Linux 2023 AMI 2023.4.20240528.0 x86_64 HVM kernel-6.1"
+      ami_id            = data.aws_ami.amazon_linux_2023.id
+      ami_description   = "Amazon Linux 2023 AMI x86_64 HVM kernel-6.1"
       default_user      = "ec2-user"
       sleep             = 60
       user_data         = "user_data/yumbased.sh"
@@ -67,7 +67,7 @@ locals {
       package_type      = ".rpm"
       architecture      = "x86_64"
     }
-         
+
     # RHEL_8_4_0 = {
     #   ami_instance_type = "t3.small"
     #   ami_id            = "ami-054965c6cd7c6e462"
@@ -110,9 +110,9 @@ locals {
       distribution      = "windows"
       package_type      = ".zip"
       architecture      = "x86_64"
-    }    
+    }
 
-     WINDOWS_SERVER_2022_BASE = {
+    WINDOWS_SERVER_2022_BASE = {
       ami_instance_type = "t3.small"
       ami_id            = data.aws_ami.windows_server_2022_base.id
       ami_description   = "Microsoft Windows Server 2022 Full Locale English AMI provided by Amazon"
@@ -122,9 +122,9 @@ locals {
       distribution      = "windows"
       package_type      = ".zip"
       architecture      = "x86_64"
-    }    
+    }
 
-  
+
   }
 }
 

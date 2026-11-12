@@ -1,20 +1,18 @@
 ## setup_aws_backend module
 
-The module performs the following actions in `us-west-1` region. It's meant to be only used once as an initial setup for state management.
+One-time setup for the AWS account the integration tests run in. Apply it manually with credentials that can create IAM resources; state is kept locally.
 
-- Sets up an S3 bucket `observe-agent-terraform-state` to store state information related to observe-agent repo 
-- Create an IAM role `gh-observe_agent-repo`
-- Create an IAM Policy called "terraform-backend" with below permissions allowed on bucket and ec2 related infrastructure: `observe-agent-terraform-state`
-   - "s3:GetObject" 
-   - "s3:PutObject"
-   - "s3:DeleteObject"
-   - "s3:ListBucket"
-   - "ec2:*" for regions `us-west-1` and `us-west-2`
-- Create an IAM policy for role assumption of `gh-observe_agent-repo` by certain IAM roles and root accounts 
-- Attach both policies to IAM role `gh-observe-agent-repo` 
+It creates:
 
-The IAM role `gh-observe-agent-repo` is meant to be used as a Github Actions Service Account for the `observe-agent` repo.
+- The GitHub Actions OIDC provider (`token.actions.githubusercontent.com`). It is account-wide, so if it already exists, import it with `terraform import aws_iam_openid_connect_provider.github <provider arn>` before applying.
+- The IAM role `observe-agent-github-oidc-role`, assumable only through GitHub OIDC by `repo:observeinc/observe-agent:*`, with an inline policy `observe-agent-github-oidc-policy` that allows it to:
+  - launch instances and import key pairs in the test region, tagging them only at creation
+  - terminate instances, delete key pairs and read Windows passwords only for resources tagged `purpose = observe-agent integration tests`
+  - open EC2 Instance Connect Endpoint tunnels to port 22
 
+```sh
+export AWS_PROFILE=<profile for the test account>
+terraform init && terraform apply
+```
 
-The aws provider role used to initially set up this module above must have admin access. A role assumption of type `OrganizationAccountAccessRole` can be used so the bucket and roles created are limited within an account instead of root level.
- 
+Store the `role_arn` output in the `SANDBOX_AWS_ROLE_ARN` repository secret.
