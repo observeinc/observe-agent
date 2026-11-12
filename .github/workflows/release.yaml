@@ -128,6 +128,15 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Read OTel Collector version
+        run: |
+          version=$(yq -e '.dist.version' builder-config.yaml)
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected OTel Collector version: $version"
+            exit 1
+          fi
+          echo "OTEL_COLLECTOR_VERSION=$version" | tee -a "$GITHUB_ENV"
+
       - name: Run GoReleaser
         timeout-minutes: 25
         uses: goreleaser/goreleaser-action@v7
