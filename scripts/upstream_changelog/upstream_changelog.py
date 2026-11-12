@@ -30,6 +30,7 @@ CATEGORIES = {
     "New components": "🚀 New components 🚀",
     "Enhancements": "💡 Enhancements 💡",
     "Bug fixes": "🧰 Bug fixes 🧰",
+    "Known Issues": "❗ Known Issues ❗",
 }
 
 MARK_START = "<!-- upstream-changelog:start -->"
@@ -190,11 +191,21 @@ def splice(body, section):
 
 
 def run(*args, stdin=None):
-    return subprocess.run(args, check=True, capture_output=True, text=True, input=stdin).stdout
+    try:
+        return subprocess.run(args, check=True, capture_output=True, text=True, input=stdin).stdout
+    except FileNotFoundError:
+        sys.exit(f"error: {args[0]} not found")
+    except subprocess.CalledProcessError as err:
+        sys.exit(f"error: {' '.join(args)} failed with exit status {err.returncode}:\n{err.stderr.strip()}")
 
 
 def previous_tag(ref):
     return run("git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", "--exclude", "*-*", f"{ref}^").strip()
+
+
+def require_tag(ref):
+    if not run("git", "tag", "--list", ref).strip():
+        sys.exit(f"error: --update-release needs --to to name a release tag, not {ref}")
 
 
 def update_release(tag, render_for_budget):
@@ -214,6 +225,8 @@ def main():
     args = parser.parse_args()
 
     os.chdir(run("git", "rev-parse", "--show-toplevel").strip())
+    if args.update_release:
+        require_tag(args.to)
     from_ref = args.from_ref or previous_tag(args.to)
     new_mod = run("git", "show", f"{args.to}:observecol/go.mod")
     old = collector_versions(run("git", "show", f"{from_ref}:observecol/go.mod"))

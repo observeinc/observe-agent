@@ -164,7 +164,7 @@ class RenderTest(unittest.TestCase):
         out = uc.render(self.old, self.new, self.changes, "v2.15.0")
         headings = [l for l in out.splitlines() if l.startswith("### ")]
         self.assertEqual(headings, ["### 🛑 Breaking changes 🛑", "### 🚩 Deprecations 🚩", "### 💡 Enhancements 💡",
-                                    "### 🧰 Bug fixes 🧰", "### Known Issues"])
+                                    "### 🧰 Bug fixes 🧰", "### ❗ Known Issues ❗"])
         self.assertEqual(out.count("<details>"), 5)
         self.assertIn("<summary>1 change</summary>\n\n- (Contrib v0.151.0)", out)
 
@@ -219,6 +219,27 @@ class SpliceTest(unittest.TestCase):
         self.assertNotIn("first", twice)
         self.assertEqual(twice.count(uc.MARK_START), 1)
         self.assertTrue(twice.startswith("## Changelog\n* fix\n\n"))
+
+
+class RunTest(unittest.TestCase):
+    def test_failure_exits_with_the_commands_error_output(self):
+        with self.assertRaisesRegex(SystemExit, "boom"):
+            uc.run(sys.executable, "-c", "import sys; sys.exit('boom')")
+
+    def test_missing_command_exits_with_its_name(self):
+        with self.assertRaisesRegex(SystemExit, "no-such-command-for-upstream-changelog"):
+            uc.run("no-such-command-for-upstream-changelog")
+
+
+class RequireTagTest(unittest.TestCase):
+    def test_rejects_a_ref_that_is_not_a_tag(self):
+        with mock.patch.object(uc, "run", lambda *a, stdin=None: ""):
+            with self.assertRaisesRegex(SystemExit, "--update-release needs --to to name a release tag"):
+                uc.require_tag("HEAD")
+
+    def test_accepts_a_tag(self):
+        with mock.patch.object(uc, "run", lambda *a, stdin=None: "v2.20.0\n"):
+            uc.require_tag("v2.20.0")
 
 
 class UpdateReleaseTest(unittest.TestCase):
