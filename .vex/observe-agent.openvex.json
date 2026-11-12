@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/observeinc/observe-agent/.vex/observe-agent.openvex.json",
   "author": "Observe Agent Team <observe-agent@observeinc.com>",
-  "timestamp": "2026-07-27T00:00:00Z",
-  "version": 3,
+  "timestamp": "2026-11-12T00:00:00Z",
+  "version": 4,
   "statements": [
     {
       "vulnerability": {
@@ -116,6 +116,22 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "CVE-2026-41178 is a DoS via oversized baggage header parsing in go.opentelemetry.io/otel/baggage. observe-agent imports go.opentelemetry.io/otel only via the OTel collector service telemetry configuration path (otelconftelemetry), which does not register a baggage propagator. The vulnerable baggage.Parse function is never called because no propagator is configured to invoke it; incoming OTLP requests are processed by the OTLP receiver without baggage header extraction."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-107891"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:apk/alpine/musl@1.2.6-r3?os_name=alpine&os_version=3.24" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "Alpine 3.24 ships musl 1.2.6-r3 with the upstream regcomp overflow fix backported as CVE-2026-107891.patch, and the Alpine v3.24 secdb lists 1.2.6-r3 as fixing this CVE. Docker Scout reports 1.2.6-r6, the fixed version from Alpine edge, which does not apply to the 3.24 branch. Separately, the observe-agent binary is built with CGO_ENABLED=0 and never calls libc regcomp."
     }
   ]
 }
