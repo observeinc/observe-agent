@@ -6,7 +6,7 @@ import (
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
 )
 
-// ErrorLevel sent from database server.
+// ErrorLevel sent from the database server.
 type errorLevel int8
 
 var errorLevelStrs = [...]string{"Warning", "Error", "FatalError"}
@@ -41,15 +41,13 @@ const (
 	HdbErrWhileParsingProtocol = 1033
 )
 
-type sqlState [sqlStateSize]byte
-
 // HdbError represents a single error returned by the server.
 type HdbError struct {
 	errorCode       int32
 	errorPosition   int32
 	errorTextLength int32
 	errorLevel      errorLevel
-	sqlState        sqlState
+	sqlState        []byte
 	stmtNo          int
 	errorText       []byte
 }
@@ -67,10 +65,7 @@ func (e *HdbError) String() string {
 }
 
 func (e *HdbError) Error() string {
-	if e.stmtNo != -1 {
-		return fmt.Sprintf("SQL %s %d - %s (statement no: %d)", e.errorLevel, e.errorCode, e.errorText, e.stmtNo)
-	}
-	return fmt.Sprintf("SQL %s %d - %s", e.errorLevel, e.errorCode, e.errorText)
+	return fmt.Sprintf("SQL %s %d - %s (statement no: %d)", e.errorLevel, e.errorCode, e.errorText, e.stmtNo)
 }
 
 // StmtNo implements the driver.DBError interface.
@@ -152,7 +147,9 @@ func (e *HdbErrors) setStmtNo(idx, no int) {
 	}
 }
 
-func (e *HdbErrors) decodeNumArg(dec *encoding.Decoder, numArg int) error {
+func (e *HdbErrors) decode(dec *encoding.Decoder, header *PartHeader, attrs *ReaderAttrs) error {
+	numArg := header.numArg()
+
 	e.onlyWarnings = true
 	e.errs = nil
 
@@ -160,28 +157,24 @@ func (e *HdbErrors) decodeNumArg(dec *encoding.Decoder, numArg int) error {
 		err := new(HdbError)
 		e.errs = append(e.errs, err)
 
-		// err.stmtNo = -1
+		// Default statement number to 0 (the first/only statement).
+		// A single-record failure (e.g. duplicate key) has no rowsAffected part,
+		// so setStmtNo is never called; treating it as statement 0 keeps single
+		// errors uniform with batch statement numbering (0-based) instead of a
+		// separate "no statement number" sentinel.
 		err.stmtNo = 0
-		/*
-			in case of an hdb error when inserting one record (e.g. duplicate)
-			- hdb does not return a rowsAffected part
-			- SetStmtNo is not called and
-			- the default value (formerly -1) is kept
-			--> initialize stmtNo with zero
-		*/
 		err.errorCode = dec.Int32()
 		err.errorPosition = dec.Int32()
 		err.errorTextLength = dec.Int32()
 		err.errorLevel = errorLevel(dec.Int8())
-		dec.Bytes(err.sqlState[:])
+		err.sqlState = dec.Bytes(sqlStateSize)
 
 		// read error text as ASCII data as some errors return invalid CESU-8 characters
 		// e.g: SQL HdbError 7 - feature not supported: invalid character encoding: <invalid CESU-8 characters>
 		//	if e.errorText, err = rd.ReadCesu8(int(e.errorTextLength)); err != nil {
 		//		return err
 		//	}
-		err.errorText = make([]byte, int(err.errorTextLength))
-		dec.Bytes(err.errorText)
+		err.errorText = dec.Bytes(int(err.errorTextLength))
 
 		if e.onlyWarnings && !err.IsWarning() {
 			e.onlyWarnings = false
@@ -210,6 +203,5 @@ func (e *HdbErrors) decodeNumArg(dec *encoding.Decoder, numArg int) error {
 	if len(e.errs) > 0 {
 		e.HdbError = e.errs[0] // set default to first error
 	}
-
-	return dec.Error()
+	return nil
 }

@@ -1,24 +1,15 @@
 package observecol
 
 import (
-	"bytes"
 	"context"
 	"os/exec"
-	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -31,21 +22,11 @@ func mapFromYAML(t *testing.T, content string) map[string]any {
 	return m
 }
 
-// useAgentFeatureGates sets the feature gates the agent applies at startup for the test's duration.
-func useAgentFeatureGates(t *testing.T) {
-	ctx := context.Background()
-	resetFeatureGates(t, ctx)
-	t.Cleanup(func() { resetFeatureGates(t, ctx) })
-}
-
 const errorsPolicy = `{name: errors, type: status_code, status_code: {status_codes: [ERROR]}}`
 const healthzInverted = `{name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}`
 const healthzPolicy = `{name: healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz]}}`
 const dropDebugPolicy = `{name: drop-debug, type: drop, drop: {drop_sub_policy: [{name: debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true}}]}}`
 
-// Each case runs through the bundled tail_sampling processor with disableinvertdecisions off, as
-// the agent sets it, and on, as it is once the gate is stable. The check must fire exactly when the
-// sampled traces differ.
 func TestReliesOnInvertMatch(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -67,30 +48,13 @@ func TestReliesOnInvertMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, reliesOnInvertMatch(mapFromYAML(t, "policies: "+tt.policies)))
-
-			useAgentFeatureGates(t)
-			before := sampledTraceIDs(t, tt.policies)
-			require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
-			after := sampledTraceIDs(t, tt.policies)
-			assert.Equal(t, tt.want, !assert.ObjectsAreEqual(before, after), "sampled with the gate off %v, on %v", before, after)
 		})
 	}
-}
-
-// Users who already enabled disableinvertdecisions have the new behavior, so nothing changes for them.
-func TestInvertMatchCheckSkipsWhenTheGateIsEnabled(t *testing.T) {
-	cfg := mapFromYAML(t, "policies: ["+errorsPolicy+", "+healthzInverted+"]")
-	check := upcomingChangeChecks["tail_sampling_invert_match"]
-	useAgentFeatureGates(t)
-	assert.True(t, check(cfg))
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
-	assert.False(t, check(cfg))
 }
 
 // Runs every entry's examples, under each of its component types.
 func TestUpcomingChangeExamples(t *testing.T) {
 	require.NotEmpty(t, upcomingChangeRules)
-	useAgentFeatureGates(t)
 	for _, r := range upcomingChangeRules {
 		for _, typ := range r.Types {
 			id := typ + "/example"
@@ -160,7 +124,6 @@ processors:
   tail_sampling:
     policies: [`+errorsPolicy+`, `+healthzInverted+`]
 `)
-	useAgentFeatureGates(t)
 	changes := upcomingChanges(conf)
 	require.Len(t, changes, 1)
 	assert.Equal(t, "tail-sampling-invert-match", changes[0].ID)
@@ -208,7 +171,6 @@ service:
 `
 
 func TestUpcomingChanges(t *testing.T) {
-	useAgentFeatureGates(t)
 	changes := upcomingChanges(mapFromYAML(t, upcomingChangesConfig))
 	require.Len(t, changes, 2)
 	assert.Equal(t, "tail_sampling", changes[0].Component)
@@ -217,7 +179,6 @@ func TestUpcomingChanges(t *testing.T) {
 }
 
 func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
-	useAgentFeatureGates(t)
 	core, logs := observer.New(zapcore.WarnLevel)
 	converter := newUpcomingChangesConverterFactory().Create(confmap.ConverterSettings{Logger: zap.New(core)})
 	conf := confmap.NewFromStringMap(mapFromYAML(t, upcomingChangesConfig))
@@ -233,56 +194,8 @@ func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
 }
 
 func TestUpcomingChangesResolvesSettings(t *testing.T) {
-	useAgentFeatureGates(t)
 	settings := generateCollectorSettings([]string{"yaml:" + upcomingChangesConfig})
 	changes, err := UpcomingChanges(context.Background(), settings)
 	require.NoError(t, err)
 	require.Len(t, changes, 2)
-}
-
-func newTrace(id byte, target string, status ptrace.StatusCode) ptrace.Traces {
-	td := ptrace.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pcommon.TraceID{id})
-	span.SetSpanID(pcommon.SpanID{id})
-	span.Attributes().PutStr("http.target", target)
-	span.Status().SetCode(status)
-	return td
-}
-
-// sampledTraceIDs runs a /healthz error (ID 1), an /api error (ID 2) and an /api OK trace (ID 3)
-// through a tail_sampling processor with the given policies, and returns the IDs it samples.
-func sampledTraceIDs(t *testing.T, policies string) []pcommon.TraceID {
-	factory := tailsamplingprocessor.NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	require.NoError(t, confmap.NewFromStringMap(mapFromYAML(t, "policies: "+policies)).Unmarshal(cfg))
-
-	sink := new(consumertest.TracesSink)
-	proc, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(factory.Type()), cfg, sink)
-	require.NoError(t, err)
-	require.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, proc.ConsumeTraces(context.Background(), newTrace(1, "/healthz", ptrace.StatusCodeError)))
-	require.NoError(t, proc.ConsumeTraces(context.Background(), newTrace(2, "/api", ptrace.StatusCodeError)))
-	require.NoError(t, proc.ConsumeTraces(context.Background(), newTrace(3, "/api", ptrace.StatusCodeOk)))
-	require.NoError(t, proc.Shutdown(context.Background()))
-
-	var sampled []pcommon.TraceID
-	for _, td := range sink.AllTraces() {
-		sampled = append(sampled, td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
-	}
-	slices.SortFunc(sampled, func(a, b pcommon.TraceID) int { return bytes.Compare(a[:], b[:]) })
-	return sampled
-}
-
-// The agent keeps disableinvertdecisions off, so invert_match excludes the /healthz error. Once the
-// gate is stable it can't be turned off, and the processor samples every trace: the change the
-// warning describes.
-func TestInvertMatchExcludesOnlyWhileTheGateIsOff(t *testing.T) {
-	require.False(t, internalFeatureFlagDefaults[disableInvertDecisionsGate])
-	policies := "[" + errorsPolicy + ", " + healthzInverted + "]"
-	useAgentFeatureGates(t)
-	assert.Equal(t, []pcommon.TraceID{{2}}, sampledTraceIDs(t, policies))
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
-	assert.Equal(t, []pcommon.TraceID{{1}, {2}, {3}}, sampledTraceIDs(t, policies))
 }

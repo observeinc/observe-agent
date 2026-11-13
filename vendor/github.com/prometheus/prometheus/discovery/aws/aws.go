@@ -68,6 +68,12 @@ func (c Role) String() string {
 	return string(c)
 }
 
+// Filter is the configuration for filtering AWS resources.
+type Filter struct {
+	Name   string   `yaml:"name"`
+	Values []string `yaml:"values"`
+}
+
 // SDConfig is the configuration for AWS service discovery.
 type SDConfig struct {
 	Role             Role                    `yaml:"role"`
@@ -77,12 +83,13 @@ type SDConfig struct {
 	SecretKey        config.Secret           `yaml:"secret_key,omitempty"`
 	Profile          string                  `yaml:"profile,omitempty"`
 	RoleARN          string                  `yaml:"role_arn,omitempty"`
+	ExternalID       string                  `yaml:"external_id,omitempty"`
 	RefreshInterval  model.Duration          `yaml:"refresh_interval,omitempty"`
 	Port             int                     `yaml:"port,omitempty"`
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
 
-	// ec2 specific
-	Filters []*EC2Filter `yaml:"filters,omitempty"`
+	// ec2, rds specific
+	Filters []*Filter `yaml:"filters,omitempty"`
 
 	// ecs, msk specific
 	Clusters []string `yaml:"clusters,omitempty"`
@@ -97,6 +104,8 @@ type SDConfig struct {
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface for SDConfig.
+// Region resolution is deferred to each concrete discovery's xxxClient
+// method; see loadRegion.
 func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	// Alias to avoid recursion
 	type plain SDConfig
@@ -106,12 +115,6 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		return err
 	}
 	*c = SDConfig(aux)
-
-	var err error
-	c.Region, err = loadRegion(context.Background(), c.Region)
-	if err != nil {
-		return fmt.Errorf("could not determine AWS region: %w", err)
-	}
 
 	switch c.Role {
 	case RoleEC2:
@@ -135,6 +138,9 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		if c.RoleARN != "" {
 			c.EC2SDConfig.RoleARN = c.RoleARN
+		}
+		if c.ExternalID != "" {
+			c.EC2SDConfig.ExternalID = c.ExternalID
 		}
 		if c.Port != 0 {
 			c.EC2SDConfig.Port = c.Port
@@ -167,6 +173,9 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		if c.RoleARN != "" {
 			c.ECSSDConfig.RoleARN = c.RoleARN
 		}
+		if c.ExternalID != "" {
+			c.ECSSDConfig.ExternalID = c.ExternalID
+		}
 		if c.Port != 0 {
 			c.ECSSDConfig.Port = c.Port
 		}
@@ -197,6 +206,9 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		if c.RoleARN != "" {
 			c.ElasticacheSDConfig.RoleARN = c.RoleARN
+		}
+		if c.ExternalID != "" {
+			c.ElasticacheSDConfig.ExternalID = c.ExternalID
 		}
 		if c.Port != 0 {
 			c.ElasticacheSDConfig.Port = c.Port
@@ -229,6 +241,9 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		if c.RoleARN != "" {
 			c.LightsailSDConfig.RoleARN = c.RoleARN
 		}
+		if c.ExternalID != "" {
+			c.LightsailSDConfig.ExternalID = c.ExternalID
+		}
 		if c.Port != 0 {
 			c.LightsailSDConfig.Port = c.Port
 		}
@@ -256,6 +271,9 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		if c.RoleARN != "" {
 			c.MSKSDConfig.RoleARN = c.RoleARN
+		}
+		if c.ExternalID != "" {
+			c.MSKSDConfig.ExternalID = c.ExternalID
 		}
 		if c.Port != 0 {
 			c.MSKSDConfig.Port = c.Port
@@ -288,11 +306,17 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		if c.RoleARN != "" {
 			c.RDSSDConfig.RoleARN = c.RoleARN
 		}
+		if c.ExternalID != "" {
+			c.RDSSDConfig.ExternalID = c.ExternalID
+		}
 		if c.Port != 0 {
 			c.RDSSDConfig.Port = c.Port
 		}
 		if c.RefreshInterval != 0 {
 			c.RDSSDConfig.RefreshInterval = c.RefreshInterval
+		}
+		if c.Filters != nil {
+			c.RDSSDConfig.Filters = c.Filters
 		}
 		if c.Clusters != nil {
 			c.RDSSDConfig.Clusters = c.Clusters
@@ -342,8 +366,47 @@ func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Di
 	}
 }
 
-// loadRegion finds the region in order: AWS config/env vars ->IMDS.
-func loadRegion(ctx context.Context, specifiedRegion string) (string, error) {
+// SetDirectory joins any relative file paths with dir.
+func (c *SDConfig) SetDirectory(dir string) {
+	switch c.Role {
+	case RoleEC2:
+		if c.EC2SDConfig != nil {
+			c.EC2SDConfig.SetDirectory(dir)
+		}
+	case RoleECS:
+		if c.ECSSDConfig != nil {
+			c.ECSSDConfig.SetDirectory(dir)
+		}
+	case RoleElasticache:
+		if c.ElasticacheSDConfig != nil {
+			c.ElasticacheSDConfig.SetDirectory(dir)
+		}
+	case RoleLightsail:
+		if c.LightsailSDConfig != nil {
+			c.LightsailSDConfig.SetDirectory(dir)
+		}
+	case RoleMSK:
+		if c.MSKSDConfig != nil {
+			c.MSKSDConfig.SetDirectory(dir)
+		}
+	case RoleRDS:
+		if c.RDSSDConfig != nil {
+			c.RDSSDConfig.SetDirectory(dir)
+		}
+	}
+}
+
+// loadRegion finds the region in order: configured region -> AWS config/env vars -> IMDS.
+// Region resolution is intentionally deferred to SD init so config-only operations
+// (e.g. `promtool check config`) stay free of network I/O. See the UnmarshalYAML
+// docstrings in this package.
+func loadRegion(ctx context.Context, specifiedRegion string) (region string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("could not determine AWS region: %w", err)
+		}
+	}()
+
 	if specifiedRegion != "" {
 		return specifiedRegion, nil
 	}
@@ -359,14 +422,14 @@ func loadRegion(ctx context.Context, specifiedRegion string) (string, error) {
 
 	// Fallback (may fail in non-AWS environments)
 	imdsClient := imds.NewFromConfig(cfg)
-	region, err := imdsClient.GetRegion(ctx, &imds.GetRegionInput{})
+	imdsRegion, err := imdsClient.GetRegion(ctx, &imds.GetRegionInput{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get region from IMDS: %w", err)
 	}
 
-	if region.Region == "" {
+	if imdsRegion.Region == "" {
 		return "", errors.New("region not found in AWS config or IMDS")
 	}
 
-	return region.Region, nil
+	return imdsRegion.Region, nil
 }

@@ -74,7 +74,7 @@ func defaultRegionsRESTCallOptions() *RegionsCallOptions {
 	}
 }
 
-// internalRegionsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -83,10 +83,12 @@ type internalRegionsClient interface {
 	List(context.Context, *computepb.ListRegionsRequest, ...gax.CallOption) *RegionIterator
 }
 
-// RegionsClient is a client for interacting with Google Compute Engine API.
+// RegionsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The Regions API.
+//
+// This client uses Regions version 2026-09-01.
 type RegionsClient struct {
 	// The internal transport-dependent client.
 	internalClient internalRegionsClient
@@ -97,7 +99,7 @@ type RegionsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionsClient) Close() error {
 	return c.internalClient.Close()
@@ -224,6 +226,35 @@ func NewRegionsRESTClient(ctx context.Context, opts ...option.ClientOption) (*Re
 		callOpts.Get = append(callOpts.Get, gax.WithClientMetrics(metrics))
 		callOpts.List = append(callOpts.List, gax.WithClientMetrics(metrics))
 	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.Get = append(callOpts.Get, gax.WithClientTracing(tracing))
+		callOpts.List = append(callOpts.List, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "compute",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/compute/apiv1",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "compute.googleapis.com",
+			}),
+		)
+
+		callOpts.Get = append(callOpts.Get, gax.WithClientLogging(logging))
+		callOpts.List = append(callOpts.List, gax.WithClientLogging(logging))
+	}
 
 	return &RegionsClient{internalClient: c, CallOptions: callOpts}, nil
 }
@@ -248,10 +279,11 @@ func (c *regionsRESTClient) setGoogleClientInfo(keyval ...string) {
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "rest", "UNKNOWN", "pb", protoVersion)
 	c.xGoogHeaders = []string{
 		"x-goog-api-client", gax.XGoogHeader(kv...),
+		"x-goog-api-version", "2026-09-01",
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -297,9 +329,6 @@ func (c *regionsRESTClient) Get(ctx context.Context, req *computepb.GetRegionReq
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//compute.googleapis.com/projects/%v/regions/%v", req.GetProject(), req.GetRegion()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.cloud.compute.v1.Regions/Get")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/compute/v1/projects/{project}/regions/{region}")
@@ -356,7 +385,7 @@ func (c *regionsRESTClient) Get(ctx context.Context, req *computepb.GetRegionReq
 // behaviour for this method.
 func (c *regionsRESTClient) List(ctx context.Context, req *computepb.ListRegionsRequest, opts ...gax.CallOption) *RegionIterator {
 	it := &RegionIterator{}
-	req = proto.Clone(req).(*computepb.ListRegionsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*computepb.Region, string, error) {
 		resp := &computepb.RegionList{}
@@ -386,9 +415,6 @@ func (c *regionsRESTClient) List(ctx context.Context, req *computepb.ListRegions
 		}
 		if req != nil && req.PageToken != nil {
 			params.Add("pageToken", fmt.Sprintf("%v", req.GetPageToken()))
-		}
-		if req != nil && req.ReturnPartialSuccess != nil {
-			params.Add("returnPartialSuccess", fmt.Sprintf("%v", req.GetReturnPartialSuccess()))
 		}
 
 		baseUrl.RawQuery = params.Encode()
