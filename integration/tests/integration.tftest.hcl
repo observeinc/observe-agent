@@ -28,12 +28,13 @@ run "test_ec2_connection" {
   variables {
     command = "python3 ./scripts/test_ec2_connection.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -53,15 +54,16 @@ run "test_upgrade" {
   variables {
     command = "python3 ./scripts/test_upgrade.py"
     env_vars = {
-      OBSERVE_URL    = run.setup_observe_variables.OBSERVE_URL
-      OBSERVE_TOKEN  = run.setup_observe_variables.OBSERVE_TOKEN
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
-      OLD_VERSION    = var.old_version
+      OBSERVE_URL       = run.setup_observe_variables.OBSERVE_URL
+      OBSERVE_TOKEN     = run.setup_observe_variables.OBSERVE_TOKEN
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
+      OLD_VERSION       = var.old_version
     }
   }
 
@@ -81,12 +83,13 @@ run "test_install" {
   variables {
     command = "python3 ./scripts/test_install.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -106,12 +109,13 @@ run "test_version" {
   variables {
     command = "python3 ./scripts/test_version.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -130,14 +134,15 @@ run "test_configure" {
   variables {
     command = "python3 ./scripts/test_configure.py"
     env_vars = {
-      OBSERVE_URL    = run.setup_observe_variables.OBSERVE_URL
-      OBSERVE_TOKEN  = run.setup_observe_variables.OBSERVE_TOKEN
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      OBSERVE_URL       = run.setup_observe_variables.OBSERVE_URL
+      OBSERVE_TOKEN     = run.setup_observe_variables.OBSERVE_TOKEN
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -157,12 +162,13 @@ run "test_start" {
   variables {
     command = "python3 ./scripts/test_start.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -182,12 +188,13 @@ run "test_diagnose" {
   variables {
     command = "python3 ./scripts/test_diagnose.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 
@@ -207,12 +214,13 @@ run "test_docker_networking" {
   variables {
     command = "python3 ./scripts/test_docker_networking.py"
     env_vars = {
-      HOST           = run.setup_ec2.public_ip
-      USER           = run.setup_ec2.user_name
-      KEY_FILENAME   = run.setup_ec2.private_key_path
-      PASSWORD       = run.setup_ec2.password
-      MACHINE_NAME   = run.setup_ec2.machine_name
-      MACHINE_CONFIG = run.setup_ec2.machine_config
+      HOST              = run.setup_ec2.private_ip
+      SSH_PROXY_COMMAND = run.setup_ec2.ssh_proxy_command
+      USER              = run.setup_ec2.user_name
+      KEY_FILENAME      = run.setup_ec2.private_key_path
+      PASSWORD          = run.setup_ec2.password
+      MACHINE_NAME      = run.setup_ec2.machine_name
+      MACHINE_CONFIG    = run.setup_ec2.machine_config
     }
   }
 

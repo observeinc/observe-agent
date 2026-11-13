@@ -3,7 +3,11 @@ from socket import error as socket_error
 from collections import defaultdict
 
 from fabric import Connection, Result
-from paramiko.ssh_exception import AuthenticationException, NoValidConnectionsError
+from paramiko.ssh_exception import (
+    AuthenticationException,
+    NoValidConnectionsError,
+    SSHException,
+)
 
 import os
 import re
@@ -155,6 +159,8 @@ class Host(object):
         self.username = username
         self.key_file_path = key_file_path
         self.password = password
+        # Instances have no public IP; SSH is tunneled through an EC2 Instance Connect Endpoint.
+        self.proxy_command = os.environ.get("SSH_PROXY_COMMAND")
 
     def _get_connection(self) -> Connection:
         connect_kwargs = {
@@ -166,6 +172,7 @@ class Host(object):
             host=self.host_ip,
             user=self.username,
             port=22,
+            gateway=self.proxy_command,
             connect_kwargs=connect_kwargs,
         )
 
@@ -248,7 +255,8 @@ class Host(object):
                 print("✅ SSH connection successful")
                 connection.close()
                 return
-            except (socket_error, NoValidConnectionsError) as exc:
+            # SSHException covers the tunnel closing before sshd is up.
+            except (socket_error, NoValidConnectionsError, SSHException) as exc:
                 print(f"❌ SSH connection failed: {exc}")
             time.sleep(1)
         raise RuntimeError(" ❌ The SSH connection failed")

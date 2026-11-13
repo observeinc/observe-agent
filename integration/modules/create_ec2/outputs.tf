@@ -28,19 +28,23 @@ output "instance_state" {
   value = aws_instance.observe_agent_instance.instance_state
 }
 
-output "public_ip" {
-  value = aws_instance.observe_agent_instance.public_ip
+output "private_ip" {
+  value = aws_instance.observe_agent_instance.private_ip
 }
 
 output "private_key_path" {
   value = var.PRIVATE_KEY_PATH
 }
 
-output "public_ssh_link" {
-  value = "ssh -i ${var.PRIVATE_KEY_PATH} ${local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user}@${aws_instance.observe_agent_instance.public_ip}"
+output "ssh_proxy_command" {
+  value = "aws ec2-instance-connect open-tunnel --instance-id ${aws_instance.observe_agent_instance.id}"
+}
+
+output "ssh_link" {
+  value = "ssh -i ${var.PRIVATE_KEY_PATH} -o ProxyCommand='aws ec2-instance-connect open-tunnel --instance-id %h' ${local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].default_user}@${aws_instance.observe_agent_instance.id}"
 }
 
 output "password" {
-  value = can(regex("WINDOWS", var.AWS_MACHINE)) ? rsadecrypt(aws_instance.observe_agent_instance.password_data, file(var.PRIVATE_KEY_PATH)) : "None" 
-  sensitive = true   
+  value     = can(regex("WINDOWS", var.AWS_MACHINE)) ? rsadecrypt(aws_instance.observe_agent_instance.password_data, file(var.PRIVATE_KEY_PATH)) : "None"
+  sensitive = true
 }

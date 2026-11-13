@@ -1,8 +1,14 @@
-provider "aws" {
-  region  = "us-west-1"
-  profile = "blunderdome"
-  assume_role {
-    role_arn = "arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
   }
+  required_version = ">= 1.7.0"
 }
 
+# Credentials come from the environment (e.g. AWS_PROFILE).
+provider "aws" {
+  region = var.region
+}

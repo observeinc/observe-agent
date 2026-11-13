@@ -1,131 +1,95 @@
-# Create an IAM role
-# 
-# This role will allow:
-#   - reading and writing to S3 state bucket, restricted to a specific prefix
-#   - reading and writing to a single SecretsManager secret
-#
+data "aws_caller_identity" "current" {}
+
+# The GitHub OIDC provider is account-wide; import it instead if it already exists.
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::384876807807:root"]
-    }
-  }
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::989541196905:root"]
-    }
-  }
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::460044344528:root"]
-    }
-  }
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::767397788203:role/OrganizationAccountAccessRole"]
-    }
-  }
-
-  #Root Blunderome (460044344528)
-  statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
       type        = "Federated"
-      identifiers = ["arn:aws:iam::460044344528:oidc-provider/token.actions.githubusercontent.com"]
+      identifiers = [aws_iam_openid_connect_provider.github.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
     }
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values = [
-        # lock to repo, but match any branch
-        "repo:observeinc/observe-agent:*",
-      ]
+      values   = [var.github_subject]
     }
   }
+}
 
-  #This is created in member account Nikhil-PS Account (767397788203) in the blunderdome root account for billing
+# The account is shared, so destructive actions are limited to resources the tests tagged.
+data "aws_iam_policy_document" "integration_tests" {
   statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals {
-      type        = "Federated"
-      identifiers = ["arn:aws:iam::767397788203:oidc-provider/token.actions.githubusercontent.com"]
-    }
+    sid = "CreateTestResources"
+    actions = [
+      "ec2:Describe*",
+      "ec2:RunInstances",
+      "ec2:ImportKeyPair",
+    ]
+    resources = ["*"]
     condition {
-      test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values = [
-        # lock to repo, but match any branch
-        "repo:observeinc/observe-agent:*",
-      ]
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.region]
     }
   }
 
-}
-
-data "aws_iam_policy_document" "s3_access" {
   statement {
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:DeleteObject",
-    ]
-
-    resources = [
-      "arn:aws:s3:::observe-agent-terraform-state/*",
-    ]
-  }
-  statement {
-    actions = [
-      "s3:ListBucket",
-    ]
-    resources = [
-      "arn:aws:s3:::observe-agent-terraform-state",
-    ]
-  }
-}
-
-
-data "aws_iam_policy_document" "network_sg_ec2" {
-  statement {
-    actions = [
-      "ec2:*",
-    ]
-    resources = [
-      "*",
-    ]
+    sid       = "TagOnlyAtCreation"
+    actions   = ["ec2:CreateTags"]
+    resources = ["*"]
     condition {
-      test     = "ForAnyValue:StringEquals"
-      variable = "ec2:Region"
-      values   = ["us-west-1", "us-west-2"]
+      test     = "StringEquals"
+      variable = "ec2:CreateAction"
+      values   = ["RunInstances", "ImportKeyPair"]
     }
   }
 
-}
+  statement {
+    sid       = "ManageTaggedTestResources"
+    actions   = ["ec2:TerminateInstances", "ec2:DeleteKeyPair", "ec2:GetPasswordData"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/purpose"
+      values   = [var.test_resource_tag]
+    }
+  }
 
+  statement {
+    sid       = "SSHThroughInstanceConnectEndpoint"
+    actions   = ["ec2-instance-connect:OpenTunnel"]
+    resources = ["arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:instance-connect-endpoint/*"]
+    condition {
+      test     = "NumericEquals"
+      variable = "ec2-instance-connect:remotePort"
+      values   = ["22"]
+    }
+  }
+}
 
 resource "aws_iam_role" "access" {
-  name = "gh-observe_agent-repo"
-  #path        = var.iam_path
-  description         = <<-EOF
-    Role for github terraform account access for observe-agent repo
-  EOF
-  assume_role_policy  = data.aws_iam_policy_document.assume_role.json
-  managed_policy_arns = []
-  inline_policy {
-    name   = "terraform_backend"
-    policy = data.aws_iam_policy_document.s3_access.json
-  }
-  inline_policy {
-    name   = "network_sg_ec2"
-    policy = data.aws_iam_policy_document.network_sg_ec2.json
-  }
+  name               = var.role_name
+  description        = "GitHub Actions role for observe-agent integration tests"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
 
+resource "aws_iam_role_policy" "integration_tests" {
+  name   = var.policy_name
+  role   = aws_iam_role.access.id
+  policy = data.aws_iam_policy_document.integration_tests.json
+}
+
+output "role_arn" {
+  value = aws_iam_role.access.arn
 }

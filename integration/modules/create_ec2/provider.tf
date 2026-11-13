@@ -10,14 +10,7 @@ terraform {
 }
 
 
+# Credentials and region come from the environment (AWS_PROFILE / AWS_REGION locally,
+# aws-actions/configure-aws-credentials in CI).
 provider "aws" {}
-
-#Create provider_override.tf with the following for local use
-# provider "aws" {
-#   region = "us-west-1" 
-#   profile = "blunderdome" 
-#   assume_role {
-#     role_arn = "IAM ROLE IN BLUNDERDOME" 
-#   }
-# }
 

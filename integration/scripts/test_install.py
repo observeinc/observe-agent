@@ -19,7 +19,7 @@ def _get_installation_package(env_vars: dict) -> tuple:
         tuple: filename and full path to the built distribution package
         Examples:
           filename: observe-agent_Windows_x86_64.zip
-          full_path: /Users/nikhil.dua/Documents/observe-repos/observe-agent/dist/observe-agent_Windows_x86_64.zip
+          full_path: /path/to/observe-agent/dist/observe-agent_Windows_x86_64.zip
 
     """
     current_dir = os.getcwd()

@@ -15,7 +15,8 @@ resource "aws_key_pair" "ec2key" {
   tags = merge(
     local.BASE_TAGS,
     {
-      Name = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.unique_id.id}")
+      Name   = format(var.name_format, "publicKey_${var.AWS_MACHINE}_${random_string.unique_id.id}")
+      run_id = var.run_id
     },
   )
 
@@ -26,9 +27,9 @@ resource "aws_instance" "observe_agent_instance" {
 
   ami                         = local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].ami_id
   instance_type               = local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].ami_instance_type
-  associate_public_ip_address = true
-  subnet_id                   = data.aws_subnet.subnet_public.id
-  vpc_security_group_ids      = [data.aws_security_group.ec2_public.id]
+  associate_public_ip_address = false
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = [var.security_group_id]
   key_name                    = aws_key_pair.ec2key.key_name
 
   user_data         = file(join("/", ["${path.module}", local.AWS_MACHINE_CONFIGS[var.AWS_MACHINE].user_data]))
@@ -42,6 +43,7 @@ resource "aws_instance" "observe_agent_instance" {
     {
       Name   = format(var.name_format, "${var.AWS_MACHINE}_${random_string.unique_id.id}")
       OS_KEY = "${var.AWS_MACHINE}"
+      run_id = var.run_id
     },
   )
 
