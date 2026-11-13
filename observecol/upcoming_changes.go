@@ -54,6 +54,7 @@ type matchCondition struct {
 	Equals      any      `yaml:"equals"`
 	Absent      bool     `yaml:"absent"`
 	NotContains any      `yaml:"not_contains"`
+	OneOf       []any    `yaml:"one_of"`
 }
 
 // upcomingChangeChecks are matches upcoming_changes.yaml can't express as conditions.
@@ -120,13 +121,13 @@ func (r upcomingChangeRule) validate() error {
 	}
 	for _, c := range r.Match.All {
 		operators := 0
-		for _, set := range []bool{c.Equals != nil, c.Absent, c.NotContains != nil} {
+		for _, set := range []bool{c.Equals != nil, c.Absent, c.NotContains != nil, len(c.OneOf) > 0} {
 			if set {
 				operators++
 			}
 		}
 		if len(c.Path) == 0 || operators != 1 {
-			return fmt.Errorf("each condition needs a path and exactly one of equals, absent or not_contains")
+			return fmt.Errorf("each condition needs a path and exactly one of equals, absent, not_contains or one_of")
 		}
 	}
 	return nil
@@ -151,6 +152,8 @@ func (c matchCondition) holds(cfg map[string]any) bool {
 		return !found || value == nil || value == ""
 	case c.Equals != nil:
 		return found && reflect.DeepEqual(value, c.Equals)
+	case len(c.OneOf) > 0:
+		return found && slices.ContainsFunc(c.OneOf, func(v any) bool { return reflect.DeepEqual(v, value) })
 	default:
 		list, _ := value.([]any)
 		return !slices.ContainsFunc(list, func(v any) bool { return reflect.DeepEqual(v, c.NotContains) })

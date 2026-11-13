@@ -96,6 +96,8 @@ func TestUpcomingChangeRulesValidation(t *testing.T) {
 		{"no fires example", strings.Replace(valid, "examples: {fires: [{}]}", "examples: {quiet: [{}]}", 1), "examples.fires"},
 		{"unknown check", valid + "\n    match: {check: nope}", "unknown check"},
 		{"two operators", valid + "\n    match: {all: [{path: [a], equals: 1, absent: true}]}", "exactly one of"},
+		{"one_of with equals", valid + "\n    match: {all: [{path: [a], equals: 1, one_of: [1, 2]}]}", "exactly one of"},
+		{"one_of", valid + "\n    match: {all: [{path: [a], one_of: [1, 2]}]}", ""},
 		{"no path", valid + "\n    match: {all: [{equals: 1}]}", "exactly one of"},
 		{"misspelled match key", valid + "\n    match: {al: [{path: [a], equals: 1}]}", "field al not found"},
 	}
