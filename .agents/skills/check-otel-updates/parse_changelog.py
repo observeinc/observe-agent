@@ -15,90 +15,24 @@ OUT_DIR/unparsed.txt (top-level bullets that didn't match the entry format).
 import glob
 import json
 import os
-import re
 import sys
 
-KINDS = ("receiver", "processor", "exporter", "connector", "extension")
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+sys.path.insert(0, os.path.join(REPO_ROOT, "scripts", "upstream_changelog"))
 
-# Changelog tags that don't match their module path.
-ALIASES = {
-    "pkg/coreinternal": "internal/coreinternal",
-    "pkg/fileconsumer": "pkg/stanza",
-    "pkg/prometheus": "pkg/translator/prometheus",
-    "extension/storage/filestorage": "extension/filestorage",
-    "extension/storage": "extension/filestorage",
-    "processor/transformprocessor/internal/logparsingfuncs": "processor/transform",
-}
-
-
-def norm(tag):
-    tag = ALIASES.get(tag.strip(), tag.strip())
-    parts = tag.split("/")
-    if parts[0] in KINDS and len(parts) > 1:
-        leaf = parts[1].replace("_", "")
-        for kind in KINDS:
-            if leaf.endswith(kind) and leaf != kind:
-                leaf = leaf[: -len(kind)]
-        parts[1] = leaf
-        if parts[0] == "extension" and parts[1] == "storage" and len(parts) > 2:
-            parts = ["extension", parts[2]]
-    return ALIASES.get("/".join(parts), "/".join(parts))
-
-
-def scope_from_gomod(path):
-    text = open(path).read()
-    contrib = {norm(m) for m in re.findall(r"opentelemetry-collector-contrib/([a-z0-9_/]+) v\d", text)}
-    core = {norm(m) for m in re.findall(r"go\.opentelemetry\.io/collector/([a-z0-9_/]+) v\d", text)}
-    return contrib, core
-
-
-def in_scope(repo, tags, contrib, core):
-    for t in tags:
-        n = norm(t)
-        if n == "all":
-            return True
-        if repo == "core":
-            if n.startswith(("pkg/", "cmd/builder", "provider/")) or n in core:
-                return True
-            continue
-        if n in contrib or any(n.startswith(m + "/") or m.startswith(n + "/") for m in contrib if m.startswith(("pkg/", "internal/"))):
-            return True
-    return False
+from otel_changelog import in_scope, parse_entries, scope_from_gomod  # noqa: E402
 
 
 def parse(paths):
     entries, unparsed, per_file = [], [], {}
     for path in paths:
-        repo, ver = os.path.basename(path)[:-3].split("-", 1)
-        before = len(entries)
-        block, heading, cur = "End User", "", None
-        for lineno, line in enumerate(open(path), 1):
-            line = line.rstrip("\n")
-            if line.startswith("## "):
-                low = line.lower()
-                block = ("API" if "api" in low else
-                         "End User" if "end" in low and "user" in low else
-                         "Unmaintained" if "unmaintained" in low else
-                         "Repeat" if re.match(r"## v\d", line) else block)
-                cur = None
-                continue
-            if line.startswith("### "):
-                heading = re.sub(r"[^A-Za-z ]", "", line).strip()
-                cur = None
-                continue
-            m = re.match(r"^- `([^`]+)`:\s*(.*)$", line)
-            if m:
-                cur = dict(repo=repo, ver=ver, block=block, heading=heading,
-                           tags=[t.strip() for t in m.group(1).split(",")],
-                           title=m.group(2), body="", prs=re.findall(r"#(\d+)", m.group(2)))
-                entries.append(cur)
-            elif cur is not None and (line.startswith("  ") or not line):
-                cur["body"] += line.strip() + "\n"
-            else:
-                if line.startswith("- "):
-                    unparsed.append(dict(file=os.path.basename(path), line=lineno, block=block, text=line))
-                cur = None
-        per_file[os.path.basename(path)] = len(entries) - before
+        name = os.path.basename(path)
+        repo, ver = name[:-3].split("-", 1)
+        with open(path) as f:
+            found, bad = parse_entries(repo, ver, f)
+        entries += found
+        unparsed += [dict(u, file=name) for u in bad]
+        per_file[name] = len(found)
     return entries, unparsed, per_file
 
 
@@ -107,7 +41,8 @@ def main():
     paths = sorted(glob.glob(os.path.join(notes_dir, "*-*.md")))
     if not paths:
         sys.exit(f"error: no release notes (core-<ver>.md / contrib-<ver>.md) found in {notes_dir}")
-    contrib, core = scope_from_gomod(gomod)
+    with open(gomod) as f:
+        contrib, core = scope_from_gomod(f.read())
     entries, unparsed, per_file = parse(paths)
     for name, count in per_file.items():
         print(f"{name}: {count} entries", file=sys.stderr)
