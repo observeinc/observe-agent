@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2015, 2025
+// Copyright IBM Corp. 2015, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package api
@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -505,8 +506,8 @@ func (a Allocation) RescheduleInfo(t time.Time) (int, int) {
 
 	// Loop over reschedule tracker to find attempts within the restart policy's interval
 	if a.RescheduleTracker != nil && availableAttempts > 0 && interval > 0 {
-		for j := len(a.RescheduleTracker.Events) - 1; j >= 0; j-- {
-			lastAttempt := a.RescheduleTracker.Events[j].RescheduleTime
+		for _, v := range slices.Backward(a.RescheduleTracker.Events) {
+			lastAttempt := v.RescheduleTime
 			timeDiff := t.UTC().UnixNano() - lastAttempt
 			if timeDiff < interval.Nanoseconds() {
 				attempted += 1

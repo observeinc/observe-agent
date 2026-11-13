@@ -231,7 +231,6 @@ func (cl *Client) metadata(ctx context.Context, noTopics bool, topics []string) 
 	req := kmsg.NewPtrMetadataRequest()
 
 	req.IncludeClusterAuthorizedOperations = true
-	req.IncludeTopicAuthorizedOperations = ctx.Value(&includeAuthOps) != nil
 	for _, t := range topics {
 		rt := kmsg.NewMetadataRequestTopic()
 		rt.Topic = kmsg.StringPtr(t)
@@ -240,7 +239,17 @@ func (cl *Client) metadata(ctx context.Context, noTopics bool, topics []string) 
 	if noTopics {
 		req.Topics = []kmsg.MetadataRequestTopic{}
 	}
-	resp, err := req.RequestWith(ctx, cl.cl)
+
+	// When auth ops are requested, bypass the cache and issue a direct
+	// request. The cached path does not populate authorized operations.
+	var resp *kmsg.MetadataResponse
+	var err error
+	if ctx.Value(&includeAuthOps) != nil {
+		req.IncludeTopicAuthorizedOperations = true
+		resp, err = req.RequestWith(ctx, cl.cl)
+	} else {
+		resp, err = cl.cl.RequestCachedMetadata(ctx, req, 0)
+	}
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -274,7 +283,7 @@ func (cl *Client) metadata(ctx context.Context, noTopics bool, topics []string) 
 				Err: kerr.ErrorForCode(p.ErrorCode),
 			}
 		}
-		tds[*t.Topic] = td
+		tds[td.Topic] = td
 	}
 
 	m := Metadata{
@@ -296,8 +305,17 @@ func (cl *Client) metadata(ctx context.Context, noTopics bool, topics []string) 
 	}
 	sort.Slice(m.Brokers, func(i, j int) bool { return m.Brokers[i].NodeID < m.Brokers[j].NodeID })
 
-	if len(topics) > 0 && len(m.Topics) != len(topics) {
-		return Metadata{}, fmt.Errorf("metadata returned only %d topics of %d requested", len(m.Topics), len(topics))
+	// Compare against the UNIQUE requested names: m.Topics is a map, so
+	// duplicate requested topics previously tripped this as a spurious
+	// "returned only N of M" error.
+	if len(topics) > 0 {
+		uniq := make(map[string]struct{}, len(topics))
+		for _, t := range topics {
+			uniq[t] = struct{}{}
+		}
+		if len(m.Topics) != len(uniq) {
+			return Metadata{}, fmt.Errorf("metadata returned only %d topics of %d requested", len(m.Topics), len(uniq))
+		}
 	}
 
 	return m, nil
@@ -529,7 +547,15 @@ func (cl *Client) listOffsets(ctx context.Context, isolation int8, timestamp int
 					LeaderEpoch: p.LeaderEpoch,
 					Err:         kerr.ErrorForCode(p.ErrorCode),
 				}
-				if timestamp != -1 && p.Offset == -1 && p.ErrorCode == 0 {
+				// Rerequest only for real by-time listings (their -1 means
+				// "no offset at or after this timestamp"; we return end
+				// offsets, the documented ListOffsetsAfterMilli fallback).
+				// The special negative listings must NOT rerequest: -1 is
+				// their honest answer (an empty partition has no max
+				// timestamp offset; an untiered partition has no remote
+				// offset), and rewriting it with the end offset invents an
+				// answer the broker never gave.
+				if timestamp >= 0 && p.Offset == -1 && p.ErrorCode == 0 {
 					rerequest[t.Topic] = append(rerequest[t.Topic], p.Partition)
 				}
 			}
