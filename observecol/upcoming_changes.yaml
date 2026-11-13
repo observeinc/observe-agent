@@ -12,7 +12,7 @@
 #   match:      omit to match every component of the types. Otherwise `check` names a Go check in
 #               upcoming_changes.go, or `all` lists conditions on the component's configuration:
 #               `path` (list of keys) with one of `equals: <value>`, `absent: true` (missing,
-#               null or empty string) or `not_contains: <value>`.
+#               null or empty string), `not_contains: <value>` or `one_of: [<value>, ...]`.
 #   message:    what changes and what to do.
 #   examples:   component configurations that must and must not match; the tests run them.
 #
@@ -173,4 +173,72 @@ changes:
       quiet:
         - {add_metric_suffixes: false, translation_strategy: UnderscoreEscapingWithoutSuffixes}
         - {add_metric_suffixes: true}
+        - {}
+
+  - id: kafka-receiver-jaeger-http-status
+    kind: receiver
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [jaeger_proto, jaeger_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, spans that the kafka receiver reads with the jaeger_proto
+      or jaeger_json encoding carry http.response.status_code instead of http.status_code. Update
+      dashboards, monitors and processors that use http.status_code on these spans. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: jaeger_proto}}
+        - {traces: {encoding: jaeger_json}}
+      quiet:
+        - {traces: {encoding: otlp_proto}}
+        - {traces: {encoding: zipkin_json}}
+        - {}
+
+  - id: kafka-receiver-zipkin-cloud-resource
+    kind: receiver
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [zipkin_proto, zipkin_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, spans that the kafka receiver reads with the zipkin_proto
+      or zipkin_json encoding carry the cloud.resource_id resource attribute instead of faas.id.
+      Update dashboards, monitors and processors that use faas.id on these spans. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: zipkin_proto}}
+        - {traces: {encoding: zipkin_json}}
+      quiet:
+        - {traces: {encoding: zipkin_thrift}}
+        - {traces: {encoding: jaeger_proto}}
+        - {}
+
+  - id: kafka-exporter-zipkin-cloud-resource
+    kind: exporter
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [zipkin_proto, zipkin_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, the kafka exporter's zipkin_proto and zipkin_json
+      encodings write the cloud.resource_id tag instead of faas.id. Update consumers of the topic
+      that read faas.id. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: zipkin_proto}}
+        - {traces: {encoding: zipkin_json}}
+      quiet:
+        - {traces: {encoding: otlp_proto}}
         - {}
