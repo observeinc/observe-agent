@@ -17,11 +17,6 @@ type PrimaryIP struct {
 	Blocked      bool                `json:"blocked"`
 	Created      time.Time           `json:"created"`
 	Location     Location            `json:"location"`
-
-	// Deprecated: [PrimaryIP.Datacenter] is deprecated and will be removed after 1 July 2026.
-	// Use [PrimaryIP.Location] instead.
-	// See https://docs.hetzner.cloud/changelog#2025-12-16-phasing-out-datacenters
-	Datacenter *Datacenter `json:"datacenter"`
 }
 
 // PrimaryIPProtection represents the protection level of a Primary IP.
@@ -36,8 +31,7 @@ type PrimaryIPDNSPTR struct {
 	IP     string `json:"ip"`
 }
 
-// PrimaryIPCreateOpts defines the request to
-// create a Primary IP.
+// PrimaryIPCreateRequest defines the request to create a Primary IP.
 type PrimaryIPCreateRequest struct {
 	Name         string             `json:"name"`
 	Type         string             `json:"type"`
@@ -46,11 +40,6 @@ type PrimaryIPCreateRequest struct {
 	Labels       *map[string]string `json:"labels,omitempty"`
 	AutoDelete   *bool              `json:"auto_delete,omitempty"`
 	Location     string             `json:"location,omitempty"`
-
-	// Deprecated: [PrimaryIPCreateRequest.Datacenter] is deprecated and will be removed after 1 July 2026.
-	// Use [PrimaryIPCreateRequest.Location] instead.
-	// See https://docs.hetzner.cloud/changelog#2025-12-16-phasing-out-datacenters
-	Datacenter string `json:"datacenter,omitempty"`
 }
 
 // PrimaryIPCreateResponse defines the schema of the response
@@ -70,8 +59,7 @@ type PrimaryIPListResponse struct {
 	PrimaryIPs []PrimaryIP `json:"primary_ips"`
 }
 
-// PrimaryIPUpdateOpts defines the request to
-// update a Primary IP.
+// PrimaryIPUpdateRequest defines the request to update a Primary IP.
 type PrimaryIPUpdateRequest struct {
 	Name       string             `json:"name,omitempty"`
 	Labels     *map[string]string `json:"labels,omitempty"`
