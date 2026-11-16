@@ -221,6 +221,42 @@ class SpliceTest(unittest.TestCase):
         self.assertTrue(twice.startswith("## Changelog\n* fix\n\n"))
 
 
+AGENT_NOTES = f"""## Changelog
+### Bug Fixes
+* abc123: fix(deps): bump a library (#394) (@someone)
+
+{uc.MARK_START}
+## OpenTelemetry Collector changes
+
+This release is still based on OpenTelemetry Collector v0.151.0, the same as v2.19.0.
+{uc.MARK_END}
+"""
+
+
+class AgentReleasesTest(unittest.TestCase):
+    TAGS = ["v2.18.0", "v2.19.0", "v2.19.0-rc1", "v2.19.1", "v2.19.2", "v2.20.0", "dev-nightly", "nightly-1"]
+
+    def test_tags_after_from_up_to_to_newest_first(self):
+        self.assertEqual(uc.agent_tags_between(self.TAGS, "v2.18.0", "v2.19.2"), ["v2.19.2", "v2.19.1", "v2.19.0"])
+
+    def test_untagged_to_takes_every_later_release(self):
+        self.assertEqual(uc.agent_tags_between(self.TAGS, "v2.19.1", "HEAD"), ["v2.20.0", "v2.19.2"])
+
+    def test_notes_lose_the_collector_section_and_nest_under_the_version(self):
+        self.assertEqual(uc.clean_agent_notes(AGENT_NOTES),
+                         "#### Bug Fixes\n* abc123: fix(deps): bump a library (#394) (@someone)")
+
+    def test_section_links_each_release(self):
+        out = uc.render_agent_releases("v2.19.0", "v2.19.2", [("v2.19.2", AGENT_NOTES), ("v2.19.1", "")])
+        self.assertTrue(out.startswith("## Observe Agent changes\n\n"
+                                       "This release updates the Observe Agent from v2.19.0 to v2.19.2.\n"))
+        self.assertIn("### [v2.19.2](https://github.com/observeinc/observe-agent/releases/tag/v2.19.2)\n\n"
+                      "#### Bug Fixes\n", out)
+        self.assertIn("### [v2.19.1](https://github.com/observeinc/observe-agent/releases/tag/v2.19.1)\n\n"
+                      "No release notes.\n", out)
+        self.assertNotIn("OpenTelemetry Collector", out)
+
+
 class RunTest(unittest.TestCase):
     def test_failure_exits_with_the_commands_error_output(self):
         with self.assertRaisesRegex(SystemExit, "boom"):

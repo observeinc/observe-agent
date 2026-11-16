@@ -8,6 +8,8 @@ upstream release in between that touch a module compiled into observecol.
 Usage:
     upstream_changelog.py [--from REF] [--to REF]     print the section as Markdown
     upstream_changelog.py --to TAG --update-release   also write it into the GitHub release for TAG
+    upstream_changelog.py --from TAG --to TAG --agent-releases --max-chars N
+        start with the notes of the observe-agent releases in between (used by the agent Helm chart)
 """
 import argparse
 import os
@@ -190,6 +192,37 @@ def splice(body, section):
     return body.rstrip("\n") + "\n\n" + block + "\n"
 
 
+def agent_tags_between(tags, from_ref, to_ref):
+    """Release tags after from_ref up to to_ref, newest first. An untagged to_ref takes every later release."""
+    def version(tag):
+        m = re.fullmatch(r"v(\d+\.\d+\.\d+)", tag)
+        return vkey(m.group(1)) if m else None
+
+    low, high = version(from_ref), version(to_ref)
+    found = [t for t in tags if version(t) and version(t) > low and (high is None or version(t) <= high)]
+    return sorted(found, key=version, reverse=True)
+
+
+def clean_agent_notes(body):
+    if MARK_START in body and MARK_END in body:
+        body = body[: body.index(MARK_START)] + body[body.index(MARK_END) + len(MARK_END):]
+    lines = []
+    for line in body.strip().splitlines():
+        if line.strip() == "## Changelog":
+            continue
+        m = re.match(r"^(#+)(\s.*)$", line)
+        lines.append("#" * max(len(m.group(1)) + 1, 4) + m.group(2) if m else line)
+    return "\n".join(lines).strip()
+
+
+def render_agent_releases(from_ref, to_ref, releases):
+    out = ["## Observe Agent changes", "", f"This release updates the Observe Agent from {from_ref} to {to_ref}."]
+    for tag, body in releases:
+        out += ["", f"### [{tag}](https://github.com/observeinc/observe-agent/releases/tag/{tag})", "",
+                clean_agent_notes(body) or "No release notes."]
+    return "\n".join(out) + "\n"
+
+
 def run(*args, stdin=None):
     try:
         return subprocess.run(args, check=True, capture_output=True, text=True, input=stdin).stdout
@@ -222,6 +255,10 @@ def main():
     parser.add_argument("--from", dest="from_ref", help="previous release ref (default: the latest v* tag before --to)")
     parser.add_argument("--update-release", action="store_true",
                         help="write the section into the GitHub release named by --to, replacing any earlier copy")
+    parser.add_argument("--agent-releases", action="store_true",
+                        help="start with the notes of every observe-agent release after --from up to --to")
+    parser.add_argument("--max-chars", type=int, default=MAX_CHARS,
+                        help=f"longest output to produce (default: {MAX_CHARS})")
     args = parser.parse_args()
 
     os.chdir(run("git", "rev-parse", "--show-toplevel").strip())
@@ -235,10 +272,20 @@ def main():
     print(f"{from_ref} -> {args.to}: collector {describe(old)} -> {describe(new)}; "
           f"{len(changes['entries'])} of {changes['total']} upstream entries in scope", file=sys.stderr)
 
+    agent_md = ""
+    if args.agent_releases:
+        tags = agent_tags_between(run("git", "tag", "--list", "v*").split(), from_ref, args.to)
+        releases = [(t, run("gh", "release", "view", t, "--json", "body", "-q", ".body")) for t in tags]
+        agent_md = render_agent_releases(from_ref, args.to, releases) + "\n"
+
+    def build(budget):
+        budget = min(budget, args.max_chars)
+        return agent_md + render(old, new, changes, from_ref, budget - len(agent_md))
+
     if args.update_release:
-        print(update_release(args.to, lambda budget: render(old, new, changes, from_ref, budget)), end="")
+        print(update_release(args.to, build), end="")
     else:
-        print(render(old, new, changes, from_ref), end="")
+        print(build(args.max_chars), end="")
 
 
 if __name__ == "__main__":
