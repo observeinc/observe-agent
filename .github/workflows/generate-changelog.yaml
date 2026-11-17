@@ -25,3 +25,5 @@ jobs:
         env:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Preview upstream OpenTelemetry Collector changes
+        run: python3 scripts/upstream_changelog/upstream_changelog.py >> "$GITHUB_STEP_SUMMARY"

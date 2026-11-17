@@ -18,6 +18,14 @@ git log <last-tag>..HEAD --oneline
 git log <last-tag>..HEAD --oneline --grep="!"  # breaking changes
 ```
 
+If the release changes the OpenTelemetry Collector version, preview the upstream section that the release workflow adds to the notes:
+
+```bash
+make upstream-changelog
+```
+
+It lists every core and contrib changelog entry since the last tag that touches a module built into `observecol`. Use its breaking changes when you recommend the bump.
+
 Present the changes to the user and recommend a version bump:
 
 - **Major**: Breaking changes — removed metrics/logs/traces, removed components,
@@ -114,6 +122,14 @@ gh run watch <run-id> --repo observeinc/observe-agent
 ```bash
 gh run view <run-id> --repo observeinc/observe-agent --log-failed | tail -100
 ```
+
+The last step, "Add upstream OpenTelemetry Collector changes to the release notes", runs after GoReleaser has published the release. If only that step failed, the release is out; fix the cause and add the section from a local checkout instead of re-running the workflow:
+
+```bash
+python3 scripts/upstream_changelog/upstream_changelog.py --to v<new-version> --update-release
+```
+
+It replaces any earlier copy of the section, so it is safe to run more than once.
 
 Do not proceed to Step 6 until the workflow succeeds.
 

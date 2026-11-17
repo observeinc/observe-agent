@@ -45,6 +45,15 @@ go-test: build
 release-snapshot:
 	goreleaser release --snapshot --clean --verbose
 
+## upstream-changelog: Previews the OpenTelemetry Collector section of the next release's notes
+upstream-changelog:
+	python3 scripts/upstream_changelog/upstream_changelog.py
+
+## test-scripts: Runs the Python tests for the changelog scripts
+test-scripts:
+	python3 -m unittest discover -s scripts/upstream_changelog
+	python3 -m unittest discover -s .agents/skills/check-otel-updates
+
 ## install-ocb: Installs correct version of ocb binary
 install-ocb:
 	@mkdir -p "$(HOME)/bin"
@@ -93,4 +102,4 @@ check-readme:
 	go run ./scripts/generate_readme/
 	git diff --exit-code README.md || (echo "README.md is out of date, run 'make generate-readme' to update it." && exit 1)
 
-.PHONY: all vendor build go-test release-snapshot install-ocb build-ocb install-tools generate-readme check-readme
+.PHONY: all vendor build go-test release-snapshot upstream-changelog test-scripts install-ocb build-ocb install-tools generate-readme check-readme
