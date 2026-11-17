@@ -1,5 +1,8 @@
 """Run: python3 -m unittest discover scripts/upstream_changelog"""
+import contextlib
+import io
 import os
+import re
 import sys
 import unittest
 from unittest import mock
@@ -134,6 +137,20 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(calls, [("contrib", "0.151.0")])
         self.assertEqual(changes["releases"], {"core": [], "contrib": ["0.151.0"]})
 
+    def test_warns_about_bullets_and_releases_that_do_not_parse(self):
+        drifted = CORE.replace("## v1.56.0/v0.150.0", "## v1.56.0/v0.150.0\n\n- A bullet without a component tag.")
+        drifted = drifted.replace("- `pkg/service`: Already shipped. (#60)", "")
+        drifted = drifted.replace("- `exporter/otlp_http`: Deprecate a field. (#77)\n"
+                                  "- `cmd/builder`: Changes how we build observecol, not the agent. (#78)",
+                                  "* `exporter/otlp_http`: A new bullet style. (#77)")
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), contextlib.redirect_stderr(stderr):
+            uc.collect({"core": "0.149.0", "contrib": "0.151.0"}, {"core": "0.151.0", "contrib": "0.151.0"},
+                       gomod("0.151.0", "0.151.0"), lambda repo, version: drifted)
+        self.assertIn("::warning::core v0.150.0: skipped a bullet that isn't a changelog entry: "
+                      "- A bullet without a component tag.\n", stderr.getvalue())
+        self.assertIn("::warning::core v0.151.0: found no changelog entries", stderr.getvalue())
+
     def test_missing_target_section_fails(self):
         with self.assertRaisesRegex(SystemExit, "v0.153.0"):
             uc.collect({"core": "0.151.0", "contrib": "0.151.0"},
@@ -210,6 +227,42 @@ class RenderTest(unittest.TestCase):
         self.assertIn("1 more in the upstream release notes", out)
 
 
+class RenderNotesTest(unittest.TestCase):
+    def setUp(self):
+        self.old = {"core": "0.149.0", "contrib": "0.149.0"}
+        self.new = {"core": "0.151.0", "contrib": "0.151.0"}
+        self.changes = uc.collect(self.old, self.new, gomod("0.151.0", "0.151.0"), fake_fetch())
+        self.releases = [(f"v2.19.{n}", AGENT_NOTES + "* padding entry\n" * 40) for n in range(5, 0, -1)]
+
+    def render(self, releases, budget):
+        return uc.render_notes(self.old, self.new, self.changes, "v2.19.0", "v2.19.5", releases, budget)
+
+    def test_long_agent_notes_are_trimmed_to_share_the_budget(self):
+        full = self.render(self.releases, uc.MAX_CHARS)
+        out = self.render(self.releases, len(full) - 1)
+        self.assertLess(len(out), len(full))
+        self.assertTrue(out.startswith("## Observe Agent changes"))
+        self.assertIn("### [v2.19.5]", out)
+        self.assertIn("left out the notes of", out)
+        self.assertIn("## OpenTelemetry Collector changes", out)
+
+    def test_a_short_collector_section_leaves_most_of_the_budget_to_the_agent_notes(self):
+        unchanged = {"releases": {"core": [], "contrib": []}, "entries": [], "total": 0}
+        releases = self.releases[:2]
+        full = uc.render_notes(self.new, self.new, unchanged, "v2.19.0", "v2.19.5", releases, uc.MAX_CHARS)
+        out = uc.render_notes(self.new, self.new, unchanged, "v2.19.0", "v2.19.5", releases, len(full) - 1)
+        self.assertIn("### [v2.19.5]", out)
+        self.assertNotIn("### [v2.19.4]", out)
+
+    def test_without_agent_releases_only_the_collector_section_is_rendered(self):
+        out = self.render(None, uc.MAX_CHARS)
+        self.assertTrue(out.startswith("## OpenTelemetry Collector changes"))
+
+    def test_output_that_cannot_fit_fails_instead_of_going_over(self):
+        with self.assertRaisesRegex(SystemExit, "more than the 500 allowed"):
+            self.render(self.releases, 500)
+
+
 class SpliceTest(unittest.TestCase):
     def test_appends_when_absent_and_replaces_when_present(self):
         once = uc.splice("## Changelog\n* fix\n", "first")
@@ -223,7 +276,7 @@ class SpliceTest(unittest.TestCase):
 
 AGENT_NOTES = f"""## Changelog
 ### Bug Fixes
-* abc123: fix(deps): bump a library (#394) (@someone)
+* abc1234def: fix(deps): bump a library (#394) (@someone)
 
 {uc.MARK_START}
 ## OpenTelemetry Collector changes
@@ -242,9 +295,26 @@ class AgentReleasesTest(unittest.TestCase):
     def test_untagged_to_takes_every_later_release(self):
         self.assertEqual(uc.agent_tags_between(self.TAGS, "v2.19.1", "HEAD"), ["v2.20.0", "v2.19.2"])
 
+    def test_from_must_be_a_release_tag(self):
+        for ref in ("v2.19.0-rc1", "HEAD~3"):
+            with self.assertRaisesRegex(SystemExit, f"--from to name a vX.Y.Z release tag, not {re.escape(ref)}"):
+                uc.agent_tags_between(self.TAGS, ref, "v2.19.2")
+
     def test_notes_lose_the_collector_section_and_nest_under_the_version(self):
+        repo = "https://github.com/observeinc/observe-agent"
         self.assertEqual(uc.clean_agent_notes(AGENT_NOTES),
-                         "#### Bug Fixes\n* abc123: fix(deps): bump a library (#394) (@someone)")
+                         f"#### Bug Fixes\n* [abc1234]({repo}/commit/abc1234def): fix(deps): bump a library "
+                         f"([#394]({repo}/issues/394)) (@someone)")
+
+    def test_over_budget_leaves_out_the_oldest_releases(self):
+        releases = [("v2.19.2", AGENT_NOTES), ("v2.19.1", AGENT_NOTES), ("v2.19.0", AGENT_NOTES)]
+        full = uc.render_agent_releases("v2.18.0", "v2.19.2", releases)
+        out = uc.render_agent_releases("v2.18.0", "v2.19.2", releases, budget=len(full) - 1)
+        self.assertLessEqual(len(out), len(full) - 1)
+        self.assertIn("### [v2.19.2]", out)
+        self.assertNotIn("### [v2.19.0]", out)
+        self.assertIn("left out the notes of 1 release: "
+                      "[v2.19.0](https://github.com/observeinc/observe-agent/releases/tag/v2.19.0)", out)
 
     def test_section_links_each_release(self):
         out = uc.render_agent_releases("v2.19.0", "v2.19.2", [("v2.19.2", AGENT_NOTES), ("v2.19.1", "")])
