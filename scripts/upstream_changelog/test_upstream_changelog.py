@@ -4,6 +4,7 @@ import io
 import os
 import re
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -117,6 +118,82 @@ class SplitSectionsTest(unittest.TestCase):
         sections = uc.split_sections(CONTRIB)
         self.assertEqual(sorted(sections), ["0.149.0", "0.150.0", "0.151.0", "0.152.0"])
         self.assertIn("- `pkg/ottl`: Add a converter. (#513)", sections["0.151.0"])
+
+
+CHANGELOG_API = """# API Changelog
+
+## v1.57.0/v0.151.0
+
+- `exporter/otlp_http`: Deprecate a field. (#77)
+"""
+
+
+def fake_files(user=None, api=None):
+    user = user or {"core": CORE, "contrib": CONTRIB}
+
+    def fetch(repo, ref, filename, missing_ok=False):
+        if filename == "CHANGELOG.md":
+            return user[repo]
+        if filename == "CHANGELOG-API.md":
+            if api is not None and repo in api:
+                return api[repo]
+            if missing_ok:
+                return ""
+        raise AssertionError((repo, ref, filename))
+
+    return fetch
+
+
+class ListFetchNotesTest(unittest.TestCase):
+    def test_list_releases_is_exclusive_low_newest_first(self):
+        out = uc.list_releases("0.150.0", fetch=fake_files())
+        self.assertEqual(out, "core: 0.151.0\ncontrib: 0.152.0 0.151.0\n")
+
+    def test_list_releases_says_up_to_date(self):
+        out = uc.list_releases("0.152.0", fetch=fake_files())
+        self.assertEqual(out, "core: up to date\ncontrib: up to date\n")
+
+    def test_rebuild_notes_omits_an_absent_api_slice(self):
+        self.assertNotIn("API", uc.rebuild_notes(["- `a`: b"], []))
+        self.assertIn("## API Changelog", uc.rebuild_notes(["- `a`: b"], ["- `c`: d"]))
+
+    def test_fetch_notes_writes_the_range_and_clears_stale_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            stale = os.path.join(d, "contrib-0.140.0.md")
+            with open(stale, "w") as f:
+                f.write("stale")
+            written = uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(api={"core": CHANGELOG_API}))
+            names = sorted(os.path.basename(p) for p in written)
+            self.assertEqual(names, ["contrib-0.151.0.md", "core-0.151.0.md"])
+            self.assertFalse(os.path.exists(stale))
+            with open(os.path.join(d, "core-0.151.0.md")) as f:
+                core = f.read()
+            self.assertIn("## End User Changelog", core)
+            self.assertIn("## API Changelog", core)
+            self.assertIn("Deprecate a field", core)
+            with open(os.path.join(d, "contrib-0.151.0.md")) as f:
+                contrib = f.read()
+            self.assertNotIn("API", contrib)
+            self.assertNotIn("0.152.0", contrib)
+
+    def test_fetch_notes_round_trips_through_parse_changelog(self):
+        skill = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "..", "..", ".agents", "skills", "check-otel-updates")
+        sys.path.insert(0, skill)
+        import parse_changelog
+        with tempfile.TemporaryDirectory() as d:
+            uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files())
+            path = os.path.join(d, "contrib-0.151.0.md")
+            entries, unparsed, per_file = parse_changelog.parse([path])
+        self.assertEqual(per_file["contrib-0.151.0.md"], 3)
+        self.assertEqual(entries[0]["heading"], "Breaking changes")
+        self.assertEqual(unparsed, [])
+
+    def test_empty_section_fails(self):
+        empty = {"core": "## v0.151.0\n\n", "contrib": CONTRIB}
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(SystemExit, "core v0.151.0 has an empty CHANGELOG.md section"):
+                uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(user=empty))
 
 
 class CollectTest(unittest.TestCase):

@@ -7,7 +7,8 @@ description: Use when checking for newer OpenTelemetry Collector (otelcol core o
 
 Written for the Baby Bots agent. Follow `base/SKILL.md` with the differences
 below; its impact checks, verification levels, and report contract are
-unchanged. Paths are relative to this skill's directory.
+unchanged. `base/` paths are relative to this skill; the changelog script is
+at the observe-agent checkout root.
 
 ## Tools
 
@@ -27,20 +28,22 @@ the Method section. A surface with no checkout is "not audited".
 
 ## Step changes
 
-1. **Versions.** Run `python3 release_notes.py list <current>` instead of
-   `gh release list`.
+1. **Versions.** From the observe-agent checkout, run
+   `python3 scripts/upstream_changelog/upstream_changelog.py --list-releases <current>`
+   instead of `gh release list`.
 2. **Notes.** Run
-   `python3 release_notes.py fetch <current> <target> /tmp/otel-notes`. It
-   rebuilds each release body from the repo's `CHANGELOG.md` and
-   `CHANGELOG-API.md`, and writes a file only for versions that repo has. The
-   rebuilt body lacks the "Unmaintained Components" list, which the parser
-   drops anyway.
+   `python3 scripts/upstream_changelog/upstream_changelog.py --fetch-notes <current> <target> /tmp/otel-notes`.
+   It rebuilds each release body from the same `CHANGELOG.md` / `CHANGELOG-API.md`
+   fetch the release workflow uses, and writes a file only for versions that
+   repo has. The rebuilt body lacks the "Unmaintained Components" list, which
+   the parser drops anyway.
 3. **Ledger.** Run `python3 base/parse_changelog.py /tmp/otel-notes
    <observe-agent>/observecol/go.mod /tmp/otel-audit`. If a file yields no
    entries because its bullets lack the `:` after the component (contrib
    `v0.165.1` does), classify those bullets by hand, list them in the
    appendix, delete the file, and rerun.
 4. **Build plumbing.** Instead of `gh pr view`, find the PR number in the
-   notes (`grep -rn '#<n>' /tmp/otel-notes`), or read the patched file at the
-   target tag on `raw.githubusercontent.com`. If neither settles it, report
-   the item as not verified, with the steps to check it.
+   notes for the patch's repo
+   (`grep -nE '#<n>\b' /tmp/otel-notes/<core|contrib>-*.md`), or read the
+   patched file at the target tag on `raw.githubusercontent.com`. If neither
+   settles it, report the item as not verified, with the steps to check it.
