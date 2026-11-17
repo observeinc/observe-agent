@@ -3,9 +3,9 @@ name: check-otel-updates
 description: Use when checking for newer OpenTelemetry Collector (otelcol core or contrib) releases, planning or reviewing an OTel upgrade of the observe-agent, or judging how upstream changelog entries affect the agent, the helm chart, or the public docs.
 ---
 
-# Check OTel Updates (Baby Bots)
+# Check OTel Updates (devbot)
 
-Written for the Baby Bots agent. Follow `base/SKILL.md` with the differences
+Written for the Baby Bots `devbot`. Follow `base/SKILL.md` with the differences
 below; its impact checks, verification levels, and report contract are
 unchanged. `base/` paths are relative to this skill; the changelog script is
 at the observe-agent checkout root.
