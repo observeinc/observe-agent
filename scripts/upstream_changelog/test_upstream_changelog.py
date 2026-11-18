@@ -207,11 +207,25 @@ class ListFetchNotesTest(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, r"no release in \(v0.151.0, v0.151.0\]"):
                 uc.fetch_notes("0.151.0", "0.151.0", d, fetch=fake_files())
 
-    def test_empty_section_fails(self):
-        empty = {"core": "## v0.151.0\n\n", "contrib": CONTRIB}
+    def test_fetch_notes_refuses_a_bad_current_and_keeps_old_notes(self):
         with tempfile.TemporaryDirectory() as d:
-            with self.assertRaisesRegex(SystemExit, "core v0.151.0 has an empty CHANGELOG.md section"):
-                uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(user=empty))
+            stale = os.path.join(d, "core-0.140.0.md")
+            with open(stale, "w") as f:
+                f.write("stale")
+            with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                uc.fetch_notes("v0.150.0", "0.151.0", d, fetch=fake_files())
+            self.assertTrue(os.path.exists(stale))
+
+    def test_empty_section_fails_before_writing_anything(self):
+        for repo in ("core", "contrib"):
+            with self.subTest(repo=repo), tempfile.TemporaryDirectory() as d:
+                user = {"core": CORE, "contrib": CONTRIB, repo: "## v0.151.0\n\n"}
+                stale = os.path.join(d, "core-0.140.0.md")
+                with open(stale, "w") as f:
+                    f.write("stale")
+                with self.assertRaisesRegex(SystemExit, f"{repo} v0.151.0 has an empty CHANGELOG.md section"):
+                    uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(user=user))
+                self.assertEqual(os.listdir(d), ["core-0.140.0.md"])
 
 
 class CollectTest(unittest.TestCase):

@@ -130,28 +130,33 @@ def fetch_notes(current, target, out, fetch=None):
     """Write parse_changelog.py's per-version files for every release in (current, target]."""
     if fetch is None:
         fetch = fetch_file
-    if not re.fullmatch(r"0\.\d+\.\d+", target):
-        sys.exit(f"error: TARGET must be a 0.x.y collector version, not {target}")
+    for name, version in (("CURRENT", current), ("TARGET", target)):
+        if not re.fullmatch(r"0\.\d+\.\d+", version):
+            sys.exit(f"error: {name} must be a 0.x.y collector version, not {version}")
     changelogs = {repo: (split_sections(fetch(repo, "main", "CHANGELOG.md")),
                          split_sections(fetch(repo, "main", "CHANGELOG-API.md", missing_ok=True)))
                   for repo in REPOS}
     if not any(target in user for user, _ in changelogs.values()):
         sys.exit(f"error: neither core nor contrib CHANGELOG.md on main has a v{target} section")
+    # Every check runs before the old notes are cleared, so a failure keeps them.
+    notes = {}
+    for repo, (user, api) in changelogs.items():
+        for ver in versions_between(user, current, target):
+            if not "".join(user[ver]).strip():
+                sys.exit(f"error: {repo} v{ver} has an empty CHANGELOG.md section")
+            notes[f"{repo}-{ver}.md"] = rebuild_notes(user[ver], api.get(ver, []))
+    if not notes:
+        sys.exit(f"error: no release in (v{current}, v{target}]")
     os.makedirs(out, exist_ok=True)
     for name in os.listdir(out):
         if NOTES_NAME.fullmatch(name):
             os.remove(os.path.join(out, name))
     written = []
-    for repo, (user, api) in changelogs.items():
-        for ver in versions_between(user, current, target):
-            if not "".join(user[ver]).strip():
-                sys.exit(f"error: {repo} v{ver} has an empty CHANGELOG.md section")
-            path = os.path.join(out, f"{repo}-{ver}.md")
-            with open(path, "w") as f:
-                f.write(rebuild_notes(user[ver], api.get(ver, [])))
-            written.append(path)
-    if not written:
-        sys.exit(f"error: no release in (v{current}, v{target}]")
+    for name, text in notes.items():
+        path = os.path.join(out, name)
+        with open(path, "w") as f:
+            f.write(text)
+        written.append(path)
     return written
 
 
