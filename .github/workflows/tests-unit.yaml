@@ -33,3 +33,5 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
       - name: Test
         run: make go-test
+      - name: Test changelog scripts
+        run: make test-scripts
