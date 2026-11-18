@@ -7,8 +7,9 @@ description: Use when checking for newer OpenTelemetry Collector (otelcol core o
 
 Written for the Baby Bots `devbot`. Follow `base/SKILL.md` with the differences
 below; its impact checks, verification levels, and report contract are
-unchanged. `base/` paths are relative to this skill; the changelog script is
-at the observe-agent checkout root.
+unchanged. Read `base/SKILL.md` for the steps, but run every script from the
+observe-agent checkout: the installed `base/` copy has no `scripts/` folder
+for `parse_changelog.py` to import from.
 
 ## Tools
 
@@ -35,10 +36,12 @@ the Method section. A surface with no checkout is "not audited".
    `python3 scripts/upstream_changelog/upstream_changelog.py --fetch-notes <current> <target> /tmp/otel-notes`.
    It rebuilds each release body from the same `CHANGELOG.md` / `CHANGELOG-API.md`
    fetch the release workflow uses, and writes a file only for versions that
-   repo has. The rebuilt body lacks the "Unmaintained Components" list, which
-   the parser drops anyway.
-3. **Ledger.** Run `python3 base/parse_changelog.py /tmp/otel-notes
-   <observe-agent>/observecol/go.mod /tmp/otel-audit`. If a file yields no
+   repo has. It fails when neither repo has a `<target>` section. The rebuilt
+   body lacks the "Unmaintained Components" list, which the parser drops
+   anyway.
+3. **Ledger.** From the observe-agent checkout, run
+   `python3 .agents/skills/check-otel-updates/parse_changelog.py /tmp/otel-notes
+   observecol/go.mod /tmp/otel-audit`. If a file yields no
    entries because its bullets lack the `:` after the component (contrib
    `v0.165.1` does), classify those bullets by hand, list them in the
    appendix, delete the file, and rerun.

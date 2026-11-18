@@ -189,6 +189,24 @@ class ListFetchNotesTest(unittest.TestCase):
         self.assertEqual(entries[0]["heading"], "Breaking changes")
         self.assertEqual(unparsed, [])
 
+    def test_fetch_notes_refuses_a_target_with_no_section(self):
+        for target, message in [
+            ("0.153.0", "has a v0.153.0 section"),
+            ("0.151", "must be a 0.x.y collector version"),
+        ]:
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as d:
+                stale = os.path.join(d, "core-0.140.0.md")
+                with open(stale, "w") as f:
+                    f.write("stale")
+                with self.assertRaisesRegex(SystemExit, message):
+                    uc.fetch_notes("0.150.0", target, d, fetch=fake_files())
+                self.assertTrue(os.path.exists(stale))
+
+    def test_fetch_notes_refuses_an_empty_range(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(SystemExit, r"no release in \(v0.151.0, v0.151.0\]"):
+                uc.fetch_notes("0.151.0", "0.151.0", d, fetch=fake_files())
+
     def test_empty_section_fails(self):
         empty = {"core": "## v0.151.0\n\n", "contrib": CONTRIB}
         with tempfile.TemporaryDirectory() as d:
