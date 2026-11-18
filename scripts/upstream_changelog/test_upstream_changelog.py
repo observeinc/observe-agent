@@ -153,6 +153,24 @@ class ListFetchNotesTest(unittest.TestCase):
         out = uc.list_releases("0.152.0", fetch=fake_files())
         self.assertEqual(out, "core: up to date\ncontrib: up to date\n")
 
+    def test_list_releases_refuses_a_bad_current_before_fetching(self):
+        def fetch(*args, **kwargs):
+            raise AssertionError(f"fetched {args} before checking CURRENT")
+
+        for current in ("v0.150.0", "0.150", ""):
+            with self.subTest(current=current):
+                with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                    uc.list_releases(current, fetch=fetch)
+
+    def test_an_empty_list_releases_is_checked_instead_of_running_git(self):
+        def fail(*args, **kwargs):
+            raise AssertionError(f"unexpected call {args}")
+
+        with mock.patch.object(sys, "argv", ["upstream_changelog.py", "--list-releases", ""]), \
+                mock.patch.multiple(uc, run=fail, fetch_file=fail):
+            with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                uc.main()
+
     def test_rebuild_notes_omits_an_absent_api_slice(self):
         self.assertNotIn("API", uc.rebuild_notes(["- `a`: b"], []))
         self.assertIn("## API Changelog", uc.rebuild_notes(["- `a`: b"], ["- `c`: d"]))

@@ -115,10 +115,16 @@ def rebuild_notes(user, api):
     return body
 
 
+def require_version(name, version):
+    if not re.fullmatch(r"0\.\d+\.\d+", version):
+        sys.exit(f"error: {name} must be a 0.x.y collector version, not {version}")
+
+
 def list_releases(current, fetch=None):
     """Print core and contrib 0.x versions newer than current, newest first."""
     if fetch is None:
         fetch = fetch_file
+    require_version("CURRENT", current)
     lines = []
     for repo in REPOS:
         newer = versions_between(split_sections(fetch(repo, "main", "CHANGELOG.md")), current)
@@ -130,9 +136,8 @@ def fetch_notes(current, target, out, fetch=None):
     """Write parse_changelog.py's per-version files for every release in (current, target]."""
     if fetch is None:
         fetch = fetch_file
-    for name, version in (("CURRENT", current), ("TARGET", target)):
-        if not re.fullmatch(r"0\.\d+\.\d+", version):
-            sys.exit(f"error: {name} must be a 0.x.y collector version, not {version}")
+    require_version("CURRENT", current)
+    require_version("TARGET", target)
     changelogs = {repo: (split_sections(fetch(repo, "main", "CHANGELOG.md")),
                          split_sections(fetch(repo, "main", "CHANGELOG-API.md", missing_ok=True)))
                   for repo in REPOS}
@@ -386,10 +391,10 @@ def main():
                         help="write NOTES_DIR/{core,contrib}-<ver>.md for versions in (CURRENT, TARGET]")
     args = parser.parse_args()
 
-    if args.list_releases:
+    if args.list_releases is not None:
         print(list_releases(args.list_releases), end="")
         return
-    if args.fetch_notes:
+    if args.fetch_notes is not None:
         for path in fetch_notes(*args.fetch_notes):
             print(path)
         return
