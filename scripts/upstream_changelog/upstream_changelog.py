@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -41,6 +42,8 @@ CATEGORIES = {
 AGENT_REPO_URL = "https://github.com/observeinc/observe-agent"
 RAW_ROOT = "https://raw.githubusercontent.com/open-telemetry"
 NOTES_NAME = re.compile(r"^(core|contrib)-.+\.md$")
+RETRY_STATUS = {429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 4
 
 MARK_START = "<!-- upstream-changelog:start -->"
 MARK_END = "<!-- upstream-changelog:end -->"
@@ -84,17 +87,31 @@ def split_sections(changelog_text):
     return sections
 
 
-def fetch_file(repo, ref, filename, missing_ok=False):
+def retry_delay(err, attempt):
+    header = err.headers.get("Retry-After") if getattr(err, "headers", None) else None
+    if header and header.isdigit():
+        return min(int(header), 60)
+    return 2 ** attempt
+
+
+def fetch_file(repo, ref, filename, missing_ok=False, sleep=time.sleep):
     url = f"{RAW_ROOT}/{REPOS[repo][0]}/{ref}/{filename}"
-    try:
-        with urllib.request.urlopen(url, timeout=30) as resp:
-            return resp.read().decode()
-    except urllib.error.HTTPError as err:
-        if missing_ok and err.code == 404:
-            return ""
-        sys.exit(f"error: fetching {url}: {err}")
-    except urllib.error.URLError as err:
-        sys.exit(f"error: fetching {url}: {err}")
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                return resp.read().decode()
+        except urllib.error.HTTPError as err:
+            if missing_ok and err.code == 404:
+                return ""
+            if err.code in RETRY_STATUS and attempt + 1 < RETRY_ATTEMPTS:
+                sleep(retry_delay(err, attempt))
+                continue
+            sys.exit(f"error: fetching {url}: {err}")
+        except urllib.error.URLError as err:
+            if attempt + 1 < RETRY_ATTEMPTS:
+                sleep(2 ** attempt)
+                continue
+            sys.exit(f"error: fetching {url}: {err}")
 
 
 def fetch_changelog(repo, version):

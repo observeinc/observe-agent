@@ -6,6 +6,7 @@ import re
 import sys
 import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -244,6 +245,53 @@ class ListFetchNotesTest(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, f"{repo} v0.151.0 has an empty CHANGELOG.md section"):
                     uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(user=user))
                 self.assertEqual(os.listdir(d), ["core-0.140.0.md"])
+
+
+class FetchFileRetryTest(unittest.TestCase):
+    def http_error(self, code, retry_after=None):
+        headers = mock.Mock()
+        headers.get.side_effect = lambda key, default=None: (
+            retry_after if key == "Retry-After" else default
+        )
+        return urllib.error.HTTPError("https://example", code, "err", headers, io.BytesIO())
+
+    def test_retries_429_then_returns(self):
+        delays = []
+        responses = [self.http_error(429, "3"), io.BytesIO(b"ok")]
+
+        def urlopen(url, timeout=30):
+            item = responses.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return contextlib.closing(item)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            out = uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(out, "ok")
+        self.assertEqual(delays, [3])
+
+    def test_retries_url_errors_then_gives_up(self):
+        delays = []
+
+        def urlopen(url, timeout=30):
+            raise urllib.error.URLError("timed out")
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            with self.assertRaisesRegex(SystemExit, "timed out"):
+                uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(delays, [1, 2, 4])
+
+    def test_does_not_retry_404(self):
+        calls = []
+
+        def urlopen(url, timeout=30):
+            calls.append(url)
+            raise self.http_error(404)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            with self.assertRaisesRegex(SystemExit, "404"):
+                uc.fetch_file("core", "main", "CHANGELOG.md", sleep=lambda _: None)
+        self.assertEqual(len(calls), 1)
 
 
 class CollectTest(unittest.TestCase):
