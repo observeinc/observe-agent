@@ -4,7 +4,7 @@
 Usage:
     parse_changelog.py NOTES_DIR OBSERVECOL_GO_MOD OUT_DIR
 
-NOTES_DIR holds core-<ver>.md and contrib-<ver>.md (bodies from `gh release view`).
+NOTES_DIR holds core-<ver>.md and contrib-<ver>.md (bodies from `--fetch-notes`).
 Scope comes from the modules required by observecol/go.mod, so shared pkg/* and
 internal/* packages are included, not only the components in builder-config.yaml.
 
@@ -49,7 +49,8 @@ def main():
     empty = [name for name, count in per_file.items() if count == 0]
     if empty:
         sys.exit(f"error: no changelog entries parsed from {', '.join(empty)} in {notes_dir}; "
-                 "re-fetch the release notes (step 2) or check the note format")
+                 "bullets likely lack `: ` after the component. Classify those bullets by hand, "
+                 "list them in the appendix, delete the file, and rerun")
     ours = [e for e in entries
             if e["block"] not in ("Unmaintained", "Repeat") and in_scope(e["repo"], e["tags"], contrib, core)]
     seen = set()

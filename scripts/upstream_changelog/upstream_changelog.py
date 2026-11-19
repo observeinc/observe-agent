@@ -15,6 +15,7 @@ Usage:
         write DIR/{core,contrib}-<ver>.md for (CURRENT, TARGET] from CHANGELOG.md and CHANGELOG-API.md
 """
 import argparse
+import http.client
 import os
 import re
 import subprocess
@@ -107,7 +108,7 @@ def fetch_file(repo, ref, filename, missing_ok=False, sleep=time.sleep):
                 sleep(retry_delay(err, attempt))
                 continue
             sys.exit(f"error: fetching {url}: {err}")
-        except urllib.error.URLError as err:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as err:
             if attempt + 1 < RETRY_ATTEMPTS:
                 sleep(2 ** attempt)
                 continue

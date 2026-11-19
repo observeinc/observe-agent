@@ -281,6 +281,21 @@ class FetchFileRetryTest(unittest.TestCase):
                 uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
         self.assertEqual(delays, [1, 2, 4])
 
+    def test_retries_timeout_error_then_returns(self):
+        delays = []
+        responses = [TimeoutError("timed out"), io.BytesIO(b"ok")]
+
+        def urlopen(url, timeout=30):
+            item = responses.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return contextlib.closing(item)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            out = uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(out, "ok")
+        self.assertEqual(delays, [1])
+
     def test_does_not_retry_404(self):
         calls = []
 
