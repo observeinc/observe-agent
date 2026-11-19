@@ -9,10 +9,15 @@ import (
 	"fmt"
 
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
+	"github.com/SAP/go-hdb/driver/internal/trace"
 )
 
+func scrampbkdf2sha256SaltedPassword(password string, salt []byte, rounds int) ([]byte, error) {
+	return pbkdf2.Key(sha256.New, password, salt, rounds, scramClientProofSize)
+}
+
 func scrampbkdf2sha256Key(password string, salt []byte, rounds int) ([]byte, error) {
-	b, err := pbkdf2.Key(sha256.New, password, salt, rounds, scramClientProofSize)
+	b, err := scrampbkdf2sha256SaltedPassword(password, salt, rounds)
 	if err != nil {
 		return nil, err
 	}
@@ -28,18 +33,19 @@ var scrampbkdf2KeyCache = newList(3, func(k *SCRAMPBKDF2SHA256) ([]byte, error) 
 type SCRAMPBKDF2SHA256 struct {
 	username, password    string
 	clientChallenge       []byte
+	clientProof           []byte
 	salt, serverChallenge []byte
-	serverProof           []byte
 	rounds                uint32
 }
 
-// NewSCRAMPBKDF2SHA256 creates a new authSCRAMPBKDF2SHA256 instance.
+// NewSCRAMPBKDF2SHA256 creates a new SCRAMPBKDF2SHA256 instance.
 func NewSCRAMPBKDF2SHA256(username, password string) *SCRAMPBKDF2SHA256 {
-	return &SCRAMPBKDF2SHA256{username: username, password: password, clientChallenge: scramClientChallenge()}
+	return &SCRAMPBKDF2SHA256{username: username, password: password}
 }
 
 func (a *SCRAMPBKDF2SHA256) String() string {
-	return fmt.Sprintf("method type %s clientChallenge %v", a.Typ(), a.clientChallenge)
+	return fmt.Sprintf("method type %s username %s clientChallenge %s clientProof %s salt %s serverChallenge %s rounds %d",
+		a.Typ(), trace.Cut(a.username), trace.Redacted(a.clientChallenge), trace.Redacted(a.clientProof), trace.Redacted(a.salt), trace.Redacted(a.serverChallenge), a.rounds)
 }
 
 // Compare implements cache.Compare interface.
@@ -53,21 +59,31 @@ func (a *SCRAMPBKDF2SHA256) Typ() string { return MtSCRAMPBKDF2SHA256 }
 // Order implements the Method interface.
 func (a *SCRAMPBKDF2SHA256) Order() byte { return MoSCRAMPBKDF2SHA256 }
 
-// PrepareInitReq implements the Method interface.
-func (a *SCRAMPBKDF2SHA256) PrepareInitReq(prms *Prms) error {
-	prms.addString(a.Typ())
+// AuthLoginName implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) AuthLoginName() string { return a.username }
+
+// EncodeInitReq implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) EncodeInitReq(prms *Prms) error {
+	a.clientChallenge = scramClientChallenge()
 	prms.addBytes(a.clientChallenge)
 	return nil
 }
 
-// InitRepDecode implements the Method interface.
-func (a *SCRAMPBKDF2SHA256) InitRepDecode(d *encoding.Decoder) error {
-	d.AuthVarFieldInd() // sub parameters
-	if err := DecodeAndCheckNumPrm(d, 3); err != nil {
+// DecodeInitReq implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) DecodeInitReq(dec *encoding.Decoder) error {
+	_, clientChallenge := dec.LIBytes()
+	a.clientChallenge = clientChallenge
+	return nil
+}
+
+// DecodeInitReply implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) DecodeInitReply(dec *encoding.Decoder) error {
+	dec.AuthVarFieldInd() // sub parameters
+	if err := DecodeAndCheckNumPrm(dec, 3); err != nil {
 		return err
 	}
-	a.salt = d.AuthBytes()
-	a.serverChallenge = d.AuthBytes()
+	a.salt = dec.AuthBytes()
+	a.serverChallenge = dec.AuthBytes()
 	if err := scramCheckSalt(a.salt); err != nil {
 		return err
 	}
@@ -75,14 +91,17 @@ func (a *SCRAMPBKDF2SHA256) InitRepDecode(d *encoding.Decoder) error {
 		return err
 	}
 	var err error
-	if a.rounds, err = d.AuthBigUint32(); err != nil {
+	if a.rounds, err = dec.AuthBigUint32(); err != nil {
 		return err
+	}
+	if a.rounds == 0 {
+		return fmt.Errorf("invalid PBKDF2 rounds %d", a.rounds)
 	}
 	return nil
 }
 
-// PrepareFinalReq implements the Method interface.
-func (a *SCRAMPBKDF2SHA256) PrepareFinalReq(prms *Prms) error {
+// EncodeFinalReq implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) EncodeFinalReq(prms *Prms) error {
 	key, err := scrampbkdf2KeyCache.Get(a)
 	if err != nil {
 		return err
@@ -92,27 +111,44 @@ func (a *SCRAMPBKDF2SHA256) PrepareFinalReq(prms *Prms) error {
 		return err
 	}
 
-	prms.AddCESU8String(a.username)
-	prms.addString(a.Typ())
 	subPrms := prms.addPrms()
 	subPrms.addBytes(clientProof)
 
 	return nil
 }
 
-// FinalRepDecode implements the Method interface.
-func (a *SCRAMPBKDF2SHA256) FinalRepDecode(d *encoding.Decoder) error {
-	if err := DecodeAndCheckNumPrm(d, 2); err != nil {
+// DecodeFinalReq implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) DecodeFinalReq(dec *encoding.Decoder, logonname string) error {
+	a.username = logonname
+	_, b := dec.LIBytes() // sub parameters
+	sub := encoding.NewDecoder(b, nil)
+	if err := DecodeAndCheckNumPrm(sub, 1); err != nil {
 		return err
 	}
-	mt := d.AuthString()
+	_, a.clientProof = sub.LIBytes()
+	return nil
+}
+
+// DecodeFinalReply implements the Method interface.
+func (a *SCRAMPBKDF2SHA256) DecodeFinalReply(dec *encoding.Decoder) error {
+	if err := DecodeAndCheckNumPrm(dec, 2); err != nil {
+		return err
+	}
+	mt := dec.AuthString()
 	if err := checkAuthMethodType(mt, a.Typ()); err != nil {
 		return err
 	}
-	d.AuthVarFieldInd()
-	if err := DecodeAndCheckNumPrm(d, 1); err != nil {
+	dec.AuthVarFieldInd()
+	if err := DecodeAndCheckNumPrm(dec, 1); err != nil {
 		return err
 	}
-	a.serverProof = d.AuthBytes()
+	serverProof := dec.AuthBytes()
+	saltedPassword, err := scrampbkdf2sha256SaltedPassword(a.password, a.salt, int(a.rounds))
+	if err != nil {
+		return err
+	}
+	if err := scramVerifyServerProof(saltedPassword, a.salt, a.serverChallenge, a.clientChallenge, serverProof); err != nil {
+		return err
+	}
 	return nil
 }

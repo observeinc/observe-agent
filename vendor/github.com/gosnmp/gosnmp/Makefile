@@ -1,3 +1,5 @@
+all: test lint
+
 .PHONY: test
 test:
 	go test ./...
