@@ -25,10 +25,12 @@ import (
 	"regexp"
 	"runtime/debug"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/observeinc/observe-agent/internal/commands/config"
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
+	agentconfig "github.com/observeinc/observe-agent/internal/config"
 	"github.com/observeinc/observe-agent/internal/root"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -102,21 +104,20 @@ func run(opts options) error {
 	if err != nil {
 		return err
 	}
-	var cfg map[string]any
-	if err := yaml.Unmarshal(rendered, &cfg); err != nil {
+	otelCfg, err := agentconfig.NewOtelConfigFromYAML(rendered)
+	if err != nil {
 		return fmt.Errorf("parsing rendered config: %w", err)
 	}
-	if err := prune(cfg, opts.pipelines, opts.extensions); err != nil {
+	dropAgentInstanceID(otelCfg)
+	if err := prune(otelCfg, opts.pipelines, opts.extensions); err != nil {
 		return err
 	}
-	dropAgentInstanceID(cfg)
 
-	var body bytes.Buffer
-	enc := yaml.NewEncoder(&body)
-	enc.SetIndent(2)
-	if err := enc.Encode(cfg); err != nil {
+	renderedExample, err := otelCfg.ToYAML()
+	if err != nil {
 		return fmt.Errorf("encoding example: %w", err)
 	}
+	body := bytes.NewBufferString(renderedExample)
 	if err := checkNoCredentials(body.Bytes(), opts.agentConfig); err != nil {
 		return err
 	}
@@ -206,128 +207,20 @@ func render(opts options) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-var componentSections = []string{"receivers", "processors", "exporters", "connectors"}
-
 // prune keeps only the given pipelines and extensions, and deletes every component that the kept
 // pipelines don't reference. A connector is only kept if one kept pipeline exports to it and
 // another receives from it; otherwise it is also removed from the pipelines that list it.
-func prune(cfg map[string]any, keepPipelines, keepExtensions []string) error {
-	service, ok := cfg["service"].(map[string]any)
-	if !ok {
-		return errors.New("rendered config has no service section")
+func prune(cfg *agentconfig.OtelConfig, keepPipelines, keepExtensions []string) error {
+	if err := cfg.RetainPipelines(keepPipelines...); err != nil {
+		return fmt.Errorf("rendered config: %w", err)
 	}
-	allPipelines, ok := service["pipelines"].(map[string]any)
-	if !ok {
-		return errors.New("rendered config has no service.pipelines section")
+	if err := cfg.RetainExtensions(keepExtensions...); err != nil {
+		return fmt.Errorf("rendered config: %w", err)
 	}
-
-	pipelines := map[string]map[string][]string{}
-	for _, name := range keepPipelines {
-		raw, ok := allPipelines[name].(map[string]any)
-		if !ok {
-			return fmt.Errorf("pipeline %q is not in the rendered config", name)
-		}
-		pipeline := map[string][]string{}
-		for _, key := range []string{"receivers", "processors", "exporters"} {
-			ids, err := stringList(raw[key])
-			if err != nil {
-				return fmt.Errorf("pipeline %q %s: %w", name, key, err)
-			}
-			pipeline[key] = ids
-		}
-		pipelines[name] = pipeline
+	cfg.RemoveUnusedComponents()
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("rendered config: %w", err)
 	}
-
-	connectors, _ := cfg["connectors"].(map[string]any)
-	isConnector := func(id string) bool { _, ok := connectors[id]; return ok }
-	for {
-		exported, received := map[string]bool{}, map[string]bool{}
-		for _, p := range pipelines {
-			for _, id := range p["exporters"] {
-				exported[id] = true
-			}
-			for _, id := range p["receivers"] {
-				received[id] = true
-			}
-		}
-		unusable := func(id string) bool { return isConnector(id) && !(exported[id] && received[id]) }
-		changed := false
-		for name, p := range pipelines {
-			for _, key := range []string{"receivers", "exporters"} {
-				kept := slices.DeleteFunc(slices.Clone(p[key]), unusable)
-				if len(kept) != len(p[key]) {
-					p[key] = kept
-					changed = true
-				}
-				if len(kept) == 0 {
-					return fmt.Errorf("pipeline %q has no %s left after removing connectors with no kept pipeline on the other side", name, key)
-				}
-			}
-		}
-		if !changed {
-			break
-		}
-	}
-
-	used := map[string]map[string]bool{}
-	for _, section := range componentSections {
-		used[section] = map[string]bool{}
-	}
-	for _, p := range pipelines {
-		for key, ids := range p {
-			for _, id := range ids {
-				if key != "processors" && isConnector(id) {
-					used["connectors"][id] = true
-				} else {
-					used[key][id] = true
-				}
-			}
-		}
-	}
-	for _, section := range componentSections {
-		components, _ := cfg[section].(map[string]any)
-		for id := range components {
-			if !used[section][id] {
-				delete(components, id)
-			}
-		}
-		for id := range used[section] {
-			if _, ok := components[id]; !ok {
-				return fmt.Errorf("pipelines reference %s %q, which the rendered config doesn't define", strings.TrimSuffix(section, "s"), id)
-			}
-		}
-		if len(components) == 0 {
-			delete(cfg, section)
-		}
-	}
-
-	extensions, _ := cfg["extensions"].(map[string]any)
-	for id := range extensions {
-		if !slices.Contains(keepExtensions, id) {
-			delete(extensions, id)
-		}
-	}
-	for _, id := range keepExtensions {
-		if _, ok := extensions[id]; !ok {
-			return fmt.Errorf("extension %q is not in the rendered config", id)
-		}
-	}
-	if len(extensions) == 0 {
-		delete(cfg, "extensions")
-		delete(service, "extensions")
-	} else {
-		service["extensions"] = toAnyList(keepExtensions)
-	}
-
-	keptPipelines := map[string]any{}
-	for name, p := range pipelines {
-		keptPipelines[name] = map[string]any{
-			"receivers":  toAnyList(p["receivers"]),
-			"processors": toAnyList(p["processors"]),
-			"exporters":  toAnyList(p["exporters"]),
-		}
-	}
-	service["pipelines"] = keptPipelines
 	return nil
 }
 
@@ -360,32 +253,28 @@ const agentInstanceIDKey = "observe.agent.instance.id"
 
 // dropAgentInstanceID removes the agent's instance ID from the internal telemetry resource and
 // from the labels the internal metrics carry.
-func dropAgentInstanceID(cfg map[string]any) {
-	service, _ := cfg["service"].(map[string]any)
-	telemetry, _ := service["telemetry"].(map[string]any)
-	if resource, ok := telemetry["resource"].(map[string]any); ok {
-		delete(resource, agentInstanceIDKey)
-		if len(resource) == 0 {
-			delete(telemetry, "resource")
+func dropAgentInstanceID(cfg *agentconfig.OtelConfig) {
+	telemetry := cfg.Telemetry()
+	telemetry.Delete("resource", agentInstanceIDKey)
+	if resource, ok := telemetry.Get("resource"); ok {
+		if m, _ := resource.(map[string]any); len(m) == 0 {
+			telemetry.Delete("resource")
 		}
 	}
-	metrics, _ := telemetry["metrics"].(map[string]any)
-	readers, _ := metrics["readers"].([]any)
-	for _, r := range readers {
-		reader, _ := r.(map[string]any)
-		pull, _ := reader["pull"].(map[string]any)
-		exporter, _ := pull["exporter"].(map[string]any)
-		prometheus, _ := exporter["prometheus"].(map[string]any)
-		labels, ok := prometheus["with_resource_constant_labels"].(map[string]any)
+	readers, _ := telemetry.Get("metrics", "readers")
+	readerList, _ := readers.([]any)
+	for i := range readerList {
+		labels := []string{"metrics", "readers", strconv.Itoa(i), "pull", "exporter", "prometheus", "with_resource_constant_labels"}
+		v, ok := telemetry.Get(append(labels, "included")...)
 		if !ok {
 			continue
 		}
-		included, _ := labels["included"].([]any)
-		included = slices.DeleteFunc(included, func(v any) bool { return v == agentInstanceIDKey })
+		included, _ := v.([]any)
+		included = slices.DeleteFunc(slices.Clone(included), func(v any) bool { return v == agentInstanceIDKey })
 		if len(included) == 0 {
-			delete(prometheus, "with_resource_constant_labels")
+			telemetry.Delete(labels...)
 		} else {
-			labels["included"] = included
+			_ = telemetry.Set(included, append(labels, "included")...)
 		}
 	}
 }
@@ -432,31 +321,4 @@ func writeAtomically(path string, content []byte) error {
 		return err
 	}
 	return os.Rename(tmp.Name(), path)
-}
-
-func stringList(v any) ([]string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	items, ok := v.([]any)
-	if !ok {
-		return nil, fmt.Errorf("expected a list, got %T", v)
-	}
-	ids := make([]string, 0, len(items))
-	for _, item := range items {
-		id, ok := item.(string)
-		if !ok {
-			return nil, fmt.Errorf("expected component IDs, got %T", item)
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
-}
-
-func toAnyList(ids []string) []any {
-	out := make([]any, len(ids))
-	for i, id := range ids {
-		out[i] = id
-	}
-	return out
 }
