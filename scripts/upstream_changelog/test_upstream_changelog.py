@@ -4,7 +4,9 @@ import io
 import os
 import re
 import sys
+import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -117,6 +119,194 @@ class SplitSectionsTest(unittest.TestCase):
         sections = uc.split_sections(CONTRIB)
         self.assertEqual(sorted(sections), ["0.149.0", "0.150.0", "0.151.0", "0.152.0"])
         self.assertIn("- `pkg/ottl`: Add a converter. (#513)", sections["0.151.0"])
+
+
+CHANGELOG_API = """# API Changelog
+
+## v1.57.0/v0.151.0
+
+- `exporter/otlp_http`: Deprecate a field. (#77)
+"""
+
+
+def fake_files(user=None, api=None):
+    user = user or {"core": CORE, "contrib": CONTRIB}
+
+    def fetch(repo, ref, filename, missing_ok=False):
+        if filename == "CHANGELOG.md":
+            return user[repo]
+        if filename == "CHANGELOG-API.md":
+            if api is not None and repo in api:
+                return api[repo]
+            if missing_ok:
+                return ""
+        raise AssertionError((repo, ref, filename))
+
+    return fetch
+
+
+class ListFetchNotesTest(unittest.TestCase):
+    def test_list_releases_is_exclusive_low_newest_first(self):
+        out = uc.list_releases("0.150.0", fetch=fake_files())
+        self.assertEqual(out, "core: 0.151.0\ncontrib: 0.152.0 0.151.0\n")
+
+    def test_list_releases_says_up_to_date(self):
+        out = uc.list_releases("0.152.0", fetch=fake_files())
+        self.assertEqual(out, "core: up to date\ncontrib: up to date\n")
+
+    def test_list_releases_refuses_a_bad_current_before_fetching(self):
+        def fetch(*args, **kwargs):
+            raise AssertionError(f"fetched {args} before checking CURRENT")
+
+        for current in ("v0.150.0", "0.150", ""):
+            with self.subTest(current=current):
+                with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                    uc.list_releases(current, fetch=fetch)
+
+    def test_an_empty_list_releases_is_checked_instead_of_running_git(self):
+        def fail(*args, **kwargs):
+            raise AssertionError(f"unexpected call {args}")
+
+        with mock.patch.object(sys, "argv", ["upstream_changelog.py", "--list-releases", ""]), \
+                mock.patch.multiple(uc, run=fail, fetch_file=fail):
+            with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                uc.main()
+
+    def test_rebuild_notes_omits_an_absent_api_slice(self):
+        self.assertNotIn("API", uc.rebuild_notes(["- `a`: b"], []))
+        self.assertIn("## API Changelog", uc.rebuild_notes(["- `a`: b"], ["- `c`: d"]))
+
+    def test_fetch_notes_writes_the_range_and_clears_stale_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            stale = os.path.join(d, "contrib-0.140.0.md")
+            with open(stale, "w") as f:
+                f.write("stale")
+            written = uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(api={"core": CHANGELOG_API}))
+            names = sorted(os.path.basename(p) for p in written)
+            self.assertEqual(names, ["contrib-0.151.0.md", "core-0.151.0.md"])
+            self.assertFalse(os.path.exists(stale))
+            with open(os.path.join(d, "core-0.151.0.md")) as f:
+                core = f.read()
+            self.assertIn("## End User Changelog", core)
+            self.assertIn("## API Changelog", core)
+            self.assertIn("Deprecate a field", core)
+            with open(os.path.join(d, "contrib-0.151.0.md")) as f:
+                contrib = f.read()
+            self.assertNotIn("API", contrib)
+            self.assertNotIn("0.152.0", contrib)
+
+    def test_fetch_notes_round_trips_through_parse_changelog(self):
+        skill = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "..", "..", ".agents", "skills", "check-otel-updates")
+        sys.path.insert(0, skill)
+        import parse_changelog
+        with tempfile.TemporaryDirectory() as d:
+            uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files())
+            path = os.path.join(d, "contrib-0.151.0.md")
+            entries, unparsed, per_file = parse_changelog.parse([path])
+        self.assertEqual(per_file["contrib-0.151.0.md"], 3)
+        self.assertEqual(entries[0]["heading"], "Breaking changes")
+        self.assertEqual(unparsed, [])
+
+    def test_fetch_notes_refuses_a_target_with_no_section(self):
+        for target, message in [
+            ("0.153.0", "has a v0.153.0 section"),
+            ("0.151", "must be a 0.x.y collector version"),
+        ]:
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as d:
+                stale = os.path.join(d, "core-0.140.0.md")
+                with open(stale, "w") as f:
+                    f.write("stale")
+                with self.assertRaisesRegex(SystemExit, message):
+                    uc.fetch_notes("0.150.0", target, d, fetch=fake_files())
+                self.assertTrue(os.path.exists(stale))
+
+    def test_fetch_notes_refuses_an_empty_range(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(SystemExit, r"no release in \(v0.151.0, v0.151.0\]"):
+                uc.fetch_notes("0.151.0", "0.151.0", d, fetch=fake_files())
+
+    def test_fetch_notes_refuses_a_bad_current_and_keeps_old_notes(self):
+        with tempfile.TemporaryDirectory() as d:
+            stale = os.path.join(d, "core-0.140.0.md")
+            with open(stale, "w") as f:
+                f.write("stale")
+            with self.assertRaisesRegex(SystemExit, "CURRENT must be a 0.x.y collector version"):
+                uc.fetch_notes("v0.150.0", "0.151.0", d, fetch=fake_files())
+            self.assertTrue(os.path.exists(stale))
+
+    def test_empty_section_fails_before_writing_anything(self):
+        for repo in ("core", "contrib"):
+            with self.subTest(repo=repo), tempfile.TemporaryDirectory() as d:
+                user = {"core": CORE, "contrib": CONTRIB, repo: "## v0.151.0\n\n"}
+                stale = os.path.join(d, "core-0.140.0.md")
+                with open(stale, "w") as f:
+                    f.write("stale")
+                with self.assertRaisesRegex(SystemExit, f"{repo} v0.151.0 has an empty CHANGELOG.md section"):
+                    uc.fetch_notes("0.150.0", "0.151.0", d, fetch=fake_files(user=user))
+                self.assertEqual(os.listdir(d), ["core-0.140.0.md"])
+
+
+class FetchFileRetryTest(unittest.TestCase):
+    def http_error(self, code, retry_after=None):
+        headers = mock.Mock()
+        headers.get.side_effect = lambda key, default=None: (
+            retry_after if key == "Retry-After" else default
+        )
+        return urllib.error.HTTPError("https://example", code, "err", headers, io.BytesIO())
+
+    def test_retries_429_then_returns(self):
+        delays = []
+        responses = [self.http_error(429, "3"), io.BytesIO(b"ok")]
+
+        def urlopen(url, timeout=30):
+            item = responses.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return contextlib.closing(item)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            out = uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(out, "ok")
+        self.assertEqual(delays, [3])
+
+    def test_retries_url_errors_then_gives_up(self):
+        delays = []
+
+        def urlopen(url, timeout=30):
+            raise urllib.error.URLError("timed out")
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            with self.assertRaisesRegex(SystemExit, "timed out"):
+                uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(delays, [1, 2, 4])
+
+    def test_retries_timeout_error_then_returns(self):
+        delays = []
+        responses = [TimeoutError("timed out"), io.BytesIO(b"ok")]
+
+        def urlopen(url, timeout=30):
+            item = responses.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return contextlib.closing(item)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            out = uc.fetch_file("core", "main", "CHANGELOG.md", sleep=delays.append)
+        self.assertEqual(out, "ok")
+        self.assertEqual(delays, [1])
+
+    def test_does_not_retry_404(self):
+        calls = []
+
+        def urlopen(url, timeout=30):
+            calls.append(url)
+            raise self.http_error(404)
+
+        with mock.patch.object(uc.urllib.request, "urlopen", side_effect=urlopen):
+            with self.assertRaisesRegex(SystemExit, "404"):
+                uc.fetch_file("core", "main", "CHANGELOG.md", sleep=lambda _: None)
+        self.assertEqual(len(calls), 1)
 
 
 class CollectTest(unittest.TestCase):

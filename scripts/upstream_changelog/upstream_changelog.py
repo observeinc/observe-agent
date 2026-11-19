@@ -10,12 +10,17 @@ Usage:
     upstream_changelog.py --to TAG --update-release   also write it into the GitHub release for TAG
     upstream_changelog.py --from TAG --to TAG --agent-releases --max-chars N
         start with the notes of the observe-agent releases in between (used by the agent Helm chart)
+    upstream_changelog.py --list-releases CURRENT     versions on main newer than CURRENT (no gh)
+    upstream_changelog.py --fetch-notes CURRENT TARGET DIR
+        write DIR/{core,contrib}-<ver>.md for (CURRENT, TARGET] from CHANGELOG.md and CHANGELOG-API.md
 """
 import argparse
+import http.client
 import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -36,6 +41,10 @@ CATEGORIES = {
 }
 
 AGENT_REPO_URL = "https://github.com/observeinc/observe-agent"
+RAW_ROOT = "https://raw.githubusercontent.com/open-telemetry"
+NOTES_NAME = re.compile(r"^(core|contrib)-.+\.md$")
+RETRY_STATUS = {429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 4
 
 MARK_START = "<!-- upstream-changelog:start -->"
 MARK_END = "<!-- upstream-changelog:end -->"
@@ -79,13 +88,99 @@ def split_sections(changelog_text):
     return sections
 
 
+def retry_delay(err, attempt):
+    header = err.headers.get("Retry-After") if getattr(err, "headers", None) else None
+    if header and header.isdigit():
+        return min(int(header), 60)
+    return 2 ** attempt
+
+
+def fetch_file(repo, ref, filename, missing_ok=False, sleep=time.sleep):
+    url = f"{RAW_ROOT}/{REPOS[repo][0]}/{ref}/{filename}"
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                return resp.read().decode()
+        except urllib.error.HTTPError as err:
+            if missing_ok and err.code == 404:
+                return ""
+            if err.code in RETRY_STATUS and attempt + 1 < RETRY_ATTEMPTS:
+                sleep(retry_delay(err, attempt))
+                continue
+            sys.exit(f"error: fetching {url}: {err}")
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as err:
+            if attempt + 1 < RETRY_ATTEMPTS:
+                sleep(2 ** attempt)
+                continue
+            sys.exit(f"error: fetching {url}: {err}")
+
+
 def fetch_changelog(repo, version):
-    url = f"https://raw.githubusercontent.com/open-telemetry/{REPOS[repo][0]}/v{version}/CHANGELOG.md"
-    try:
-        with urllib.request.urlopen(url, timeout=30) as resp:
-            return resp.read().decode()
-    except urllib.error.URLError as err:
-        sys.exit(f"error: fetching {url}: {err}")
+    return fetch_file(repo, f"v{version}", "CHANGELOG.md")
+
+
+def versions_between(sections, current, target=None):
+    lo, hi = vkey(current), vkey(target) if target else (10**9,)
+    return sorted((v for v in sections if lo < vkey(v) <= hi), key=vkey)
+
+
+def rebuild_notes(user, api):
+    """Rebuild one `gh release view` body from the End User and API changelog slices."""
+    body = "## End User Changelog\n\n" + "\n".join(user).strip("\n") + "\n"
+    api_text = "\n".join(api).strip("\n") if api else ""
+    if api_text:
+        body += "\n## API Changelog\n\n" + api_text + "\n"
+    return body
+
+
+def require_version(name, version):
+    if not re.fullmatch(r"0\.\d+\.\d+", version):
+        sys.exit(f"error: {name} must be a 0.x.y collector version, not {version}")
+
+
+def list_releases(current, fetch=None):
+    """Print core and contrib 0.x versions newer than current, newest first."""
+    if fetch is None:
+        fetch = fetch_file
+    require_version("CURRENT", current)
+    lines = []
+    for repo in REPOS:
+        newer = versions_between(split_sections(fetch(repo, "main", "CHANGELOG.md")), current)
+        lines.append(f"{repo}: {' '.join(reversed(newer)) or 'up to date'}")
+    return "\n".join(lines) + "\n"
+
+
+def fetch_notes(current, target, out, fetch=None):
+    """Write parse_changelog.py's per-version files for every release in (current, target]."""
+    if fetch is None:
+        fetch = fetch_file
+    require_version("CURRENT", current)
+    require_version("TARGET", target)
+    changelogs = {repo: (split_sections(fetch(repo, "main", "CHANGELOG.md")),
+                         split_sections(fetch(repo, "main", "CHANGELOG-API.md", missing_ok=True)))
+                  for repo in REPOS}
+    if not any(target in user for user, _ in changelogs.values()):
+        sys.exit(f"error: neither core nor contrib CHANGELOG.md on main has a v{target} section")
+    # Every check runs before the old notes are cleared, so a failure keeps them.
+    notes = {}
+    for repo, (user, api) in changelogs.items():
+        for ver in versions_between(user, current, target):
+            if not "".join(user[ver]).strip():
+                sys.exit(f"error: {repo} v{ver} has an empty CHANGELOG.md section")
+            notes[f"{repo}-{ver}.md"] = rebuild_notes(user[ver], api.get(ver, []))
+    if not notes:
+        sys.exit(f"error: no release in (v{current}, v{target}]")
+    os.makedirs(out, exist_ok=True)
+    for name in os.listdir(out):
+        if NOTES_NAME.fullmatch(name):
+            os.remove(os.path.join(out, name))
+    written = []
+    for name, text in notes.items():
+        path = os.path.join(out, name)
+        with open(path, "w") as f:
+            f.write(text)
+        written.append(path)
+    return written
 
 
 def collect(old, new, gomod_text, fetch):
@@ -308,7 +403,19 @@ def main():
                         help="start with the notes of every observe-agent release after --from up to --to")
     parser.add_argument("--max-chars", type=int, default=MAX_CHARS,
                         help=f"longest output to produce (default: {MAX_CHARS})")
+    parser.add_argument("--list-releases", metavar="CURRENT",
+                        help="list core and contrib versions newer than CURRENT from CHANGELOG.md on main")
+    parser.add_argument("--fetch-notes", nargs=3, metavar=("CURRENT", "TARGET", "NOTES_DIR"),
+                        help="write NOTES_DIR/{core,contrib}-<ver>.md for versions in (CURRENT, TARGET]")
     args = parser.parse_args()
+
+    if args.list_releases is not None:
+        print(list_releases(args.list_releases), end="")
+        return
+    if args.fetch_notes is not None:
+        for path in fetch_notes(*args.fetch_notes):
+            print(path)
+        return
 
     os.chdir(run("git", "rev-parse", "--show-toplevel").strip())
     if args.update_release:

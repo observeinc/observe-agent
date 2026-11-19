@@ -143,6 +143,7 @@ class ParseChangelogTest(unittest.TestCase):
         res = run(self.notes, self.gomod, self.out)
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("no changelog entries parsed from core-0.999.0.md", res.stderr)
+        self.assertIn("Classify those bullets by hand", res.stderr)
 
     def test_one_empty_file_among_populated_fails(self):
         self.write_notes()
