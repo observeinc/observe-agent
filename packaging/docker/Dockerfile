@@ -14,7 +14,7 @@ RUN apk --update add ca-certificates
 
 FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 
-RUN apk upgrade --no-cache zlib
+RUN apk upgrade --no-cache zlib libcrypto3 libssl3
 
 ARG USER_UID=10001
 ARG USER_GID=10001
