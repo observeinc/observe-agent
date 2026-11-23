@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/observeinc/observe-agent/.vex/observe-agent.openvex.json",
   "author": "Observe Agent Team <observe-agent@observeinc.com>",
-  "timestamp": "2026-11-23T00:00:00Z",
-  "version": 5,
+  "timestamp": "2026-11-25T00:00:00Z",
+  "version": 6,
   "statements": [
     {
       "vulnerability": {
@@ -148,6 +148,102 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "CVE-2026-128085 lets string attributes made of U+FFFD runes bypass attribute_value_length_limit on log records in go.opentelemetry.io/otel/sdk/log. The collector applies that limit only when it exports its own logs through service::telemetry::logs::processors. The agent's bundled configurations and the Helm chart set neither processors nor an attribute length limit; internal logs go to stdout through zap. OpenTelemetry Collector v0.164 still requires sdk/log v0.21.0; v0.165.0 moves to the fixed v1.47.0."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-93749"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/source-map-js@1.2.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "source-map-js is a build tool for the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-109383"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/undici@8.10.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "undici is a build dependency of the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-109829"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/undici@8.10.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "undici is a build dependency of the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-109869"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/undici@8.10.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "undici is a build dependency of the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-87018"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/undici@8.10.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "undici is a build dependency of the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-112942"
+      },
+      "products": [
+        {
+          "@id": "pkg:docker/observeinc/observe-agent@test",
+          "subcomponents": [
+            { "@id": "pkg:npm/vite@8.2.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "vite is the build tool for the Prometheus server web UI, listed in vendor/github.com/prometheus/prometheus/web/ui/pnpm-lock.yaml. observe-agent never builds that UI: the assets are only embedded with the builtinassets Go build tag, which the agent build does not set. The package is not in the binary or the image."
     }
   ]
 }
