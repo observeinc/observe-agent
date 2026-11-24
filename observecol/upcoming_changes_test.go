@@ -22,39 +22,27 @@ func mapFromYAML(t *testing.T, content string) map[string]any {
 	return m
 }
 
-const errorsPolicy = `{name: errors, type: status_code, status_code: {status_codes: [ERROR]}}`
-const healthzInverted = `{name: no-healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz], invert_match: true}}`
-const healthzPolicy = `{name: healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz]}}`
-const dropDebugPolicy = `{name: drop-debug, type: drop, drop: {drop_sub_policy: [{name: debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true}}]}}`
+// testRules keep the matcher tests independent of the entries in upcoming_changes.yaml.
+const testRules = `
+changes:
+  - id: legacy-flag
+    kind: receiver
+    types: [example]
+    upstream: v0.160.0
+    remove_in: v2.30.0
+    match: {all: [{path: [legacy], equals: true}]}
+    message: legacy no longer works
+    examples: {fires: [{legacy: true}], quiet: [{}]}
+`
 
-func TestReliesOnInvertMatch(t *testing.T) {
-	tests := []struct {
-		name     string
-		policies string
-		want     bool
-	}{
-		{"inverted next to another policy", `[` + errorsPolicy + `, ` + healthzInverted + `]`, true},
-		{"two inverted policies", `[` + healthzInverted + `, {name: slow, type: numeric_attribute, numeric_attribute: {key: duration, min_value: 1, max_value: 2, invert_match: true}}]`, true},
-		{"inverted next to a drop policy", `[` + healthzInverted + `, ` + dropDebugPolicy + `]`, true},
-		{"lone not wrapping an inverted policy", `[{name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, true},
-		{"not wrapping an inverted policy next to another policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, true},
-		{"lone inverted policy", `[` + healthzInverted + `]`, false},
-		{"not wrapping a plain policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzPolicy + `}}]`, false},
-		{"inverted inside and", `[` + errorsPolicy + `, {name: and, type: and, and: {and_sub_policy: [` + healthzInverted + `]}}]`, false},
-		{"inverted inside drop", `[` + errorsPolicy + `, {name: drop, type: drop, drop: {drop_sub_policy: [` + healthzInverted + `]}}]`, false},
-		{"invert_match false", `[` + errorsPolicy + `, ` + healthzPolicy + `]`, false},
-		{"no invert_match", `[` + errorsPolicy + `]`, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, reliesOnInvertMatch(mapFromYAML(t, "policies: "+tt.policies)))
-		})
-	}
+func useTestRules(t *testing.T) {
+	saved := upcomingChangeRules
+	upcomingChangeRules = mustLoadUpcomingChangeRules([]byte(testRules))
+	t.Cleanup(func() { upcomingChangeRules = saved })
 }
 
 // Runs every entry's examples, under each of its component types.
 func TestUpcomingChangeExamples(t *testing.T) {
-	require.NotEmpty(t, upcomingChangeRules)
 	for _, r := range upcomingChangeRules {
 		for _, typ := range r.Types {
 			id := typ + "/example"
@@ -113,23 +101,20 @@ func TestUpcomingChangeRulesValidation(t *testing.T) {
 
 // An entry only matches components of its own kind and types.
 func TestUpcomingChangesOnlyMatchTheirTypes(t *testing.T) {
+	useTestRules(t)
 	conf := mapFromYAML(t, `
 receivers:
-  otlp: {}
-  prometheus: {}
-exporters:
-  prometheusremotewrite:
-    add_metric_suffixes: false
+  example: {legacy: true}
+  otlp: {legacy: true}
 processors:
-  tail_sampling:
-    policies: [`+errorsPolicy+`, `+healthzInverted+`]
+  example: {legacy: true}
 `)
 	changes := upcomingChanges(conf)
 	require.Len(t, changes, 1)
-	assert.Equal(t, "tail-sampling-invert-match", changes[0].ID)
+	assert.Equal(t, UpcomingChange{ID: "legacy-flag", Component: "example", Message: "legacy no longer works"}, changes[0])
 }
 
-// remove_in is Phase 3: once that release is tagged, the entry must be gone. Skipped without tags.
+// Once an entry's remove_in release is tagged, the entry must be gone. Skipped without tags.
 func TestUpcomingChangesNotExpired(t *testing.T) {
 	out, err := exec.Command("git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*").Output()
 	if err != nil {
@@ -154,31 +139,31 @@ func compareVersions(a, b string) int {
 }
 
 const upcomingChangesConfig = `
+receivers:
+  otlp: {}
+  example/observe: {legacy: true}
+  example: {legacy: true}
+  example/clean: {}
 processors:
-  batch: {}
-  tail_sampling/observe:
-    policies: [` + errorsPolicy + `, ` + healthzInverted + `]
-  tail_sampling:
-    policies: [` + errorsPolicy + `, ` + healthzInverted + `]
-  tail_sampling/clean:
-    policies: [` + errorsPolicy + `]
-  filter/invert_match:
-    invert_match: true
+  filter/legacy:
+    legacy: true
 service:
   pipelines:
     traces:
-      processors: [tail_sampling, batch]
+      receivers: [example]
 `
 
 func TestUpcomingChanges(t *testing.T) {
+	useTestRules(t)
 	changes := upcomingChanges(mapFromYAML(t, upcomingChangesConfig))
 	require.Len(t, changes, 2)
-	assert.Equal(t, "tail_sampling", changes[0].Component)
-	assert.Equal(t, "tail_sampling/observe", changes[1].Component)
-	assert.Contains(t, changes[0].Message, "no longer exclude traces")
+	assert.Equal(t, "example", changes[0].Component)
+	assert.Equal(t, "example/observe", changes[1].Component)
+	assert.Equal(t, "legacy no longer works", changes[0].Message)
 }
 
 func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
+	useTestRules(t)
 	core, logs := observer.New(zapcore.WarnLevel)
 	converter := newUpcomingChangesConverterFactory().Create(confmap.ConverterSettings{Logger: zap.New(core)})
 	conf := confmap.NewFromStringMap(mapFromYAML(t, upcomingChangesConfig))
@@ -189,11 +174,12 @@ func TestUpcomingChangesConverterOnlyWarns(t *testing.T) {
 	assert.Equal(t, before, conf.ToStringMap())
 	entries := logs.All()
 	require.Len(t, entries, 2)
-	assert.Equal(t, "tail_sampling", entries[0].ContextMap()["component"])
-	assert.Equal(t, "tail_sampling/observe", entries[1].ContextMap()["component"])
+	assert.Equal(t, "example", entries[0].ContextMap()["component"])
+	assert.Equal(t, "example/observe", entries[1].ContextMap()["component"])
 }
 
 func TestUpcomingChangesResolvesSettings(t *testing.T) {
+	useTestRules(t)
 	settings := generateCollectorSettings([]string{"yaml:" + upcomingChangesConfig})
 	changes, err := UpcomingChanges(context.Background(), settings)
 	require.NoError(t, err)

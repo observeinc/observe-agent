@@ -20,8 +20,7 @@ import (
 var upcomingChangesYAML []byte
 
 // UpcomingChange is a component whose configuration behaves differently, or whose output changes,
-// because of an upstream change, from shortly before the Observe Agent release that delivers it
-// until the entry's remove_in release.
+// because of an upstream change in the next Observe Agent release.
 type UpcomingChange struct {
 	// ID is the entry in upcoming_changes.yaml that matched.
 	ID string
@@ -57,10 +56,7 @@ type matchCondition struct {
 }
 
 // upcomingChangeChecks are matches upcoming_changes.yaml can't express as conditions.
-var upcomingChangeChecks = map[string]func(cfg map[string]any) bool{
-	"tail_sampling_invert_match": reliesOnInvertMatch,
-	"hostmetrics_cpu_attribute":  dropsPerCPUSeries,
-}
+var upcomingChangeChecks = map[string]func(cfg map[string]any) bool{}
 
 var (
 	upcomingChangeKinds = []string{"receiver", "processor", "exporter", "connector", "extension"}
@@ -169,72 +165,6 @@ func lookupPath(cfg map[string]any, path []string) (any, bool) {
 		}
 	}
 	return current, true
-}
-
-// reliesOnInvertMatch reports whether a tail_sampling configuration behaves differently from
-// v0.152.0, where invert_match policies return plain sampled and not-sampled decisions: a top-level
-// inverted policy next to any other top-level policy, or a top-level not policy that wraps an
-// inverted policy, since not passes inverted decisions through without negating them. invert_match
-// inside and, composite and drop policies, and a lone inverted policy, behave the same.
-func reliesOnInvertMatch(cfg map[string]any) bool {
-	policies, _ := cfg["policies"].([]any)
-	for _, p := range policies {
-		policy, _ := p.(map[string]any)
-		if isInvertedPolicy(policy) && len(policies) > 1 {
-			return true
-		}
-		if policy["type"] == "not" {
-			not, _ := policy["not"].(map[string]any)
-			sub, _ := not["not_sub_policy"].(map[string]any)
-			if isInvertedPolicy(sub) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isInvertedPolicy(policy map[string]any) bool {
-	typ, _ := policy["type"].(string)
-	switch typ {
-	case "string_attribute", "numeric_attribute", "boolean_attribute":
-		filter, _ := policy[typ].(map[string]any)
-		invert, _ := filter["invert_match"].(bool)
-		return invert
-	}
-	return false
-}
-
-// dropsPerCPUSeries reports whether a hostmetrics configuration has a CPU scraper with an enabled
-// system.cpu.time or system.cpu.utilization metric that doesn't list the cpu attribute. Those
-// metrics lose the cpu attribute from v0.157.0. The bundled configuration and the helm chart list
-// it, so this never fires for them.
-func dropsPerCPUSeries(cfg map[string]any) bool {
-	scrapers, _ := cfg["scrapers"].(map[string]any)
-	cpu, ok := scrapers["cpu"]
-	if !ok {
-		return false
-	}
-	cpuCfg, _ := cpu.(map[string]any)
-	metrics, _ := cpuCfg["metrics"].(map[string]any)
-	for _, m := range []struct {
-		name             string
-		enabledByDefault bool
-	}{{"system.cpu.time", true}, {"system.cpu.utilization", false}} {
-		metric, _ := metrics[m.name].(map[string]any)
-		enabled := m.enabledByDefault
-		if e, ok := metric["enabled"].(bool); ok {
-			enabled = e
-		}
-		if !enabled {
-			continue
-		}
-		attributes, _ := metric["attributes"].([]any)
-		if !slices.Contains(attributes, any("cpu")) {
-			return true
-		}
-	}
-	return false
 }
 
 func matchUpcomingChanges(rules []upcomingChangeRule, conf map[string]any) []UpcomingChange {
