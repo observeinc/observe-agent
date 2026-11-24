@@ -89,3 +89,133 @@ changes:
       quiet:
         - {traces: {encoding: otlp_proto}}
         - {}
+
+  - id: prometheus-exporter-resource-to-telemetry
+    kind: exporter
+    types: [prometheus]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [resource_to_telemetry_conversion, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the prometheus exporter ignores
+      resource_to_telemetry_conversion, so resource attributes are no longer added as metric labels.
+      Replace it with resource_constant_labels: enabled: true adds them all, and included or
+      excluded choose which. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {resource_to_telemetry_conversion: {enabled: true}}
+      quiet:
+        - {resource_to_telemetry_conversion: {enabled: false}}
+        - {resource_constant_labels: {enabled: true}}
+        - {}
+
+  - id: prometheus-exporter-utf8-escaping
+    kind: exporter
+    types: [prometheus]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [translation_strategy], one_of: [NoUTF8EscapingWithSuffixes, NoTranslation]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, with translation_strategy NoUTF8EscapingWithSuffixes or
+      NoTranslation, the prometheus exporter replaces characters such as dots in metric and label
+      names with underscores when the scraper requests a format without an escaping parameter.
+      Scrapers that request escaping=allow-utf-8 still get UTF-8 names. Update dashboards and
+      monitors that use the UTF-8 names. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {translation_strategy: NoUTF8EscapingWithSuffixes}
+        - {translation_strategy: NoTranslation}
+      quiet:
+        - {translation_strategy: UnderscoreEscapingWithoutSuffixes}
+        - {}
+
+  - id: sql-query-default-interval
+    kind: receiver
+    types: [sql_query, sqlquery]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [collection_interval], absent: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the sql_query receiver runs its queries every 60 seconds
+      by default instead of every 10 seconds. To keep 10 seconds, set collection_interval: 10s.
+      Details: https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {}
+      quiet:
+        - {collection_interval: 10s}
+        - {collection_interval: 60s}
+
+  - id: aws-s3-max-unmarshal-size
+    kind: receiver
+    types: [aws_s3, awss3]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [s3downloader, max_unmarshal_size], absent: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the aws_s3 receiver fails objects larger than 256 MiB
+      after decompression when its decoder doesn't stream them. If your objects can be larger, set
+      s3downloader.max_unmarshal_size. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {}
+        - {s3downloader: {region: us-east-1}}
+      quiet:
+        - {s3downloader: {max_unmarshal_size: 1073741824}}
+
+  - id: sqlserver-lock-wait-workload-group
+    kind: receiver
+    types: [sql_server, sqlserver]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [metrics, sqlserver.lock.wait.count, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, sqlserver.lock.wait.count carries
+      sqlserver.workload_group.name, so it reports one data point per Resource Governor workload
+      group. Update dashboards and monitors that use it. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {metrics: {sqlserver.lock.wait.count: {enabled: true}}}
+      quiet:
+        - {metrics: {sqlserver.lock.wait.count: {enabled: false}}}
+        - {}
+
+  - id: sqlserver-memory-usage-resource-pool
+    kind: receiver
+    types: [sql_server, sqlserver]
+    upstream: v0.166.0
+    remove_in: v2.22.0
+    match:
+      all:
+        - {path: [metrics, sqlserver.memory.usage, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, sqlserver.memory.usage carries
+      sqlserver.resource_pool.name, so it reports one data point per Resource Governor resource
+      pool. Update dashboards and monitors that use it. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {metrics: {sqlserver.memory.usage: {enabled: true}}}
+      quiet:
+        - {metrics: {sqlserver.memory.usage: {enabled: false}}}
+        - {}
