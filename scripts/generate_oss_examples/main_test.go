@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"testing"
 
+	agentconfig "github.com/observeinc/observe-agent/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 )
 
 const testRendered = `
@@ -57,9 +57,9 @@ service:
       exporters: [otlphttp/observe]
 `
 
-func parse(t *testing.T, s string) map[string]any {
-	var cfg map[string]any
-	require.NoError(t, yaml.Unmarshal([]byte(s), &cfg))
+func parse(t *testing.T, s string) *agentconfig.OtelConfig {
+	cfg, err := agentconfig.NewOtelConfigFromYAML([]byte(s))
+	require.NoError(t, err)
 	return cfg
 }
 
@@ -99,9 +99,11 @@ service:
 func Test_pruneWithoutExtensions(t *testing.T) {
 	cfg := parse(t, testRendered)
 	require.NoError(t, prune(cfg, []string{"logs/forward"}, nil))
-	assert.NotContains(t, cfg, "extensions")
-	assert.NotContains(t, cfg["service"], "extensions")
-	assert.NotContains(t, cfg, "connectors")
+	assert.Empty(t, cfg.Components(agentconfig.Extensions))
+	assert.Empty(t, cfg.Components(agentconfig.Connectors))
+	rendered, err := cfg.ToYAML()
+	require.NoError(t, err)
+	assert.NotContains(t, rendered, "extensions")
 }
 
 func Test_pruneErrors(t *testing.T) {
@@ -148,8 +150,7 @@ func Test_checkNoCredentials(t *testing.T) {
 }
 
 func Test_dropAgentInstanceID(t *testing.T) {
-	var cfg map[string]any
-	require.NoError(t, yaml.Unmarshal([]byte(`
+	cfg := parse(t, `
 service:
   telemetry:
     resource:
@@ -163,11 +164,13 @@ service:
                 with_resource_constant_labels:
                   included:
                     - observe.agent.instance.id
-`), &cfg))
+`)
 	dropAgentInstanceID(cfg)
-	telemetry := cfg["service"].(map[string]any)["telemetry"].(map[string]any)
-	assert.NotContains(t, telemetry, "resource")
-	prometheus := telemetry["metrics"].(map[string]any)["readers"].([]any)[0].(map[string]any)["pull"].(map[string]any)["exporter"].(map[string]any)["prometheus"].(map[string]any)
+	telemetry := cfg.Telemetry()
+	_, ok := telemetry.Get("resource")
+	assert.False(t, ok)
+	prometheus, ok := telemetry.Get("metrics", "readers", "0", "pull", "exporter", "prometheus")
+	require.True(t, ok)
 	assert.Equal(t, map[string]any{"host": "localhost"}, prometheus)
 }
 
