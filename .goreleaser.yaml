@@ -160,6 +160,10 @@ release:
   make_latest: "{{ if .IsNightly }}false{{ else }}true{{ end }}"
   tag: "{{ if .IsNightly}}dev-nightly{{ else }}{{ .Tag }}{{ end }}"
   disable: "{{ .IsNightly }}"
+  header: |
+    {{- with index .Env "OTEL_COLLECTOR_VERSION" }}
+    **OpenTelemetry Collector version:** v{{ . }}
+    {{- end }}
 
   # Add all install scripts to the release
   extra_files:
