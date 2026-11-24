@@ -81,11 +81,14 @@ func (e *BinaryExpr) Pretty(level int) string {
 
 func (e *DurationExpr) Pretty(int) string {
 	var s string
-	fmt.Println("e.LHS", e.LHS)
-	fmt.Println("e.RHS", e.RHS)
 	if e.LHS == nil {
-		// This is a unary duration expression.
-		s = fmt.Sprintf("%s%s", e.Op, e.RHS.Pretty(0))
+		// Unary plus is not printed, matching String(), so a parenthesised
+		// number lifted into a unary-plus DurationExpr round-trips as (5).
+		if e.Op == ADD && e.RHS != nil {
+			s = e.RHS.Pretty(0)
+		} else {
+			s = fmt.Sprintf("%s%s", e.Op, e.RHS.Pretty(0))
+		}
 	} else {
 		s = fmt.Sprintf("%s %s %s", e.LHS.Pretty(0), e.Op, e.RHS.Pretty(0))
 	}

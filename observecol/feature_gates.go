@@ -16,16 +16,14 @@ const (
 	featureGatesFlagDescription = "Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature."
 )
 
-const disableInvertDecisionsGate = "processor.tailsamplingprocessor.disableinvertdecisions"
-
 var featureGates []string
 
 var internalFeatureFlagDefaults = map[string]bool{
 	"exporter.prometheusremotewritexporter.EnableMultipleWorkers": true,
 	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
 	"connector.spanmetrics.excludeResourceMetrics":                false,
-	disableInvertDecisionsGate:                                    false,
 	"connector.spanmetrics.includeCollectorInstanceID":            true,
+	"processor.k8sattributes.DontEmitV0K8sConventions":            false,
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {

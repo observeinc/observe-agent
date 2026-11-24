@@ -9,6 +9,7 @@ import (
 	"iter"
 	"slices"
 	"sync"
+	"sync/atomic"
 )
 
 // check if statements implements all required interfaces.
@@ -20,15 +21,13 @@ var (
 )
 
 type stmt struct {
-	session *session
+	conn    *conn
 	wg      *sync.WaitGroup // from conn
 	attrs   *connAttrs
 	metrics *metrics
 	query   string
 	pr      *prepareResult
-
-	// rows: stored procedures with table output parameters
-	rows *sql.Rows
+	closed  atomic.Bool // guards close against repeated teardown.
 }
 
 type totalRowsAffected int64
@@ -44,13 +43,13 @@ func (t *totalRowsAffected) add(r driver.Result) {
 	*t += totalRowsAffected(rows)
 }
 
-func newStmt(session *session, wg *sync.WaitGroup, attrs *connAttrs, metrics *metrics, query string, pr *prepareResult) *stmt {
-	metrics.msgCh <- gaugeMsg{idx: gaugeStmt, v: 1} // increment number of statements.
-	return &stmt{session: session, wg: wg, attrs: attrs, metrics: metrics, query: query, pr: pr}
+func newStmt(conn *conn, wg *sync.WaitGroup, attrs *connAttrs, metrics *metrics, query string, pr *prepareResult) *stmt {
+	metrics.addGauge(gaugeStmt, 1) // increment number of statements.
+	return &stmt{conn: conn, wg: wg, attrs: attrs, metrics: metrics, query: query, pr: pr}
 }
 
 /*
-NumInput differs dependent on statement (check is done in QueryContext and ExecContext):
+NumInput depends on the statement (checked in QueryContext and ExecContext):
 - #args == #param (only in params):    query, exec, exec bulk (non control query)
 - #args == #param (in and out params): exec call
 - #args == 0:                          exec bulk (control query)
@@ -59,16 +58,25 @@ NumInput differs dependent on statement (check is done in QueryContext and ExecC
 func (s *stmt) NumInput() int { return -1 }
 
 func (s *stmt) Close() error {
-	s.metrics.msgCh <- gaugeMsg{idx: gaugeStmt, v: -1} // decrement number of statements.
-
-	if s.rows != nil {
-		s.rows.Close()
+	// While a table-out tracker is attached app-driven closes
+	// are no-ops; teardown runs on the worker.
+	if s.conn.tableOutTracker != nil {
+		return nil
 	}
+	return s.close()
+}
 
-	if s.session.isBad() {
+// close drops the server-side statement and decrements the statement gauge.
+func (s *stmt) close() error {
+	if !s.closed.CompareAndSwap(false, true) {
+		return nil
+	}
+	s.metrics.addGauge(gaugeStmt, -1) // decrement number of statements.
+
+	if s.conn.session.isBad() {
 		return driver.ErrBadConn
 	}
-	return s.session.dropStatementID(context.Background(), s.pr.stmtID)
+	return s.conn.session.dropStatementID(context.Background(), s.pr.stmtID)
 }
 
 // CheckNamedValue implements NamedValueChecker interface.
@@ -81,7 +89,7 @@ func (s *stmt) QueryContext(ctx context.Context, nvargs []driver.NamedValue) (dr
 	if s.pr.isProcedureCall() {
 		return nil, fmt.Errorf("invalid procedure call %s - please use Exec instead", s.query)
 	}
-	if err := s.session.preventSwitchUser(ctx); err != nil {
+	if err := s.conn.session.preventSwitchUser(ctx); err != nil {
 		return nil, err
 	}
 
@@ -90,12 +98,14 @@ func (s *stmt) QueryContext(ctx context.Context, nvargs []driver.NamedValue) (dr
 	done := make(chan struct{})
 	s.wg.Go(func() {
 		defer close(done)
-		rows, sqlErr = s.session.query(ctx, s.query, s.pr, nvargs)
+		rows, sqlErr = s.conn.session.query(ctx, s.query, s.pr, nvargs)
 	})
 
 	select {
 	case <-ctx.Done():
-		s.session.cancel()
+		if victimDone := s.conn.terminateSession(done); victimDone {
+			return rows, sqlErr
+		}
 		return nil, ctx.Err()
 	case <-done:
 		return rows, sqlErr
@@ -106,18 +116,17 @@ func (s *stmt) ExecContext(ctx context.Context, nvargs []driver.NamedValue) (dri
 	if hookFn, ok := ctx.Value(connHookCtxKey).(connHookFn); ok {
 		hookFn(choStmtExec)
 	}
-	if err := s.session.preventSwitchUser(ctx); err != nil {
+	if err := s.conn.session.preventSwitchUser(ctx); err != nil {
 		return nil, err
 	}
 
 	var sqlErr error
 	var result driver.Result
-	var rows *sql.Rows // needed to avoid data race in case if context get canceled.
 	done := make(chan struct{})
 	s.wg.Go(func() {
 		defer close(done)
 		if s.pr.isProcedureCall() {
-			result, rows, sqlErr = s.execCall(ctx, s.pr, nvargs) //nolint: sqlclosecheck
+			result, sqlErr = s.execCall(ctx, s.pr, nvargs)
 		} else {
 			result, sqlErr = s.execDefault(ctx, nvargs)
 		}
@@ -125,15 +134,16 @@ func (s *stmt) ExecContext(ctx context.Context, nvargs []driver.NamedValue) (dri
 
 	select {
 	case <-ctx.Done():
-		s.session.cancel()
+		if victimDone := s.conn.terminateSession(done); victimDone {
+			return result, sqlErr
+		}
 		return nil, ctx.Err()
 	case <-done:
-		s.rows = rows
 		return result, sqlErr
 	}
 }
 
-func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.NamedValue) (driver.Result, *sql.Rows, error) {
+func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.NamedValue) (driver.Result, error) {
 	/*
 		call without lob input parameters:
 		--> callResult output parameter values are set after read call
@@ -141,15 +151,15 @@ func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.
 		--> callResult output parameter values are set after last lob input write
 	*/
 
-	cr, callArgs, numRow, err := s.session.execCall(ctx, s.query, pr, nvargs)
+	cr, callArgs, numRow, err := s.conn.session.execCall(ctx, s.query, pr, nvargs)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	numOutArgs := len(callArgs.outArgs)
 	// no output args -> done
 	if numOutArgs == 0 {
-		return driver.RowsAffected(numRow), nil, nil
+		return driver.RowsAffected(numRow), nil
 	}
 
 	numOutputField := len(cr.outFields)
@@ -162,26 +172,53 @@ func (s *stmt) execCall(ctx context.Context, pr *prepareResult, nvargs []driver.
 		scanArgs[i] = new(sql.Rows)
 	}
 
-	// no table output parameters -> QueryRow
+	// no table output parameters -> convert scalar output parameters
 	if len(callArgs.outFields) == numOutArgs {
-		if err := stdConnTracker.callDB().QueryRow("", cr).Scan(scanArgs...); err != nil {
-			return nil, nil, err
+		if err := convertCallResult(cr, scanArgs); err != nil {
+			return nil, err
 		}
-		return driver.RowsAffected(numRow), nil, nil
+		return driver.RowsAffected(numRow), nil
 	}
 
-	// table output parameters -> Query (needs to kept open)
-	rows, err := stdConnTracker.callDB().Query("", cr)
+	// table output resultset -> Query (kept open on success; the table-out
+	// tracker owns the fake parent rows).
+	rows, err := stdCallDB.db().QueryContext(context.Background(), "", cr)
 	if err != nil {
-		return nil, rows, err
+		return nil, err
 	}
 	if !rows.Next() {
-		return nil, rows, rows.Err()
+		_ = rows.Close()
+		return nil, rows.Err()
 	}
 	if err := rows.Scan(scanArgs...); err != nil {
-		return nil, rows, err
+		_ = rows.Close() //nolint: sqlclosecheck // fake parent, closed explicitly on the error paths only
+		return nil, err
 	}
-	return driver.RowsAffected(numRow), rows, nil
+	// the call succeeded and handed the table output rows to the caller: wire
+	// the tracker to the resultsets and the connection, holding it for the
+	// worker. On any error path the resultsets stay tracker-less,
+	// close without accounting, and never hold. If the request was canceled
+	// while the call ran, the connection is already doomed: close the table
+	// rowsets and the parent rows inline and never publish, so no orphaned
+	// tracker reaches the worker.
+	tracker := &tableOutTracker{stmt: s, rows: rows, lc: s.conn.lifecycle, done: make(chan struct{})}
+	for _, v := range cr.fieldValues {
+		if qr, ok := v.(*queryResult); ok {
+			qr.tableOutTracker = tracker
+			tracker.tables = append(tracker.tables, qr)
+			tracker.n.Add(1)
+		}
+	}
+	if !s.conn.tryPublishTracker(tracker) {
+		// Refused means our own terminateSession canceled this request:
+		// the fake path never touches the session writer, so isBad here
+		// is canceled, and ctx.Err() is non-nil. Clean up inline, never
+		// published, nothing reaches the worker.
+		tracker.closeTables()
+		_ = rows.Close()
+		return nil, ctx.Err()
+	}
+	return driver.RowsAffected(numRow), nil
 }
 
 func (s *stmt) execDefault(ctx context.Context, nvargs []driver.NamedValue) (driver.Result, error) {
@@ -191,7 +228,7 @@ func (s *stmt) execDefault(ctx context.Context, nvargs []driver.NamedValue) (dri
 		if numField != 0 {
 			return nil, fmt.Errorf("invalid number of arguments %d - expected %d", numNVArg, numField)
 		}
-		return s.session.exec(ctx, s.query, s.pr, nvargs, 0)
+		return s.conn.session.exec(ctx, s.query, s.pr, nvargs, 0)
 	}
 	if numNVArg == 1 {
 		switch nvargs[0].Value.(type) {
@@ -343,10 +380,7 @@ func (s *stmt) execMany(ctx context.Context, nvargs []driver.NamedValue) (driver
 
 	for i := range numBatch {
 		from := i * numField * bulkSize
-		to := (i + 1) * numField * bulkSize
-		if to > numNVArg {
-			to = numNVArg
-		}
+		to := min((i+1)*numField*bulkSize, numNVArg)
 		r, err := s.exec(ctx, s.pr, nvargs[from:to], i*bulkSize)
 		totalRowsAffected.add(r)
 		if err != nil {
@@ -377,7 +411,7 @@ Bulk insert containing LOBs:
     .for all packages except the last one, the last row contains 'incomplete' LOB data ('piecewise' writing)
 */
 func (s *stmt) exec(ctx context.Context, pr *prepareResult, nvargs []driver.NamedValue, ofs int) (driver.Result, error) {
-	addLobDataRecs, err := convertExecArgs(pr.parameterFields, nvargs, s.attrs.cesu8Encoder, s.attrs.lobChunkSize)
+	addLobDataRecs, err := convertExecArgs(pr.parameterFields, nvargs, s.attrs.cesu8EncoderFn, s.attrs.lobChunkSize)
 	if err != nil {
 		return driver.ResultNoRows, err
 	}
@@ -389,7 +423,7 @@ func (s *stmt) exec(ctx context.Context, pr *prepareResult, nvargs []driver.Name
 	for _, row := range addLobDataRecs {
 		to := (row + 1) * numColumn
 
-		r, err := s.session.exec(ctx, s.query, pr, nvargs[from:to], ofs)
+		r, err := s.conn.session.exec(ctx, s.query, pr, nvargs[from:to], ofs+from/numColumn)
 		totalRowsAffected.add(r)
 		if err != nil {
 			return driver.RowsAffected(totalRowsAffected), err
