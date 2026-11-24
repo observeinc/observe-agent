@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -43,48 +42,37 @@ const healthzInverted = `{name: no-healthz, type: string_attribute, string_attri
 const healthzPolicy = `{name: healthz, type: string_attribute, string_attribute: {key: http.target, values: [/healthz]}}`
 const dropDebugPolicy = `{name: drop-debug, type: drop, drop: {drop_sub_policy: [{name: debug, type: boolean_attribute, boolean_attribute: {key: debug, value: true}}]}}`
 
-// Each case runs through the bundled tail_sampling processor with disableinvertdecisions off, as
-// the agent sets it, and on, as it is once the gate is stable. The check must fire exactly when the
-// sampled traces differ.
+// Each case runs through the bundled tail_sampling processor, and before holds the traces the
+// v0.151.0 processor sampled with the agent's feature gates, when invert_match still excluded traces.
+// The check must fire exactly when the sampled traces differ.
 func TestReliesOnInvertMatch(t *testing.T) {
 	tests := []struct {
 		name     string
 		policies string
+		before   []pcommon.TraceID
 		want     bool
 	}{
-		{"inverted next to another policy", `[` + errorsPolicy + `, ` + healthzInverted + `]`, true},
-		{"two inverted policies", `[` + healthzInverted + `, {name: slow, type: numeric_attribute, numeric_attribute: {key: duration, min_value: 1, max_value: 2, invert_match: true}}]`, true},
-		{"inverted next to a drop policy", `[` + healthzInverted + `, ` + dropDebugPolicy + `]`, true},
-		{"lone not wrapping an inverted policy", `[{name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, true},
-		{"not wrapping an inverted policy next to another policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, true},
-		{"lone inverted policy", `[` + healthzInverted + `]`, false},
-		{"not wrapping a plain policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzPolicy + `}}]`, false},
-		{"inverted inside and", `[` + errorsPolicy + `, {name: and, type: and, and: {and_sub_policy: [` + healthzInverted + `]}}]`, false},
-		{"inverted inside drop", `[` + errorsPolicy + `, {name: drop, type: drop, drop: {drop_sub_policy: [` + healthzInverted + `]}}]`, false},
-		{"invert_match false", `[` + errorsPolicy + `, ` + healthzPolicy + `]`, false},
-		{"no invert_match", `[` + errorsPolicy + `]`, false},
+		{"inverted next to another policy", `[` + errorsPolicy + `, ` + healthzInverted + `]`, []pcommon.TraceID{{2}}, true},
+		{"two inverted policies", `[` + healthzInverted + `, {name: slow, type: numeric_attribute, numeric_attribute: {key: duration, min_value: 1, max_value: 2, invert_match: true}}]`, []pcommon.TraceID{{2}, {3}}, true},
+		{"inverted next to a drop policy", `[` + healthzInverted + `, ` + dropDebugPolicy + `]`, nil, true},
+		{"lone not wrapping an inverted policy", `[{name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, []pcommon.TraceID{{2}, {3}}, true},
+		{"not wrapping an inverted policy next to another policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzInverted + `}}]`, []pcommon.TraceID{{2}}, true},
+		{"lone inverted policy", `[` + healthzInverted + `]`, []pcommon.TraceID{{2}, {3}}, false},
+		{"not wrapping a plain policy", `[` + errorsPolicy + `, {name: not, type: not, not: {not_sub_policy: ` + healthzPolicy + `}}]`, []pcommon.TraceID{{1}, {2}, {3}}, false},
+		{"inverted inside and", `[` + errorsPolicy + `, {name: and, type: and, and: {and_sub_policy: [` + healthzInverted + `]}}]`, []pcommon.TraceID{{1}, {2}, {3}}, false},
+		{"inverted inside drop", `[` + errorsPolicy + `, {name: drop, type: drop, drop: {drop_sub_policy: [` + healthzInverted + `]}}]`, []pcommon.TraceID{{1}}, false},
+		{"invert_match false", `[` + errorsPolicy + `, ` + healthzPolicy + `]`, []pcommon.TraceID{{1}, {2}}, false},
+		{"no invert_match", `[` + errorsPolicy + `]`, []pcommon.TraceID{{1}, {2}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, reliesOnInvertMatch(mapFromYAML(t, "policies: "+tt.policies)))
 
 			useAgentFeatureGates(t)
-			before := sampledTraceIDs(t, tt.policies)
-			require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
 			after := sampledTraceIDs(t, tt.policies)
-			assert.Equal(t, tt.want, !assert.ObjectsAreEqual(before, after), "sampled with the gate off %v, on %v", before, after)
+			assert.Equal(t, tt.want, !assert.ObjectsAreEqual(tt.before, after), "sampled before %v, now %v", tt.before, after)
 		})
 	}
-}
-
-// Users who already enabled disableinvertdecisions have the new behavior, so nothing changes for them.
-func TestInvertMatchCheckSkipsWhenTheGateIsEnabled(t *testing.T) {
-	cfg := mapFromYAML(t, "policies: ["+errorsPolicy+", "+healthzInverted+"]")
-	check := upcomingChangeChecks["tail_sampling_invert_match"]
-	useAgentFeatureGates(t)
-	assert.True(t, check(cfg))
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
-	assert.False(t, check(cfg))
 }
 
 // Runs every entry's examples, under each of its component types.
@@ -274,15 +262,10 @@ func sampledTraceIDs(t *testing.T, policies string) []pcommon.TraceID {
 	return sampled
 }
 
-// The agent keeps disableinvertdecisions off, so invert_match excludes the /healthz error. Once the
-// gate is stable it can't be turned off, and the processor samples every trace: the change the
-// warning describes.
-func TestInvertMatchExcludesOnlyWhileTheGateIsOff(t *testing.T) {
-	require.False(t, internalFeatureFlagDefaults[disableInvertDecisionsGate])
-	policies := "[" + errorsPolicy + ", " + healthzInverted + "]"
+// invert_match no longer excludes the /healthz error that the errors policy samples, so the
+// processor samples every trace: the change the warning describes.
+func TestInvertMatchNoLongerExcludes(t *testing.T) {
 	useAgentFeatureGates(t)
-	assert.Equal(t, []pcommon.TraceID{{2}}, sampledTraceIDs(t, policies))
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableInvertDecisionsGate, true))
+	policies := "[" + errorsPolicy + ", " + healthzInverted + "]"
 	assert.Equal(t, []pcommon.TraceID{{1}, {2}, {3}}, sampledTraceIDs(t, policies))
 }
