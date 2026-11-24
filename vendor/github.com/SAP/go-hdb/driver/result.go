@@ -97,16 +97,17 @@ func (r *noResultType) Next(dest []driver.Value) error { return io.EOF }
 // queryResult represents a single resultset of a query.
 type queryResult struct {
 	// field alignment
-	fields       []*p.ResultField
-	fieldValues  []driver.Value
-	decodeErrors p.DecodeErrors
-	_columns     []string
-	lastErr      error
-	session      *session
-	rsID         uint64
-	pos          int
-	attrs        p.PartAttributes
-	closed       bool
+	fields          []*p.ResultField
+	fieldValues     []driver.Value
+	decodeErrors    p.DecodeErrors
+	_columns        []string
+	lastErr         error
+	session         *session
+	rsID            uint64
+	pos             int
+	attrs           p.PartAttributes
+	tableOutTracker *tableOutTracker
+	closed          bool
 }
 
 // ErrScanOnClosedResultset is the error raised in case a scan is executed on a closed resultset.
@@ -124,9 +125,22 @@ func (qr *queryResult) Columns() []string {
 	return qr._columns
 }
 
-// Close implements the driver.Rows interface.
+// Close implements the driver.Rows interface. A table resultset releases
+// itself to its tableOutTracker (if any) so the connection teardown can proceed
+// once the last table rowset is closed (see tableOutTracker.release).
 func (qr *queryResult) Close() error {
+	if qr.closed {
+		return nil
+	}
 	qr.closed = true
+	err := qr.close()
+	if qr.tableOutTracker != nil {
+		qr.tableOutTracker.release()
+	}
+	return err
+}
+
+func (qr *queryResult) close() error {
 	if qr.attrs.ResultsetClosed() {
 		return nil
 	}
@@ -144,28 +158,37 @@ func (qr *queryResult) numRow() int {
 	return len(qr.fieldValues) / len(qr.fields)
 }
 
-// Next implements the driver.Rows interface.
-func (qr *queryResult) Next(dest []driver.Value) error {
+// nextRow advances to the next row and returns the row index or io.EOF.
+func (qr *queryResult) nextRow() (int, error) {
 	if qr.pos >= qr.numRow() {
 		if qr.attrs.LastPacket() {
-			return io.EOF
+			return -1, io.EOF
 		}
 		if err := qr.session.fetchNext(context.Background(), qr); err != nil {
 			qr.lastErr = err // fieldValues and attrs are nil
-			return err
+			return -1, err
 		}
 		if qr.numRow() == 0 {
-			return io.EOF
+			return -1, io.EOF
 		}
 		qr.pos = 0
+	}
+	row := qr.pos
+	qr.pos++
+	return row, nil
+}
+
+// Next implements the driver.Rows interface.
+func (qr *queryResult) Next(dest []driver.Value) error {
+	row, err := qr.nextRow()
+	if err != nil {
+		return err
 	}
 
 	// copy row.
 	cols := len(qr.fields)
-	copy(dest, qr.fieldValues[qr.pos*cols:(qr.pos+1)*cols])
-	err := qr.decodeErrors.RowErrors(qr.pos)
-	qr.pos++
-	return err
+	copy(dest, qr.fieldValues[row*cols:(row+1)*cols])
+	return qr.decodeErrors.RowErrors(row)
 }
 
 // ColumnTypeDatabaseTypeName implements the driver.RowsColumnTypeDatabaseTypeName interface.
@@ -187,14 +210,6 @@ func (qr *queryResult) ColumnTypePrecisionScale(idx int) (int64, int64, bool) {
 // ColumnTypeScanType implements the driver.RowsColumnTypeScanType interface.
 func (qr *queryResult) ColumnTypeScanType(idx int) reflect.Type { return qr.fields[idx].ScanType() }
 
-// ReadLob used by protocol LobReader.
-func (qr *queryResult) ReadLob(request *p.ReadLobRequest, reply *p.ReadLobReply) error {
-	if qr.closed {
-		return ErrScanOnClosedResultset
-	}
-	return qr.session.readLob(context.Background(), request, reply)
-}
-
 // queryMultiResult represents multi resultsets of a query.
 type queryMultiResult struct {
 	idx int
@@ -208,7 +223,9 @@ func (qmr *queryMultiResult) Columns() []string { return qmr.qrs[qmr.idx].Column
 func (qmr *queryMultiResult) Close() error {
 	errs := []error{}
 	for _, qr := range qmr.qrs {
-		errs = append(errs, qr.Close())
+		if err := qr.Close(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return errors.Join(errs...)
 }
@@ -275,24 +292,24 @@ func (cr *callResult) Columns() []string {
 	return cr._columns
 }
 
-// Next implements the driver.Rows interface.
-func (cr *callResult) Next(dest []driver.Value) error {
+// nextRow advances to the call result row. It returns io.EOF if there is no row.
+func (cr *callResult) nextRow() error {
 	if len(cr.fieldValues) == 0 || cr.eof {
 		return io.EOF
 	}
 
 	cr.eof = true
+	return nil
+}
+
+// Next implements the driver.Rows interface.
+func (cr *callResult) Next(dest []driver.Value) error {
+	if err := cr.nextRow(); err != nil {
+		return err
+	}
 	copy(dest, cr.fieldValues)
 	return cr.decodeErrors.RowErrors(0)
 }
 
 // Close implements the driver.Rows interface.
 func (cr *callResult) Close() error { cr.closed = true; return nil }
-
-// ReadLob used by protocol LobReader.
-func (cr *callResult) ReadLob(request *p.ReadLobRequest, reply *p.ReadLobReply) error {
-	if cr.closed {
-		return ErrScanOnClosedResultset
-	}
-	return cr.session.readLob(context.Background(), request, reply)
-}

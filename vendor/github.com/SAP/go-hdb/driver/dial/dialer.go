@@ -9,8 +9,13 @@ import (
 
 // DialerOptions contains optional parameters that might be used by a Dialer.
 type DialerOptions struct {
-	Timeout, TCPKeepAlive time.Duration
-	TCPKeepAliveConfig    net.KeepAliveConfig
+	Timeout time.Duration
+	// TCPKeepAlive mirrors net.Dialer.KeepAlive 1:1: zero uses the
+	// net default (15s), a negative value disables keep-alive. Under
+	// net.Dialer semantics KeepAlive is ignored whenever
+	// TCPKeepAliveConfig is enabled.
+	TCPKeepAlive       time.Duration
+	TCPKeepAliveConfig net.KeepAliveConfig
 }
 
 // The Dialer interface needs to be implemented by custom Dialers. A Dialer for providing a custom driver connection
@@ -20,7 +25,7 @@ type Dialer interface {
 }
 
 // DefaultDialer is the default driver Dialer implementation.
-// TCP4 connections are preferred over TCP6 connections until HANA cloud would fully support IPv6.
+// TCP4 connections are preferred over TCP6 connections until HANA Cloud fully supports IPv6.
 // see https://github.com/SAP/go-hdb/issues/157.
 var DefaultDialer Dialer = &tcp4PrefDialer{}
 var _ = &dialer{}

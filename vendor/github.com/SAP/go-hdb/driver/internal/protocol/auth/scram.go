@@ -30,8 +30,7 @@ func scramCheckServerChallenge(serverChallenge []byte) error {
 
 func scramClientChallenge() []byte {
 	r := make([]byte, scramClientChallengeSize)
-	// does not return err starting with go1.24
-	rand.Read(r) //nolint: errcheck
+	rand.Read(r) // does not return err starting with go1.24
 	return r
 }
 
@@ -41,7 +40,7 @@ func scramClientProof(key, salt, serverChallenge, clientChallenge []byte) ([]byt
 	}
 	sig := scramHMAC(scramSHA256(key), salt, serverChallenge, clientChallenge)
 	if len(sig) != scramClientProofSize {
-		return nil, fmt.Errorf("invalid sig size %d - expected %d", len(key), scramClientProofSize)
+		return nil, fmt.Errorf("invalid sig size %d - expected %d", len(sig), scramClientProofSize)
 	}
 	// xor sig and key into sig (inline: no further allocation).
 	for i, v := range key {
@@ -54,6 +53,21 @@ func scramSHA256(p []byte) []byte {
 	hash := sha256.New()
 	hash.Write(p)
 	return hash.Sum(nil)
+}
+
+// scramVerifyServerProof verifies the server proof: the verifier is the HMAC of
+// the salted password and the salt, the expected proof is the HMAC of the
+// verifier over clientChallenge, salt and serverChallenge.
+func scramVerifyServerProof(saltedPassword, salt, serverChallenge, clientChallenge, serverProof []byte) error {
+	if len(serverProof) != scramClientProofSize {
+		return fmt.Errorf("invalid server proof size %d - expected %d", len(serverProof), scramClientProofSize)
+	}
+	verifier := scramHMAC(saltedPassword, salt)
+	proof := scramHMAC(verifier, clientChallenge, salt, serverChallenge)
+	if !hmac.Equal(proof, serverProof) {
+		return fmt.Errorf("%w: invalid server proof", ErrAuthVerifyFailed)
+	}
+	return nil
 }
 
 func scramHMAC(key []byte, prms ...[]byte) []byte {

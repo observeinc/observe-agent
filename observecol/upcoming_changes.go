@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -58,20 +57,8 @@ type matchCondition struct {
 
 // upcomingChangeChecks are matches upcoming_changes.yaml can't express as conditions.
 var upcomingChangeChecks = map[string]func(cfg map[string]any) bool{
-	"tail_sampling_invert_match": func(cfg map[string]any) bool {
-		return !featureGateEnabled(disableInvertDecisionsGate) && reliesOnInvertMatch(cfg)
-	},
-	"hostmetrics_cpu_attribute": dropsPerCPUSeries,
-}
-
-func featureGateEnabled(id string) bool {
-	enabled := false
-	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
-		if g.ID() == id {
-			enabled = g.IsEnabled()
-		}
-	})
-	return enabled
+	"tail_sampling_invert_match": reliesOnInvertMatch,
+	"hostmetrics_cpu_attribute":  dropsPerCPUSeries,
 }
 
 var (

@@ -1,10 +1,7 @@
 package protocol
 
 import (
-	"reflect"
-
 	"github.com/SAP/go-hdb/driver/internal/protocol/encoding"
-	"golang.org/x/text/transform"
 )
 
 // Part represents a protocol part.
@@ -13,32 +10,20 @@ type Part interface {
 	kind() PartKind
 }
 
-type partDecoder interface {
+// PartDecoder represents a protocol part decoder.
+type PartDecoder interface {
 	Part
-	decode(dec *encoding.Decoder) error
-}
-type numArgPartDecoder interface {
-	Part
-	decodeNumArg(dec *encoding.Decoder, numArg int) error
-}
-type bufLenPartDecoder interface {
-	Part
-	decodeBufLen(dec *encoding.Decoder, bufLen int) error
-}
-type resultPartDecoder interface {
-	Part
-	decodeResult(dec *encoding.Decoder, tr transform.Transformer, numArg int, lobReader LobReader, lobChunkSize int) error
+	decode(dec *encoding.Decoder, header *PartHeader, attrs *ReaderAttrs) error
 }
 
 // PartEncoder represents a protocol part the driver is able to encode.
 type PartEncoder interface {
 	Part
 	numArg() int
-	size() int
 	encode(enc *encoding.Encoder) error
 }
 
-func (*HdbErrors) kind() PartKind           { return pkError }
+func (*HdbErrors) kind() PartKind           { return PkError }
 func (*AuthInitRequest) kind() PartKind     { return PkAuthentication }
 func (*AuthInitReply) kind() PartKind       { return PkAuthentication }
 func (*AuthFinalRequest) kind() PartKind    { return PkAuthentication }
@@ -47,7 +32,7 @@ func (ClientID) kind() PartKind             { return PkClientID }
 func (clientInfo) kind() PartKind           { return PkClientInfo }
 func (*TopologyInformation) kind() PartKind { return PkTopologyInformation }
 func (Command) kind() PartKind              { return PkCommand }
-func (*rowsAffected) kind() PartKind        { return pkRowsAffected }
+func (*RowsAffected) kind() PartKind        { return PkRowsAffected }
 func (StatementID) kind() PartKind          { return PkStatementID }
 func (*ParameterMetadata) kind() PartKind   { return PkParameterMetadata }
 func (*InputParameters) kind() PartKind     { return PkParameters }
@@ -63,7 +48,7 @@ func (*WriteLobReply) kind() PartKind       { return PkWriteLobReply }
 func (*ClientContext) kind() PartKind       { return PkClientContext }
 func (*ConnectOptions) kind() PartKind      { return PkConnectOptions }
 func (*DBConnectInfo) kind() PartKind       { return PkDBConnectInfo }
-func (*statementContext) kind() PartKind    { return PkStatementContext }
+func (*StatementContext) kind() PartKind    { return PkStatementContext }
 func (*transactionFlags) kind() PartKind    { return PkTransactionFlags }
 
 // numArg methods (result == 1).
@@ -75,21 +60,6 @@ func (StatementID) numArg() int       { return 1 }
 func (ResultsetID) numArg() int       { return 1 }
 func (Fetchsize) numArg() int         { return 1 }
 func (*ReadLobRequest) numArg() int   { return 1 }
-
-// size methods (fixed size).
-const (
-	statementIDSize    = 8
-	resultsetIDSize    = 8
-	fetchsizeSize      = 4
-	readLobRequestSize = 24
-)
-
-func (StatementID) size() int    { return statementIDSize }
-func (ResultsetID) size() int    { return resultsetIDSize }
-func (Fetchsize) size() int      { return fetchsizeSize }
-func (ReadLobRequest) size() int { return readLobRequestSize }
-
-// func (lobFlags) size() int       { return tinyintFieldSize }
 
 // check if part types implement the part encoder interface.
 var (
@@ -111,67 +81,84 @@ var (
 
 // check if part types implement the right part decoder interface.
 var (
-	_ numArgPartDecoder = (*HdbErrors)(nil)
-	_ partDecoder       = (*AuthInitRequest)(nil)
-	_ partDecoder       = (*AuthInitReply)(nil)
-	_ partDecoder       = (*AuthFinalRequest)(nil)
-	_ partDecoder       = (*AuthFinalReply)(nil)
-	_ bufLenPartDecoder = (*ClientID)(nil)
-	_ numArgPartDecoder = (*clientInfo)(nil)
-	_ numArgPartDecoder = (*TopologyInformation)(nil)
-	_ bufLenPartDecoder = (*Command)(nil)
-	_ numArgPartDecoder = (*rowsAffected)(nil)
-	_ partDecoder       = (*StatementID)(nil)
-	_ numArgPartDecoder = (*ParameterMetadata)(nil)
-	_ numArgPartDecoder = (*InputParameters)(nil)
-	_ resultPartDecoder = (*OutputParameters)(nil)
-	_ numArgPartDecoder = (*ResultMetadata)(nil)
-	_ partDecoder       = (*ResultsetID)(nil)
-	_ resultPartDecoder = (*Resultset)(nil)
-	_ partDecoder       = (*Fetchsize)(nil)
-	_ partDecoder       = (*ReadLobRequest)(nil)
-	_ numArgPartDecoder = (*WriteLobRequest)(nil)
-	_ numArgPartDecoder = (*ReadLobReply)(nil)
-	_ numArgPartDecoder = (*WriteLobReply)(nil)
-	_ numArgPartDecoder = (*ClientContext)(nil)
-	_ numArgPartDecoder = (*ConnectOptions)(nil)
-	_ numArgPartDecoder = (*DBConnectInfo)(nil)
-	_ numArgPartDecoder = (*statementContext)(nil)
-	_ numArgPartDecoder = (*transactionFlags)(nil)
+	_ PartDecoder = (*HdbErrors)(nil)
+	_ PartDecoder = (*AuthInitRequest)(nil)
+	_ PartDecoder = (*AuthInitReply)(nil)
+	_ PartDecoder = (*AuthFinalRequest)(nil)
+	_ PartDecoder = (*AuthFinalReply)(nil)
+	_ PartDecoder = (*ClientID)(nil)
+	_ PartDecoder = (*clientInfo)(nil)
+	_ PartDecoder = (*TopologyInformation)(nil)
+	_ PartDecoder = (*Command)(nil)
+	_ PartDecoder = (*RowsAffected)(nil)
+	_ PartDecoder = (*StatementID)(nil)
+	_ PartDecoder = (*ParameterMetadata)(nil)
+	_ PartDecoder = (*InputParameters)(nil)
+	_ PartDecoder = (*ResultMetadata)(nil)
+	_ PartDecoder = (*ResultsetID)(nil)
+	_ PartDecoder = (*Fetchsize)(nil)
+	_ PartDecoder = (*ReadLobRequest)(nil)
+	_ PartDecoder = (*WriteLobRequest)(nil)
+	_ PartDecoder = (*ReadLobReply)(nil)
+	_ PartDecoder = (*WriteLobReply)(nil)
+	_ PartDecoder = (*ClientContext)(nil)
+	_ PartDecoder = (*ConnectOptions)(nil)
+	_ PartDecoder = (*DBConnectInfo)(nil)
+	_ PartDecoder = (*StatementContext)(nil)
+	_ PartDecoder = (*transactionFlags)(nil)
 )
 
-var genPartTypeMap = map[PartKind]reflect.Type{
-	pkError:               reflect.TypeFor[HdbErrors](),
-	PkClientID:            reflect.TypeFor[ClientID](),
-	PkClientInfo:          reflect.TypeFor[clientInfo](),
-	PkTopologyInformation: reflect.TypeFor[TopologyInformation](),
-	PkCommand:             reflect.TypeFor[Command](),
-	pkRowsAffected:        reflect.TypeFor[rowsAffected](),
-	PkStatementID:         reflect.TypeFor[StatementID](),
-	PkResultsetID:         reflect.TypeFor[ResultsetID](),
-	PkFetchSize:           reflect.TypeFor[Fetchsize](),
-	PkReadLobRequest:      reflect.TypeFor[ReadLobRequest](),
-	PkReadLobReply:        reflect.TypeFor[ReadLobReply](),
-	PkWriteLobReply:       reflect.TypeFor[WriteLobReply](),
-	PkWriteLobRequest:     reflect.TypeFor[WriteLobRequest](),
-	PkClientContext:       reflect.TypeFor[ClientContext](),
-	PkConnectOptions:      reflect.TypeFor[ConnectOptions](),
-	PkTransactionFlags:    reflect.TypeFor[transactionFlags](),
-	PkStatementContext:    reflect.TypeFor[statementContext](),
-	PkDBConnectInfo:       reflect.TypeFor[DBConnectInfo](),
-	/*
-	   parts that cannot be used generically as additional parameters are needed
-
-	   PkParameterMetadata
-	   PkParameters
-	   PkOutputParameters
-	   PkResultMetadata
-	   PkResultset
-	*/
-}
-
-// to be implemented by parts needing initialization
-// in case the part is instantiated generically.
-type initer interface {
-	init()
+// newPart instantiates the generic part decoder for kind. It returns false
+// when a kind cannot be instantiated generically: authentication parts are
+// bound to the auth handshake state, other non-generic parts need additional
+// parameters (PkParameters, PkOutputParameters, PkResultset, PkReadLobReply
+// - the latter needs the locator id from the originating request), and
+// unknown kinds are ignored.
+func newPart(kind PartKind) (PartDecoder, bool) {
+	var part PartDecoder
+	switch kind {
+	case PkError:
+		part = new(HdbErrors)
+	case PkClientID:
+		part = new(ClientID)
+	case PkClientInfo:
+		part = new(clientInfo)
+	case PkTopologyInformation:
+		part = new(TopologyInformation)
+	case PkCommand:
+		part = new(Command)
+	case PkRowsAffected:
+		part = new(RowsAffected)
+	case PkStatementID:
+		part = new(StatementID)
+	case PkResultsetID:
+		part = new(ResultsetID)
+	case PkFetchSize:
+		part = new(Fetchsize)
+	case PkReadLobRequest:
+		part = new(ReadLobRequest)
+	case PkWriteLobReply:
+		part = new(WriteLobReply)
+	case PkWriteLobRequest:
+		part = new(WriteLobRequest)
+	case PkClientContext:
+		part = new(ClientContext)
+	case PkConnectOptions:
+		part = new(ConnectOptions)
+	case PkTransactionFlags:
+		part = new(transactionFlags)
+	case PkStatementContext:
+		part = new(StatementContext)
+	case PkDBConnectInfo:
+		part = new(DBConnectInfo)
+	case PkParameterMetadata:
+		part = new(ParameterMetadata)
+	case PkResultMetadata:
+		part = new(ResultMetadata)
+	case PkAuthentication:
+		return nil, false
+	default:
+		return nil, false
+	}
+	return part, true
 }
