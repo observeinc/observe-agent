@@ -3,7 +3,7 @@
 # GENERATED FILE, DO NOT EDIT. Run "make generate-oss-examples" to regenerate it from the Observe
 # Agent configuration.
 #
-# Run it with otelcol-contrib 0.151.0, the collector version the Observe Agent is built with.
+# Run it with otelcol-contrib 0.164.0, the collector version the Observe Agent is built with.
 #
 # Set these environment variables before starting the collector; it doesn't start without them
 # (see examples/oss-collector/README.md): DEPLOYMENT_ENVIRONMENT, OBSERVE_COLLECTION_URL, OBSERVE_TOKEN

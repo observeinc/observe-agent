@@ -79,7 +79,7 @@ func (x *GoSNMP) validateParametersV3() error {
 func (packet *SnmpPacket) authenticate(msg []byte) ([]byte, error) {
 	defer func() {
 		if e := recover(); e != nil {
-			var buf = make([]byte, 8192)
+			buf := make([]byte, 8192)
 			runtime.Stack(buf, true)
 			fmt.Printf("[v3::authenticate]recover: %v. Stack=%v\n", e, string(buf))
 		}
@@ -161,9 +161,17 @@ func (x *GoSNMP) negotiateInitialSecurityParameters(packetOut *SnmpPacket) error
 	if discoveryPacket := packetOut.SecurityParameters.discoveryRequired(); discoveryPacket != nil {
 		discoveryPacket.ContextName = x.ContextName
 		result, err := x.sendOneRequest(discoveryPacket, true)
-
 		if err != nil {
-			return err
+			// Some devices (e.g. Dell EMC switches) respond to discovery probes with
+			// usmStatsUnknownUserNames instead of usmStatsUnknownEngineIDs, yet still
+			// include valid engine parameters. Treat it as a valid discovery response.
+			if !errors.Is(err, ErrUnknownUsername) || result == nil {
+				return err
+			}
+			usp, ok := result.SecurityParameters.(*UsmSecurityParameters)
+			if !ok || usp.AuthoritativeEngineID == "" {
+				return err
+			}
 		}
 
 		err = x.storeSecurityParameters(result)
@@ -231,7 +239,7 @@ func (packet *SnmpPacket) marshalV3(buf *bytes.Buffer) (*bytes.Buffer, error) {
 	if err != nil {
 		return emptyBuffer, err
 	}
-	buf.Write([]byte{byte(Sequence), byte(len(header))})
+	buf.Write([]byte{byte(Sequence), byte(len(header))}) //nolint:gosec
 	packet.Logger.Printf("Marshal V3 Header len=%d. Eaten Last 4 Bytes=%v", len(header), header[len(header)-4:])
 	buf.Write(header)
 
@@ -281,7 +289,7 @@ func (packet *SnmpPacket) marshalV3Header() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	buf.Write([]byte{byte(Integer), byte(len(maxmsgsize))})
+	buf.Write([]byte{byte(Integer), byte(len(maxmsgsize))}) //nolint:gosec
 	buf.Write(maxmsgsize)
 	packet.Logger.Printf("MarshalV3Header maxmsgsize len=%v", buf.Len()-oldLen)
 	oldLen = buf.Len()
@@ -354,7 +362,8 @@ func (packet *SnmpPacket) prepareV3ScopedPDU() ([]byte, error) {
 
 func (x *GoSNMP) unmarshalV3Header(packet []byte,
 	cursor int,
-	response *SnmpPacket) (int, error) {
+	response *SnmpPacket,
+) (int, error) {
 	if PDUType(packet[cursor]) != Sequence {
 		return 0, fmt.Errorf("invalid SNMPV3 Header")
 	}
@@ -450,7 +459,7 @@ func (x *GoSNMP) unmarshalV3Header(packet []byte,
 
 func (x *GoSNMP) decryptPacket(packet []byte, cursor int, response *SnmpPacket) ([]byte, int, error) {
 	var err error
-	var decrypted = false
+	decrypted := false
 
 	if cursor >= len(packet) {
 		return nil, 0, errors.New("error parsing SNMPV3: truncated packet")

@@ -147,6 +147,21 @@ type Attribute struct {
 	noSmithyDocumentSerde
 }
 
+// The auto repair configuration for an Amazon ECS Managed Instances capacity
+// provider. When enabled, Amazon ECS automatically replaces container instances
+// that are detected as unhealthy based on container instance health checks,
+// including accelerated compute device and daemon health checks.
+type AutoRepairConfiguration struct {
+
+	// The status of auto repair actions for the capacity provider. When set to ENABLED
+	// , Amazon ECS automatically replaces container instances with an IMPAIRED health
+	// status. When set to DISABLED , Amazon ECS still monitors container instance
+	// health but does not automatically replace impaired instances.
+	ActionsStatus AutoRepairActionsStatus
+
+	noSmithyDocumentSerde
+}
+
 // The details of the Auto Scaling group for the capacity provider.
 type AutoScalingGroupProvider struct {
 
@@ -819,6 +834,9 @@ type Container struct {
 	// The network interfaces associated with the container.
 	NetworkInterfaces []NetworkInterface
 
+	// The IDs of each Neuron device assigned to the container.
+	NeuronDeviceIds []string
+
 	// A short (1024 max characters) human-readable string to provide additional
 	// details about a running or stopped container.
 	Reason *string
@@ -1295,8 +1313,8 @@ type ContainerDefinition struct {
 	// The private repository authentication credentials to use.
 	RepositoryCredentials *RepositoryCredentials
 
-	// The type and amount of a resource to assign to a container. The only supported
-	// resource is a GPU.
+	// The type and amount of a resource to assign to a container. The supported
+	// resources are GPUs and Neuron devices.
 	ResourceRequirements []ResourceRequirement
 
 	// The restart policy for a container. When you set up a restart policy, Amazon
@@ -1738,7 +1756,8 @@ type ContainerOverride struct {
 	Name *string
 
 	// The type and amount of a resource to assign to a container, instead of the
-	// default value from the task definition. The only supported resource is a GPU.
+	// default value from the task definition. The supported resources are GPUs and
+	// Neuron devices.
 	ResourceRequirements []ResourceRequirement
 
 	noSmithyDocumentSerde
@@ -1850,6 +1869,11 @@ type CreateManagedInstancesProviderConfiguration struct {
 	// This member is required.
 	InstanceLaunchTemplate *InstanceLaunchTemplate
 
+	// The auto repair configuration for the Amazon ECS Managed Instances capacity
+	// provider. Use this to enable or disable automatic replacement of container
+	// instances that are detected as unhealthy.
+	AutoRepairConfiguration *AutoRepairConfiguration
+
 	// Defines how Amazon ECS Managed Instances optimizes the infrastastructure in
 	// your capacity provider. Provides control over the delay between when EC2
 	// instances become idle or underutilized and when Amazon ECS optimizes them.
@@ -1859,6 +1883,622 @@ type CreateManagedInstancesProviderConfiguration struct {
 	// ECS Managed Instances. When enabled, tags applied to the capacity provider are
 	// automatically applied to all instances launched by this provider.
 	PropagateTags PropagateMITags
+
+	noSmithyDocumentSerde
+}
+
+// The CloudWatch alarm configuration for a daemon. When enabled, CloudWatch
+// alarms determine whether a daemon deployment has failed.
+type DaemonAlarmConfiguration struct {
+
+	// The CloudWatch alarm names to monitor during a daemon deployment.
+	AlarmNames []string
+
+	// Determines whether to use the CloudWatch alarm option in the daemon deployment
+	// process. The default value is false .
+	Enable bool
+
+	noSmithyDocumentSerde
+}
+
+// Information about a capacity provider associated with a daemon revision.
+type DaemonCapacityProvider struct {
+
+	// The Amazon Resource Name (ARN) of the capacity provider.
+	Arn *string
+
+	// The number of daemon tasks running on this capacity provider.
+	RunningCount int32
+
+	// The number of instances on this capacity provider that are running without the
+	// daemon task. This applies to daemons that aren't critical, where the instance
+	// remains available for your other tasks even if the daemon task can't start or
+	// stops. These instances aren't included in runningCount .
+	WithoutDaemonCount int32
+
+	noSmithyDocumentSerde
+}
+
+// Information about the circuit breaker used to determine when a daemon
+// deployment has failed.
+type DaemonCircuitBreaker struct {
+
+	// The number of times the circuit breaker detected a daemon deployment failure.
+	FailureCount int32
+
+	// The circuit breaker status. Amazon ECS is not using the circuit breaker for
+	// daemon deployment failures when the status is DISABLED .
+	Status DaemonDeploymentRollbackMonitorsStatus
+
+	// The threshold which determines that the daemon deployment failed.
+	Threshold int32
+
+	noSmithyDocumentSerde
+}
+
+// A container definition for a daemon task. Daemon container definitions describe
+// the containers that run as part of a daemon task on container instances managed
+// by capacity providers.
+type DaemonContainerDefinition struct {
+
+	// The image used to start the container. This string is passed directly to the
+	// Docker daemon. Images in the Docker Hub registry are available by default. Other
+	// repositories are specified with either repository-url/image:tag  or
+	// repository-url/image@digest .
+	//
+	// This member is required.
+	Image *string
+
+	// The command that's passed to the container.
+	Command []string
+
+	// The number of cpu units reserved for the container.
+	Cpu int32
+
+	// The dependencies defined for container startup and shutdown. A container can
+	// contain multiple dependencies on other containers in a task definition.
+	DependsOn []ContainerDependency
+
+	// The entry point that's passed to the container.
+	EntryPoint []string
+
+	// The environment variables to pass to a container.
+	Environment []KeyValuePair
+
+	// A list of files containing the environment variables to pass to a container.
+	EnvironmentFiles []EnvironmentFile
+
+	// If the essential parameter of a container is marked as true , and that container
+	// fails or stops for any reason, all other containers that are part of the task
+	// are stopped.
+	Essential *bool
+
+	// The FireLens configuration for the container. This is used to specify and
+	// configure a log router for container logs.
+	FirelensConfiguration *FirelensConfiguration
+
+	// The container health check command and associated configuration parameters for
+	// the container.
+	HealthCheck *HealthCheck
+
+	// When this parameter is true , you can deploy containerized applications that
+	// require stdin or a tty to be allocated.
+	Interactive *bool
+
+	// Linux-specific modifications that are applied to the container configuration,
+	// such as Linux kernel capabilities.
+	LinuxParameters *DaemonLinuxParameters
+
+	// The log configuration specification for the container.
+	LogConfiguration *LogConfiguration
+
+	// The amount (in MiB) of memory to present to the container. If the container
+	// attempts to exceed the memory specified here, the container is killed.
+	Memory *int32
+
+	// The soft limit (in MiB) of memory to reserve for the container.
+	MemoryReservation *int32
+
+	// The mount points for data volumes in your container.
+	MountPoints []MountPoint
+
+	// The name of the container. Up to 255 letters (uppercase and lowercase),
+	// numbers, underscores, and hyphens are allowed.
+	Name *string
+
+	// When this parameter is true, the container is given elevated privileges on the
+	// host container instance (similar to the root user).
+	Privileged *bool
+
+	// When this parameter is true , a TTY is allocated.
+	PseudoTerminal *bool
+
+	// When this parameter is true, the container is given read-only access to its
+	// root file system.
+	ReadonlyRootFilesystem *bool
+
+	// The private repository authentication credentials to use.
+	RepositoryCredentials *RepositoryCredentials
+
+	// The restart policy for the container. When you set up a restart policy, Amazon
+	// ECS can restart the container without needing to replace the task.
+	RestartPolicy *ContainerRestartPolicy
+
+	// The secrets to pass to the container.
+	Secrets []Secret
+
+	// Time duration (in seconds) to wait before giving up on resolving dependencies
+	// for a container.
+	StartTimeout *int32
+
+	// Time duration (in seconds) to wait before the container is forcefully killed if
+	// it doesn't exit normally on its own.
+	StopTimeout *int32
+
+	// A list of namespaced kernel parameters to set in the container.
+	SystemControls []SystemControl
+
+	// A list of ulimits to set in the container.
+	Ulimits []Ulimit
+
+	// The user to use inside the container.
+	User *string
+
+	// The working directory to run commands inside the container in.
+	WorkingDirectory *string
+
+	noSmithyDocumentSerde
+}
+
+// The details about the container image a daemon revision uses.
+type DaemonContainerImage struct {
+
+	// The name of the container.
+	ContainerName *string
+
+	// The container image.
+	Image *string
+
+	// The container image digest.
+	ImageDigest *string
+
+	noSmithyDocumentSerde
+}
+
+// Information about a daemon deployment. A daemon deployment orchestrates the
+// progressive rollout of daemon task updates across container instances.
+type DaemonDeployment struct {
+
+	// The CloudWatch alarms that determine when a daemon deployment fails.
+	Alarms *DaemonDeploymentAlarms
+
+	// The circuit breaker configuration that determines when a daemon deployment has
+	// failed.
+	CircuitBreaker *DaemonCircuitBreaker
+
+	// The Amazon Resource Name (ARN) of the cluster that hosts the daemon.
+	ClusterArn *string
+
+	// The time the daemon deployment was created. The format is yyyy-MM-dd
+	// HH:mm:ss.SSSSSS.
+	CreatedAt *time.Time
+
+	// The Amazon Resource Name (ARN) of the daemon deployment.
+	DaemonDeploymentArn *string
+
+	// The deployment configuration used for this daemon deployment.
+	DeploymentConfiguration *DaemonDeploymentConfiguration
+
+	// The time the daemon deployment finished. The format is yyyy-MM-dd
+	// HH:mm:ss.SSSSSS.
+	FinishedAt *time.Time
+
+	// The rollback options for the daemon deployment.
+	Rollback *DaemonRollback
+
+	// The currently deployed daemon revisions that are being replaced.
+	SourceDaemonRevisions []DaemonDeploymentRevisionDetail
+
+	// The time the daemon deployment started. The format is yyyy-MM-dd
+	// HH:mm:ss.SSSSSS.
+	StartedAt *time.Time
+
+	// The status of the daemon deployment.
+	Status DaemonDeploymentStatus
+
+	// Information about why the daemon deployment is in the current status.
+	StatusReason *string
+
+	// The time the daemon deployment stopped. The format is yyyy-MM-dd
+	// HH:mm:ss.SSSSSS.
+	StoppedAt *time.Time
+
+	// The daemon revision being deployed.
+	TargetDaemonRevision *DaemonDeploymentRevisionDetail
+
+	noSmithyDocumentSerde
+}
+
+// The CloudWatch alarms used to determine a daemon deployment failed.
+type DaemonDeploymentAlarms struct {
+
+	// The name of the CloudWatch alarms that determine when a daemon deployment
+	// failed.
+	AlarmNames []string
+
+	// The status of the alarms check. Amazon ECS is not using alarms for daemon
+	// deployment failures when the status is DISABLED .
+	Status DaemonDeploymentRollbackMonitorsStatus
+
+	// One or more CloudWatch alarm names that have been triggered during the daemon
+	// deployment.
+	TriggeredAlarmNames []string
+
+	noSmithyDocumentSerde
+}
+
+// Information about a capacity provider during a daemon deployment.
+type DaemonDeploymentCapacityProvider struct {
+
+	// The Amazon Resource Name (ARN) of the capacity provider.
+	Arn *string
+
+	// The number of instances being drained on this capacity provider during the
+	// deployment.
+	DrainingInstanceCount *int32
+
+	// The number of instances running daemon tasks on this capacity provider.
+	RunningInstanceCount *int32
+
+	// The number of instances on this capacity provider that are running without the
+	// daemon task. This applies to daemons that aren't critical, where the instance
+	// remains available for your other tasks even if the daemon task can't start or
+	// stops. These instances aren't included in runningInstanceCount .
+	WithoutDaemonInstanceCount *int32
+
+	noSmithyDocumentSerde
+}
+
+// Optional deployment parameters that control how a daemon rolls out updates
+// across container instances.
+type DaemonDeploymentConfiguration struct {
+
+	// The CloudWatch alarm configuration for the daemon deployment. When alarms are
+	// triggered during a deployment, the deployment can be automatically rolled back.
+	Alarms *DaemonAlarmConfiguration
+
+	// The amount of time (in minutes) to wait after a successful deployment step
+	// before proceeding. This allows time to monitor for issues before continuing. The
+	// default value is 0.
+	BakeTimeInMinutes int32
+
+	// The percentage of container instances to drain simultaneously during a daemon
+	// deployment. Valid values are between 0.0 and 100.0.
+	DrainPercent *float64
+
+	noSmithyDocumentSerde
+}
+
+// Details about a daemon revision during a deployment, including running and
+// draining instance counts per capacity provider.
+type DaemonDeploymentRevisionDetail struct {
+
+	// The Amazon Resource Name (ARN) of the daemon revision.
+	Arn *string
+
+	// The capacity providers associated with this daemon revision during the
+	// deployment.
+	CapacityProviders []DaemonDeploymentCapacityProvider
+
+	// The total number of instances being drained for this revision during the
+	// deployment.
+	TotalDrainingInstanceCount *int32
+
+	// The total number of instances running daemon tasks for this revision.
+	TotalRunningInstanceCount *int32
+
+	// The total number of instances running without the daemon task for this
+	// revision, across all capacity providers. These instances aren't included in
+	// totalRunningInstanceCount .
+	TotalWithoutDaemonInstanceCount *int32
+
+	noSmithyDocumentSerde
+}
+
+// A summary of a daemon deployment.
+type DaemonDeploymentSummary struct {
+
+	// The Amazon Resource Name (ARN) of the cluster that hosts the daemon.
+	ClusterArn *string
+
+	// The time the daemon deployment was created.
+	CreatedAt *time.Time
+
+	// The Amazon Resource Name (ARN) of the daemon.
+	DaemonArn *string
+
+	// The Amazon Resource Name (ARN) of the daemon deployment.
+	DaemonDeploymentArn *string
+
+	// The time the daemon deployment finished.
+	FinishedAt *time.Time
+
+	// The time the daemon deployment started.
+	StartedAt *time.Time
+
+	// The status of the daemon deployment.
+	Status DaemonDeploymentStatus
+
+	// Information about why the daemon deployment is in the current status.
+	StatusReason *string
+
+	// The time the daemon deployment stopped.
+	StoppedAt *time.Time
+
+	// The ARN of the daemon revision being deployed.
+	TargetDaemonRevisionArn *string
+
+	noSmithyDocumentSerde
+}
+
+// The detailed information about a daemon.
+type DaemonDetail struct {
+
+	// The Amazon Resource Name (ARN) of the cluster that the daemon is running in.
+	ClusterArn *string
+
+	// The Unix timestamp for the time when the daemon was created.
+	CreatedAt *time.Time
+
+	// The current daemon revision details, including the running task counts per
+	// capacity provider.
+	CurrentRevisions []DaemonRevisionDetail
+
+	// The Amazon Resource Name (ARN) of the daemon.
+	DaemonArn *string
+
+	// The Amazon Resource Name (ARN) of the most recent daemon deployment.
+	DeploymentArn *string
+
+	// The status of the daemon.
+	Status DaemonStatus
+
+	// The Unix timestamp for the time when the daemon was last updated.
+	UpdatedAt *time.Time
+
+	noSmithyDocumentSerde
+}
+
+// The Linux-specific options that are applied to the daemon container, such as
+// Linux kernel capabilities.
+type DaemonLinuxParameters struct {
+
+	// The Linux capabilities for the container that are added to or dropped from the
+	// default configuration provided by Docker.
+	Capabilities *KernelCapabilities
+
+	// Any host devices to expose to the container.
+	Devices []Device
+
+	// Run an init process inside the container that forwards signals and reaps
+	// processes.
+	InitProcessEnabled *bool
+
+	// The container path, mount options, and size (in MiB) of the tmpfs mount.
+	Tmpfs []Tmpfs
+
+	noSmithyDocumentSerde
+}
+
+// Information about a daemon revision. A daemon revision is a snapshot of the
+// daemon's configuration at the time a deployment was initiated.
+type DaemonRevision struct {
+
+	// The Amazon Resource Name (ARN) of the cluster that hosts the daemon.
+	ClusterArn *string
+
+	// The container images used by the daemon revision.
+	ContainerImages []DaemonContainerImage
+
+	// The Unix timestamp for the time when the daemon revision was created.
+	CreatedAt *time.Time
+
+	// If the critical parameter of this daemon revision is true , and the daemon task
+	// fails, stops, or becomes unhealthy, Amazon ECS drains the container instance and
+	// stops the other tasks running on it. If the parameter is false , the daemon task
+	// failure doesn't affect the other tasks on the instance, and doesn't block
+	// instance registration. The default value is true .
+	Critical *bool
+
+	// The Amazon Resource Name (ARN) of the daemon for this revision.
+	DaemonArn *string
+
+	// The Amazon Resource Name (ARN) of the daemon revision.
+	DaemonRevisionArn *string
+
+	// The Amazon Resource Name (ARN) of the daemon task definition used by this
+	// revision.
+	DaemonTaskDefinitionArn *string
+
+	// Specifies whether Amazon ECS managed tags are turned on for the daemon tasks.
+	EnableECSManagedTags *bool
+
+	// Specifies whether the execute command functionality is turned on for the daemon
+	// tasks.
+	EnableExecuteCommand *bool
+
+	// Specifies whether tags are propagated from the daemon to the daemon tasks.
+	PropagateTags DaemonPropagateTags
+
+	noSmithyDocumentSerde
+}
+
+// Details about a daemon revision, including the running task counts per capacity
+// provider.
+type DaemonRevisionDetail struct {
+
+	// The Amazon Resource Name (ARN) of the daemon revision.
+	Arn *string
+
+	// The capacity providers associated with this daemon revision.
+	CapacityProviders []DaemonCapacityProvider
+
+	// The total number of daemon tasks running for this revision.
+	TotalRunningCount int32
+
+	// The total number of instances running without the daemon task for this
+	// revision, across all capacity providers. These instances aren't included in
+	// totalRunningCount .
+	TotalWithoutDaemonCount int32
+
+	noSmithyDocumentSerde
+}
+
+// Information about a daemon deployment rollback.
+type DaemonRollback struct {
+
+	// The reason the rollback happened. For example, the circuit breaker initiated
+	// the rollback operation.
+	Reason *string
+
+	// The capacity providers involved in the rollback.
+	RollbackCapacityProviders []string
+
+	// The ARN of the daemon revision deployed as part of the rollback.
+	RollbackTargetDaemonRevisionArn *string
+
+	// The time that the rollback started. The format is yyyy-MM-dd HH:mm:ss.SSSSSS.
+	StartedAt *time.Time
+
+	noSmithyDocumentSerde
+}
+
+// A summary of a daemon.
+type DaemonSummary struct {
+
+	// The Unix timestamp for the time when the daemon was created.
+	CreatedAt *time.Time
+
+	// The Amazon Resource Name (ARN) of the daemon.
+	DaemonArn *string
+
+	// The status of the daemon.
+	Status DaemonStatus
+
+	// The Unix timestamp for the time when the daemon was last updated.
+	UpdatedAt *time.Time
+
+	noSmithyDocumentSerde
+}
+
+// The details of a daemon task definition. A daemon task definition is a template
+// that describes the containers that form a daemon. Daemons deploy cross-cutting
+// software agents independently across your Amazon ECS infrastructure.
+type DaemonTaskDefinition struct {
+
+	// A list of container definitions in JSON format that describe the containers
+	// that make up the daemon task.
+	ContainerDefinitions []DaemonContainerDefinition
+
+	// The number of CPU units used by the daemon task.
+	Cpu *string
+
+	// The full Amazon Resource Name (ARN) of the daemon task definition.
+	DaemonTaskDefinitionArn *string
+
+	// The Unix timestamp for the time when the daemon task definition delete was
+	// requested.
+	DeleteRequestedAt *time.Time
+
+	// The Amazon Resource Name (ARN) of the task execution role that grants the
+	// Amazon ECS container agent permission to make Amazon Web Services API calls on
+	// your behalf.
+	ExecutionRoleArn *string
+
+	// The name of a family that this daemon task definition is registered to.
+	Family *string
+
+	// The IPC namespace mode for the daemon. The valid values are none and shared .
+	// The default is none .
+	//
+	// If none is specified or no value is provided, the daemon runs with its own IPC
+	// namespace, isolated from other tasks. If shared is specified, the daemon joins
+	// the host IPC namespace, making it accessible to non-daemon tasks that use
+	// ipcMode: "host" or other daemons that use ipcMode: "shared" .
+	IpcMode DaemonIpcMode
+
+	// The amount of memory (in MiB) used by the daemon task.
+	Memory *string
+
+	// The PID namespace mode for the daemon. The valid values are none and shared .
+	// The default is none .
+	//
+	// If none is specified or no value is provided, the daemon runs with its own PID
+	// namespace, isolated from other tasks. If shared is specified, the daemon joins
+	// the host PID namespace, making it accessible to non-daemon tasks that use
+	// pidMode: "host" or other daemons that use pidMode: "shared" .
+	PidMode DaemonPidMode
+
+	// The Unix timestamp for the time when the daemon task definition was registered.
+	RegisteredAt *time.Time
+
+	// The principal that registered the daemon task definition.
+	RegisteredBy *string
+
+	// The revision of the daemon task in a particular family. The revision is a
+	// version number of a daemon task definition in a family. When you register a
+	// daemon task definition for the first time, the revision is 1 . Each time that
+	// you register a new revision of a daemon task definition in the same family, the
+	// revision value always increases by one.
+	Revision int32
+
+	// The status of the daemon task definition. The valid values are ACTIVE ,
+	// DELETE_IN_PROGRESS , and DELETED .
+	Status DaemonTaskDefinitionStatus
+
+	// The short name or full Amazon Resource Name (ARN) of the IAM role that grants
+	// containers in the daemon task permission to call Amazon Web Services APIs on
+	// your behalf.
+	TaskRoleArn *string
+
+	// The list of data volume definitions for the daemon task.
+	Volumes []DaemonVolume
+
+	noSmithyDocumentSerde
+}
+
+// A summary of a daemon task definition.
+type DaemonTaskDefinitionSummary struct {
+
+	// The Amazon Resource Name (ARN) of the daemon task definition.
+	Arn *string
+
+	// The Unix timestamp for the time when the daemon task definition delete was
+	// requested.
+	DeleteRequestedAt *time.Time
+
+	// The Unix timestamp for the time when the daemon task definition was registered.
+	RegisteredAt *time.Time
+
+	// The principal that registered the daemon task definition.
+	RegisteredBy *string
+
+	// The status of the daemon task definition.
+	Status DaemonTaskDefinitionStatus
+
+	noSmithyDocumentSerde
+}
+
+// A data volume definition for a daemon task.
+type DaemonVolume struct {
+
+	// The contents of the host parameter determine whether your bind mount host
+	// volume persists on the host container instance and where it's stored.
+	Host *HostVolumeProperties
+
+	// The name of the volume. Up to 255 letters (uppercase and lowercase), numbers,
+	// underscores, and hyphens are allowed.
+	Name *string
 
 	noSmithyDocumentSerde
 }
@@ -2058,6 +2698,17 @@ type DeploymentCircuitBreaker struct {
 	// This member is required.
 	Rollback bool
 
+	// Specifies whether the deployment circuit breaker resets its failure count when
+	// a task reaches a healthy state. When set to true , a task that reaches a healthy
+	// state resets the failure count to 0 . When set to false , Amazon ECS does not
+	// reset the failure count. The default is true .
+	ResetOnHealthyTask *bool
+
+	// The threshold configuration that controls when the deployment circuit breaker
+	// triggers. The type and value together determine how many task failures are
+	// tolerated before the circuit breaker activates.
+	ThresholdConfiguration *ThresholdConfiguration
+
 	noSmithyDocumentSerde
 }
 
@@ -2094,8 +2745,14 @@ type DeploymentConfiguration struct {
 	// [Rolling update]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/deployment-type-ecs.html
 	DeploymentCircuitBreaker *DeploymentCircuitBreaker
 
-	// An array of deployment lifecycle hook objects to run custom logic at specific
-	// stages of the deployment lifecycle.
+	// The early success criteria configuration for a rolling deployment. With early
+	// success criteria, you can configure an Amazon ECS deployment to complete faster.
+	// Amazon ECS declares a deployment successful once a target percentage of tasks
+	// are healthy, instead of waiting for the service to fully stabilize.
+	EarlySuccessCriteria *DeploymentEarlySuccessCriteria
+
+	// An array of deployment lifecycle hook objects to run custom logic or pause the
+	// deployment at specific stages of the deployment lifecycle.
 	LifecycleHooks []DeploymentLifecycleHook
 
 	// Configuration for linear deployment strategy. Only valid when the deployment
@@ -2328,6 +2985,48 @@ type DeploymentController struct {
 	noSmithyDocumentSerde
 }
 
+// You can use early success criteria only with rolling deployment strategy.
+//
+// The configuration that determines when a rolling update deployment is
+// considered successful. Early success criteria defines the percentage of tasks
+// that must be healthy before a deployment completes. It also controls whether
+// Amazon ECS must remove the previous tasks before a deployment completes.
+type DeploymentEarlySuccessCriteria struct {
+
+	// Specifies whether to use the early success criteria for the service deployment.
+	// When set to false , the deployment uses the default behavior, where Amazon ECS
+	// considers the deployment successful when the target service revision fully
+	// stabilizes and the previous tasks are removed. The default value is false .
+	//
+	// When set to true , Amazon ECS monitors the deployment to meet early success
+	// criteria. You must also specify healthyPercent and sourceServiceRevisionCleanup .
+	//
+	// This member is required.
+	Enable bool
+
+	// The percentage of healthy tasks that the target service revision must reach
+	// before Amazon ECS considers the deployment successful. This percentage is
+	// relative to the service's desiredCount and must be an integer between 0 and 100
+	// . This value must be greater than or equal to the minimumHealthyPercent value.
+	//
+	// After this percentage of tasks is healthy and the bake time elapses, Amazon ECS
+	// completes the deployment. Amazon ECS continues to scale the target service
+	// revision to 100 percent in the background.
+	HealthyPercent *int32
+
+	// The time when Amazon ECS removes the source revisions' tasks relative to
+	// deployment completion. The valid values are:
+	//
+	//   - BLOCKING —Amazon ECS removes the previous tasks before it marks the
+	//   deployment as successful.
+	//
+	//   - DEFERRED —Amazon ECS marks the deployment successful, and then removes the
+	//   previous tasks in the background.
+	SourceServiceRevisionCleanup ServiceRevisionCleanup
+
+	noSmithyDocumentSerde
+}
+
 // The amount of ephemeral storage to allocate for the deployment.
 type DeploymentEphemeralStorage struct {
 
@@ -2338,8 +3037,9 @@ type DeploymentEphemeralStorage struct {
 	noSmithyDocumentSerde
 }
 
-// A deployment lifecycle hook runs custom logic at specific stages of the
-// deployment process. Currently, you can use Lambda functions as hook targets.
+// A deployment lifecycle hook runs custom logic or pauses the deployment at
+// specific stages of the deployment process. You can use Lambda functions or pause
+// hooks as hook targets.
 //
 // For more information, see [Lifecycle hooks for Amazon ECS service deployments] in the Amazon Elastic Container Service Developer
 // Guide.
@@ -2347,14 +3047,14 @@ type DeploymentEphemeralStorage struct {
 // [Lifecycle hooks for Amazon ECS service deployments]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/deployment-lifecycle-hooks.html
 type DeploymentLifecycleHook struct {
 
-	// Use this field to specify custom parameters that Amazon ECS will pass to your
-	// hook target invocations (such as a Lambda function).
+	// Use this field to specify custom parameters that Amazon ECS passes to your
+	// Lambda function on each invocation. This field is not used for PAUSE hooks.
 	HookDetails document.Interface
 
-	// The Amazon Resource Name (ARN) of the hook target. Currently, only Lambda
-	// function ARNs are supported.
+	// The Amazon Resource Name (ARN) of the hook target. For AWS_LAMBDA hooks, this
+	// is the Lambda function ARN. This field is not applicable for PAUSE hooks.
 	//
-	// You must provide this parameter when configuring a deployment lifecycle hook.
+	// You must provide this parameter when configuring an AWS_LAMBDA lifecycle hook.
 	HookTargetArn *string
 
 	// The lifecycle stages at which to run the hook. Choose from these valid values:
@@ -2395,10 +3095,18 @@ type DeploymentLifecycleHook struct {
 	//
 	// You can use a lifecycle hook for this stage.
 	//
+	//   - PRE_PRODUCTION_TRAFFIC_SHIFT
+	//
+	// Occurs before production traffic shift. For linear and canary deployments, this
+	//   stage is invoked before every traffic shift step.
+	//
+	// You can use a lifecycle hook for this stage.
+	//
 	//   - PRODUCTION_TRAFFIC_SHIFT
 	//
 	// Production traffic is shifting to the green service revision. The green service
-	//   revision is migrating from 0% to 100% of production traffic.
+	//   revision is migrating from 0% to 100% of production traffic. For linear and
+	//   canary deployments, this stage is invoked at every traffic shift step.
 	//
 	// You can use a lifecycle hook for this stage.
 	//
@@ -2407,6 +3115,10 @@ type DeploymentLifecycleHook struct {
 	// The production traffic shift is complete.
 	//
 	// You can use a lifecycle hook for this stage.
+	//
+	// PAUSE hooks cannot be configured at TEST_TRAFFIC_SHIFT or
+	// PRODUCTION_TRAFFIC_SHIFT stages. These stages are only valid for AWS_LAMBDA
+	// hooks.
 	//
 	// You must provide this parameter when configuring a deployment lifecycle hook.
 	LifecycleStages []DeploymentLifecycleHookStage
@@ -2419,6 +3131,78 @@ type DeploymentLifecycleHook struct {
 	//
 	// [Permissions required for Lambda functions in Amazon ECS blue/green deployments]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/blue-green-permissions.html
 	RoleArn *string
+
+	// The type of action the lifecycle hook performs. Valid values are:
+	//
+	//   - AWS_LAMBDA - Invokes a Lambda function at the specified lifecycle stage.
+	//   This is the default value.
+	//
+	//   - PAUSE - Pauses the deployment at the specified lifecycle stage until you
+	//   call ContinueServiceDeployment to continue or roll back.
+	//
+	// This field is optional. If not specified, the default value is AWS_LAMBDA .
+	TargetType DeploymentLifecycleHookTargetType
+
+	// The timeout configuration for the lifecycle hook. This specifies how long
+	// Amazon ECS waits before taking the timeout action if the hook is not resolved.
+	TimeoutConfiguration *DeploymentLifecycleHookTimeoutConfiguration
+
+	noSmithyDocumentSerde
+}
+
+// The details of a deployment lifecycle hook that is active during a service
+// deployment.
+//
+// You can view lifecycle hook details by calling [DescribeServiceDeployments].
+//
+// [DescribeServiceDeployments]: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_DescribeServiceDeployments.html
+type DeploymentLifecycleHookDetail struct {
+
+	// The time when the lifecycle hook times out. If the hook has not been completed
+	// by this time, Amazon ECS takes the timeout action.
+	ExpiresAt *time.Time
+
+	// The ID of the lifecycle hook. Use this value when calling
+	// ContinueServiceDeployment to continue or roll back a paused deployment.
+	HookId *string
+
+	// The status of the lifecycle hook. Valid values include AWAITING_ACTION ,
+	// IN_PROGRESS , SUCCEEDED , FAILED , and TIMED_OUT .
+	Status DeploymentLifecycleHookStatus
+
+	// The Amazon Resource Name (ARN) of the hook target. For AWS_LAMBDA hooks, this
+	// is the Lambda function ARN. For PAUSE hooks, this field is not set.
+	TargetArn *string
+
+	// The type of action the lifecycle hook performs, such as AWS_LAMBDA or PAUSE .
+	TargetType DeploymentLifecycleHookTargetType
+
+	// The action Amazon ECS takes when the lifecycle hook times out. Valid values are
+	// CONTINUE and ROLLBACK .
+	TimeoutAction DeploymentLifecycleHookAction
+
+	noSmithyDocumentSerde
+}
+
+// The timeout configuration for a deployment lifecycle hook. This determines how
+// long Amazon ECS waits for the hook to complete before taking the specified
+// timeout action.
+type DeploymentLifecycleHookTimeoutConfiguration struct {
+
+	// The action Amazon ECS takes when the lifecycle hook times out. Valid values are:
+	//
+	//   - CONTINUE - Proceeds the deployment to the next lifecycle stage.
+	//
+	//   - ROLLBACK - Rolls back the deployment to the previous service revision.
+	//
+	// Default: ROLLBACK
+	Action DeploymentLifecycleHookAction
+
+	// The number of minutes Amazon ECS waits for the lifecycle hook to complete
+	// before taking the timeout action.
+	//
+	// Default: 1440 (24 hours)
+	TimeoutInMinutes *int32
 
 	noSmithyDocumentSerde
 }
@@ -2903,6 +3687,11 @@ type ExpressGatewayServiceConfiguration struct {
 	// The ARN of the service revision.
 	ServiceRevisionArn *string
 
+	// The ARN of the task definition used by this service revision. This is present
+	// for all Express services and reflects the task definition in use, whether
+	// managed by Amazon ECS or provided by the customer.
+	TaskDefinitionArn *string
+
 	// The ARN of the task role for the service revision.
 	TaskRoleArn *string
 
@@ -3366,6 +4155,9 @@ type InstanceHealthCheckResult struct {
 	// The container instance health status.
 	Status InstanceHealthCheckState
 
+	// The reason for the container instance health status.
+	StatusReason *string
+
 	// The type of container instance health status that was verified.
 	Type InstanceHealthCheckType
 
@@ -3435,8 +4227,8 @@ type InstanceLaunchTemplate struct {
 	// FIPS-compliant cryptographic algorithms and modules for enhanced security
 	// compliance. If false , instances use standard cryptographic implementations.
 	//
-	// If not specified, instances are launched with FIPS enabled in AWS GovCloud (US)
-	// regions and FIPS disabled in other regions.
+	// If not specified, instances are launched with FIPS enabled in Amazon Web
+	// Services GovCloud (US) regions and FIPS disabled in other regions.
 	FipsEnabled *bool
 
 	// Determines whether tags are propagated to the instance metadata service (IMDS)
@@ -3466,6 +4258,10 @@ type InstanceLaunchTemplate struct {
 	// criteria.
 	InstanceRequirements *InstanceRequirementsRequest
 
+	// The local storage configuration for Amazon ECS Managed Instances. This defines
+	// how ECS uses instance store volumes available on the container instance.
+	LocalStorageConfiguration *ManagedInstancesLocalStorageConfiguration
+
 	// CloudWatch provides two categories of monitoring: basic monitoring and detailed
 	// monitoring. By default, your managed instance is configured for basic
 	// monitoring. You can optionally enable detailed monitoring to help you more
@@ -3477,7 +4273,7 @@ type InstanceLaunchTemplate struct {
 	Monitoring ManagedInstancesMonitoringOptions
 
 	// The storage configuration for Amazon ECS Managed Instances. This defines the
-	// root volume size and type for the instances.
+	// data volume properties for the instances.
 	StorageConfiguration *ManagedInstancesStorageConfiguration
 
 	noSmithyDocumentSerde
@@ -3525,6 +4321,11 @@ type InstanceLaunchTemplateUpdate struct {
 	// Changes to instance requirements affect which instance types Amazon ECS selects
 	// for new instances.
 	InstanceRequirements *InstanceRequirementsRequest
+
+	// The updated local storage configuration for Amazon ECS Managed Instances.
+	// Changes to local storage settings apply to new instances launched after the
+	// update.
+	LocalStorageConfiguration *ManagedInstancesLocalStorageConfiguration
 
 	// CloudWatch provides two categories of monitoring: basic monitoring and detailed
 	// monitoring. By default, your managed instance is configured for basic
@@ -3839,9 +4640,6 @@ type LinuxParameters struct {
 
 	// The container path, mount options, and size (in MiB) of the tmpfs mount. This
 	// parameter maps to the --tmpfs option to docker run.
-	//
-	// If you're using tasks that use the Fargate launch type, the tmpfs parameter
-	// isn't supported.
 	Tmpfs []Tmpfs
 
 	noSmithyDocumentSerde
@@ -4321,6 +5119,21 @@ type ManagedIngressPath struct {
 	noSmithyDocumentSerde
 }
 
+// The local storage configuration for Amazon ECS Managed Instances. This defines
+// how ECS uses and configures instance store volumes available on container
+// instance.
+type ManagedInstancesLocalStorageConfiguration struct {
+
+	// Use instance store volumes for data storage when available. EBS volumes are not
+	// provisioned for data storage. If the container instance has multiple instance
+	// store volumes, a single data volume is created. Consider defining instance store
+	// requirements using the localStorage , localStorageTypes and totalLocalStorageGB
+	// properties.
+	UseLocalStorage bool
+
+	noSmithyDocumentSerde
+}
+
 // The network configuration for Amazon ECS Managed Instances. This specifies the
 // VPC subnets and security groups that instances use for network connectivity.
 // Amazon ECS Managed Instances support multiple network modes including awsvpc
@@ -4347,6 +5160,11 @@ type ManagedInstancesNetworkConfiguration struct {
 // Amazon EC2 instance types and features while offloading infrastructure
 // management to Amazon Web Services.
 type ManagedInstancesProvider struct {
+
+	// The auto repair configuration for the Amazon ECS Managed Instances capacity
+	// provider. Indicates whether Amazon ECS automatically replaces container
+	// instances that are detected as unhealthy.
+	AutoRepairConfiguration *AutoRepairConfiguration
 
 	// Defines how Amazon ECS Managed Instances optimizes the infrastastructure in
 	// your capacity provider. Configure it to turn on or off the infrastructure
@@ -4383,10 +5201,10 @@ type ManagedInstancesProvider struct {
 }
 
 // The storage configuration for Amazon ECS Managed Instances. This defines the
-// root volume configuration for the instances.
+// data volume configuration for the instances.
 type ManagedInstancesStorageConfiguration struct {
 
-	// The size of the tasks volume.
+	// The size of the data volume.
 	StorageSizeGiB *int32
 
 	noSmithyDocumentSerde
@@ -4728,6 +5546,36 @@ type MemoryMiBRequest struct {
 	noSmithyDocumentSerde
 }
 
+// The configuration for a specific set of metrics to collect for a service.
+type MetricConfiguration struct {
+
+	// The list of metric names to configure. The supported metric names are
+	// CPUUtilization and MemoryUtilization .
+	//
+	// This member is required.
+	MetricNames []string
+
+	// The resolution, in seconds, at which to collect the metrics. The valid values
+	// are 20 and 60 .
+	//
+	// This member is required.
+	ResolutionSeconds *int32
+
+	noSmithyDocumentSerde
+}
+
+// The optional monitoring configuration for a service, which defines the
+// resolution for the service-level CPUUtilization and MemoryUtilization Amazon
+// CloudWatch metrics. When not specified, Amazon ECS uses the default resolution
+// of 60 seconds.
+type MonitoringConfiguration struct {
+
+	// The list of metric configurations for the service monitoring.
+	MetricConfigurations []MetricConfiguration
+
+	noSmithyDocumentSerde
+}
+
 // The details for a volume mount point that's used in a container definition.
 type MountPoint struct {
 
@@ -4934,19 +5782,20 @@ type PlacementStrategy struct {
 	noSmithyDocumentSerde
 }
 
-// The devices that are available on the container instance. The only supported
-// device type is a GPU.
+// The devices that are available on the container instance. The supported device
+// types are GPUs and Neuron devices.
 type PlatformDevice struct {
 
-	// The ID for the GPUs on the container instance. The available GPU IDs can also
-	// be obtained on the container instance in the
-	// /var/lib/ecs/gpu/nvidia_gpu_info.json file.
+	// The ID for the GPU or Neuron device on the container instance. For GPUs, the
+	// available GPU IDs can also be obtained on the container instance in the
+	// /var/lib/ecs/gpu/nvidia_gpu_info.json file. For Neuron devices, the ID
+	// corresponds to the device index (for example, 0 for /dev/neuron0 ).
 	//
 	// This member is required.
 	Id *string
 
-	// The type of device that's available on the container instance. The only
-	// supported value is GPU .
+	// The type of device that's available on the container instance. The supported
+	// values are GPU and NEURON_DEVICE .
 	//
 	// This member is required.
 	Type PlatformDeviceType
@@ -5113,9 +5962,10 @@ type PortMapping struct {
 	// start with a hyphen.
 	Name *string
 
-	// The protocol used for the port mapping. Valid values are tcp and udp . The
-	// default is tcp . protocol is immutable in a Service Connect service. Updating
-	// this field requires a service deletion and redeployment.
+	// The protocol that's used for the port mapping. Valid values are tcp and udp
+	// (case-sensitive). The default is tcp . Amazon ECS treats any other specified
+	// value as tcp . protocol is immutable in a Service Connect service. To update
+	// this field, you must delete and redeploy the service.
 	Protocol TransportProtocol
 
 	noSmithyDocumentSerde
@@ -5254,8 +6104,9 @@ type Resource struct {
 }
 
 // The type and amount of a resource to assign to a container. The supported
-// resource types are GPUs and Elastic Inference accelerators. For more
-// information, see [Working with GPUs on Amazon ECS]or [Working with Amazon Elastic Inference on Amazon ECS] in the Amazon Elastic Container Service Developer Guide
+// resource types are GPUs, Neuron devices, and Elastic Inference accelerators. For
+// more information, see [Working with GPUs on Amazon ECS]or [Working with Amazon Elastic Inference on Amazon ECS] in the Amazon Elastic Container Service Developer
+// Guide
 //
 // [Working with Amazon Elastic Inference on Amazon ECS]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-inference.html
 // [Working with GPUs on Amazon ECS]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
@@ -5271,7 +6122,13 @@ type ResourceRequirement struct {
 	// When the type is GPU , the value is the number of physical GPUs the Amazon ECS
 	// container agent reserves for the container. The number of GPUs that's reserved
 	// for all containers in a task can't exceed the number of available GPUs on the
-	// container instance that the task is launched on.
+	// container instance that the task is launched on. You can also specify ALL to
+	// allocate all available GPUs on the instance to the container.
+	//
+	// When the type is NeuronDevice , the value must be ALL . This allocates all
+	// available Neuron devices on the instance to the container. Only one container in
+	// a task can specify NeuronDevice resources. This resource type is only supported
+	// on Managed Instances.
 	//
 	// When the type is InferenceAccelerator , the value matches the deviceName for an [InferenceAccelerator]
 	// specified in a task definition.
@@ -5317,6 +6174,71 @@ type RuntimePlatform struct {
 
 	// The operating system.
 	OperatingSystemFamily OSFamily
+
+	noSmithyDocumentSerde
+}
+
+// The runtime platform that Amazon ECS applies to a service revision. This value
+// overrides the runtime platform specified in the task definition. You can't set
+// this value.
+type RuntimePlatformOverride struct {
+
+	// The CPU architecture that tasks in this service revision run on. This value
+	// might differ from the architecture declared in the task definition—for example,
+	// when Amazon ECS detects an architecture mismatch during an Amazon ECS Express
+	// deployment and runs tasks on a different architecture. You can't set this value.
+	//
+	// Valid values:
+	//
+	//   - X86_64 - The x86 64-bit architecture.
+	//
+	//   - ARM64 - The 64-bit ARM architecture.
+	CpuArchitecture *string
+
+	noSmithyDocumentSerde
+}
+
+// This parameter is specified when you're using an Amazon S3 Files file system
+// for task storage. For more information, see [Amazon S3 Files volumes]in the Amazon Elastic Container
+// Service Developer Guide.
+//
+// Your task definition must include a Task IAM Role. See [IAM role for attaching your file system to Amazon Web Services compute resources] for required
+// permissions.
+//
+// [Amazon S3 Files volumes]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/s3files-volumes.html
+// [IAM role for attaching your file system to Amazon Web Services compute resources]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-prereq-policies.html#s3-files-prereq-iam-compute-role
+type S3FilesVolumeConfiguration struct {
+
+	// The full ARN of the S3 Files file system to mount.
+	//
+	// This member is required.
+	FileSystemArn *string
+
+	// The full ARN of the S3 Files access point to use. If an access point is
+	// specified, the root directory value specified in the S3FilesVolumeConfiguration
+	// must either be omitted or set to / which will enforce the path set on the S3
+	// Files access point. For more information, see [Creating S3 Files access points].
+	//
+	// [Creating S3 Files access points]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-access-points-creating.html
+	AccessPointArn *string
+
+	// The directory within the Amazon S3 Files file system to mount as the root
+	// directory. If this parameter is omitted, the root of the Amazon S3 Files file
+	// system will be used. Specifying / will have the same effect as omitting this
+	// parameter.
+	//
+	// If a S3 Files access point is specified in the accessPointArn , the root
+	// directory parameter must either be omitted or set to / which will enforce the
+	// path set on the S3 Files access point.
+	RootDirectory *string
+
+	// The port to use for sending encrypted data between the ECS host and the S3
+	// Files file system. If you do not specify a transit encryption port, it will use
+	// the port selection strategy that the Amazon S3 Files mount helper uses. For more
+	// information, see [S3 Files mount helper].
+	//
+	// [S3 Files mount helper]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-mounting.html
+	TransitEncryptionPort *int32
 
 	noSmithyDocumentSerde
 }
@@ -5996,6 +6918,9 @@ type ServiceDeployment struct {
 	// HH:mm:ss.SSSSSS.
 	FinishedAt *time.Time
 
+	// The details of the lifecycle hooks for the current service deployment.
+	LifecycleHookDetails []DeploymentLifecycleHookDetail
+
 	// The current lifecycle stage of the deployment. Possible values include:
 	//
 	//   - RECONCILE_SERVICE
@@ -6029,10 +6954,16 @@ type ServiceDeployment struct {
 	// The test traffic shift is complete. The green service revision handles 100% of
 	//   the test traffic.
 	//
+	//   - PRE_PRODUCTION_TRAFFIC_SHIFT
+	//
+	// Occurs before production traffic shift. For linear and canary deployments, this
+	//   stage is invoked before every traffic shift step.
+	//
 	//   - PRODUCTION_TRAFFIC_SHIFT
 	//
 	// Production traffic is shifting to the green service revision. The green service
-	//   revision is migrating from 0% to 100% of production traffic.
+	//   revision is migrating from 0% to 100% of production traffic. For linear and
+	//   canary deployments, this stage is invoked at every traffic shift step.
 	//
 	//   - POST_PRODUCTION_TRAFFIC_SHIFT
 	//
@@ -6445,8 +7376,19 @@ type ServiceRevision struct {
 	// The load balancers the service revision uses.
 	LoadBalancers []LoadBalancer
 
+	// The optional monitoring configuration for the service, which defines the
+	// resolution for the service-level CPUUtilization and MemoryUtilization Amazon
+	// CloudWatch metrics. When not specified, Amazon ECS uses the default resolution
+	// of 60 seconds.
+	Monitoring *MonitoringConfiguration
+
 	// The network configuration for a task or service.
 	NetworkConfiguration *NetworkConfiguration
+
+	// The effective runtime overrides that Amazon ECS applies to this service
+	// revision. This value is present only when Amazon ECS detects a difference
+	// between the task definition and the actual runtime configuration.
+	Overrides *ServiceRevisionOverrides
 
 	// The platform family the service revision uses.
 	PlatformFamily *string
@@ -6505,6 +7447,18 @@ type ServiceRevisionLoadBalancer struct {
 	// The Amazon Resource Name (ARN) of the target group associated with the service
 	// revision.
 	TargetGroupArn *string
+
+	noSmithyDocumentSerde
+}
+
+// Contains the runtime overrides that Amazon ECS automatically applies to a
+// service revision when the effective runtime configuration differs from the task
+// definition. This value is read-only.
+type ServiceRevisionOverrides struct {
+
+	// The runtime platform override that Amazon ECS automatically applies to the
+	// service revision. You can't set this value.
+	RuntimePlatform *RuntimePlatformOverride
 
 	noSmithyDocumentSerde
 }
@@ -6779,6 +7733,8 @@ type Task struct {
 	HealthStatus HealthStatus
 
 	// The Elastic Inference accelerator that's associated with the task.
+	//
+	// Deprecated: This feature is no longer available.
 	InferenceAccelerators []InferenceAccelerator
 
 	// The last known status for the task. For more information, see [Task Lifecycle].
@@ -6962,6 +7918,9 @@ type TaskDefinition struct {
 	// [Task size]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
 	Cpu *string
 
+	// The Unix timestamp for the time when the task definition delete was requested.
+	DeleteRequestedAt *time.Time
+
 	// The Unix timestamp for the time when the task definition was deregistered.
 	DeregisteredAt *time.Time
 
@@ -6991,6 +7950,8 @@ type TaskDefinition struct {
 	Family *string
 
 	// The Elastic Inference accelerator that's associated with the task.
+	//
+	// Deprecated: This feature is no longer available.
 	InferenceAccelerators []InferenceAccelerator
 
 	// The IPC resource namespace to use for the containers in the task. The valid
@@ -7435,6 +8396,8 @@ type TaskOverride struct {
 	ExecutionRoleArn *string
 
 	// The Elastic Inference accelerator override for the task.
+	//
+	// Deprecated: This feature is no longer available.
 	InferenceAcceleratorOverrides []InferenceAcceleratorOverride
 
 	// The memory override for the task.
@@ -7630,6 +8593,33 @@ type TaskVolumeConfiguration struct {
 	noSmithyDocumentSerde
 }
 
+// Defines the failure threshold that the deployment circuit breaker uses to
+// monitor a deployment. The type and value together determine the number of task
+// failures that are tolerated before the circuit breaker triggers.
+//
+// By default, the threshold configuration uses a type of BOUNDED_PERCENT with a
+// value of 50 .
+type ThresholdConfiguration struct {
+
+	// Determines how Amazon ECS uses value to calculate the failure threshold. For
+	// the percentage types ( BOUNDED_PERCENT and UNBOUNDED_PERCENT ), Amazon ECS
+	// multiplies value by the latest service desired count. For COUNT , Amazon ECS
+	// uses value directly as the threshold. The default is BOUNDED_PERCENT .
+	//
+	// This member is required.
+	Type ThresholdType
+
+	// Specifies the integer that Amazon ECS uses to calculate the failure threshold.
+	// When type is COUNT , this value is the failure threshold itself. When type is a
+	// percentage type, Amazon ECS multiplies this value by the latest service desired
+	// count to produce the failure threshold. The default is 50 .
+	//
+	// This member is required.
+	Value int32
+
+	noSmithyDocumentSerde
+}
+
 // An object that represents the timeout configurations for Service Connect.
 //
 // If idleTimeout is set to a time that is less than perRequestTimeout , the
@@ -7779,6 +8769,10 @@ type UpdateManagedInstancesProviderConfiguration struct {
 	// This member is required.
 	InstanceLaunchTemplate *InstanceLaunchTemplateUpdate
 
+	// The updated auto repair configuration for the Amazon ECS Managed Instances
+	// capacity provider.
+	AutoRepairConfiguration *AutoRepairConfiguration
+
 	// The updated infrastructure optimization configuration. Changes to this setting
 	// affect how Amazon ECS optimizes instances going forward.
 	InfrastructureOptimization *InfrastructureOptimization
@@ -7832,9 +8826,10 @@ type VersionInfo struct {
 // configuration may contain multiple volumes but only one volume configured at
 // launch is supported. Each volume defined in the volume configuration may only
 // specify a name and one of either configuredAtLaunch , dockerVolumeConfiguration
-// , efsVolumeConfiguration , fsxWindowsFileServerVolumeConfiguration , or host .
-// If an empty volume configuration is specified, by default Amazon ECS uses a host
-// volume. For more information, see [Using data volumes in tasks].
+// , efsVolumeConfiguration , s3filesVolumeConfiguration ,
+// fsxWindowsFileServerVolumeConfiguration , or host . If an empty volume
+// configuration is specified, by default Amazon ECS uses a host volume. For more
+// information, see [Using data volumes in tasks].
 //
 // [Using data volumes in tasks]: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html
 type Volume struct {
@@ -7890,7 +8885,13 @@ type Volume struct {
 	// parameter of the mountPoints object in the container definition.
 	//
 	// When a volume is using the efsVolumeConfiguration , the name is required.
+	//
+	// When a volume is using the s3filesVolumeConfiguration , the name is required.
 	Name *string
+
+	// This parameter is specified when you use an Amazon S3 Files file system for
+	// task storage.
+	S3filesVolumeConfiguration *S3FilesVolumeConfiguration
 
 	noSmithyDocumentSerde
 }
