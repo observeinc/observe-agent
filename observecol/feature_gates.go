@@ -23,6 +23,9 @@ var internalFeatureFlagDefaults = map[string]bool{
 	"connector.spanmetrics.useSecondAsDefaultMetricsUnit":         false,
 	"connector.spanmetrics.excludeResourceMetrics":                false,
 	"connector.spanmetrics.includeCollectorInstanceID":            true,
+	// Keep kubeletstats *.cpu.usage from the kubelet's UsageNanoCores, which Kubernetes Explorer
+	// reads; the scrape-based calculation is missing on the first scrape.
+	"receiver.kubeletstats.cpuUsageScrapeBased": false,
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {
