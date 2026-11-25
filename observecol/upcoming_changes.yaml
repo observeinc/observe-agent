@@ -14,11 +14,208 @@
 #   match:      omit to match every component of the types. Otherwise `check` names a Go check in
 #               upcoming_changes.go, or `all` lists conditions on the component's configuration:
 #               `path` (list of keys) with one of `equals: <value>`, `absent: true` (missing,
-#               null or empty string) or `not_contains: <value>`.
+#               null or empty string), `not_contains: <value>` or `one_of: [<value>, ...]`.
 #   message:    what changes and what to do.
 #   examples:   component configurations that must and must not match; the tests run them.
 #
 # Shipped configuration must never match an entry (Test_BundledConfigHasNoUpcomingChanges), so
 # match on component types or settings that shipped configuration doesn't use.
 
-changes: []
+changes:
+  - id: kafka-receiver-jaeger-http-status
+    kind: receiver
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [jaeger_proto, jaeger_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, spans that the kafka receiver reads with the jaeger_proto
+      or jaeger_json encoding carry http.response.status_code instead of http.status_code. Update
+      dashboards, monitors and processors that use http.status_code on these spans. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: jaeger_proto}}
+        - {traces: {encoding: jaeger_json}}
+      quiet:
+        - {traces: {encoding: otlp_proto}}
+        - {traces: {encoding: zipkin_json}}
+        - {}
+
+  - id: kafka-receiver-zipkin-cloud-resource
+    kind: receiver
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [zipkin_proto, zipkin_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, spans that the kafka receiver reads with the zipkin_proto
+      or zipkin_json encoding carry the cloud.resource_id resource attribute instead of faas.id.
+      Update dashboards, monitors and processors that use faas.id on these spans. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: zipkin_proto}}
+        - {traces: {encoding: zipkin_json}}
+      quiet:
+        - {traces: {encoding: zipkin_thrift}}
+        - {traces: {encoding: jaeger_proto}}
+        - {}
+
+  - id: kafka-exporter-zipkin-cloud-resource
+    kind: exporter
+    types: [kafka]
+    upstream: v0.165.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [traces, encoding], one_of: [zipkin_proto, zipkin_json]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.165.0, the kafka exporter's zipkin_proto and zipkin_json
+      encodings write the cloud.resource_id tag instead of faas.id. Update consumers of the topic
+      that read faas.id. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {traces: {encoding: zipkin_proto}}
+        - {traces: {encoding: zipkin_json}}
+      quiet:
+        - {traces: {encoding: otlp_proto}}
+        - {}
+
+  - id: prometheus-exporter-resource-to-telemetry
+    kind: exporter
+    types: [prometheus]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [resource_to_telemetry_conversion, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the prometheus exporter ignores
+      resource_to_telemetry_conversion, so resource attributes are no longer added as metric labels.
+      Replace it with resource_constant_labels: enabled: true adds them all, and included or
+      excluded choose which. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {resource_to_telemetry_conversion: {enabled: true}}
+      quiet:
+        - {resource_to_telemetry_conversion: {enabled: false}}
+        - {resource_constant_labels: {enabled: true}}
+        - {}
+
+  - id: prometheus-exporter-utf8-escaping
+    kind: exporter
+    types: [prometheus]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [translation_strategy], one_of: [NoUTF8EscapingWithSuffixes, NoTranslation]}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, with translation_strategy NoUTF8EscapingWithSuffixes or
+      NoTranslation, the prometheus exporter replaces characters such as dots in metric and label
+      names with underscores when the scraper requests a format without an escaping parameter.
+      Scrapers that request escaping=allow-utf-8 still get UTF-8 names. Update dashboards and
+      monitors that use the UTF-8 names. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {translation_strategy: NoUTF8EscapingWithSuffixes}
+        - {translation_strategy: NoTranslation}
+      quiet:
+        - {translation_strategy: UnderscoreEscapingWithoutSuffixes}
+        - {}
+
+  - id: sql-query-default-interval
+    kind: receiver
+    types: [sql_query, sqlquery]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [collection_interval], absent: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the sql_query receiver runs its queries every 60 seconds
+      by default instead of every 10 seconds. To keep 10 seconds, set collection_interval: 10s.
+      Details: https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {}
+      quiet:
+        - {collection_interval: 10s}
+        - {collection_interval: 60s}
+
+  - id: aws-s3-max-unmarshal-size
+    kind: receiver
+    types: [aws_s3, awss3]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [s3downloader, max_unmarshal_size], absent: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, the aws_s3 receiver fails objects larger than 256 MiB
+      after decompression when its decoder doesn't stream them. If your objects can be larger, set
+      s3downloader.max_unmarshal_size. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {}
+        - {s3downloader: {region: us-east-1}}
+      quiet:
+        - {s3downloader: {max_unmarshal_size: 1073741824}}
+
+  - id: sqlserver-lock-wait-workload-group
+    kind: receiver
+    types: [sql_server, sqlserver]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [metrics, sqlserver.lock.wait.count, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, sqlserver.lock.wait.count carries
+      sqlserver.workload_group.name, so it reports one data point per Resource Governor workload
+      group. Update dashboards and monitors that use it. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {metrics: {sqlserver.lock.wait.count: {enabled: true}}}
+      quiet:
+        - {metrics: {sqlserver.lock.wait.count: {enabled: false}}}
+        - {}
+
+  - id: sqlserver-memory-usage-resource-pool
+    kind: receiver
+    types: [sql_server, sqlserver]
+    upstream: v0.166.0
+    remove_in: v2.21.0
+    match:
+      all:
+        - {path: [metrics, sqlserver.memory.usage, enabled], equals: true}
+    message: >-
+      Upcoming change in Observe Agent v2.21.0, which updates the OpenTelemetry Collector from
+      v0.164.1 to v0.166.0: from v0.166.0, sqlserver.memory.usage carries
+      sqlserver.resource_pool.name, so it reports one data point per Resource Governor resource
+      pool. Update dashboards and monitors that use it. Details:
+      https://docs.observeinc.com/docs/breaking-changes-and-deprecation-notices
+    examples:
+      fires:
+        - {metrics: {sqlserver.memory.usage: {enabled: true}}}
+      quiet:
+        - {metrics: {sqlserver.memory.usage: {enabled: false}}}
+        - {}
