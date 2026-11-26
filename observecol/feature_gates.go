@@ -26,6 +26,11 @@ var internalFeatureFlagDefaults = map[string]bool{
 	// Keep kubeletstats *.cpu.usage from the kubelet's UsageNanoCores, which Kubernetes Explorer
 	// reads; the scrape-based calculation is missing on the first scrape.
 	"receiver.kubeletstats.cpuUsageScrapeBased": false,
+	// Emit only the apache receiver's new metric and attribute names. The receiver is new to the
+	// agent, so starting on the new names means no user has to migrate off the old ones later.
+	// disableOldFormatMetrics requires enableNewFormatMetrics.
+	"receiver.apache.enableNewFormatMetrics":  true,
+	"receiver.apache.disableOldFormatMetrics": true,
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {
