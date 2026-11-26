@@ -1793,6 +1793,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformpro
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces
+# github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.164.1
+## explicit; go 1.26.0
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata
 # github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.164.1
 ## explicit; go 1.26.0
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
