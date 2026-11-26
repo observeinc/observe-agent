@@ -37,12 +37,44 @@ Load15: 0.3
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `
 
+var (
+	newFormatApacheMetrics = []string{"apache.request.count", "apache.worker.status", "apache.worker.active", "apache.worker.idle"}
+	oldFormatApacheMetrics = []string{"apache.requests", "apache.scoreboard", "apache.workers", "apache.current_connections"}
+)
+
 // TestApacheReceiverEmitsOnlyNewFormatMetrics checks that, with the agent's default feature
 // gates, the apache receiver emits only the new metric names. The receiver is new to the agent,
 // so no user has built anything on the original names and none will need migrating later.
 func TestApacheReceiverEmitsOnlyNewFormatMetrics(t *testing.T) {
+	names := scrapeApacheMetricNames(t, nil)
+	for _, name := range newFormatApacheMetrics {
+		assert.True(t, names[name], "new-format metric %q should be emitted; got %v", name, names)
+	}
+	for _, name := range oldFormatApacheMetrics {
+		assert.False(t, names[name], "original-format metric %q should not be emitted; got %v", name, names)
+	}
+}
+
+// TestApacheReceiverOldFormatMetricsOptOut checks that a user who disables only
+// receiver.apache.enableNewFormatMetrics gets a working receiver with the original names.
+// Without internalFeatureFlagRequires, the agent's disableOldFormatMetrics default stays on and
+// the receiver refuses to start.
+func TestApacheReceiverOldFormatMetricsOptOut(t *testing.T) {
+	names := scrapeApacheMetricNames(t, []string{"-receiver.apache.enableNewFormatMetrics"})
+	for _, name := range oldFormatApacheMetrics {
+		assert.True(t, names[name], "original-format metric %q should be emitted; got %v", name, names)
+	}
+	for _, name := range newFormatApacheMetrics {
+		assert.False(t, names[name], "new-format metric %q should not be emitted; got %v", name, names)
+	}
+}
+
+// scrapeApacheMetricNames applies the given --feature-gates values on top of the agent's
+// defaults, scrapes a fake mod_status page once, and returns the metric names emitted.
+func scrapeApacheMetricNames(t *testing.T, gates []string) map[string]bool {
+	t.Helper()
 	ctx := context.Background()
-	featureGates = []string{}
+	featureGates = gates
 	t.Cleanup(func() { resetFeatureGates(t, ctx) })
 	require.NoError(t, ApplyFeatureGates(ctx))
 
@@ -79,11 +111,5 @@ func TestApacheReceiverEmitsOnlyNewFormatMetrics(t *testing.T) {
 			}
 		}
 	}
-
-	for _, name := range []string{"apache.request.count", "apache.worker.status", "apache.worker.active", "apache.worker.idle"} {
-		assert.True(t, names[name], "new-format metric %q should be emitted; got %v", name, names)
-	}
-	for _, name := range []string{"apache.requests", "apache.scoreboard", "apache.workers", "apache.current_connections"} {
-		assert.False(t, names[name], "original-format metric %q should not be emitted; got %v", name, names)
-	}
+	return names
 }

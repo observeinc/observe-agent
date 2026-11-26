@@ -3,6 +3,7 @@ package observecol
 import (
 	"context"
 	"errors"
+	"maps"
 
 	"github.com/observeinc/observe-agent/internal/commands/util/logger"
 	"github.com/spf13/pflag"
@@ -28,9 +29,17 @@ var internalFeatureFlagDefaults = map[string]bool{
 	"receiver.kubeletstats.cpuUsageScrapeBased": false,
 	// Emit only the apache receiver's new metric and attribute names. The receiver is new to the
 	// agent, so starting on the new names means no user has to migrate off the old ones later.
-	// disableOldFormatMetrics requires enableNewFormatMetrics.
+	// disableOldFormatMetrics requires enableNewFormatMetrics; see internalFeatureFlagRequires.
 	"receiver.apache.enableNewFormatMetrics":  true,
 	"receiver.apache.disableOldFormatMetrics": true,
+}
+
+// internalFeatureFlagRequires maps a gate in internalFeatureFlagDefaults to a gate it requires.
+// If the user explicitly disables the required gate, the dependent gate is disabled instead of
+// getting its default, so a single opt-out flag doesn't leave an invalid pair. A dependent gate
+// the user sets explicitly is always applied as given.
+var internalFeatureFlagRequires = map[string]string{
+	"receiver.apache.disableOldFormatMetrics": "receiver.apache.enableNewFormatMetrics",
 }
 
 func AddFeatureGateFlag(flags *pflag.FlagSet) {
@@ -49,11 +58,19 @@ func ApplyFeatureGates(ctx context.Context) error {
 		}
 	}
 
-	// Apply internal defaults only if the user did not specify a value in the flag.
+	// Apply internal defaults only if the user did not specify a value in the flag. A default
+	// whose required gate the user explicitly disabled is replaced with false.
+	userFlags := maps.Clone(flags)
 	for id, enabled := range internalFeatureFlagDefaults {
-		if _, ok := flags[id]; !ok {
-			flags[id] = enabled
+		if _, ok := userFlags[id]; ok {
+			continue
 		}
+		if required, ok := internalFeatureFlagRequires[id]; ok {
+			if requiredEnabled, set := userFlags[required]; set && !requiredEnabled {
+				enabled = false
+			}
+		}
+		flags[id] = enabled
 	}
 
 	var errs error
