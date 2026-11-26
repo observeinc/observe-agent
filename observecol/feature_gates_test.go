@@ -50,6 +50,21 @@ func TestInternalFeatureFlagDefaultsExist(t *testing.T) {
 	}
 }
 
+// TestInternalFeatureFlagRequiresExist verifies that every gate named in
+// internalFeatureFlagRequires is registered and that each dependent gate has a default.
+func TestInternalFeatureFlagRequiresExist(t *testing.T) {
+	for dependent, required := range internalFeatureFlagRequires {
+		t.Run(dependent, func(t *testing.T) {
+			_, exists := getGate(dependent)
+			assert.True(t, exists, "Feature gate %q is not registered", dependent)
+			_, exists = getGate(required)
+			assert.True(t, exists, "Feature gate %q (required by %q) is not registered", required, dependent)
+			_, hasDefault := internalFeatureFlagDefaults[dependent]
+			assert.True(t, hasDefault, "Feature gate %q has a requirement but no default in internalFeatureFlagDefaults", dependent)
+		})
+	}
+}
+
 // TestInternalFeatureFlagDefaultsCanBeSet verifies that all feature flags can be
 // set to their default values without errors.
 //
@@ -155,6 +170,40 @@ func TestApplyFeatureGates(t *testing.T) {
 			expectError: false,
 			checkGates: map[string]bool{
 				"exporter.prometheusremotewritexporter.EnableMultipleWorkers": false,
+			},
+		},
+		{
+			name: "disabling a required gate disables the gates that depend on it",
+			featureGates: []string{
+				"-receiver.apache.enableNewFormatMetrics",
+			},
+			expectError: false,
+			checkGates: map[string]bool{
+				"receiver.apache.enableNewFormatMetrics":  false,
+				"receiver.apache.disableOldFormatMetrics": false,
+			},
+		},
+		{
+			name: "disabling only the dependent gate keeps the required gate's default",
+			featureGates: []string{
+				"-receiver.apache.disableOldFormatMetrics",
+			},
+			expectError: false,
+			checkGates: map[string]bool{
+				"receiver.apache.enableNewFormatMetrics":  true,
+				"receiver.apache.disableOldFormatMetrics": false,
+			},
+		},
+		{
+			name: "an explicitly set dependent gate is applied even if its required gate is disabled",
+			featureGates: []string{
+				"-receiver.apache.enableNewFormatMetrics",
+				"+receiver.apache.disableOldFormatMetrics",
+			},
+			expectError: false,
+			checkGates: map[string]bool{
+				"receiver.apache.enableNewFormatMetrics":  false,
+				"receiver.apache.disableOldFormatMetrics": true,
 			},
 		},
 	}

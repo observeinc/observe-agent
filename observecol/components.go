@@ -52,6 +52,7 @@ import (
 	observek8sattributesprocessor "github.com/observeinc/observe-agent/components/processors/observek8sattributesprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
+	apachereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	awsecscontainermetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	awss3receiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 	collectdreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -124,6 +125,7 @@ func components() (otelcol.Factories, error) {
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
 		nopreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
 		awsecscontainermetricsreceiver.NewFactory(),
 		awss3receiver.NewFactory(),
 		collectdreceiver.NewFactory(),
@@ -160,6 +162,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules = makeModulesMap(factories.Receivers, map[component.Type]string{
 		otlpreceiver.NewFactory().Type(): "go.opentelemetry.io/collector/receiver/otlpreceiver v0.164.0",
 		nopreceiver.NewFactory().Type(): "go.opentelemetry.io/collector/receiver/nopreceiver v0.164.0",
+		apachereceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.164.1",
 		awsecscontainermetricsreceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.164.1",
 		awss3receiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver v0.164.1",
 		collectdreceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.164.1",

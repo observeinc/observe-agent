@@ -838,6 +838,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsampling
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.164.1/go.mod h1:6dDGPRKdDCwetaT8LOl6gVoZSgtNcU5WngR/ZsYd0IQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.164.1 h1:ieV1Eg8g8hQmZR1Iq5XOwftewlRf34b/nptCLy/GtvU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.164.1/go.mod h1:92OrIJ3oJQVuCvzrwn8mVH+zEWEKm4i0gBL1ChHHgK0=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.164.1 h1:vDGIlVt/odf+z2/9K08V8zUizMkL/Kptjh8GA+YZ340=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.164.1/go.mod h1:S0w5kvqK+K8CGO9KJfbjcY4bhTd58imcWjvTtQJX8IY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.164.1 h1:ELvjcA0J57eJJsrdVm9xM9LRcD9cjnQ4uZthg8t8NIY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.164.1/go.mod h1:fY6G8Im+a8ilqeq+XFelLvrkpfgXgkDX6jg+dwBkzP4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver v0.164.1 h1:59KwQPa6sTOgUnGmaFP1vjF5OJcGuxB1DgLDjpl079E=
